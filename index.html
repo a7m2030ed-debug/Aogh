@@ -206,9 +206,9 @@
       <p>قالبك كما هو + ملفات الإكسل ← عرض تقديمي جاهز</p>
     </div>
   </div>
-  <button class="btn" id="bPdf" disabled>
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V4h12v5M6 18v2h12v-2M4 9h16v9H4z"/></svg>
-    تحميل PDF
+  <button class="btn" id="bClear" disabled>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M9 7V5h6v2m-8 0 1 13h8l1-13"/></svg>
+    مسح والبدء من جديد
   </button>
   <button class="btn btn-main" id="bMake" disabled>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 19h16"/></svg>
@@ -259,7 +259,11 @@
   </section>
 
   <section class="step" id="s4">
-    <header><span class="n">٤</span><h2>المعاينة قبل التحميل</h2><span class="state" id="st4"></span></header>
+    <header>
+      <span class="n">٤</span><h2>المعاينة قبل التحميل</h2>
+      <span class="state" id="st4"></span>
+      <button class="btn btn-sm btn-ghost" id="bPdf" disabled style="margin-inline-start:10px">تحميل PDF</button>
+    </header>
     <div class="body" id="preview">
       <p class="empty">ارفع القالب وملف فرع واحد على الأقل لتظهر المعاينة.</p>
     </div>
@@ -1464,7 +1468,7 @@ function renderPreview() {
 
   const pdf = document.createElement("div");
   pdf.className = "note";
-  pdf.innerHTML = '<span class="m"></span><span><b>زر «تحميل PDF»</b> يرسم الشرائح ويفتح نافذة الطباعة — ' +
+  pdf.innerHTML = '<span class="m"></span><span><b>زر «تحميل PDF»</b> أعلى هذه الخطوة يرسم الشرائح ويفتح نافذة الطباعة — ' +
     "اختر «حفظ بصيغة PDF». يُرسم كل شكل بمكانه ومقاسه من الشريحة نفسها، ويظهر الخط مطابقًا إن كان " +
     "<code>Plus Jakarta Sans</code> مثبَّتًا على جهازك. وللحصول على PDF مطابق بنسبة 100% يمكنك دائمًا " +
     "تصدير ملف البوربوينت من PowerPoint عبر ‏File ← Export‏.</span>";
@@ -1483,7 +1487,9 @@ function renderPreview() {
 
 function refresh() {
   renderTemplateInfo(); renderBranchInfo(); renderPreview();
-  $("#bMake").disabled = $("#bPdf").disabled = !(state.tpl && state.branches.length);
+  const ready = !!(state.tpl && state.branches.length);
+  $("#bMake").disabled = $("#bPdf").disabled = !ready;
+  $("#bClear").disabled = !state.branches.length;
   $("#assume").innerHTML =
     "<b>القواعد المطبَّقة:</b> الطوارئ تُستثنى من جدول الأطباء وتغذّي بطاقة EMERGENCY وحدها · " +
     "الأقسام المذكورة أعلاه تتصدّر الجدول بترتيبها، وبقيتها بترتيب ظهورها في ملف الإكسل · " +
@@ -1554,6 +1560,22 @@ $("#bMake").onclick = async e => {
   } catch (err) {
     toast("تعذّر إنشاء العرض: " + err.message, "err");
   } finally { b.disabled = false; b.innerHTML = keep; refresh(); }
+};
+
+/* Start the next report without reloading: the workbooks and their mapping go,
+   the template and the settings stay. */
+$("#bClear").onclick = () => {
+  state.branches = [];
+  state.headers = [];
+  state.map = {};
+  state.dateTouched = false;
+  const today = new Date().toISOString().slice(0, 10);
+  state.date = today;
+  $("#inDate").value = today;
+  $("#fileX").value = "";
+  $("#printer").textContent = "";
+  refresh();
+  toast("تم المسح — ارفع ملفات التقرير التالي");
 };
 
 $("#bPdf").onclick = e => {
