@@ -1,0 +1,1422 @@
+<meta charset="utf-8">
+<title>مُفرِّغ البيانات — نموذج + إكسل</title>
+<style>
+  :root{
+    color-scheme: light;
+    --paper:#F1F3F0;
+    --card:#FFFFFF;
+    --sunk:#E8EBE7;
+    --ink:#141F1C;
+    --ink-2:#41514C;
+    --ink-3:#71827C;
+    --line:#D6DDD8;
+    --line-2:#E7EBE7;
+    --accent:#0E6B59;
+    --accent-ink:#0A4F42;
+    --accent-soft:#DDEBE7;
+    --brass:#8E7128;
+    --brass-soft:#F1E9D3;
+    --ok:#1E7A4C;
+    --warn:#8C6410;
+    --crit:#AA3A2C;
+    --shadow:0 1px 2px rgba(20,31,28,.05), 0 12px 32px -12px rgba(20,31,28,.18);
+    --sheet-shadow:0 2px 4px rgba(20,31,28,.06), 0 24px 48px -20px rgba(20,31,28,.30);
+    --radius:10px;
+    --f-display:"Noto Kufi Arabic","Sakkal Majalla","Segoe UI",Tahoma,sans-serif;
+    --f-body:"Noto Sans Arabic","Segoe UI",Tahoma,Arial,sans-serif;
+    --f-mono:ui-monospace,"Cascadia Mono","SF Mono",Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      color-scheme: dark;
+      --paper:#0C1312;
+      --card:#141D1B;
+      --sunk:#101917;
+      --ink:#E8EEEB;
+      --ink-2:#AEBDB8;
+      --ink-3:#7F908A;
+      --line:#26332F;
+      --line-2:#1D2826;
+      --accent:#4FBFA3;
+      --accent-ink:#8AD9C3;
+      --accent-soft:#16302A;
+      --brass:#C9A94F;
+      --brass-soft:#2A2415;
+      --ok:#54B983;
+      --warn:#D2A63F;
+      --crit:#E27C6C;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 12px 32px -12px rgba(0,0,0,.6);
+      --sheet-shadow:0 2px 6px rgba(0,0,0,.5), 0 28px 56px -24px rgba(0,0,0,.8);
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme: dark;
+    --paper:#0C1312; --card:#141D1B; --sunk:#101917;
+    --ink:#E8EEEB; --ink-2:#AEBDB8; --ink-3:#7F908A;
+    --line:#26332F; --line-2:#1D2826;
+    --accent:#4FBFA3; --accent-ink:#8AD9C3; --accent-soft:#16302A;
+    --brass:#C9A94F; --brass-soft:#2A2415;
+    --ok:#54B983; --warn:#D2A63F; --crit:#E27C6C;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 12px 32px -12px rgba(0,0,0,.6);
+    --sheet-shadow:0 2px 6px rgba(0,0,0,.5), 0 28px 56px -24px rgba(0,0,0,.8);
+  }
+  :root[data-theme="light"]{
+    color-scheme: light;
+    --paper:#F1F3F0; --card:#FFFFFF; --sunk:#E8EBE7;
+    --ink:#141F1C; --ink-2:#41514C; --ink-3:#71827C;
+    --line:#D6DDD8; --line-2:#E7EBE7;
+    --accent:#0E6B59; --accent-ink:#0A4F42; --accent-soft:#DDEBE7;
+    --brass:#8E7128; --brass-soft:#F1E9D3;
+    --ok:#1E7A4C; --warn:#8C6410; --crit:#AA3A2C;
+    --shadow:0 1px 2px rgba(20,31,28,.05), 0 12px 32px -12px rgba(20,31,28,.18);
+    --sheet-shadow:0 2px 4px rgba(20,31,28,.06), 0 24px 48px -20px rgba(20,31,28,.30);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:var(--f-body); font-size:15px; line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{font-family:var(--f-display); font-weight:700; margin:0; text-wrap:balance; line-height:1.3}
+  button,input,select,textarea{font:inherit; color:inherit}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:4px}
+
+  /* ---------- command bar ---------- */
+  .bar{
+    position:sticky; top:0; z-index:40;
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+    padding:12px 20px;
+    background:color-mix(in srgb, var(--card) 88%, transparent);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .brand{display:flex; align-items:center; gap:10px; margin-inline-end:auto}
+  .seal{
+    width:34px; height:34px; flex:none; border-radius:8px;
+    background:var(--accent); color:#fff;
+    display:grid; place-items:center; font-family:var(--f-display); font-weight:700; font-size:15px;
+    box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--brass) 55%, transparent);
+  }
+  .brand h1{font-size:17px; letter-spacing:-.01em}
+  .brand p{margin:0; font-size:12px; color:var(--ink-3)}
+
+  .btn{
+    display:inline-flex; align-items:center; gap:7px;
+    padding:8px 14px; border-radius:8px; cursor:pointer;
+    border:1px solid var(--line); background:var(--card); color:var(--ink);
+    font-size:14px; font-weight:600; white-space:nowrap;
+    transition:background .15s, border-color .15s, transform .08s;
+  }
+  .btn:hover{border-color:color-mix(in srgb, var(--accent) 45%, var(--line))}
+  .btn:active{transform:translateY(1px)}
+  .btn[disabled]{opacity:.45; cursor:not-allowed; transform:none}
+  .btn-main{background:var(--accent); border-color:var(--accent); color:#fff}
+  :root[data-theme="dark"] .btn-main, @media (prefers-color-scheme: dark){}
+  .btn-main:hover{background:var(--accent-ink); border-color:var(--accent-ink)}
+  .btn-ghost{background:transparent}
+  .btn-sm{padding:5px 10px; font-size:13px; font-weight:500}
+  .btn svg{width:15px; height:15px; flex:none}
+
+  /* ---------- shell ---------- */
+  .shell{
+    display:grid; grid-template-columns:352px minmax(0,1fr);
+    gap:20px; padding:20px; align-items:start;
+    max-width:1560px; margin:0 auto;
+  }
+  @media (max-width:1000px){ .shell{grid-template-columns:minmax(0,1fr)} }
+
+  .rail{display:flex; flex-direction:column; gap:14px; position:sticky; top:74px}
+  @media (max-width:1000px){ .rail{position:static} }
+
+  .panel{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); overflow:hidden;
+  }
+  .panel > header{
+    display:flex; align-items:center; gap:8px;
+    padding:11px 14px; border-bottom:1px solid var(--line-2);
+    background:linear-gradient(to bottom, color-mix(in srgb, var(--accent-soft) 40%, var(--card)), var(--card));
+  }
+  .panel > header h2{font-size:13px; letter-spacing:.06em; text-transform:none; color:var(--ink-2)}
+  /* Arabic must never be set in a monospace face — those fonts carry no
+     joining forms, so the letters render disconnected. Mono is reserved
+     for digits, file extensions and Latin keys. */
+  .panel > header .num{
+    margin-inline-start:auto; font-size:11.5px;
+    color:var(--ink-3); font-variant-numeric:tabular-nums;
+  }
+  .panel .body{padding:14px; display:flex; flex-direction:column; gap:12px}
+
+  /* ---------- drop zone ---------- */
+  .drop{
+    border:1.5px dashed color-mix(in srgb, var(--accent) 40%, var(--line));
+    border-radius:9px; background:var(--sunk);
+    padding:18px 14px; text-align:center; cursor:pointer;
+    transition:background .15s, border-color .15s;
+  }
+  .drop:hover, .drop.hot{background:var(--accent-soft); border-color:var(--accent)}
+  .drop strong{display:block; font-family:var(--f-display); font-size:14px}
+  .drop span{font-size:12px; color:var(--ink-3); font-family:var(--f-mono)}
+  .check{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink-2); cursor:pointer}
+  .check input{accent-color:var(--accent); width:15px; height:15px}
+
+  .src{
+    display:flex; align-items:center; gap:10px; padding:8px 10px;
+    background:var(--sunk); border:1px solid var(--line-2); border-radius:8px; font-size:13px;
+  }
+  .src .dot{width:7px; height:7px; border-radius:50%; background:var(--ok); flex:none}
+  .src .nm{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .src .ct{margin-inline-start:auto; font-size:12.5px; color:var(--ink-3); font-variant-numeric:tabular-nums; flex:none}
+
+  /* ---------- field list ---------- */
+  .flist{display:flex; flex-direction:column; gap:6px; max-height:340px; overflow-y:auto; margin:-2px}
+  .frow{
+    display:flex; align-items:center; gap:8px; padding:7px 9px; margin:2px;
+    border:1px solid var(--line-2); border-radius:8px; background:var(--card);
+    cursor:pointer; text-align:start; width:calc(100% - 4px);
+    transition:border-color .12s, background .12s;
+  }
+  .frow:hover{border-color:color-mix(in srgb, var(--accent) 35%, var(--line))}
+  .frow.on{border-color:var(--accent); background:var(--accent-soft)}
+  .frow .lbl{font-weight:600; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .frow .bind{
+    margin-inline-start:auto; font-size:11.5px;
+    padding:2px 7px; border-radius:5px; background:var(--sunk); color:var(--ink-3);
+    max-width:112px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:none;
+  }
+  .frow .bind.linked{background:var(--accent-soft); color:var(--accent-ink)}
+  .frow .bind.miss{background:color-mix(in srgb, var(--crit) 16%, transparent); color:var(--crit)}
+  .frow .kind{
+    font-size:10.5px; color:var(--brass); flex:none; letter-spacing:.02em;
+    padding:1px 6px; border-radius:4px; background:var(--brass-soft);
+  }
+  .x{
+    border:0; background:transparent; color:var(--ink-3); cursor:pointer;
+    padding:2px 5px; border-radius:5px; line-height:1; flex:none; font-size:15px;
+  }
+  .x:hover{background:color-mix(in srgb, var(--crit) 14%, transparent); color:var(--crit)}
+
+  /* ---------- property grid ---------- */
+  .props{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  .props .wide{grid-column:1 / -1}
+  label.fld{display:flex; flex-direction:column; gap:4px; font-size:11px; color:var(--ink-3); letter-spacing:.03em}
+  label.fld input[type="text"], label.fld input[type="number"], label.fld select, label.fld textarea{
+    padding:7px 9px; border:1px solid var(--line); border-radius:7px;
+    background:var(--card); font-size:13.5px; width:100%;
+  }
+  label.fld textarea{resize:vertical; min-height:58px; font-size:13px; line-height:1.6}
+  label.fld input:focus, label.fld select:focus, label.fld textarea:focus{border-color:var(--accent); outline:none}
+  .seg{display:flex; border:1px solid var(--line); border-radius:7px; overflow:hidden}
+  .seg button{
+    flex:1; border:0; background:var(--card); padding:6px 0; cursor:pointer;
+    font-size:12px; color:var(--ink-2); border-inline-start:1px solid var(--line-2);
+  }
+  .seg button:first-child{border-inline-start:0}
+  .seg button.on{background:var(--accent); color:#fff}
+  .empty{font-size:13px; color:var(--ink-3); text-align:center; padding:14px 6px; line-height:1.7}
+
+  /* ---------- stage ---------- */
+  .stage{display:flex; flex-direction:column; gap:14px; min-width:0}
+  .stage-top{display:flex; align-items:center; gap:12px; flex-wrap:wrap}
+  .nav{display:flex; align-items:center; gap:6px; background:var(--card); border:1px solid var(--line); border-radius:9px; padding:5px; box-shadow:var(--shadow)}
+  .nav button{
+    border:0; background:transparent; cursor:pointer; padding:5px 9px; border-radius:6px;
+    color:var(--ink-2); font-size:15px; line-height:1;
+  }
+  .nav button:hover:not([disabled]){background:var(--sunk); color:var(--ink)}
+  .nav button[disabled]{opacity:.3; cursor:not-allowed}
+  .nav .pos{font-family:var(--f-mono); font-size:13px; padding:0 6px; font-variant-numeric:tabular-nums; color:var(--ink-2)}
+  .hint{font-size:12.5px; color:var(--ink-3); margin-inline-start:auto}
+  .hint kbd{
+    font-family:var(--f-mono); font-size:11px; background:var(--sunk);
+    border:1px solid var(--line); border-radius:4px; padding:1px 5px;
+  }
+
+  .sheet-wrap{
+    background:
+      repeating-linear-gradient(0deg, var(--line-2) 0 1px, transparent 1px 24px),
+      repeating-linear-gradient(90deg, var(--line-2) 0 1px, transparent 1px 24px),
+      var(--sunk);
+    border:1px solid var(--line); border-radius:var(--radius);
+    padding:28px; display:grid; place-items:center; min-height:340px; overflow-x:auto;
+  }
+  .sheet{
+    position:relative; background:#fff; box-shadow:var(--sheet-shadow);
+    flex:none; overflow:hidden; color:#141F1C;
+  }
+  .sheet .accentbar{position:absolute; inset-inline:0; top:0; background:var(--accent)}
+  .fbox{position:absolute; overflow:hidden}
+  /* no letter-spacing here: the preview must match the PowerPoint output */
+  .fbox .fl{
+    font-family:var(--f-body); color:#6E7F79;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .fbox .fv{font-family:var(--f-body); color:#141F1C; overflow:hidden; white-space:pre-wrap; overflow-wrap:anywhere}
+  .fbox .fv.blank{color:#B6C0BB}
+  .fbox.boxed{border:1px solid #D6DDD8; border-radius:3px; background:#FBFCFB}
+  .fbox.sel{outline:2px solid var(--accent); outline-offset:1px}
+  .editing .fbox{cursor:move}
+  .grip{
+    position:absolute; inset-inline-start:-5px; bottom:-5px; width:12px; height:12px;
+    background:var(--accent); border:2px solid #fff; border-radius:3px; cursor:nwse-resize;
+    display:none;
+  }
+  .fbox.sel .grip{display:block}
+
+  /* ---------- table peek ---------- */
+  .peek{overflow:auto; max-height:230px; border-top:1px solid var(--line-2)}
+  table{border-collapse:collapse; width:100%; font-size:12.5px}
+  th,td{
+    padding:6px 10px; text-align:start; border-bottom:1px solid var(--line-2);
+    white-space:nowrap; max-width:190px; overflow:hidden; text-overflow:ellipsis;
+  }
+  th{
+    position:sticky; top:0; background:var(--card); font-size:11.5px; letter-spacing:.02em;
+    color:var(--ink-3); font-weight:600; border-bottom:1px solid var(--line);
+  }
+  td{font-variant-numeric:tabular-nums}
+  tr.on td{background:var(--accent-soft)}
+  tbody tr{cursor:pointer}
+  tbody tr:hover td{background:color-mix(in srgb, var(--accent-soft) 55%, transparent)}
+  .rn{font-family:var(--f-mono); color:var(--ink-3); font-size:11px}
+
+  /* ---------- toast ---------- */
+  #toasts{position:fixed; inset-block-end:18px; inset-inline-start:18px; z-index:90; display:flex; flex-direction:column; gap:8px}
+  .toast{
+    display:flex; align-items:center; gap:9px; padding:10px 14px; border-radius:9px;
+    background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow);
+    font-size:13.5px; max-width:min(420px, 84vw);
+    animation:rise .22s ease-out;
+  }
+  .toast .b{width:4px; align-self:stretch; border-radius:2px; background:var(--accent); flex:none}
+  .toast.err .b{background:var(--crit)}
+  .toast.warn .b{background:var(--warn)}
+  @keyframes rise{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none}}
+  @media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important} }
+
+  /* ---------- print ---------- */
+  #printer{display:none}
+  @media print{
+    .bar, .shell, #toasts{display:none !important}
+    #printer{display:block}
+    .pg{position:relative; background:#fff; overflow:hidden; break-after:page; page-break-after:always}
+    .pg:last-child{break-after:auto; page-break-after:auto}
+    .pg .fbox .fv{color:#141F1C}
+  }
+  #printer .pg{position:relative; background:#fff; overflow:hidden}
+</style>
+
+<div class="bar">
+  <div class="brand">
+    <div class="seal">ن</div>
+    <div>
+      <h1>مُفرِّغ البيانات</h1>
+      <p>نموذج مفرَّغ + ملف إكسل ← بوربوينت أو PDF</p>
+    </div>
+  </div>
+  <button class="btn btn-ghost" id="bSample">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 19h16"/></svg>
+    ملف إكسل تجريبي
+  </button>
+  <button class="btn" id="bPdf">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V4h12v5M6 18v2h12v-2M4 9h16v9H4z"/></svg>
+    تحميل PDF
+  </button>
+  <button class="btn btn-main" id="bPptx">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 4h18v12H3zM12 16v4m-4 0h8"/></svg>
+    تحميل PowerPoint
+  </button>
+</div>
+
+<div class="shell">
+  <!-- ============ control rail ============ -->
+  <div class="rail">
+
+    <section class="panel">
+      <header><h2>١ · مصدر البيانات</h2><span class="num" id="nRows">لا يوجد</span></header>
+      <div class="body">
+        <div class="drop" id="drop" tabindex="0" role="button" aria-label="اختيار ملف إكسل">
+          <strong>اسحب ملف الإكسل هنا أو انقر للاختيار</strong>
+          <span>xlsx · xlsm · csv · tsv</span>
+        </div>
+        <input type="file" id="file" accept=".xlsx,.xlsm,.xltx,.csv,.tsv" multiple hidden>
+        <label class="check"><input type="checkbox" id="cAppend"> إضافة السجلات للبيانات الحالية بدل استبدالها</label>
+        <div id="srcList" style="display:flex; flex-direction:column; gap:6px"></div>
+        <button class="btn btn-sm btn-ghost" id="bClear" style="align-self:flex-start; display:none">مسح البيانات</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <header>
+        <h2>٢ · خانات النموذج</h2>
+        <span class="num" id="nFields">0</span>
+      </header>
+      <div class="body">
+        <div class="flist" id="flist"></div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap">
+          <button class="btn btn-sm" id="bAdd">＋ إضافة خانة</button>
+          <button class="btn btn-sm btn-ghost" id="bAddText">＋ نص ثابت</button>
+          <button class="btn btn-sm btn-ghost" id="bAuto">توليد من أعمدة الإكسل</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <header><h2>٣ · خصائص الخانة</h2><span class="num" id="selName">—</span></header>
+      <div class="body" id="propsBody">
+        <p class="empty">اختر خانة من القائمة أو من الورقة لتعديل عنوانها والعمود المرتبط بها وموضعها.</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <header><h2>مقاس النموذج</h2></header>
+      <div class="body">
+        <label class="fld">
+          <span>المقاس</span>
+          <select id="selSize"></select>
+        </label>
+        <label class="fld">
+          <span>عنوان الملف الناتج</span>
+          <input type="text" id="inFile" value="النموذج-المُفرَّغ">
+        </label>
+        <button class="btn btn-sm btn-ghost" id="bReset" style="align-self:flex-start">إعادة النموذج الافتراضي</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ stage ============ -->
+  <div class="stage">
+    <div class="stage-top">
+      <div class="nav">
+        <button id="nFirst" title="الأول">⏮</button>
+        <button id="nPrev" title="السابق">▶</button>
+        <span class="pos" id="pos">نموذج مفرَّغ</span>
+        <button id="nNext" title="التالي">◀</button>
+        <button id="nLast" title="الأخير">⏭</button>
+      </div>
+      <p class="hint">اسحب الخانات على الورقة لتغيير مواضعها · <kbd>Shift</kbd> للسحب الحر دون محاذاة</p>
+    </div>
+
+    <div class="sheet-wrap">
+      <div class="sheet editing" id="sheet"></div>
+    </div>
+
+    <section class="panel" id="peekPanel" style="display:none">
+      <header><h2>بيانات الإكسل</h2><span class="num" id="peekMeta"></span></header>
+      <div class="peek" id="peek"></div>
+    </section>
+  </div>
+</div>
+
+<div id="printer"></div>
+<div id="toasts" aria-live="polite"></div>
+
+<script>
+(() => {
+"use strict";
+document.documentElement.lang = "ar";
+document.documentElement.dir  = "rtl";
+
+/* ══════════════════════════ helpers ══════════════════════════ */
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const uid = () => "f" + Math.random().toString(36).slice(2, 9);
+const xe = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&apos;" })[c]);
+
+function toast(msg, kind = "") {
+  const t = document.createElement("div");
+  t.className = "toast " + kind;
+  t.innerHTML = '<span class="b"></span><span></span>';
+  t.lastChild.textContent = msg;
+  $("#toasts").append(t);
+  setTimeout(() => { t.style.opacity = "0"; t.style.transition = "opacity .3s"; setTimeout(() => t.remove(), 320); }, kind === "err" ? 6500 : 3600);
+}
+
+/* ══════════════════════════ ZIP (read + write) ══════════════════════════
+   xlsx and pptx are both ZIP containers. The browser's own
+   DecompressionStream / CompressionStream handle the deflate side, so no
+   external library is needed.                                            */
+
+const CRC = (() => {
+  const t = new Uint32Array(256);
+  for (let i = 0; i < 256; i++) { let c = i; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[i] = c >>> 0; }
+  return t;
+})();
+const crc32 = u8 => { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = CRC[(c ^ u8[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+
+async function streamThrough(u8, tr) {
+  const buf = await new Response(new Blob([u8]).stream().pipeThrough(tr)).arrayBuffer();
+  return new Uint8Array(buf);
+}
+const deflateRaw = u8 => streamThrough(u8, new CompressionStream("deflate-raw"));
+const inflateRaw = u8 => streamThrough(u8, new DecompressionStream("deflate-raw"));
+
+async function zipRead(arrayBuffer) {
+  const u8 = new Uint8Array(arrayBuffer), dv = new DataView(arrayBuffer);
+  let eocd = -1;
+  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 66000); i--) {
+    if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error("الملف ليس بصيغة ZIP/XLSX صالحة");
+  const count = dv.getUint16(eocd + 10, true);
+  let off = dv.getUint32(eocd + 16, true);
+  const dec = new TextDecoder("utf-8"), map = new Map();
+  for (let n = 0; n < count; n++) {
+    if (dv.getUint32(off, true) !== 0x02014b50) break;
+    const method = dv.getUint16(off + 10, true);
+    const compSize = dv.getUint32(off + 20, true);
+    const nameLen = dv.getUint16(off + 28, true);
+    const extraLen = dv.getUint16(off + 30, true);
+    const cmtLen = dv.getUint16(off + 32, true);
+    const lho = dv.getUint32(off + 42, true);
+    const name = dec.decode(u8.subarray(off + 46, off + 46 + nameLen));
+    map.set(name, { method, compSize, lho });
+    off += 46 + nameLen + extraLen + cmtLen;
+  }
+  const text = async name => {
+    const e = map.get(name);
+    if (!e) return null;
+    const nl = dv.getUint16(e.lho + 26, true), el = dv.getUint16(e.lho + 28, true);
+    const start = e.lho + 30 + nl + el;
+    const raw = u8.subarray(start, start + e.compSize);
+    if (e.method === 0) return dec.decode(raw);
+    if (e.method === 8) return dec.decode(await inflateRaw(raw));
+    throw new Error("طريقة ضغط غير مدعومة داخل الملف");
+  };
+  return { names: [...map.keys()], text };
+}
+
+class ZipWriter {
+  constructor() { this.parts = []; }
+  async add(name, data) {
+    if (typeof data === "string") data = new TextEncoder().encode(data);
+    const crc = crc32(data);
+    let body = data, method = 0;
+    try {
+      const d = await deflateRaw(data);
+      if (d.length < data.length) { body = d; method = 8; }
+    } catch { /* stored */ }
+    this.parts.push({ name: new TextEncoder().encode(name), crc, method, body, size: data.length });
+  }
+  blob() {
+    const now = new Date();
+    const time = ((now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1)) & 0xFFFF;
+    const date = (((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate()) & 0xFFFF;
+    const locals = [], centrals = [];
+    let offset = 0;
+    for (const p of this.parts) {
+      const lh = new Uint8Array(30 + p.name.length), lv = new DataView(lh.buffer);
+      lv.setUint32(0, 0x04034b50, true); lv.setUint16(4, 20, true); lv.setUint16(6, 0x0800, true);
+      lv.setUint16(8, p.method, true); lv.setUint16(10, time, true); lv.setUint16(12, date, true);
+      lv.setUint32(14, p.crc, true); lv.setUint32(18, p.body.length, true); lv.setUint32(22, p.size, true);
+      lv.setUint16(26, p.name.length, true); lv.setUint16(28, 0, true);
+      lh.set(p.name, 30);
+      locals.push(lh, p.body);
+
+      const ch = new Uint8Array(46 + p.name.length), cv = new DataView(ch.buffer);
+      cv.setUint32(0, 0x02014b50, true); cv.setUint16(4, 20, true); cv.setUint16(6, 20, true);
+      cv.setUint16(8, 0x0800, true); cv.setUint16(10, p.method, true);
+      cv.setUint16(12, time, true); cv.setUint16(14, date, true);
+      cv.setUint32(16, p.crc, true); cv.setUint32(20, p.body.length, true); cv.setUint32(24, p.size, true);
+      cv.setUint16(28, p.name.length, true); cv.setUint32(42, offset, true);
+      ch.set(p.name, 46);
+      centrals.push(ch);
+      offset += lh.length + p.body.length;
+    }
+    const cdSize = centrals.reduce((n, c) => n + c.length, 0);
+    const eocd = new Uint8Array(22), ev = new DataView(eocd.buffer);
+    ev.setUint32(0, 0x06054b50, true);
+    ev.setUint16(8, this.parts.length, true); ev.setUint16(10, this.parts.length, true);
+    ev.setUint32(12, cdSize, true); ev.setUint32(16, offset, true);
+    return new Blob([...locals, ...centrals, eocd], { type: "application/octet-stream" });
+  }
+}
+
+/* strip only what Windows and macOS reject in a file name; spaces,
+   hyphens and Arabic diacritics are all legal and must survive */
+const safeName = s => (String(s).replace(/[\\/:*?"<>|]/g, "").replace(/[\u0000-\u001f]/g, "").trim() || "النموذج");
+
+function saveBlob(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = name; a.rel = "noopener";
+  /* the download attribute is only honoured for an anchor in the document */
+  a.style.display = "none";
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+/* ══════════════════════════ spreadsheet reading ══════════════════════════ */
+
+const DATE_FMT_IDS = new Set([14,15,16,17,18,19,20,21,22,45,46,47,27,30,36,50,57]);
+
+function colIndex(ref) {
+  let n = 0;
+  for (const ch of ref) {
+    const c = ch.charCodeAt(0);
+    if (c >= 65 && c <= 90) n = n * 26 + (c - 64); else break;
+  }
+  return n - 1;
+}
+function serialToText(n) {
+  const ms = Math.round((n - 25569) * 86400000);
+  const d = new Date(ms);
+  if (isNaN(d)) return String(n);
+  const p = x => String(x).padStart(2, "0");
+  const day = `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())}`;
+  const frac = n - Math.floor(n);
+  if (frac < 1e-6) return day;
+  return `${day} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`;
+}
+
+async function readXlsx(arrayBuffer) {
+  const zip = await zipRead(arrayBuffer);
+  const P = new DOMParser();
+  const doc = async n => { const t = await zip.text(n); return t ? P.parseFromString(t, "application/xml") : null; };
+
+  /* shared strings */
+  const shared = [];
+  const ss = await doc("xl/sharedStrings.xml");
+  if (ss) for (const si of ss.getElementsByTagName("si")) {
+    let s = "";
+    for (const t of si.getElementsByTagName("t")) {
+      if (t.parentNode.nodeName === "rPh") continue;
+      s += t.textContent;
+    }
+    shared.push(s);
+  }
+
+  /* date-formatted styles */
+  const dateStyle = new Set();
+  const st = await doc("xl/styles.xml");
+  if (st) {
+    const custom = new Map();
+    for (const nf of st.getElementsByTagName("numFmt")) {
+      const code = nf.getAttribute("formatCode") || "";
+      const stripped = code.replace(/"[^"]*"/g, "").replace(/\[[^\]]*\]/g, "");
+      custom.set(nf.getAttribute("numFmtId"), /[ymdhs]/i.test(stripped) && !/^[#0.,%\s]*$/.test(stripped));
+    }
+    const xfs = st.getElementsByTagName("cellXfs")[0];
+    if (xfs) [...xfs.getElementsByTagName("xf")].forEach((xf, i) => {
+      const id = xf.getAttribute("numFmtId") || "0";
+      if (DATE_FMT_IDS.has(+id) || custom.get(id)) dateStyle.add(i);
+    });
+  }
+
+  /* first sheet by workbook order */
+  const wb = await doc("xl/workbook.xml");
+  const rels = await doc("xl/_rels/workbook.xml.rels");
+  let path = null, sheetName = "الورقة1";
+  if (wb) {
+    const sh = wb.getElementsByTagName("sheet")[0];
+    if (sh) {
+      sheetName = sh.getAttribute("name") || sheetName;
+      const rid = sh.getAttribute("r:id") || sh.getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships", "id");
+      if (rels && rid) for (const r of rels.getElementsByTagName("Relationship")) {
+        if (r.getAttribute("Id") === rid) {
+          let t = r.getAttribute("Target").replace(/^\/?xl\//, "").replace(/^\//, "");
+          path = "xl/" + t;
+        }
+      }
+    }
+  }
+  if (!path || !zip.names.includes(path)) path = zip.names.find(n => /^xl\/worksheets\/[^/]+\.xml$/.test(n));
+  if (!path) throw new Error("لم يتم العثور على ورقة عمل داخل الملف");
+
+  const ws = await doc(path);
+  const grid = [];
+  for (const row of ws.getElementsByTagName("row")) {
+    const cells = [];
+    for (const c of row.getElementsByTagName("c")) {
+      const ref = c.getAttribute("r") || "";
+      const i = ref ? colIndex(ref) : cells.length;
+      const type = c.getAttribute("t");
+      let val = "";
+      if (type === "inlineStr") {
+        val = [...c.getElementsByTagName("t")].map(t => t.textContent).join("");
+      } else {
+        const v = c.getElementsByTagName("v")[0];
+        const raw = v ? v.textContent : "";
+        if (type === "s") val = shared[+raw] ?? "";
+        else if (type === "e") val = "";
+        else if (type === "b") val = raw === "1" ? "نعم" : "لا";
+        else if (raw !== "") {
+          const sIdx = c.getAttribute("s");
+          val = (sIdx !== null && dateStyle.has(+sIdx) && isFinite(+raw) && +raw > 0) ? serialToText(+raw) : raw;
+        }
+      }
+      cells[i] = String(val).trim();
+    }
+    grid.push(cells);
+  }
+  return { grid, sheetName };
+}
+
+function readDelimited(text, delim) {
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const grid = [];
+  let row = [], cell = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (q) {
+      if (ch === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; }
+      else cell += ch;
+    } else if (ch === '"') q = true;
+    else if (ch === delim) { row.push(cell); cell = ""; }
+    else if (ch === "\n") { row.push(cell); grid.push(row); row = []; cell = ""; }
+    else if (ch !== "\r") cell += ch;
+  }
+  if (cell !== "" || row.length) { row.push(cell); grid.push(row); }
+  return { grid: grid.map(r => r.map(c => c.trim())), sheetName: "CSV" };
+}
+
+/* trim empty leading rows, take first non-empty row as the header */
+function gridToTable(grid) {
+  const rows = grid.filter(r => r && r.some(c => c !== "" && c != null));
+  if (!rows.length) throw new Error("الملف لا يحتوي على بيانات");
+  const rawHead = rows[0];
+  const headers = [];
+  rawHead.forEach((h, i) => {
+    let name = (h || "").trim() || `عمود ${i + 1}`;
+    let n = name, k = 2;
+    while (headers.includes(n)) n = `${name} ${k++}`;
+    headers.push(n);
+  });
+  const data = rows.slice(1).map(r => {
+    const o = {};
+    headers.forEach((h, i) => { o[h] = (r[i] ?? "").toString(); });
+    return o;
+  }).filter(o => headers.some(h => o[h] !== ""));
+  return { headers, data };
+}
+
+/* ══════════════════════════ state ══════════════════════════ */
+
+const SIZES = {
+  "16x9": { label: "شريحة عريضة ‎16:9‎ (بوربوينت)", w: 13.333, h: 7.5 },
+  "4x3":  { label: "شريحة ‎4:3‎", w: 10, h: 7.5 },
+  "a4p":  { label: "‏A4 عمودي (نموذج ورقي)", w: 8.268, h: 11.693 },
+  "a4l":  { label: "‏A4 أفقي", w: 11.693, h: 8.268 },
+};
+
+const state = {
+  size: "a4p",
+  fields: [],
+  headers: [],
+  rows: [],
+  sources: [],
+  sel: null,
+  idx: 0,
+  fileName: "النموذج-المُفرَّغ",
+};
+
+const F = o => Object.assign({
+  id: uid(), kind: "field", label: "خانة", col: "", text: "",
+  x: .08, y: .2, w: .84, h: .09,
+  size: 16, bold: false, align: "right", showLabel: true, boxed: true,
+}, o);
+
+function defaultTemplate() {
+  return [
+    F({ kind: "text", label: "العنوان", text: "نموذج بيانات", x: .08, y: .045, w: .84, h: .07, size: 28, bold: true, align: "center", boxed: false, showLabel: false }),
+    F({ kind: "text", label: "سطر تعريفي", text: "تم تفريغ هذا النموذج آليًا من ملف الإكسل", x: .08, y: .115, w: .84, h: .04, size: 12, align: "center", boxed: false, showLabel: false }),
+    F({ label: "الاسم",           col: "الاسم",           x: .08, y: .19,  w: .84, h: .085 }),
+    F({ label: "الرقم الوظيفي",   col: "الرقم الوظيفي",   x: .52, y: .295, w: .40, h: .085 }),
+    F({ label: "القسم",           col: "القسم",           x: .08, y: .295, w: .40, h: .085 }),
+    F({ label: "التاريخ",         col: "التاريخ",         x: .52, y: .40,  w: .40, h: .085 }),
+    F({ label: "الحالة",          col: "الحالة",          x: .08, y: .40,  w: .40, h: .085 }),
+    F({ label: "ملاحظات",         col: "ملاحظات",         x: .08, y: .505, w: .84, h: .17, size: 14 }),
+    F({ kind: "text", label: "التوقيع", text: "التوقيع: ......................................", x: .08, y: .90, w: .40, h: .05, size: 12, boxed: false, showLabel: false }),
+  ];
+}
+
+/* ══════════════════════════ persistence ══════════════════════════ */
+const KEY = "mufarrigh.template.v1";
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify({ size: state.size, fields: state.fields, fileName: state.fileName })); } catch {}
+}
+function load() {
+  try {
+    const j = JSON.parse(localStorage.getItem(KEY) || "null");
+    if (j && Array.isArray(j.fields) && j.fields.length) {
+      state.fields = j.fields.map(f => F(f));
+      if (SIZES[j.size]) state.size = j.size;
+      if (j.fileName) state.fileName = j.fileName;
+      return true;
+    }
+  } catch {}
+  return false;
+}
+
+/* ══════════════════════════ value resolution ══════════════════════════ */
+
+function valueOf(field, row) {
+  if (field.kind === "text") {
+    return (field.text || "").replace(/\{\{\s*([^}]+?)\s*\}\}/g, (_, k) => (row && row[k] != null ? row[k] : ""));
+  }
+  if (!row) return "";
+  return field.col && row[field.col] != null ? row[field.col] : "";
+}
+const currentRow = () => state.rows.length ? state.rows[clamp(state.idx, 0, state.rows.length - 1)] : null;
+
+/* ══════════════════════════ sheet rendering ══════════════════════════ */
+
+const SHEET_MAX_W = 760, SHEET_MAX_H = 620;
+
+function sheetPx() {
+  const s = SIZES[state.size];
+  const scale = Math.min(SHEET_MAX_W / (s.w * 96), SHEET_MAX_H / (s.h * 96));
+  return { w: Math.round(s.w * 96 * scale), h: Math.round(s.h * 96 * scale), scale };
+}
+
+/* Build a page's DOM. scale = px per CSS inch / 96 ; used for both the
+   on-screen sheet and the print pages. */
+function paintPage(host, row, pxW, pxH, scale, interactive) {
+  host.textContent = "";
+  host.style.width = pxW + "px";
+  host.style.height = pxH + "px";
+
+  const bar = document.createElement("div");
+  bar.className = "accentbar";
+  bar.style.height = Math.max(3, 6 * scale) + "px";
+  bar.style.background = "#0E6B59";
+  host.append(bar);
+
+  for (const f of state.fields) {
+    const box = document.createElement("div");
+    box.className = "fbox" + (f.boxed ? " boxed" : "") + (interactive && state.sel === f.id ? " sel" : "");
+    box.style.right  = (f.x * pxW) + "px";
+    box.style.top    = (f.y * pxH) + "px";
+    box.style.width  = (f.w * pxW) + "px";
+    box.style.height = (f.h * pxH) + "px";
+    box.style.padding = (f.boxed ? 7 : 2) * scale + "px " + (f.boxed ? 9 : 0) * scale + "px";
+    box.style.display = "flex";
+    box.style.flexDirection = "column";
+    box.style.justifyContent = f.showLabel && f.kind === "field" ? "flex-start" : "center";
+    box.style.gap = 2 * scale + "px";
+    if (interactive) box.dataset.id = f.id;
+
+    if (f.showLabel && f.kind === "field") {
+      const l = document.createElement("div");
+      l.className = "fl";
+      l.style.fontSize = Math.max(6, f.size * .62 * scale * (96 / 72)) + "px";
+      l.style.textAlign = f.align;
+      l.textContent = f.label;
+      box.append(l);
+    }
+    const v = document.createElement("div");
+    const val = valueOf(f, row);
+    v.className = "fv" + (val === "" ? " blank" : "");
+    v.style.fontSize = Math.max(7, f.size * scale * (96 / 72)) + "px";
+    v.style.fontWeight = f.bold ? "700" : "400";
+    v.style.textAlign = f.align;
+    v.style.lineHeight = "1.35";
+    v.style.flex = "1";
+    v.textContent = val === "" ? (f.kind === "field" ? "—————" : "") : val;
+    box.append(v);
+
+    if (interactive) {
+      const g = document.createElement("div");
+      g.className = "grip";
+      box.append(g);
+    }
+    host.append(box);
+  }
+}
+
+function renderSheet() {
+  const { w, h, scale } = sheetPx();
+  paintPage($("#sheet"), currentRow(), w, h, scale, true);
+}
+
+/* ══════════════════════════ drag & resize ══════════════════════════ */
+
+let drag = null;
+$("#sheet").addEventListener("pointerdown", e => {
+  const box = e.target.closest(".fbox");
+  if (!box) { state.sel = null; renderAll(); return; }
+  const f = state.fields.find(x => x.id === box.dataset.id);
+  if (!f) return;
+  state.sel = f.id;
+  const { w, h } = sheetPx();
+  drag = {
+    f, mode: e.target.classList.contains("grip") ? "size" : "move",
+    sx: e.clientX, sy: e.clientY, ox: f.x, oy: f.y, ow: f.w, oh: f.h, pw: w, ph: h,
+  };
+  box.setPointerCapture?.(e.pointerId);
+  renderAll();
+  e.preventDefault();
+});
+addEventListener("pointermove", e => {
+  if (!drag) return;
+  const snap = v => e.shiftKey ? v : Math.round(v * 200) / 200;
+  /* RTL: fields are positioned from the right edge, so dragging left
+     (negative clientX delta) increases the right-offset. */
+  const dx = -(e.clientX - drag.sx) / drag.pw;
+  const dy = (e.clientY - drag.sy) / drag.ph;
+  const f = drag.f;
+  if (drag.mode === "move") {
+    f.x = snap(clamp(drag.ox + dx, 0, 1 - f.w));
+    f.y = snap(clamp(drag.oy + dy, 0, 1 - f.h));
+  } else {
+    f.w = snap(clamp(drag.ow - dx, .05, 1 - f.x));
+    f.h = snap(clamp(drag.oh + dy, .02, 1 - f.y));
+  }
+  renderSheet();
+  syncProps();
+});
+addEventListener("pointerup", () => { if (drag) { drag = null; save(); } });
+
+/* ══════════════════════════ rail rendering ══════════════════════════ */
+
+function renderFieldList() {
+  const host = $("#flist");
+  $("#nFields").textContent = state.fields.length + " خانة";
+  if (!state.fields.length) {
+    host.innerHTML = '<p class="empty">لا توجد خانات. أضِف خانة أو ولّدها من أعمدة الإكسل.</p>';
+    return;
+  }
+  host.textContent = "";
+  for (const f of state.fields) {
+    const row = document.createElement("button");
+    row.className = "frow" + (state.sel === f.id ? " on" : "");
+    row.type = "button";
+
+    const lbl = document.createElement("span");
+    lbl.className = "lbl";
+    lbl.textContent = f.label || "(بلا عنوان)";
+    row.append(lbl);
+
+    if (f.kind === "text") {
+      const k = document.createElement("span");
+      k.className = "kind"; k.textContent = "نص ثابت";
+      row.append(k);
+    }
+
+    const b = document.createElement("span");
+    if (f.kind === "text") {
+      b.className = "bind";
+      b.textContent = (f.text || "").slice(0, 22) || "—";
+    } else if (!f.col) {
+      b.className = "bind"; b.textContent = "غير مرتبط";
+    } else if (state.headers.length && !state.headers.includes(f.col)) {
+      b.className = "bind miss"; b.textContent = f.col;
+    } else {
+      b.className = "bind linked"; b.textContent = f.col;
+    }
+    row.append(b);
+
+    const x = document.createElement("span");
+    x.className = "x"; x.textContent = "×"; x.title = "حذف الخانة"; x.setAttribute("role", "button");
+    x.onclick = ev => {
+      ev.stopPropagation();
+      state.fields = state.fields.filter(y => y.id !== f.id);
+      if (state.sel === f.id) state.sel = null;
+      save(); renderAll();
+    };
+    row.append(x);
+
+    row.onclick = () => { state.sel = f.id; renderAll(); };
+    host.append(row);
+  }
+}
+
+function propInput(label, value, oninput, opts = {}) {
+  const l = document.createElement("label");
+  l.className = "fld" + (opts.wide ? " wide" : "");
+  l.innerHTML = "<span></span>";
+  l.firstChild.textContent = label;
+  const i = document.createElement(opts.textarea ? "textarea" : "input");
+  if (!opts.textarea) i.type = opts.type || "text";
+  if (opts.min != null) i.min = opts.min;
+  if (opts.max != null) i.max = opts.max;
+  if (opts.step != null) i.step = opts.step;
+  i.value = value;
+  i.oninput = () => oninput(i.value);
+  l.append(i);
+  l.dataset.k = opts.key || "";
+  return l;
+}
+
+function renderProps() {
+  const host = $("#propsBody");
+  const f = state.fields.find(x => x.id === state.sel);
+  $("#selName").textContent = f ? (f.kind === "text" ? "نص ثابت" : "خانة بيانات") : "—";
+  host.textContent = "";
+  if (!f) {
+    host.innerHTML = '<p class="empty">اختر خانة من القائمة أو من الورقة لتعديل عنوانها والعمود المرتبط بها وموضعها.</p>';
+    return;
+  }
+  const grid = document.createElement("div");
+  grid.className = "props";
+
+  grid.append(propInput("العنوان", f.label, v => { f.label = v; save(); renderAll(); }, { wide: true }));
+
+  if (f.kind === "field") {
+    const l = document.createElement("label");
+    l.className = "fld wide";
+    l.innerHTML = "<span>العمود في ملف الإكسل</span>";
+    const sel = document.createElement("select");
+    const opts = ["", ...state.headers];
+    if (f.col && !state.headers.includes(f.col)) opts.push(f.col);
+    for (const h of opts) {
+      const o = document.createElement("option");
+      o.value = h;
+      o.textContent = h === "" ? "— بدون ربط —" : h + (state.headers.includes(h) ? "" : "  (غير موجود في الملف الحالي)");
+      if (h === f.col) o.selected = true;
+      sel.append(o);
+    }
+    sel.onchange = () => { f.col = sel.value; save(); renderAll(); };
+    l.append(sel);
+    grid.append(l);
+  } else {
+    grid.append(propInput("النص — يمكنك إدراج ‎{{اسم العمود}}‎", f.text, v => { f.text = v; save(); renderAll(); }, { wide: true, textarea: true }));
+  }
+
+  grid.append(propInput("حجم الخط (نقطة)", f.size, v => { f.size = clamp(+v || 12, 6, 96); save(); renderAll(); }, { type: "number", min: 6, max: 96 }));
+
+  const alignWrap = document.createElement("label");
+  alignWrap.className = "fld";
+  alignWrap.innerHTML = "<span>المحاذاة</span>";
+  const seg = document.createElement("div");
+  seg.className = "seg";
+  for (const [v, t] of [["right", "يمين"], ["center", "وسط"], ["left", "يسار"]]) {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = t;
+    if (f.align === v) b.className = "on";
+    b.onclick = () => { f.align = v; save(); renderAll(); };
+    seg.append(b);
+  }
+  alignWrap.append(seg);
+  grid.append(alignWrap);
+
+  const toggles = document.createElement("div");
+  toggles.className = "wide";
+  toggles.style.cssText = "display:flex; gap:16px; flex-wrap:wrap";
+  const mk = (txt, on, fn) => {
+    const l = document.createElement("label");
+    l.className = "check";
+    const i = document.createElement("input");
+    i.type = "checkbox"; i.checked = on;
+    i.onchange = () => { fn(i.checked); save(); renderAll(); };
+    l.append(i, document.createTextNode(txt));
+    return l;
+  };
+  toggles.append(mk("خط عريض", f.bold, v => f.bold = v));
+  toggles.append(mk("إطار", f.boxed, v => f.boxed = v));
+  if (f.kind === "field") toggles.append(mk("إظهار العنوان", f.showLabel, v => f.showLabel = v));
+  grid.append(toggles);
+
+  const geo = document.createElement("div");
+  geo.className = "props wide";
+  geo.style.gridColumn = "1 / -1";
+  for (const [k, t] of [["x", "من اليمين ٪"], ["y", "من الأعلى ٪"], ["w", "العرض ٪"], ["h", "الارتفاع ٪"]]) {
+    geo.append(propInput(t, Math.round(f[k] * 1000) / 10, v => {
+      f[k] = clamp((+v || 0) / 100, .01, 1);
+      save(); renderSheet();
+    }, { type: "number", min: 1, max: 100, step: .5, key: k }));
+  }
+  grid.append(geo);
+
+  const dup = document.createElement("button");
+  dup.className = "btn btn-sm btn-ghost";
+  dup.textContent = "تكرار هذه الخانة";
+  dup.onclick = () => {
+    const c = F({ ...f, id: uid(), y: clamp(f.y + f.h + .015, 0, .95) });
+    state.fields.push(c); state.sel = c.id; save(); renderAll();
+  };
+  host.append(grid, dup);
+}
+
+function syncProps() {
+  const f = state.fields.find(x => x.id === state.sel);
+  if (!f) return;
+  for (const l of $$("#propsBody label.fld[data-k]")) {
+    const k = l.dataset.k;
+    if (k && ["x", "y", "w", "h"].includes(k)) l.querySelector("input").value = Math.round(f[k] * 1000) / 10;
+  }
+}
+
+function renderNav() {
+  const n = state.rows.length;
+  $("#pos").textContent = n ? `سجل ${state.idx + 1} من ${n}` : "نموذج مفرَّغ";
+  $("#nFirst").disabled = $("#nPrev").disabled = !n || state.idx === 0;
+  $("#nLast").disabled  = $("#nNext").disabled = !n || state.idx >= n - 1;
+  $("#nRows").textContent = n ? `${n} سجل · ${state.headers.length} عمود` : "لا يوجد";
+}
+
+function renderSources() {
+  const host = $("#srcList");
+  host.textContent = "";
+  $("#bClear").style.display = state.sources.length ? "" : "none";
+  for (const s of state.sources) {
+    const d = document.createElement("div");
+    d.className = "src";
+    d.innerHTML = '<span class="dot"></span><span class="nm"></span><span class="ct"></span>';
+    d.children[1].textContent = s.name;
+    d.children[2].textContent = s.count + " سجل";
+    host.append(d);
+  }
+}
+
+function renderPeek() {
+  const p = $("#peekPanel");
+  if (!state.rows.length) { p.style.display = "none"; return; }
+  p.style.display = "";
+  $("#peekMeta").textContent = `${state.rows.length} × ${state.headers.length}`;
+  const t = document.createElement("table");
+  const thead = document.createElement("thead");
+  const hr = document.createElement("tr");
+  hr.append(document.createElement("th"));
+  hr.firstChild.textContent = "#";
+  for (const h of state.headers) { const th = document.createElement("th"); th.textContent = h; hr.append(th); }
+  thead.append(hr); t.append(thead);
+  const tb = document.createElement("tbody");
+  state.rows.forEach((r, i) => {
+    const tr = document.createElement("tr");
+    if (i === state.idx) tr.className = "on";
+    const n = document.createElement("td");
+    n.className = "rn"; n.textContent = i + 1;
+    tr.append(n);
+    for (const h of state.headers) { const td = document.createElement("td"); td.textContent = r[h] ?? ""; tr.append(td); }
+    tr.onclick = () => { state.idx = i; renderAll(); };
+    tb.append(tr);
+  });
+  t.append(tb);
+  const host = $("#peek");
+  host.textContent = "";
+  host.append(t);
+}
+
+function renderAll() { renderSheet(); renderFieldList(); renderProps(); renderNav(); renderSources(); renderPeek(); }
+
+/* ══════════════════════════ file intake ══════════════════════════ */
+
+async function ingest(files) {
+  if (!("DecompressionStream" in window)) {
+    toast("متصفحك لا يدعم فتح ملفات الإكسل. استخدم Chrome أو Edge أو Safari بإصدار حديث، أو ارفع الملف بصيغة CSV.", "err");
+    return;
+  }
+  const append = $("#cAppend").checked;
+  let headers = append ? [...state.headers] : [];
+  let rows = append ? [...state.rows] : [];
+  let sources = append ? [...state.sources] : [];
+
+  for (const file of files) {
+    try {
+      const lower = file.name.toLowerCase();
+      let parsed;
+      if (/\.(csv|tsv|txt)$/.test(lower)) {
+        parsed = readDelimited(await file.text(), lower.endsWith(".tsv") ? "\t" : ",");
+      } else {
+        parsed = await readXlsx(await file.arrayBuffer());
+      }
+      const { headers: h, data } = gridToTable(parsed.grid);
+      if (!data.length) { toast(`«${file.name}» لا يحتوي على سجلات بعد سطر العناوين.`, "warn"); continue; }
+      for (const c of h) if (!headers.includes(c)) headers.push(c);
+      rows = rows.concat(data);
+      sources.push({ name: file.name, count: data.length });
+    } catch (err) {
+      toast(`تعذّر قراءة «${file.name}»: ${err.message}`, "err");
+    }
+  }
+  if (!rows.length) return;
+
+  /* normalise every row against the union of headers */
+  rows = rows.map(r => { const o = {}; for (const h of headers) o[h] = r[h] ?? ""; return o; });
+
+  const isFirst = !state.headers.length;
+  state.headers = headers;
+  state.rows = rows;
+  state.sources = sources;
+  state.idx = clamp(state.idx, 0, rows.length - 1);
+
+  const linked = autoBind();
+  if (isFirst && !state.fields.some(f => f.kind === "field" && f.col)) autoFields();
+
+  renderAll();
+  toast(`تم تفريغ ${rows.length} سجل · تم ربط ${linked} خانة تلقائيًا`);
+}
+
+const norm = s => String(s).replace(/[ً-ْـ]/g, "").replace(/[إأآا]/g, "ا").replace(/ى/g, "ي").replace(/[ةه]/g, "ه").replace(/\s+/g, "").toLowerCase();
+
+function autoBind() {
+  let n = 0;
+  const byNorm = new Map(state.headers.map(h => [norm(h), h]));
+  for (const f of state.fields) {
+    if (f.kind !== "field") continue;
+    if (f.col && state.headers.includes(f.col)) { n++; continue; }
+    const hit = byNorm.get(norm(f.col || f.label));
+    if (hit) { f.col = hit; n++; }
+  }
+  save();
+  return n;
+}
+
+function autoFields() {
+  const cols = state.headers.slice(0, 14);
+  if (!cols.length) return;
+  const keep = state.fields.filter(f => f.kind === "text" && f.y < .18);
+  const two = cols.length > 5;
+  const top = .19, gap = .012;
+  const h = Math.min(.085, (.86 - top) / Math.ceil(cols.length / (two ? 2 : 1)) - gap);
+  const out = [...keep];
+  cols.forEach((c, i) => {
+    const rowI = two ? Math.floor(i / 2) : i;
+    const right = two ? (i % 2 === 0) : true;
+    out.push(F({
+      label: c, col: c, size: 15,
+      x: two ? (right ? .08 : .52) : .08,
+      w: two ? .40 : .84,
+      y: top + rowI * (h + gap),
+      h,
+    }));
+  });
+  state.fields = out;
+  state.sel = null;
+  save();
+}
+
+/* ══════════════════════════ PPTX writer ══════════════════════════ */
+
+const EMU = 914400;
+const NS = 'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"';
+const XML = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\r\n';
+
+const THEME = XML + `<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="Office"><a:themeElements><a:clrScheme name="Office"><a:dk1><a:sysClr val="windowText" lastClr="000000"/></a:dk1><a:lt1><a:sysClr val="window" lastClr="FFFFFF"/></a:lt1><a:dk2><a:srgbClr val="0E6B59"/></a:dk2><a:lt2><a:srgbClr val="E7EBE7"/></a:lt2><a:accent1><a:srgbClr val="0E6B59"/></a:accent1><a:accent2><a:srgbClr val="8E7128"/></a:accent2><a:accent3><a:srgbClr val="41514C"/></a:accent3><a:accent4><a:srgbClr val="1E7A4C"/></a:accent4><a:accent5><a:srgbClr val="AA3A2C"/></a:accent5><a:accent6><a:srgbClr val="71827C"/></a:accent6><a:hlink><a:srgbClr val="0A4F42"/></a:hlink><a:folHlink><a:srgbClr val="8E7128"/></a:folHlink></a:clrScheme><a:fontScheme name="Office"><a:majorFont><a:latin typeface="Arial"/><a:ea typeface=""/><a:cs typeface="Arial"/></a:majorFont><a:minorFont><a:latin typeface="Arial"/><a:ea typeface=""/><a:cs typeface="Arial"/></a:minorFont></a:fontScheme><a:fmtScheme name="Office"><a:fillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:fillStyleLst><a:lnStyleLst><a:ln w="6350" cap="flat" cmpd="sng" algn="ctr"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:prstDash val="solid"/></a:ln><a:ln w="12700" cap="flat" cmpd="sng" algn="ctr"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:prstDash val="solid"/></a:ln><a:ln w="19050" cap="flat" cmpd="sng" algn="ctr"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:prstDash val="solid"/></a:ln></a:lnStyleLst><a:effectStyleLst><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle></a:effectStyleLst><a:bgFillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:bgFillStyleLst></a:fmtScheme></a:themeElements></a:theme>`;
+
+const SLIDE_MASTER = XML + `<p:sldMaster ${NS}><p:cSld><p:bg><p:bgPr><a:solidFill><a:schemeClr val="lt1"/></a:solidFill><a:effectLst/></p:bgPr></p:bg><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr></p:spTree></p:cSld><p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/><p:sldLayoutIdLst><p:sldLayoutId id="2147483649" r:id="rId1"/></p:sldLayoutIdLst><p:txStyles><p:titleStyle/><p:bodyStyle/><p:otherStyle/></p:txStyles></p:sldMaster>`;
+
+const SLIDE_LAYOUT = XML + `<p:sldLayout ${NS} type="blank" preserve="1"><p:cSld name="فارغ"><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr></p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sldLayout>`;
+
+const ALIGN = { right: "r", center: "ctr", left: "l" };
+
+function para(text, ptSize, bold, align, colorHex) {
+  const lines = String(text ?? "").split(/\r?\n/);
+  return lines.map(line => {
+    const pPr = `<a:pPr algn="${ALIGN[align] || "r"}" rtl="1"/>`;
+    if (line === "") return `<a:p>${pPr}<a:endParaRPr lang="ar-SA" sz="${Math.round(ptSize * 100)}"/></a:p>`;
+    const rPr = `<a:rPr lang="ar-SA" sz="${Math.round(ptSize * 100)}"${bold ? ' b="1"' : ""} dirty="0"><a:solidFill><a:srgbClr val="${colorHex}"/></a:solidFill><a:latin typeface="Arial"/><a:cs typeface="Arial"/></a:rPr>`;
+    return `<a:p>${pPr}<a:r>${rPr}<a:t>${xe(line)}</a:t></a:r></a:p>`;
+  }).join("");
+}
+
+/* Slide geometry is stored right-anchored (x = distance from the right
+   edge), matching the RTL preview — convert to PowerPoint's left origin. */
+function slideXml(row, sizeIn) {
+  const W = Math.round(sizeIn.w * EMU), H = Math.round(sizeIn.h * EMU);
+  let id = 2, shapes = "";
+
+  shapes += `<p:sp><p:nvSpPr><p:cNvPr id="${id++}" name="شريط"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${W}" cy="${Math.round(0.0625 * EMU)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:solidFill><a:srgbClr val="0E6B59"/></a:solidFill><a:ln><a:noFill/></a:ln></p:spPr><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:endParaRPr lang="ar-SA"/></a:p></p:txBody></p:sp>`;
+
+  for (const f of state.fields) {
+    const cx = Math.round(f.w * W), cy = Math.round(f.h * H);
+    const x  = Math.round(W - f.x * W - cx), y = Math.round(f.y * H);
+    const fill = f.boxed ? '<a:solidFill><a:srgbClr val="FBFCFB"/></a:solidFill><a:ln w="9525"><a:solidFill><a:srgbClr val="D6DDD8"/></a:solidFill></a:ln>' : '<a:noFill/><a:ln><a:noFill/></a:ln>';
+    const anchor = (f.showLabel && f.kind === "field") ? "t" : "ctr";
+    let body = "";
+    if (f.showLabel && f.kind === "field") body += para(f.label, Math.max(6, f.size * .62), false, f.align, "6E7F79");
+    const val = valueOf(f, row);
+    body += para(val === "" && f.kind === "field" ? "—————" : val, f.size, f.bold, f.align, val === "" ? "B6C0BB" : "141F1C");
+    const ins = f.boxed ? 'lIns="68580" rIns="68580" tIns="45720" bIns="45720"' : 'lIns="0" rIns="0" tIns="18288" bIns="18288"';
+    shapes += `<p:sp><p:nvSpPr><p:cNvPr id="${id++}" name="${xe(f.label || "خانة")}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${x}" y="${y}"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom>${fill}</p:spPr><p:txBody><a:bodyPr wrap="square" rtlCol="1" anchor="${anchor}" ${ins}><a:normAutofit/></a:bodyPr><a:lstStyle/>${body}</p:txBody></p:sp>`;
+  }
+
+  return XML + `<p:sld ${NS}><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>${shapes}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`;
+}
+
+async function buildPptx() {
+  const sizeIn = SIZES[state.size];
+  const rows = state.rows.length ? state.rows : [null];
+  const z = new ZipWriter();
+
+  const overrides = rows.map((_, i) =>
+    `<Override PartName="/ppt/slides/slide${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>`).join("");
+  await z.add("[Content_Types].xml", XML +
+    `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/><Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/><Override PartName="/ppt/slideLayouts/slideLayout1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/><Override PartName="/ppt/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>${overrides}</Types>`);
+
+  await z.add("_rels/.rels", XML +
+    `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>`);
+
+  const iso = new Date().toISOString().replace(/\.\d+Z$/, "Z");
+  await z.add("docProps/core.xml", XML +
+    `<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>${xe(state.fileName)}</dc:title><dcterms:created xsi:type="dcterms:W3CDTF">${iso}</dcterms:created><dcterms:modified xsi:type="dcterms:W3CDTF">${iso}</dcterms:modified></cp:coreProperties>`);
+  await z.add("docProps/app.xml", XML +
+    `<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"><Slides>${rows.length}</Slides></Properties>`);
+
+  const slideIds = rows.map((_, i) => `<p:sldId id="${256 + i}" r:id="rId${i + 2}"/>`).join("");
+  await z.add("ppt/presentation.xml", XML +
+    `<p:presentation ${NS} saveSubsetFonts="1"><p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst><p:sldIdLst>${slideIds}</p:sldIdLst><p:sldSz cx="${Math.round(sizeIn.w * EMU)}" cy="${Math.round(sizeIn.h * EMU)}"/><p:notesSz cx="6858000" cy="9144000"/><p:defaultTextStyle/></p:presentation>`);
+
+  const presRels = [`<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="slideMasters/slideMaster1.xml"/>`]
+    .concat(rows.map((_, i) => `<Relationship Id="rId${i + 2}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide${i + 1}.xml"/>`))
+    .concat([`<Relationship Id="rId${rows.length + 2}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="theme/theme1.xml"/>`]);
+  await z.add("ppt/_rels/presentation.xml.rels", XML +
+    `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${presRels.join("")}</Relationships>`);
+
+  await z.add("ppt/theme/theme1.xml", THEME);
+  await z.add("ppt/slideMasters/slideMaster1.xml", SLIDE_MASTER);
+  await z.add("ppt/slideMasters/_rels/slideMaster1.xml.rels", XML +
+    `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="../theme/theme1.xml"/></Relationships>`);
+  await z.add("ppt/slideLayouts/slideLayout1.xml", SLIDE_LAYOUT);
+  await z.add("ppt/slideLayouts/_rels/slideLayout1.xml.rels", XML +
+    `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="../slideMasters/slideMaster1.xml"/></Relationships>`);
+
+  for (let i = 0; i < rows.length; i++) {
+    await z.add(`ppt/slides/slide${i + 1}.xml`, slideXml(rows[i], sizeIn));
+    await z.add(`ppt/slides/_rels/slide${i + 1}.xml.rels`, XML +
+      `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/></Relationships>`);
+  }
+  return z.blob();
+}
+
+/* ══════════════════════════ sample workbook ══════════════════════════ */
+
+async function buildSampleXlsx() {
+  const head = ["الاسم", "الرقم الوظيفي", "القسم", "التاريخ", "الحالة", "ملاحظات"];
+  const body = [
+    ["عبدالله محمد العمري", "10421", "الشؤون المالية", "2026-03-11", "معتمد", "تمت مراجعة المستندات كاملة"],
+    ["نورة سعد القحطاني",  "10588", "الموارد البشرية", "2026-03-12", "قيد المراجعة", "ينقص إرفاق الشهادة"],
+    ["خالد إبراهيم الدوسري", "10613", "تقنية المعلومات", "2026-03-15", "معتمد", "—"],
+    ["ريم فهد الحربي",      "10744", "المشتريات", "2026-03-18", "مؤجل", "بانتظار موافقة المدير"],
+  ];
+  const cell = (r, c, v) => {
+    const col = String.fromCharCode(65 + c);
+    return `<c r="${col}${r}" t="inlineStr"><is><t xml:space="preserve">${xe(v)}</t></is></c>`;
+  };
+  const rowsXml = [head, ...body].map((r, ri) =>
+    `<row r="${ri + 1}">${r.map((v, ci) => cell(ri + 1, ci, v)).join("")}</row>`).join("");
+
+  const z = new ZipWriter();
+  await z.add("[Content_Types].xml", XML +
+    `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`);
+  await z.add("_rels/.rels", XML +
+    `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`);
+  await z.add("xl/workbook.xml", XML +
+    `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="البيانات" sheetId="1" r:id="rId1"/></sheets></workbook>`);
+  await z.add("xl/_rels/workbook.xml.rels", XML +
+    `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`);
+  await z.add("xl/styles.xml", XML +
+    `<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts><fills count="1"><fill><patternFill patternType="none"/></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`);
+  await z.add("xl/worksheets/sheet1.xml", XML +
+    `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView rightToLeft="1" workbookViewId="0"/></sheetViews><cols><col min="1" max="6" width="24" customWidth="1"/></cols><sheetData>${rowsXml}</sheetData></worksheet>`);
+  return z.blob();
+}
+
+/* ══════════════════════════ PDF via print ══════════════════════════ */
+
+function printPdf() {
+  const s = SIZES[state.size];
+  const rows = state.rows.length ? state.rows : [null];
+  if (rows.length > 400 && !confirm(`سيتم إنشاء ${rows.length} صفحة. هل تريد المتابعة؟`)) return;
+
+  let style = $("#printStyle");
+  if (!style) { style = document.createElement("style"); style.id = "printStyle"; document.head.append(style); }
+  style.textContent = `@media print{@page{size:${s.w}in ${s.h}in; margin:0}}`;
+
+  const host = $("#printer");
+  host.textContent = "";
+  const pxW = s.w * 96, pxH = s.h * 96;
+  for (const row of rows) {
+    const pg = document.createElement("div");
+    pg.className = "pg";
+    paintPage(pg, row, pxW, pxH, 1, false);
+    host.append(pg);
+  }
+  const done = () => { host.textContent = ""; removeEventListener("afterprint", done); };
+  addEventListener("afterprint", done);
+  setTimeout(() => window.print(), 60);
+}
+
+/* ══════════════════════════ wiring ══════════════════════════ */
+
+const drop = $("#drop"), fileInput = $("#file");
+drop.onclick = () => fileInput.click();
+drop.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInput.click(); } };
+fileInput.onchange = () => { if (fileInput.files.length) ingest([...fileInput.files]); fileInput.value = ""; };
+for (const ev of ["dragenter", "dragover"]) drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("hot"); });
+for (const ev of ["dragleave", "drop"]) drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("hot"); });
+drop.addEventListener("drop", e => { const f = [...(e.dataTransfer?.files || [])]; if (f.length) ingest(f); });
+addEventListener("dragover", e => e.preventDefault());
+addEventListener("drop", e => e.preventDefault());
+
+$("#bClear").onclick = () => {
+  state.rows = []; state.headers = []; state.sources = []; state.idx = 0;
+  renderAll(); toast("تم مسح البيانات — النموذج عاد مفرَّغًا");
+};
+$("#bAdd").onclick = () => {
+  const f = F({ label: "خانة جديدة", y: clamp(.19 + state.fields.filter(x => x.kind === "field").length * .1, .1, .88) });
+  state.fields.push(f); state.sel = f.id; save(); renderAll();
+};
+$("#bAddText").onclick = () => {
+  const f = F({ kind: "text", label: "نص ثابت", text: "نص ثابت — استخدم ‎{{اسم العمود}}‎ لدمج قيمة", boxed: false, showLabel: false, size: 13, y: .82 });
+  state.fields.push(f); state.sel = f.id; save(); renderAll();
+};
+$("#bAuto").onclick = () => {
+  if (!state.headers.length) { toast("ارفع ملف إكسل أولًا حتى تُعرَف الأعمدة.", "warn"); return; }
+  autoFields(); renderAll(); toast(`تم توليد ${state.headers.slice(0, 14).length} خانة من أعمدة الملف`);
+};
+$("#bReset").onclick = () => {
+  state.fields = defaultTemplate(); state.sel = null;
+  if (state.headers.length) autoBind();
+  save(); renderAll(); toast("تم استرجاع النموذج الافتراضي");
+};
+$("#bSample").onclick = async () => {
+  try { saveBlob(await buildSampleXlsx(), "بيانات-تجريبية.xlsx"); toast("تم تنزيل ملف إكسل تجريبي — ارفعه لتجربة التفريغ"); }
+  catch (e) { toast("تعذّر إنشاء الملف التجريبي: " + e.message, "err"); }
+};
+$("#bPptx").onclick = async e => {
+  const b = e.currentTarget;
+  if (!state.fields.length) { toast("النموذج بلا خانات — أضِف خانة واحدة على الأقل.", "warn"); return; }
+  b.disabled = true;
+  const label = b.innerHTML;
+  b.lastChild.textContent = " جاري التجهيز…";
+  try {
+    const blob = await buildPptx();
+    saveBlob(blob, safeName(state.fileName) + ".pptx");
+    toast(`تم تحميل ملف بوربوينت — ${state.rows.length || 1} شريحة`);
+  } catch (err) {
+    toast("تعذّر إنشاء ملف البوربوينت: " + err.message, "err");
+  } finally { b.disabled = false; b.innerHTML = label; }
+};
+$("#bPdf").onclick = () => {
+  if (!state.fields.length) { toast("النموذج بلا خانات — أضِف خانة واحدة على الأقل.", "warn"); return; }
+  printPdf();
+};
+$("#nFirst").onclick = () => { state.idx = 0; renderAll(); };
+$("#nPrev").onclick  = () => { state.idx = clamp(state.idx - 1, 0, state.rows.length - 1); renderAll(); };
+$("#nNext").onclick  = () => { state.idx = clamp(state.idx + 1, 0, state.rows.length - 1); renderAll(); };
+$("#nLast").onclick  = () => { state.idx = Math.max(0, state.rows.length - 1); renderAll(); };
+addEventListener("keydown", e => {
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+  if (e.key === "ArrowLeft") $("#nNext").click();
+  if (e.key === "ArrowRight") $("#nPrev").click();
+  if (e.key === "Delete" && state.sel) {
+    state.fields = state.fields.filter(f => f.id !== state.sel);
+    state.sel = null; save(); renderAll();
+  }
+});
+
+const selSize = $("#selSize");
+for (const [k, v] of Object.entries(SIZES)) {
+  const o = document.createElement("option");
+  o.value = k; o.textContent = v.label;
+  selSize.append(o);
+}
+selSize.onchange = () => { state.size = selSize.value; save(); renderSheet(); };
+$("#inFile").oninput = e => { state.fileName = e.target.value.trim() || "النموذج"; save(); };
+
+/* ── boot ── */
+if (!load()) state.fields = defaultTemplate();
+selSize.value = state.size;
+$("#inFile").value = state.fileName;
+renderAll();
+if (!("DecompressionStream" in window)) {
+  toast("متصفحك لا يدعم قراءة xlsx مباشرة — يمكنك استخدام ملفات CSV بدلًا منها.", "warn");
+}
+})();
+</script>
