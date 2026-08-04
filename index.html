@@ -717,14 +717,16 @@ async function loadTemplate(file) {
     const doc = new DOMParser().parseFromString(summary.xml, "application/xml");
     const shapes = shapesOf(doc).map(el => ({ el, g: geomOf(el), t: textOf(el) })).filter(s => s.g);
     for (const s of shapes) {
-      const m = /\{\{([A-Z]{2})_CLINIC\}\}/.exec(s.t);
+      const m = /\{\{([A-Z]{2,3})_CLINIC\}\}/.exec(s.t);
       if (!m) continue;
       const mid = s.g.y + s.g.cy / 2;
       const label = shapes.find(o => o !== s && o.t && !o.t.includes("{{") &&
         o.g.y <= mid && mid <= o.g.y + o.g.cy && o.g.x < s.g.x);
-      prefixes.push({ prefix: m[1], label: label ? label.t.trim() : m[1] });
+      prefixes.push({ prefix: m[1], label: label ? label.t.trim() : m[1], y: s.g.y });
     }
-    prefixes.sort((a, b) => a.prefix.localeCompare(b.prefix));
+    /* keep the summary table's own row order — it decides the order of the
+       branch slides too, so reordering the template reorders the deck */
+    prefixes.sort((a, b) => a.y - b.y);
   }
   return { parts, slides, summary, branch, cont, prefixes, name: file.name };
 }
@@ -938,6 +940,12 @@ function buildPlan() {
     if (hint && pages.length > 1) pages = paginate(c.depts, Math.max(2, capB - 1), capC);
     return { ...b, calc: c, pages };
   });
+
+  /* branch slides follow the summary table's row order, not the upload order;
+     anything with no row of its own trails behind, in the order it came in */
+  const rank = new Map(t.prefixes.map((p, i) => [p.prefix, i]));
+  const at = b => rank.has(b.prefix) ? rank.get(b.prefix) : t.prefixes.length + 1;
+  branches.sort((a, b) => at(a) - at(b));
 
   const plan = [];
   if (t.summary) {
