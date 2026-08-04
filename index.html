@@ -249,6 +249,10 @@
         <label class="fld"><span>تاريخ التقرير</span><input type="date" id="inDate"></label>
         <label class="fld"><span>اسم الملف الناتج</span><input type="text" id="inName" value="Cluster2_Daily_Report"></label>
         <label class="fld"><span>أقسام الطوارئ تُعرَف بكلمة</span><input type="text" id="inER" value="Emergency"></label>
+        <label class="fld" style="flex:1 1 260px">
+          <span>الأقسام التي تتقدّم في الجدول — مفصولة بفاصلة</span>
+          <input type="text" id="inOrder" value="Family Medicine">
+        </label>
       </div>
       <div class="note"><span class="m"></span><span id="assume"></span></div>
     </div>
@@ -745,6 +749,18 @@ const band = r => r == null ? "none" : r >= 80 ? "g" : r >= 50 ? "m" : "l";
 const BANDHEX = { g: "4CAF86", m: "C07A2A", l: "C0392B", none: "6B6B6B" };
 const DASH = "—";
 
+/* position of a department in the "these come first" list; unlisted ones tie
+   for last place and so keep their workbook order */
+function deptRank(name) {
+  const n = key(name);
+  const list = state.deptOrder || [];
+  for (let i = 0; i < list.length; i++) {
+    const p = key(list[i]);
+    if (p && (n === p || n.includes(p) || p.includes(n))) return i;
+  }
+  return list.length;
+}
+
 function computeBranch(rows, erWord) {
   const w = (erWord || "Emergency").toLowerCase();
   const isER = r => r.dept.toLowerCase().includes(w);
@@ -763,6 +779,9 @@ function computeBranch(rows, erWord) {
     return { name: d, docs, act: sum(docs, "actual"), tgt: sum(docs, "target"),
              noshow: state.map.noshow ? sum(docs, "noshow") : null };
   });
+  /* listed departments lead the table in the order given, everything else keeps
+     the order it appears in the workbook (Array.sort is stable) */
+  depts.sort((a, b) => deptRank(a.name) - deptRank(b.name));
   return { ER, hasER: er.length > 0 && ER > 0, clinic: ACT, target: TGT, noshow: NS,
            total: ACT + ER, rate: pct(ACT, TGT), depts };
 }
@@ -1467,7 +1486,7 @@ function refresh() {
   $("#bMake").disabled = $("#bPdf").disabled = !(state.tpl && state.branches.length);
   $("#assume").innerHTML =
     "<b>القواعد المطبَّقة:</b> الطوارئ تُستثنى من جدول الأطباء وتغذّي بطاقة EMERGENCY وحدها · " +
-    "الأقسام تُرتَّب بترتيب أول ظهور في ملف الإكسل · " +
+    "الأقسام المذكورة أعلاه تتصدّر الجدول بترتيبها، وبقيتها بترتيب ظهورها في ملف الإكسل · " +
     "النسبة = المشاهَد ÷ المتاح، وتلوين الحبّة ‎≥80%‎ أخضر و‎50–79%‎ ذهبي و‎&lt;50%‎ أحمر · " +
     "الخانات غير المستخدمة تُحذف أشكالها من الشريحة.";
 }
@@ -1519,6 +1538,10 @@ hookDrop($("#dropX"), $("#fileX"), async files => {
 
 $("#inDate").onchange = e => { state.date = e.target.value; state.dateTouched = true; refresh(); };
 $("#inER").oninput = () => refresh();
+$("#inOrder").oninput = e => {
+  state.deptOrder = e.target.value.split(/[,،\n]/).map(s => s.trim()).filter(Boolean);
+  refresh();
+};
 
 $("#bMake").onclick = async e => {
   const b = e.currentTarget, keep = b.innerHTML;
@@ -1546,6 +1569,7 @@ $("#bPdf").onclick = e => {
 
 $("#inDate").value = new Date().toISOString().slice(0, 10);
 state.date = $("#inDate").value;
+state.deptOrder = $("#inOrder").value.split(/[,،\n]/).map(s => s.trim()).filter(Boolean);
 refresh();
 
 /* the Cluster 2 template ships with the page: only the workbooks change daily */
