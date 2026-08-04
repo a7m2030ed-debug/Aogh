@@ -177,6 +177,25 @@
   .toast.err .b{background:var(--low)} .toast.warn .b{background:var(--mid)}
   @keyframes rise{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none}}
   @media (prefers-reduced-motion: reduce){*{animation:none !important; transition:none !important}}
+
+  /* ---------- PDF output ---------- */
+  #printer{display:none}
+  #printer .sld{
+    position:relative; overflow:hidden; background:#fff;
+    --pdf-fallback:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-family:var(--pdf-fallback); line-height:1.2;
+    /* the deck is Latin: without an LTR island the RTL page reorders
+       "04 AUG 2026" into "AUG 2026 04" */
+    direction:ltr; unicode-bidi:isolate; text-align:left;
+  }
+  #printer .sh{position:absolute; box-sizing:border-box; overflow:hidden}
+  #printer img.sh{object-fit:contain}
+  @media print{
+    .bar, .shell, #toasts{display:none !important}
+    #printer{display:block}
+    #printer .sld{break-after:page; page-break-after:always}
+    #printer .sld:last-child{break-after:auto; page-break-after:auto}
+  }
 </style>
 
 <div class="bar">
@@ -187,9 +206,13 @@
       <p>قالبك كما هو + ملفات الإكسل ← عرض تقديمي جاهز</p>
     </div>
   </div>
+  <button class="btn" id="bPdf" disabled>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V4h12v5M6 18v2h12v-2M4 9h16v9H4z"/></svg>
+    تحميل PDF
+  </button>
   <button class="btn btn-main" id="bMake" disabled>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 19h16"/></svg>
-    تحميل العرض المُعبَّأ
+    تحميل PowerPoint
   </button>
 </div>
 
@@ -239,6 +262,7 @@
   </section>
 </div>
 
+<div id="printer" dir="ltr" lang="en" aria-hidden="true"></div>
 <div id="toasts" aria-live="polite"></div>
 
 <script>
@@ -709,6 +733,16 @@ function analyzeTable(doc) {
            zebra: zebra ? { top: zebra.g.y, el: zebra.el } : null };
 }
 
+/* rate pills get a coloured fill, so their text has to go white to stay legible */
+function setRunColor(el, hex) {
+  for (const rPr of el.getElementsByTagNameNS(A, "rPr")) {
+    const sf = rPr.getElementsByTagNameNS(A, "solidFill")[0];
+    const c = sf && sf.getElementsByTagNameNS(A, "srgbClr")[0];
+    if (c) c.setAttribute("val", hex);
+  }
+}
+const PILL_TEXT = "FFFFFF";
+
 function shiftY(el, dy) {
   for (const off of el.getElementsByTagNameNS(A, "off"))
     off.setAttribute("y", String(+off.getAttribute("y") + dy));
@@ -731,7 +765,7 @@ function renderSlide(srcXml, values, opts = {}) {
     const pill = shapes.find(s => s !== txt && s.g && !s.t &&
       s.g.x === txt.g.x && s.g.y === txt.g.y && s.g.cx === txt.g.cx && s.g.cy === txt.g.cy);
     const clr = pill && pill.el.getElementsByTagNameNS(A, "srgbClr")[0];
-    if (clr) clr.setAttribute("val", hex);
+    if (clr) { clr.setAttribute("val", hex); setRunColor(txt.el, PILL_TEXT); }
   }
 
   const table = opts.rows ? analyzeTable(doc) : null;
@@ -764,9 +798,9 @@ function renderSlide(srcXml, values, opts = {}) {
       });
       if (row.kind === "doc" && rateGeom)
         for (const { c, s } of clones) {
-          if (s.t.trim()) continue;
           const g = geomOf(c);
           if (!g || `${g.x}|${g.y}|${g.cx}|${g.cy}` !== rateGeom) continue;
+          if (s.t.trim()) { setRunColor(c, PILL_TEXT); continue; }
           const clr = c.getElementsByTagNameNS(A, "srgbClr")[0];
           if (clr) clr.setAttribute("val", row.pill);
         }
@@ -916,6 +950,166 @@ async function buildDeck() {
   out.set("ppt/presentation.xml", pres);
 
   return { blob: await zipWrite(out), count: built.plan.length };
+}
+
+/* ═════════════════ PDF ═════════════════
+   The deck is redrawn as absolutely positioned HTML in inches and points, from
+   the very same slide XML that goes into the .pptx, then handed to the browser's
+   print dialog. The template uses only rectangles, rounded rectangles, ellipses,
+   lines, solid fills and images, so the drawing maps over exactly.            */
+
+const EMU2IN = v => v / EMU_IN;
+const b64 = u8 => {
+  let s = "";
+  for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+  return btoa(s);
+};
+const MIME = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", gif: "image/gif", svg: "image/svg+xml", bmp: "image/bmp", webp: "image/webp" };
+
+function mediaFor(tpl, slidePath) {
+  const relName = slidePath.replace("ppt/slides/", "ppt/slides/_rels/") + ".rels";
+  const map = {};
+  const bytes = tpl.parts.get(relName);
+  if (!bytes) return map;
+  const doc = new DOMParser().parseFromString(new TextDecoder().decode(bytes), "application/xml");
+  for (const r of doc.getElementsByTagName("Relationship")) {
+    const target = r.getAttribute("Target") || "";
+    if (!/\/media\//.test(target)) continue;
+    const part = "ppt/" + target.replace(/^(\.\.\/)+/, "").replace(/^\/?ppt\//, "");
+    const data = tpl.parts.get(part);
+    if (!data) continue;
+    const ext = part.split(".").pop().toLowerCase();
+    map[r.getAttribute("Id")] = `data:${MIME[ext] || "application/octet-stream"};base64,${b64(data)}`;
+  }
+  return map;
+}
+
+const ALIGN_CSS = { l: "left", r: "right", ctr: "center", just: "justify" };
+
+function slideToHtml(xml, media, w, h) {
+  const doc = new DOMParser().parseFromString(xml, "application/xml");
+  const tree = doc.getElementsByTagNameNS(P, "spTree")[0];
+  const out = [`<div class="sld" style="width:${w}in;height:${h}in">`];
+  if (!tree) return out.join("") + "</div>";
+
+  for (const el of tree.children) {
+    if (!["sp", "pic"].includes(el.localName)) continue;
+    const g = geomOf(el);
+    if (!g) continue;
+    const xfrm = el.getElementsByTagNameNS(A, "xfrm")[0];
+    const rot = xfrm && xfrm.getAttribute("rot");
+    const box = `left:${EMU2IN(g.x)}in;top:${EMU2IN(g.y)}in;width:${EMU2IN(g.cx)}in;height:${EMU2IN(g.cy)}in;` +
+                (rot ? `transform:rotate(${(+rot / 60000).toFixed(2)}deg);` : "");
+
+    if (el.localName === "pic") {
+      const blip = el.getElementsByTagNameNS(A, "blip")[0];
+      const id = blip && (blip.getAttribute("r:embed") || blip.getAttributeNS(RT, "embed"));
+      const src = id && media[id];
+      if (src) out.push(`<img class="sh" style="${box}" src="${src}">`);
+      continue;
+    }
+
+    const spPr = el.getElementsByTagNameNS(P, "spPr")[0];
+    let css = box;
+    if (spPr) {
+      const prst = (spPr.getElementsByTagNameNS(A, "prstGeom")[0] || {}).getAttribute?.("prst") || "rect";
+      const fill = [...spPr.children].find(c => c.localName === "solidFill");
+      const clr = fill && fill.getElementsByTagNameNS(A, "srgbClr")[0];
+      if (clr) {
+        const alpha = clr.getElementsByTagNameNS(A, "alpha")[0];
+        const a = alpha ? +alpha.getAttribute("val") / 100000 : 1;
+        css += a < 1 ? `background:rgb(from #${clr.getAttribute("val")} r g b / ${a});`
+                     : `background:#${clr.getAttribute("val")};`;
+      }
+      if (prst === "roundRect") {
+        /* PowerPoint's default rounded corner is 1/6 of the short side */
+        const adj = spPr.getElementsByTagNameNS(A, "gd")[0];
+        const f = adj ? +adj.getAttribute("fmla").replace(/[^0-9]/g, "") / 100000 : 1 / 6;
+        css += `border-radius:${Math.min(EMU2IN(g.cx), EMU2IN(g.cy)) * f}in;`;
+      } else if (prst === "ellipse") css += "border-radius:50%;";
+
+      const ln = spPr.getElementsByTagNameNS(A, "ln")[0];
+      const lnFill = ln && [...ln.children].find(c => c.localName === "solidFill");
+      const lnClr = lnFill && lnFill.getElementsByTagNameNS(A, "srgbClr")[0];
+      if (lnClr) {
+        const wpt = ln.getAttribute("w") ? +ln.getAttribute("w") / 12700 : 1;
+        if (prst === "line") { css += `border-top:${wpt}pt solid #${lnClr.getAttribute("val")};height:0;`; }
+        else css += `border:${wpt}pt solid #${lnClr.getAttribute("val")};`;
+      }
+    }
+
+    const tx = el.getElementsByTagNameNS(P, "txBody")[0];
+    let inner = "";
+    if (tx) {
+      const bodyPr = tx.getElementsByTagNameNS(A, "bodyPr")[0];
+      const anchor = bodyPr && bodyPr.getAttribute("anchor");
+      const nowrap = bodyPr && bodyPr.getAttribute("wrap") === "none";
+      const ins = k => {
+        const v = bodyPr && bodyPr.getAttribute(k);
+        return EMU2IN(v == null ? (k === "lIns" || k === "rIns" ? 91440 : 45720) : +v);
+      };
+      css += `padding:${ins("tIns")}in ${ins("rIns")}in ${ins("bIns")}in ${ins("lIns")}in;` +
+             `display:flex;flex-direction:column;justify-content:${anchor === "ctr" ? "center" : anchor === "b" ? "flex-end" : "flex-start"};` +
+             (nowrap ? "white-space:nowrap;" : "");
+      const paras = [];
+      for (const p of tx.getElementsByTagNameNS(A, "p")) {
+        const pPr = p.getElementsByTagNameNS(A, "pPr")[0];
+        const algn = pPr && pPr.getAttribute("algn");
+        const runs = [];
+        for (const r of p.getElementsByTagNameNS(A, "r")) {
+          const rPr = r.getElementsByTagNameNS(A, "rPr")[0];
+          const t = r.getElementsByTagNameNS(A, "t")[0];
+          if (!t) continue;
+          let rs = "";
+          if (rPr) {
+            const sz = rPr.getAttribute("sz");
+            if (sz) rs += `font-size:${+sz / 100}pt;`;
+            if (rPr.getAttribute("b") === "1") rs += "font-weight:700;";
+            if (rPr.getAttribute("i") === "1") rs += "font-style:italic;";
+            if (rPr.getAttribute("u") && rPr.getAttribute("u") !== "none") rs += "text-decoration:underline;";
+            const sp = rPr.getAttribute("spc");
+            if (sp) rs += `letter-spacing:${+sp / 100}pt;`;
+            const sf = [...rPr.children].find(c => c.localName === "solidFill");
+            const c = sf && sf.getElementsByTagNameNS(A, "srgbClr")[0];
+            if (c) rs += `color:#${c.getAttribute("val")};`;
+            const face = rPr.getElementsByTagNameNS(A, "latin")[0];
+            if (face && face.getAttribute("typeface")) rs += `font-family:"${face.getAttribute("typeface")}",var(--pdf-fallback);`;
+          }
+          runs.push(`<span style="${rs}">${XE(t.textContent)}</span>`);
+        }
+        paras.push(`<div style="text-align:${ALIGN_CSS[algn] || "left"}">${runs.join("") || "&#8203;"}</div>`);
+      }
+      inner = paras.join("");
+    }
+    out.push(`<div class="sh" style="${css}">${inner}</div>`);
+  }
+  out.push("</div>");
+  return out.join("");
+}
+
+function printPdf() {
+  const t = state.tpl, built = buildPlan();
+  if (!built) throw new Error("القالب أو البيانات غير جاهزة");
+  const pres = new TextDecoder().decode(t.parts.get("ppt/presentation.xml"));
+  const sz = /<p:sldSz[^>]*cx="(\d+)"[^>]*cy="(\d+)"/.exec(pres);
+  const w = sz ? EMU2IN(+sz[1]) : 10, h = sz ? EMU2IN(+sz[2]) : 5.625;
+
+  const cache = new Map();
+  const html = built.plan.map(item => {
+    if (!cache.has(item.src.path)) cache.set(item.src.path, mediaFor(t, item.src.path));
+    return slideToHtml(renderSlide(item.src.xml, item.values, item.opts), cache.get(item.src.path), w, h);
+  }).join("");
+
+  let style = $("#pdfPage");
+  if (!style) { style = document.createElement("style"); style.id = "pdfPage"; document.head.append(style); }
+  style.textContent = `@page{size:${w}in ${h}in;margin:0}`;
+
+  const host = $("#printer");
+  host.innerHTML = html;
+  const done = () => { host.textContent = ""; removeEventListener("afterprint", done); };
+  addEventListener("afterprint", done);
+  setTimeout(() => window.print(), 120);
+  return built.plan.length;
 }
 
 /* ═════════════════ UI ═════════════════ */
@@ -1077,9 +1271,10 @@ function renderPreview() {
 
   const pdf = document.createElement("div");
   pdf.className = "note";
-  pdf.innerHTML = '<span class="m"></span><span><b>للحصول على PDF:</b> افتح الملف الناتج في PowerPoint ثم ' +
-    "‏File ← Export ← Create PDF‏. التصدير من PowerPoint نفسه يحفظ التصميم والخطوط بدقة كاملة، " +
-    "وهو أدق من أي تحويل داخل المتصفح.</span>";
+  pdf.innerHTML = '<span class="m"></span><span><b>زر «تحميل PDF»</b> يرسم الشرائح ويفتح نافذة الطباعة — ' +
+    "اختر «حفظ بصيغة PDF». يُرسم كل شكل بمكانه ومقاسه من الشريحة نفسها، ويظهر الخط مطابقًا إن كان " +
+    "<code>Plus Jakarta Sans</code> مثبَّتًا على جهازك. وللحصول على PDF مطابق بنسبة 100% يمكنك دائمًا " +
+    "تصدير ملف البوربوينت من PowerPoint عبر ‏File ← Export‏.</span>";
   host.append(pdf);
 
   const unassigned = state.branches.filter(b => !b.prefix);
@@ -1095,7 +1290,7 @@ function renderPreview() {
 
 function refresh() {
   renderTemplateInfo(); renderBranchInfo(); renderPreview();
-  $("#bMake").disabled = !(state.tpl && state.branches.length);
+  $("#bMake").disabled = $("#bPdf").disabled = !(state.tpl && state.branches.length);
   $("#assume").innerHTML =
     "<b>القواعد المطبَّقة:</b> الطوارئ تُستثنى من جدول الأطباء وتغذّي بطاقة EMERGENCY وحدها · " +
     "الأقسام تُرتَّب بترتيب أول ظهور في ملف الإكسل · " +
@@ -1151,6 +1346,17 @@ $("#bMake").onclick = async e => {
     toast(`تم تحميل العرض — ${count} شريحة`);
   } catch (err) {
     toast("تعذّر إنشاء العرض: " + err.message, "err");
+  } finally { b.disabled = false; b.innerHTML = keep; refresh(); }
+};
+
+$("#bPdf").onclick = e => {
+  const b = e.currentTarget, keep = b.innerHTML;
+  b.disabled = true; b.lastChild.textContent = " جارٍ الرسم…";
+  try {
+    const n = printPdf();
+    toast(`تم تجهيز ${n} صفحة — اختر «حفظ بصيغة PDF» في نافذة الطباعة`);
+  } catch (err) {
+    toast("تعذّر تجهيز PDF: " + err.message, "err");
   } finally { b.disabled = false; b.innerHTML = keep; refresh(); }
 };
 
