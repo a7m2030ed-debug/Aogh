@@ -80,31 +80,43 @@ button,input,select,textarea{ font:inherit; color:inherit; }
 .muted{ color:var(--ink-3); }
 .grow{ flex:1; }
 
-/* ═══════════════ الشريط العلوي ═══════════════ */
-.top{
+/* ═══════════════ الشريط الكحلي ═══════════════ */
+.appbar{
+  background:linear-gradient(180deg, #24336E, #1C2755);
+  color:#FFFFFF; border-bottom:3px solid var(--seal);
   position:sticky; top:0; z-index:40;
-  background:color-mix(in srgb, var(--card) 90%, transparent);
-  backdrop-filter:saturate(160%) blur(10px);
-  border-bottom:1px solid var(--line);
 }
-.top-in{
-  max-width:1180px; margin:0 auto; padding:10px 20px;
-  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+:root[data-theme="dark"] .appbar,
+:root:where(:not([data-theme="light"])) .appbar{ background:linear-gradient(180deg, #1A2450, #131B3C); }
+.appbar-in{
+  max-width:1180px; margin:0 auto; padding:11px 20px;
+  display:flex; align-items:center; gap:12px; flex-wrap:wrap;
 }
-.brand{ display:flex; align-items:center; gap:10px; min-width:0; margin-inline-end:auto; }
-.seal{
-  width:36px; height:36px; flex:none; display:grid; place-items:center;
-  border-radius:10px; background:var(--brand); color:var(--on-brand);
-  font-family:var(--f-display); font-weight:700; font-size:16px;
+.org{ display:flex; flex-direction:column; line-height:1.3; min-width:0; }
+.org b{ font-family:var(--f-display); font-size:18px; letter-spacing:.01em; }
+.org em{ font-style:normal; font-size:11.5px; color:#B9C2E8; }
+.tools{ display:flex; align-items:center; gap:6px; }
+.tbtn{
+  display:inline-flex; align-items:center; justify-content:center; gap:6px; cursor:pointer;
+  height:34px; padding:0 11px; border-radius:9px; font-size:12.5px; font-weight:600;
+  color:#EAEEFB; background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.20);
+  transition:background .15s, border-color .15s;
 }
-.brand-t{ display:flex; flex-direction:column; line-height:1.25; min-width:0; }
-.brand-t b{ font-family:var(--f-display); font-size:15px; }
-.brand-t em{ font-style:normal; font-size:11.5px; color:var(--ink-3); }
+.tbtn:hover{ background:rgba(255,255,255,.20); border-color:rgba(255,255,255,.38); }
+.tbtn:focus-visible{ outline:2px solid #fff; outline-offset:2px; }
+.tbtn svg{ width:15px; height:15px; flex:none; }
+.tbtn.only{ width:34px; padding:0; }
+.mark{
+  width:36px; height:36px; flex:none; display:grid; place-items:center; border-radius:9px;
+  background:#FFFFFF; color:#1C2755;
+}
+.mark svg{ width:21px; height:21px; }
 
+/* ═══════════════ الأزرار ═══════════════ */
 .btn{
   display:inline-flex; align-items:center; justify-content:center; gap:7px; cursor:pointer;
-  padding:8px 14px; border-radius:10px; border:1px solid var(--line);
-  background:var(--card); color:var(--ink); font-size:13px; font-weight:600;
+  padding:9px 16px; border-radius:10px; border:1px solid var(--line);
+  background:var(--card); color:var(--ink); font-size:13.5px; font-weight:600;
   transition:background .15s, border-color .15s, transform .06s;
 }
 .btn:hover{ background:var(--sunk); border-color:var(--ink-3); }
@@ -118,33 +130,46 @@ button,input,select,textarea{ font:inherit; color:inherit; }
 .btn[disabled]{ opacity:.45; cursor:not-allowed; }
 .btn svg{ width:16px; height:16px; flex:none; }
 
-/* ═══════════════ خانة البحث ═══════════════ */
-.wrap{ max-width:1180px; margin:0 auto; padding:34px 20px 90px; }
-.hero{ max-width:760px; margin:0 auto 26px; }
-.hero h1{ font-size:23px; text-align:center; margin-bottom:6px; }
-.hero .sub{ text-align:center; color:var(--ink-3); font-size:13px; margin:0 0 20px; }
-.searchbar{ display:flex; gap:8px; align-items:stretch; }
-.searchbar .box{ position:relative; flex:1 1 auto; min-width:0; }
-.searchbar input{
-  width:100%; height:52px; padding:0 48px 0 16px; font-size:16px;
-  border-radius:14px; border:1px solid var(--line); background:var(--card); color:var(--ink);
-  box-shadow:var(--shadow);
+/* ═══════════════ نموذج الإدخال ═══════════════ */
+.wrap{ max-width:1180px; margin:0 auto; padding:24px 20px 90px; }
+.formcard{
+  background:var(--card); border:1px solid var(--line); border-radius:14px;
+  box-shadow:var(--shadow); padding:22px 26px 20px; max-width:980px; margin:0 auto;
 }
-.searchbar input::placeholder{ color:var(--ink-3); font-size:14px; }
-.searchbar input:focus{ border-color:var(--brand); }
-.searchbar .ic{
-  position:absolute; inset-inline-start:16px; top:50%; transform:translateY(-50%);
-  color:var(--ink-3); pointer-events:none; display:grid;
+.formtitle{ text-align:center; font-size:18px; margin-bottom:20px; }
+.formtitle::after{
+  content:""; display:block; width:64px; height:2px; margin:9px auto 0;
+  background:var(--seal); border-radius:2px;
 }
-.searchbar .btn{ height:52px; padding:0 26px; font-size:14.5px; border-radius:14px; flex:none; }
-@media (max-width:600px){
-  .searchbar{ flex-wrap:wrap; }
-  .searchbar .box{ flex:1 0 100%; }
-  .searchbar .btn{ flex:1; padding:0; height:46px; }
+.fgrid2{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:11px 30px; }
+.fld{ display:flex; align-items:center; gap:10px; min-width:0; }
+.fld > span{ flex:0 0 118px; text-align:end; font-size:13px; font-weight:600; color:var(--ink-2); }
+.fld > span b{ color:var(--crit); font-weight:700; }
+.fld input{
+  flex:1 1 auto; min-width:0; padding:8px 11px; border-radius:8px;
+  border:1px solid var(--line); color:var(--ink);
+  background:color-mix(in srgb, var(--sunk) 55%, var(--line));
+}
+.fld input:focus{ background:var(--card); border-color:var(--brand); }
+.fld.metric > span{ flex-basis:78px; }
+.fld.metric input{ max-width:96px; }
+.fsplit{ grid-column:1 / -1; display:flex; align-items:center; gap:12px; margin:6px 0 2px; }
+.fsplit span{ font-family:var(--f-display); font-size:11px; font-weight:700; letter-spacing:.1em; color:var(--seal); }
+.fsplit i{ flex:1; height:1px; background:var(--line); }
+.hint{ text-align:center; font-size:12.5px; margin:16px 0 0; min-height:1.2em; color:var(--ink-3); }
+.hint.warn{ color:var(--seal); font-weight:600; }
+.hint.bad{ color:var(--crit); font-weight:600; }
+.actions{ display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-top:14px; }
+.actions .btn{ min-width:132px; height:44px; font-size:14.5px; }
+@media (max-width:760px){
+  .fgrid2{ grid-template-columns:1fr; }
+  .fld > span{ flex-basis:100px; }
+  .formcard{ padding:18px 16px 16px; }
+  .actions .btn{ flex:1; min-width:0; }
 }
 .count{
   display:flex; align-items:center; gap:8px; flex-wrap:wrap;
-  margin:18px auto 0; max-width:760px; font-size:13px; color:var(--ink-3);
+  margin:26px auto 0; max-width:980px; font-size:13px; color:var(--ink-3);
 }
 .count b{ color:var(--ink); font-weight:700; }
 
@@ -159,7 +184,14 @@ button,input,select,textarea{ font:inherit; color:inherit; }
 }
 .ecard:hover{ transform:translateY(-2px); box-shadow:var(--shadow-lg); }
 .ecard:focus-visible{ outline:2px solid var(--brand); outline-offset:2px; }
-.ecard .head{ display:flex; align-items:center; gap:10px; min-width:0; }
+.ecard .head{ display:flex; align-items:center; gap:10px; min-width:0; padding-inline-end:34px; }
+.ecard .file{
+  position:absolute; inset-inline-end:12px; top:13px; width:28px; height:28px;
+  display:grid; place-items:center; border-radius:8px; cursor:pointer;
+  border:1px solid var(--line); background:var(--card); color:var(--ink-3);
+}
+.ecard .file:hover{ background:var(--brand-soft); color:var(--brand); border-color:var(--brand); }
+.ecard .file svg{ width:14px; height:14px; }
 .av{
   width:40px; height:40px; flex:none; border-radius:11px; display:grid; place-items:center;
   font-family:var(--f-display); font-weight:700; font-size:14px; color:var(--ink);
@@ -208,12 +240,12 @@ button,input,select,textarea{ font:inherit; color:inherit; }
   text-align:center; padding:48px 24px; background:var(--card);
   border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); margin-top:20px;
 }
-.state .mark{
+.state .mark-lg{
   width:60px; height:60px; margin:0 auto 16px; border-radius:16px; display:grid; place-items:center;
   background:var(--brand-soft); color:var(--brand);
   border:1px solid color-mix(in srgb, var(--brand) 25%, transparent);
 }
-.state .mark svg{ width:28px; height:28px; }
+.state .mark-lg svg{ width:28px; height:28px; }
 .state h3{ font-size:17px; margin-bottom:6px; }
 .state p{ margin:0 auto 18px; max-width:50ch; color:var(--ink-3); font-size:13px; }
 .state .row{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
@@ -365,70 +397,65 @@ input[aria-invalid="true"]{ border-color:var(--crit); background:var(--crit-soft
 @media (prefers-reduced-motion: reduce){ *{ animation-duration:.01ms !important; transition-duration:.01ms !important; } }
 
 @media print{
-  .top, .wrap, #toasts, #tip{ display:none !important; }
+  .appbar, .wrap, #toasts, #tip{ display:none !important; }
   .modal:not([hidden]){ position:static; display:block; padding:0; }
   .modal .veil, .mfoot, .mhead .btn{ display:none !important; }
   .modal .box{ width:auto; max-height:none; overflow:visible; border:0; box-shadow:none; }
   body{ background:#fff; }
 }
 @media (max-width:600px){
-  .top-in{ padding:9px 14px; }
-  .wrap{ padding:22px 14px 70px; }
+  .appbar-in{ padding:9px 14px; }
+  .wrap{ padding:18px 14px 70px; }
   .cards{ grid-template-columns:1fr; }
 }
 </style>
 
-<header class="top">
-  <div class="top-in">
-    <div class="brand">
-      <span class="seal" aria-hidden="true">سج</span>
-      <span class="brand-t">
-        <b>سجل الموظفين</b>
-        <em>قاعدة بيانات الموارد البشرية</em>
-      </span>
+<header class="appbar">
+  <div class="appbar-in">
+    <div class="org">
+      <b>مجموعة مينا — السويدي</b>
+      <em>قاعدة بيانات الموارد البشرية</em>
     </div>
-    <button class="btn" id="btnDb">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5.5" rx="8" ry="3"/><path d="M4 5.5v13c0 1.7 3.6 3 8 3s8-1.3 8-3v-13"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>
-      قاعدة البيانات
-    </button>
-    <button class="btn" id="btnNew">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
-      موظف جديد
-    </button>
-    <button class="btn" id="btnImport">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m8 11 4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
-      استيراد
-    </button>
-    <button class="btn" id="btnExport">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V9"/><path d="m8 13 4-4 4 4"/><path d="M4 5V4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v1"/></svg>
-      تصدير
-    </button>
-    <button class="btn icon" id="btnDash" title="المؤشرات" aria-label="المؤشرات">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg>
-    </button>
-    <button class="btn icon" id="btnTheme" title="تبديل السمة" aria-label="تبديل السمة">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-    </button>
+    <span class="grow"></span>
+    <div class="tools">
+      <button class="tbtn" id="btnDb" title="عرض قاعدة البيانات">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5.5" rx="8" ry="3"/><path d="M4 5.5v13c0 1.7 3.6 3 8 3s8-1.3 8-3v-13"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>
+        قاعدة البيانات
+      </button>
+      <button class="tbtn" id="btnImport" title="استيراد من إكسل">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m8 11 4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+        استيراد
+      </button>
+      <button class="tbtn" id="btnExport" title="تصدير">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V9"/><path d="m8 13 4-4 4 4"/><path d="M4 5V4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v1"/></svg>
+        تصدير
+      </button>
+      <button class="tbtn only" id="btnDash" title="المؤشرات" aria-label="المؤشرات">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg>
+      </button>
+      <button class="tbtn only" id="btnTheme" title="تبديل السمة" aria-label="تبديل السمة">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+    <span class="mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6a2 2 0 0 1 2-2h5l2 2h5a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M9 13h6M9 17h4"/></svg>
+    </span>
   </div>
 </header>
 
 <main class="wrap">
-  <section class="hero">
-    <h1>ابحث عن موظف</h1>
-    <p class="sub">بالاسم أو الرقم الوظيفي أو رقم الهوية أو الجوال أو الفرع أو القسم أو المسمى</p>
-    <div class="searchbar">
-      <div class="box">
-        <span class="ic" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-        </span>
-        <input id="q" type="search" placeholder="اكتب ما تبحث عنه…" aria-label="بحث في سجل الموظفين" autocomplete="off">
-      </div>
-      <button class="btn primary" id="btnSearch">بحث</button>
-      <button class="btn" id="btnClear">مسح</button>
+  <section class="formcard">
+    <h1 class="formtitle">نموذج إدخال بيانات موظفين</h1>
+    <form id="form" class="fgrid2" autocomplete="off"></form>
+    <p class="hint" id="formHint"></p>
+    <div class="actions">
+      <button class="btn primary" id="btnSearch" type="button">بحث</button>
+      <button class="btn" id="btnAdd" type="button">إضافة</button>
+      <button class="btn" id="btnClearForm" type="button">مسح</button>
     </div>
-    <p class="count" id="count"></p>
   </section>
 
+  <p class="count" id="count"></p>
   <div id="results"></div>
 </main>
 
@@ -465,30 +492,11 @@ input[aria-invalid="true"]{ border-color:var(--crit); background:var(--crit-soft
     </div>
     <div class="mbody" id="viewBody"></div>
     <div class="mfoot">
-      <button class="btn" id="btnEditCur">تعديل البيانات</button>
+      <button class="btn" id="btnEditCur">تعديل في النموذج</button>
       <button class="btn" id="btnPrint">طباعة</button>
       <span class="grow"></span>
       <button class="btn danger" id="btnDelCur">حذف</button>
     </div>
-  </div>
-</div>
-
-<!-- ═══════════ نافذة الموظف ═══════════ -->
-<div class="modal" id="mEmp" hidden>
-  <div class="veil" data-close></div>
-  <div class="box" role="dialog" aria-modal="true" aria-labelledby="mEmpTitle">
-    <div class="mhead">
-      <h3 id="mEmpTitle">موظف جديد</h3>
-      <span class="grow"></span>
-      <button class="btn icon ghost" data-close aria-label="إغلاق">✕</button>
-    </div>
-    <form id="empForm" novalidate>
-      <div class="mbody" id="empFields"></div>
-      <div class="mfoot">
-        <button type="submit" class="btn primary">حفظ</button>
-        <button type="button" class="btn" data-close>إلغاء</button>
-      </div>
-    </form>
   </div>
 </div>
 
@@ -1081,20 +1089,17 @@ function buildCsv(rows) {
 }
 
 /* ═════════════════════════════════════════════════════════════════
-   6 · الحالة — الواجهة كلها بحث واحد ونتائج في شبكة
+   6 · الحالة — نموذج واحد يبحث ويضيف، ونتائج في شبكة تحته
    ═════════════════════════════════════════════════════════════════ */
 const PAGE = 60;   /* عدد البطاقات المعروضة قبل «عرض المزيد» */
 
 const state = {
-  rows: [], byId: new Map(), hay: new Map(),
-  q: "", shown: PAGE, current: null, imp: null,
+  rows: [], byId: new Map(),
+  crit: {},        /* شروط البحث المأخوذة من خانات النموذج */
+  shown: PAGE, loaded: null, current: null, imp: null,
 };
 
-function reindex() {
-  state.byId = new Map(state.rows.map(r => [r.id, r]));
-  state.hay = new Map(state.rows.map(r => [r.id,
-    FIELDS.filter(f => f.t !== "int").map(f => r[f.k]).join(" ").toLowerCase()]));
-}
+function reindex() { state.byId = new Map(state.rows.map(r => [r.id, r])); }
 
 const score = r => r.absence + r.late + r.violations * 2 + r.warnings * 3;
 function verdict(r) {
@@ -1105,18 +1110,85 @@ function verdict(r) {
   return { t: "حالة حرجة", tone: "crit" };
 }
 
-/* كل كلمة في البحث يجب أن ترد في السجل، أيًّا كان الحقل */
-function matches() {
-  const q = state.q.trim().toLowerCase();
-  const rows = q
-    ? state.rows.filter(r => { const h = state.hay.get(r.id) || ""; return q.split(/\s+/).every(t => h.includes(t)); })
-    : state.rows;
-  return [...rows].sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "ar"));
+/* ═════════════════════════════════════════════════════════════════
+   7 · النموذج
+   ═════════════════════════════════════════════════════════════════ */
+function buildForm() {
+  const fld = f => {
+    const type = f.t === "int" ? "number" : f.t === "date" ? "date"
+               : f.t === "email" ? "email" : f.t === "tel" ? "tel" : "text";
+    const list = f.facet ? "dl-" + f.k : null;
+    return '<label class="fld' + (f.metric ? " metric" : "") + '">' +
+      "<span>" + esc(f.ar) + ":" + (f.req ? " <b>*</b>" : "") + "</span>" +
+      '<input name="' + f.k + '" type="' + type + '"' +
+      (f.t === "int" ? ' min="0" step="1"' : "") +
+      (list ? ' list="' + list + '"' : "") + ">" +
+      (list ? '<datalist id="' + list + '"></datalist>' : "") + "</label>";
+  };
+  $("#form").innerHTML =
+    FIELDS.filter(f => !f.metric).map(fld).join("") +
+    '<div class="fsplit"><span>مؤشرات الانضباط</span><i></i></div>' +
+    FIELDS.filter(f => f.metric).map(fld).join("");
+  refreshLists();
+}
+
+/* قوائم الاقتراح تتغذى من القيم الموجودة في القاعدة نفسها */
+function refreshLists() {
+  for (const f of FIELDS) {
+    if (!f.facet) continue;
+    const dl = $("#dl-" + f.k);
+    if (!dl) continue;
+    dl.innerHTML = uniq(state.rows.map(r => r[f.k]).filter(Boolean))
+      .sort((a, b) => a.localeCompare(b, "ar"))
+      .map(v => '<option value="' + esc(v) + '">').join("");
+  }
+}
+
+const input = k => $('#form [name="' + k + '"]');
+const formValues = () => Object.fromEntries(FIELDS.map(f => [f.k, input(f.k).value.trim()]));
+
+function fillForm(rec) {
+  for (const f of FIELDS) input(f.k).value = f.t === "int" ? (rec[f.k] || 0) : (rec[f.k] || "");
+  state.loaded = rec.id;
+  clearInvalid();
+  hint("السجل مفتوح للتعديل — غيّر ما تريد ثم اضغط «إضافة» ليُحفظ التحديث.", "warn");
+}
+
+function clearForm() {
+  for (const f of FIELDS) input(f.k).value = "";
+  state.loaded = null;
+  state.crit = {};
+  state.shown = PAGE;
+  clearInvalid();
+  hint("");
+  render();
+}
+
+const hint = (msg, kind) => { const h = $("#formHint"); h.textContent = msg || ""; h.className = "hint" + (kind ? " " + kind : ""); };
+const clearInvalid = () => $$("#form [name]").forEach(i => i.removeAttribute("aria-invalid"));
+
+/* الرقم المكتوب موجود؟ فالإضافة تحديث، ويُقال ذلك قبل الضغط */
+function idWatch() {
+  const id = input("id").value.trim().replace(/\s/g, "");
+  if (!id) { if (!state.loaded) hint(""); return; }
+  const hit = state.byId.get(id);
+  if (hit) hint("الرقم " + id + " مسجَّل باسم «" + hit.name + "» — «إضافة» ستحدّث بياناته.", "warn");
+  else if (!state.loaded) hint("");
 }
 
 /* ═════════════════════════════════════════════════════════════════
-   7 · شبكة النتائج
+   8 · البحث والنتائج
    ═════════════════════════════════════════════════════════════════ */
+function matches() {
+  const c = state.crit, keys = Object.keys(c);
+  let rows = state.rows;
+  if (keys.length) rows = rows.filter(r => keys.every(k => {
+    if (F[k].t === "int") return Number(r[k]) === Number(c[k]);
+    return String(r[k] ?? "").toLowerCase().includes(String(c[k]).toLowerCase());
+  }));
+  return [...rows].sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "ar"));
+}
+
 const ICON_FILE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' +
   '<path d="M4 6a2 2 0 0 1 2-2h5l2 2h5a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M9 13h6M9 17h4"/></svg>';
 
@@ -1127,6 +1199,7 @@ function cardHtml(r) {
     (value ? '<dd class="' + (mono ? "mono" : "") + '">' + esc(value) + "</dd>" : '<dd class="none">—</dd>') + "</div>";
   const flags = METRICS.filter(f => r[f.k] > 0);
   return '<article class="ecard" data-id="' + esc(r.id) + '" tabindex="0" role="button" style="--c:' + c + '">' +
+    '<button class="file" data-file="' + esc(r.id) + '" title="فتح الملف الكامل" aria-label="فتح ملف ' + esc(r.name) + '">' + ICON_FILE + "</button>" +
     '<div class="head">' +
       '<span class="av">' + esc(initials(r.name)) + "</span>" +
       '<span class="who"><b>' + esc(r.name || "—") + "</b>" +
@@ -1150,35 +1223,37 @@ function cardHtml(r) {
 
 function render() {
   const host = $("#results"), count = $("#count");
+  refreshLists();
   if (!$("#mDb").hidden) renderDb();   /* شاشة القاعدة تبقى مطابقة للمخزن */
 
   if (!state.rows.length) {
     count.innerHTML = "";
-    host.innerHTML = '<div class="state"><div class="mark">' + ICON_FILE + "</div>" +
+    host.innerHTML = '<div class="state"><div class="mark-lg">' + ICON_FILE + "</div>" +
       "<h3>القاعدة فارغة</h3>" +
-      "<p>ابدأ باستيراد ورقة <b>Employees</b> من ملف الإكسل، أو أضف أول موظف يدويًا. " +
-      "تُحفَظ السجلات في متصفحك على هذا الجهاز.</p>" +
+      "<p>املأ النموذج أعلاه واضغط «إضافة» لتسجيل أول موظف، أو استورد ورقة <b>Employees</b> من ملف الإكسل دفعة واحدة.</p>" +
       '<div class="row">' +
         '<button class="btn primary" data-act="import">استيراد من إكسل</button>' +
-        '<button class="btn" data-act="new">إضافة موظف</button>' +
+        '<button class="btn" data-act="focus">املأ النموذج</button>' +
         '<button class="btn ghost" data-act="seed">بيانات تجريبية</button>' +
       "</div></div>";
     return;
   }
 
-  const all = matches(), q = state.q.trim();
+  const all = matches();
+  const keys = Object.keys(state.crit);
+  const crit = keys.map(k => esc(F[k].ar) + " = <b>" + esc(state.crit[k]) + "</b>").join(" · ");
 
   if (!all.length) {
     count.innerHTML = "";
-    host.innerHTML = '<div class="state"><h3>لا نتائج لـ «' + esc(q) + "»</h3>" +
-      "<p>جرّب كلمة أقصر — البحث يشمل الاسم والرقم الوظيفي والهوية والجوال والبريد والفرع والقسم والمسمى والمدير والجنسية.</p>" +
-      '<div class="row"><button class="btn" data-act="clear">مسح البحث</button></div></div>';
+    host.innerHTML = '<div class="state"><h3>لا سجل يطابق البحث</h3>' +
+      "<p>الشروط: " + crit + " — امسح ما لا تحتاجه من الخانات ثم اضغط «بحث» مرة أخرى.</p>" +
+      '<div class="row"><button class="btn" data-act="clear">مسح النموذج</button></div></div>';
     return;
   }
 
   const page = all.slice(0, state.shown);
-  count.innerHTML = q
-    ? "نتائج البحث عن «" + esc(q) + "»: <b>" + fmt(all.length) + "</b> من <b>" + fmt(state.rows.length) + "</b> سجل"
+  count.innerHTML = keys.length
+    ? "نتائج البحث · " + crit + " — <b>" + fmt(all.length) + "</b> من <b>" + fmt(state.rows.length) + "</b> سجل"
     : "كل السجلات: <b>" + fmt(state.rows.length) + "</b>";
   host.innerHTML = '<div class="cards">' + page.map(cardHtml).join("") + "</div>" +
     (all.length > page.length
@@ -1187,7 +1262,7 @@ function render() {
 }
 
 /* ═════════════════════════════════════════════════════════════════
-   8 · ملف الموظف — كل الحقول في شبكة داخل نافذة
+   9 · ملف الموظف — كل الحقول في شبكة داخل نافذة
    ═════════════════════════════════════════════════════════════════ */
 function openView(id) {
   const r = state.byId.get(id);
@@ -1236,7 +1311,7 @@ function openView(id) {
 }
 
 /* ═════════════════════════════════════════════════════════════════
-   9 · شاشة القاعدة — المخزن نفسه معروضًا كما هو
+   10 · شاشة القاعدة — المخزن نفسه معروضًا كما هو
    ═════════════════════════════════════════════════════════════════ */
 const DB_ROWS = 500;   /* سقف الصفوف المعروضة دفعة واحدة */
 let dbShown = DB_ROWS;
@@ -1286,7 +1361,7 @@ function renderDb() {
 }
 
 /* ═════════════════════════════════════════════════════════════════
-   10 · المؤشرات
+   11 · المؤشرات
    ═════════════════════════════════════════════════════════════════ */
 function tally(k, limit) {
   const m = new Map();
@@ -1366,10 +1441,8 @@ function renderDash() {
 }
 
 /* ═════════════════════════════════════════════════════════════════
-   10 · النوافذ ونموذج الإدخال
+   12 · أزرار النموذج الثلاثة: بحث · إضافة · مسح
    ═════════════════════════════════════════════════════════════════ */
-let editing = null;   /* الرقم الوظيفي عند التعديل، أو null عند الإضافة */
-
 function openModal(id) {
   $(id).hidden = false;
   const f = $(id).querySelector("input:not([type=hidden]), button");
@@ -1377,59 +1450,49 @@ function openModal(id) {
 }
 const closeModal = id => { $(id).hidden = true; };
 
-const optionsFor = k => uniq(state.rows.map(r => r[k]).filter(Boolean)).sort((a, b) => a.localeCompare(b, "ar"));
-
-function openEmp(id) {
-  editing = id || null;
-  const rec = id ? state.byId.get(id) : blank();
-  if (!rec) return;
-  $("#mEmpTitle").textContent = id ? "تعديل ملف الموظف" : "موظف جديد";
-
-  $("#empFields").innerHTML = GROUPS.map(g =>
-    "<fieldset><legend>" + esc(g) + '</legend><div class="fgrid">' +
-    FIELDS.filter(f => f.group === g).map(f => {
-      const val = rec[f.k] ?? "";
-      const listId = f.facet ? "dl-" + f.k : null;
-      const type = f.t === "int" ? "number" : f.t === "date" ? "date" : f.t === "email" ? "email" : f.t === "tel" ? "tel" : "text";
-      return "<label><span>" + esc(f.ar) + (f.req ? ' <b style="color:var(--crit)">*</b>' : "") + "</span>" +
-        '<input name="' + f.k + '" type="' + type + '" value="' + esc(val) + '"' +
-        (f.t === "int" ? ' min="0" step="1"' : "") +
-        (f.k === "id" && id ? " readonly" : "") +
-        (listId ? ' list="' + listId + '" autocomplete="off"' : "") + ">" +
-        (listId ? '<datalist id="' + listId + '">' + optionsFor(f.k).map(v => '<option value="' + esc(v) + '">').join("") + "</datalist>" : "") +
-        '<span class="err" data-err="' + f.k + '"></span></label>';
-    }).join("") + "</div></fieldset>").join("");
-  openModal("#mEmp");
+/* بحث: كل خانة مملوءة شرط، والنص يُطابَق جزئيًا والعدد يُطابَق تمامًا */
+function doSearch() {
+  const v = formValues(), crit = {};
+  for (const f of FIELDS) {
+    const val = v[f.k];
+    if (!val) continue;
+    if (f.t === "int" && Number(val) === 0) continue;   /* صفر ليس شرطًا */
+    crit[f.k] = val;
+  }
+  state.crit = crit;
+  state.shown = PAGE;
+  render();
+  const n = matches().length;
+  hint(Object.keys(crit).length
+    ? (n ? "طابق البحثَ " + fmt(n) + " سجلًا — النتائج تحت النموذج." : "لا سجل يطابق هذه الشروط.")
+    : "عُرضت كل السجلات — املأ أي خانة ثم اضغط «بحث» للتصفية.", n || !Object.keys(crit).length ? "" : "bad");
+  $("#results").scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
-async function submitEmp(ev) {
-  ev.preventDefault();
-  const data = {};
-  for (const el of $$("#empFields [name]")) data[el.name] = el.value;
-  if (editing) { const old = state.byId.get(editing); data.id = editing; data.createdAt = old && old.createdAt; }
-  const rec = coerce(data);
-  const errs = validate(rec, { isNew: !editing });
-  $$("#empFields .err").forEach(e => e.textContent = "");
-  $$("#empFields [name]").forEach(e => e.removeAttribute("aria-invalid"));
+/* إضافة: سجل جديد، أو تحديث إن كان الرقم مسجَّلًا */
+async function addFromForm() {
+  const raw = formValues();
+  const exists = state.byId.get(raw.id.replace(/\s/g, ""));
+  if (exists) raw.createdAt = exists.createdAt;
+  const rec = coerce(raw);
+  const errs = validate(rec, { isNew: !exists });
+  clearInvalid();
   const keys = Object.keys(errs);
   if (keys.length) {
-    for (const k of keys) {
-      const box = $('[data-err="' + k + '"]'), inp = $('#empFields [name="' + k + '"]');
-      if (box) box.textContent = errs[k];
-      if (inp) inp.setAttribute("aria-invalid", "true");
-    }
-    $('#empFields [name="' + keys[0] + '"]').focus();
+    keys.forEach(k => input(k).setAttribute("aria-invalid", "true"));
+    hint(errs[keys[0]], "bad");
+    input(keys[0]).focus();
     toast("راجع الحقول المعلَّمة", "err");
     return;
   }
-  const wasEditing = editing;
   await dbPut(rec);
   await reload();
-  closeModal("#mEmp");
+  state.loaded = rec.id;
+  state.crit = { id: rec.id };
+  state.shown = PAGE;
   render();
-  toast(wasEditing ? "حُفظت التعديلات" : "أُضيف الموظف", "ok");
-  /* التعديل يأتي دائمًا من نافذة الملف فتُحدَّث خلفه، والإضافة تفتح ملف الجديد */
-  if (!wasEditing || !$("#mView").hidden) openView(rec.id);
+  hint(exists ? "حُدِّث سجل «" + rec.name + "»." : "أُضيف «" + rec.name + "» إلى القاعدة.", "warn");
+  toast(exists ? "حُدِّث السجل" : "أُضيف الموظف", "ok");
 }
 
 async function delCurrent() {
@@ -1438,6 +1501,7 @@ async function delCurrent() {
   if (!confirm("حذف سجل «" + (r.name || id) + "» نهائيًا من القاعدة؟")) return;
   await dbDelete(id);
   state.current = null;
+  if (state.loaded === id) { state.loaded = null; state.crit = {}; for (const f of FIELDS) input(f.k).value = ""; hint(""); }
   await reload();
   closeModal("#mView");
   render();
@@ -1445,7 +1509,7 @@ async function delCurrent() {
 }
 
 /* ═════════════════════════════════════════════════════════════════
-   11 · الاستيراد
+   13 · الاستيراد
    ═════════════════════════════════════════════════════════════════ */
 async function pickFile(file) {
   const host = $("#mapHost");
@@ -1522,6 +1586,7 @@ async function doImport() {
   await reload();
   closeModal("#mImport");
   state.imp = null; $("#mapHost").innerHTML = "";
+  state.crit = {}; state.shown = PAGE;
   render();
   const added = recs.length - updated;
   toast("استُورد " + fmt(recs.length) + " سجلًا (" + fmt(added) + " جديد · " + fmt(updated) + " محدَّث" +
@@ -1529,7 +1594,7 @@ async function doImport() {
 }
 
 /* ═════════════════════════════════════════════════════════════════
-   12 · التصدير والنسخ الاحتياطي
+   14 · التصدير والنسخ الاحتياطي
    ═════════════════════════════════════════════════════════════════ */
 const stamp = () => iso(new Date());
 const sorted = () => [...state.rows].sort((a, b) => String(a.id).localeCompare(String(b.id), "ar", { numeric: true }));
@@ -1551,7 +1616,7 @@ function exportJson() {
 }
 
 /* ═════════════════════════════════════════════════════════════════
-   13 · بيانات تجريبية — لتجربة الواجهة قبل استيراد البيانات الحقيقية
+   15 · بيانات تجريبية — لتجربة الواجهة قبل إدخال البيانات الحقيقية
    ═════════════════════════════════════════════════════════════════ */
 const SEED = [
   ["1001","نورة عبدالله القحطاني","1045873201","0551002001","noura.q@phc.sa","1989-03-14","سعودية","الورود","الأسنان","طبيب أسنان استشاري","د. ماجد العتيبي","2014-02-01",0,0,0,0],
@@ -1584,20 +1649,16 @@ async function wipe() {
   state.current = null;
   await reload();
   closeModal("#mExport");
-  render();
+  clearForm();
   toast("فُرّغت القاعدة", "ok");
 }
 
 /* ═════════════════════════════════════════════════════════════════
-   14 · الأحداث
+   16 · الأحداث
    ═════════════════════════════════════════════════════════════════ */
 async function reload() { state.rows = await dbAll(); reindex(); }
 
-function search(q) {
-  state.q = q ?? $("#q").value;
-  state.shown = PAGE;
-  render();
-}
+const focusForm = () => { $(".formcard").scrollIntoView({ behavior: "smooth", block: "start" }); input("id").focus(); };
 
 /* ── السمة ─────────────────────────────────────────────────────── */
 const THEMES = ["auto", "light", "dark"];
@@ -1622,14 +1683,14 @@ document.addEventListener("mousemove", e => {
 });
 
 function wire() {
-  let qt = null;
-  $("#q").addEventListener("input", e => { clearTimeout(qt); qt = setTimeout(() => search(e.target.value), 160); });
-  $("#q").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); clearTimeout(qt); search(); } });
-  $("#btnSearch").addEventListener("click", () => { clearTimeout(qt); search(); });
-  $("#btnClear").addEventListener("click", () => { $("#q").value = ""; search(""); $("#q").focus(); });
+  $("#btnSearch").addEventListener("click", doSearch);
+  $("#btnAdd").addEventListener("click", addFromForm);
+  $("#btnClearForm").addEventListener("click", () => { clearForm(); input("id").focus(); });
+  $("#form").addEventListener("submit", e => { e.preventDefault(); doSearch(); });
+  $("#form").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); doSearch(); } });
+  $("#form").addEventListener("input", e => { if (e.target.name === "id") idWatch(); });
   addEventListener("keydown", e => {
-    if (e.key === "Escape") { const open = $$(".modal:not([hidden])"); if (open.length) open.forEach(m => m.hidden = true); }
-    if (e.key === "/" && !/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName)) { e.preventDefault(); $("#q").focus(); }
+    if (e.key === "Escape") $$(".modal:not([hidden])").forEach(m => m.hidden = true);
   });
 
   $("#results").addEventListener("click", e => {
@@ -1637,19 +1698,21 @@ function wire() {
     if (act) {
       const a = act.dataset.act;
       if (a === "import") openModal("#mImport");
-      if (a === "new") openEmp(null);
       if (a === "seed") seed();
-      if (a === "clear") $("#btnClear").click();
+      if (a === "focus") focusForm();
+      if (a === "clear") { clearForm(); focusForm(); }
       if (a === "more") { state.shown += PAGE; render(); }
       return;
     }
+    const file = e.target.closest("[data-file]");
+    if (file) { openView(file.dataset.file); return; }
     const card = e.target.closest(".ecard");
-    if (card) openView(card.dataset.id);
+    if (card) loadIntoForm(card.dataset.id);
   });
   $("#results").addEventListener("keydown", e => {
     if (e.key !== "Enter" && e.key !== " ") return;
     const card = e.target.closest(".ecard");
-    if (card) { e.preventDefault(); openView(card.dataset.id); }
+    if (card) { e.preventDefault(); loadIntoForm(card.dataset.id); }
   });
 
   $("#btnDb").addEventListener("click", () => { dbShown = DB_ROWS; renderDb(); openModal("#mDb"); });
@@ -1661,16 +1724,18 @@ function wire() {
   });
   $("#dbXlsx").addEventListener("click", exportXlsx);
   $("#dbJson").addEventListener("click", exportJson);
-  $("#dbNew").addEventListener("click", () => openEmp(null));
+  $("#dbNew").addEventListener("click", () => { closeModal("#mDb"); clearForm(); focusForm(); });
 
-  $("#btnNew").addEventListener("click", () => openEmp(null));
   $("#btnImport").addEventListener("click", () => openModal("#mImport"));
   $("#btnExport").addEventListener("click", () => openModal("#mExport"));
   $("#btnDash").addEventListener("click", () => { renderDash(); openModal("#mDash"); });
-  $("#btnEditCur").addEventListener("click", () => { if (state.current) openEmp(state.current); });
+  $("#btnEditCur").addEventListener("click", () => {
+    if (!state.current) return;
+    closeModal("#mView");
+    loadIntoForm(state.current);
+  });
   $("#btnDelCur").addEventListener("click", delCurrent);
   $("#btnPrint").addEventListener("click", () => print());
-  $("#empForm").addEventListener("submit", submitEmp);
   $$("[data-close]").forEach(b => b.addEventListener("click", () => b.closest(".modal").hidden = true));
 
   $("#drop").addEventListener("click", () => $("#file").click());
@@ -1701,10 +1766,19 @@ function wire() {
   $("#btnTheme").addEventListener("click", () => { ti = (ti + 1) % THEMES.length; applyTheme(THEMES[ti]); });
 }
 
+function loadIntoForm(id) {
+  const r = state.byId.get(id);
+  if (!r) return;
+  fillForm(r);
+  $(".formcard").scrollIntoView({ behavior: "smooth", block: "start" });
+  toast("فُتح سجل «" + (r.name || id) + "» في النموذج");
+}
+
 /* ═════════════════════════════════════════════════════════════════
-   15 · الإقلاع
+   17 · الإقلاع
    ═════════════════════════════════════════════════════════════════ */
 (async () => {
+  buildForm();
   wire();
   if (!("DecompressionStream" in window))
     toast("متصفحك لا يدعم فتح ملفات xlsx — استخدم Chrome أو Edge أو Safari حديثًا.", "err");
@@ -1715,7 +1789,7 @@ function wire() {
     toast("تعذّر فتح قاعدة البيانات المحلية: " + (e.message || e), "err");
   }
   render();
-  $("#q").focus();
+  input("id").focus();
 })();
 
 })();
