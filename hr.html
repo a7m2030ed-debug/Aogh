@@ -227,6 +227,30 @@ button,input,select,textarea{ font:inherit; color:inherit; }
   background:var(--card); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow-lg);
 }
 .modal .box.wide{ width:min(1000px, 100%); }
+.modal .box.full{ width:min(1440px, 100%); }
+#mView{ z-index:80; }
+#mEmp{ z-index:90; }   /* نموذج الإدخال يعلو ملف الموظف الذي فُتح منه */
+
+/* ═══════════════ شاشة القاعدة ═══════════════ */
+.dbmeta{ display:grid; grid-template-columns:repeat(auto-fit, minmax(148px,1fr)); gap:10px; margin-bottom:16px; }
+.dbmeta > div{ background:var(--sunk); border:1px solid var(--line); border-radius:11px; padding:10px 12px; min-width:0; }
+.dbmeta dt{ font-size:11px; color:var(--ink-3); font-weight:600; margin-bottom:1px; }
+.dbmeta dd{ margin:0; font-size:13px; font-weight:700; line-height:1.45; overflow-wrap:anywhere; }
+.tbl{ overflow:auto; border:1px solid var(--line); border-radius:12px; max-height:58vh; background:var(--card); }
+table.db{ width:100%; min-width:1560px; border-collapse:separate; border-spacing:0; font-size:12.5px; }
+table.db thead th{
+  position:sticky; top:0; z-index:2; background:var(--sunk); text-align:start;
+  padding:8px 10px; border-bottom:1px solid var(--line); white-space:nowrap;
+  font-family:var(--f-display); font-size:11px; font-weight:700; color:var(--ink-2);
+}
+table.db thead th small{ display:block; font-family:var(--f-mono); font-size:9.5px; font-weight:400; color:var(--ink-3); }
+table.db thead th.key{ color:var(--brand); }
+table.db td{ padding:7px 10px; border-bottom:1px solid var(--line-2); white-space:nowrap; }
+table.db td.empty{ color:var(--ink-3); }
+table.db tbody tr{ cursor:pointer; }
+table.db tbody tr:hover td{ background:var(--sunk); }
+table.db tbody tr:last-child td{ border-bottom:0; }
+.dbnote{ font-size:12px; color:var(--ink-3); margin:12px 0 0; }
 .mhead{
   display:flex; align-items:center; gap:12px; padding:15px 20px;
   border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--card); z-index:2;
@@ -322,7 +346,7 @@ input[aria-invalid="true"]{ border-color:var(--crit); background:var(--crit-soft
 .chart-empty{ padding:24px 0; text-align:center; color:var(--ink-3); font-size:12.5px; }
 
 #tip{
-  position:fixed; z-index:90; pointer-events:none; opacity:0; transform:translateY(4px);
+  position:fixed; z-index:96; pointer-events:none; opacity:0; transform:translateY(4px);
   background:var(--ink); color:var(--paper); font-size:12px; font-weight:600;
   padding:6px 10px; border-radius:7px; box-shadow:var(--shadow); transition:opacity .12s, transform .12s;
   max-width:220px;
@@ -330,7 +354,7 @@ input[aria-invalid="true"]{ border-color:var(--crit); background:var(--crit-soft
 #tip.on{ opacity:1; transform:translateY(0); }
 #tip small{ display:block; font-weight:400; opacity:.75; font-size:11px; }
 
-#toasts{ position:fixed; inset-block-end:18px; inset-inline-start:50%; transform:translateX(50%); z-index:95; display:flex; flex-direction:column; gap:8px; align-items:center; }
+#toasts{ position:fixed; inset-block-end:18px; inset-inline-start:50%; transform:translateX(50%); z-index:100; display:flex; flex-direction:column; gap:8px; align-items:center; }
 .toast{
   background:var(--ink); color:var(--paper); padding:10px 16px; border-radius:10px;
   font-size:13px; font-weight:600; box-shadow:var(--shadow-lg); animation:pop .2s ease;
@@ -363,6 +387,10 @@ input[aria-invalid="true"]{ border-color:var(--crit); background:var(--crit-soft
         <em>قاعدة بيانات الموارد البشرية</em>
       </span>
     </div>
+    <button class="btn" id="btnDb">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5.5" rx="8" ry="3"/><path d="M4 5.5v13c0 1.7 3.6 3 8 3s8-1.3 8-3v-13"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>
+      قاعدة البيانات
+    </button>
     <button class="btn" id="btnNew">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
       موظف جديد
@@ -406,6 +434,25 @@ input[aria-invalid="true"]{ border-color:var(--crit); background:var(--crit-soft
 
 <div id="tip" role="status" aria-live="polite"></div>
 <div id="toasts" aria-live="polite"></div>
+
+<!-- ═══════════ قاعدة البيانات ═══════════ -->
+<div class="modal" id="mDb" hidden>
+  <div class="veil" data-close></div>
+  <div class="box full" role="dialog" aria-modal="true" aria-labelledby="mDbTitle">
+    <div class="mhead">
+      <h3 id="mDbTitle">قاعدة البيانات</h3>
+      <span class="grow"></span>
+      <button class="btn icon ghost" data-close aria-label="إغلاق">✕</button>
+    </div>
+    <div class="mbody" id="dbHost"></div>
+    <div class="mfoot">
+      <button class="btn primary" id="dbXlsx">تحميل القاعدة ‎.xlsx‎</button>
+      <button class="btn" id="dbJson">نسخة احتياطية ‎.json‎</button>
+      <span class="grow"></span>
+      <button class="btn" id="dbNew">صف جديد</button>
+    </div>
+  </div>
+</div>
 
 <!-- ═══════════ ملف الموظف ═══════════ -->
 <div class="modal" id="mView" hidden>
@@ -1103,6 +1150,7 @@ function cardHtml(r) {
 
 function render() {
   const host = $("#results"), count = $("#count");
+  if (!$("#mDb").hidden) renderDb();   /* شاشة القاعدة تبقى مطابقة للمخزن */
 
   if (!state.rows.length) {
     count.innerHTML = "";
@@ -1188,7 +1236,57 @@ function openView(id) {
 }
 
 /* ═════════════════════════════════════════════════════════════════
-   9 · المؤشرات
+   9 · شاشة القاعدة — المخزن نفسه معروضًا كما هو
+   ═════════════════════════════════════════════════════════════════ */
+const DB_ROWS = 500;   /* سقف الصفوف المعروضة دفعة واحدة */
+let dbShown = DB_ROWS;
+
+const bytesText = n => n < 1024 ? fmt(n) + " بايت" : n < 1048576
+  ? fmt(Math.round(n / 102.4) / 10) + " كيلوبايت" : fmt(Math.round(n / 104857.6) / 10) + " ميغابايت";
+
+function renderDb() {
+  const host = $("#dbHost");
+  const rows = [...state.rows].sort((a, b) => String(a.id).localeCompare(String(b.id), "ar", { numeric: true }));
+  const bytes = rows.length ? new Blob([JSON.stringify(rows)]).size : 0;
+  const last = rows.reduce((m, r) => (r.updatedAt && r.updatedAt > m ? r.updatedAt : m), "");
+  const lastText = last ? last.slice(0, 10) + " · " + last.slice(11, 16) : "—";
+
+  const meta = [
+    ["اسم القاعدة", DB.name, true],
+    ["نوع التخزين", "IndexedDB", false],
+    ["المخزن", DB.store, true],
+    ["مفتاح السجل", "Employee ID", true],
+    ["عدد السجلات", fmt(rows.length), false],
+    ["عدد الحقول", fmt(FIELDS.length), false],
+    ["الفهارس", "‏5: الفرع · القسم · الجنسية · الاسم · التعيين", false],
+    ["حجم البيانات", bytesText(bytes), false],
+    ["آخر تحديث", lastText, true],
+  ].map(([k, v, mono]) => "<div><dt>" + esc(k) + '</dt><dd' + (mono ? ' class="mono"' : "") + ">" + esc(v) + "</dd></div>").join("");
+
+  const head = "<tr>" + FIELDS.map(f =>
+    "<th" + (f.k === "id" ? ' class="key"' : "") + ">" + esc(f.ar) + "<small>" + esc(f.xl) + "</small></th>").join("") + "</tr>";
+
+  const page = rows.slice(0, dbShown);
+  const body = page.map(r => '<tr data-id="' + esc(r.id) + '">' + FIELDS.map(f => {
+    const v = r[f.k];
+    if (f.t === "int") return '<td class="mono num' + (v ? "" : " empty") + '">' + fmt(v) + "</td>";
+    return v ? '<td' + (f.mono || f.t === "date" ? ' class="mono"' : "") + ">" + esc(v) + "</td>"
+             : '<td class="empty">—</td>';
+  }).join("") + "</tr>").join("");
+
+  host.innerHTML = '<dl class="dbmeta">' + meta + "</dl>" +
+    (rows.length
+      ? '<div class="tbl"><table class="db"><thead>' + head + "</thead><tbody>" + body + "</tbody></table></div>" +
+        (rows.length > page.length
+          ? '<div class="more"><button class="btn" data-db="more">عرض المزيد (' + fmt(rows.length - page.length) + ")</button></div>"
+          : "") +
+        '<p class="dbnote">كل صف سجل واحد في المخزن، وكل عمود حقل من حقول ورقة <b>Employees</b> — اضغط أي صف لفتح ملفه أو تعديله. ' +
+        "البيانات محفوظة داخل هذا المتصفح على هذا الجهاز وحده، ولا تُرفع إلى أي خادم؛ ونسختها كملف تحصل عليها من زرّي الأسفل.</p>"
+      : '<p class="chart-empty">لا سجلات في القاعدة بعد — استورد ملف الإكسل أو أضف صفًا جديدًا.</p>');
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   10 · المؤشرات
    ═════════════════════════════════════════════════════════════════ */
 function tally(k, limit) {
   const m = new Map();
@@ -1553,6 +1651,17 @@ function wire() {
     const card = e.target.closest(".ecard");
     if (card) { e.preventDefault(); openView(card.dataset.id); }
   });
+
+  $("#btnDb").addEventListener("click", () => { dbShown = DB_ROWS; renderDb(); openModal("#mDb"); });
+  $("#dbHost").addEventListener("click", e => {
+    const more = e.target.closest("[data-db]");
+    if (more) { dbShown += DB_ROWS; renderDb(); return; }
+    const tr = e.target.closest("tr[data-id]");
+    if (tr) openView(tr.dataset.id);
+  });
+  $("#dbXlsx").addEventListener("click", exportXlsx);
+  $("#dbJson").addEventListener("click", exportJson);
+  $("#dbNew").addEventListener("click", () => openEmp(null));
 
   $("#btnNew").addEventListener("click", () => openEmp(null));
   $("#btnImport").addEventListener("click", () => openModal("#mImport"));
