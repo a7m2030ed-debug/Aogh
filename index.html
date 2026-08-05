@@ -1512,7 +1512,10 @@ addEventListener("drop", e => e.preventDefault());
 hookDrop($("#dropT"), $("#fileT"), async files => {
   try {
     state.tpl = await loadTemplate(files[0]);
-    for (const b of state.branches) if (!b.prefix) b.prefix = guessPrefix(b.label);
+    /* a swapped template names its branches differently, so any assignment that
+       no longer exists there is re-guessed rather than left silently stale */
+    const known = new Set(state.tpl.prefixes.map(p => p.prefix));
+    for (const b of state.branches) if (!b.prefix || !known.has(b.prefix)) b.prefix = guessPrefix(b.label);
     refresh();
     toast(`تم تحليل القالب: ${state.tpl.slides.length} شرائح · ${state.tpl.branch.slots} خانة في صفحة الفرع`);
   } catch (e) { toast("تعذّر قراءة القالب: " + e.message, "err"); }
