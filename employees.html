@@ -1,0 +1,1139 @@
+<!doctype html>
+<html dir="rtl" lang="ar">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>سجل الموظفين — بحث وحفظ</title>
+<style>
+  :root{
+    color-scheme: light;
+    --paper:#F1F3F0; --card:#FFFFFF; --sunk:#E8EBE7;
+    --ink:#141F1C; --ink-2:#41514C; --ink-3:#71827C;
+    --line:#D6DDD8; --line-2:#E7EBE7;
+    --accent:#0E6B59; --accent-ink:#0A4F42; --accent-soft:#DDEBE7;
+    --brass:#8E7128; --brass-soft:#F1E9D3;
+    --good:#1E7A4C; --mid:#8C6410; --low:#AA3A2C;
+    --shadow:0 1px 2px rgba(20,31,28,.05), 0 12px 32px -12px rgba(20,31,28,.18);
+    --radius:10px;
+    --f-display:"Noto Kufi Arabic","Sakkal Majalla","Segoe UI",Tahoma,sans-serif;
+    --f-body:"Noto Sans Arabic","Segoe UI",Tahoma,Arial,sans-serif;
+    --f-mono:ui-monospace,"Cascadia Mono","SF Mono",Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      color-scheme: dark;
+      --paper:#0C1312; --card:#141D1B; --sunk:#101917;
+      --ink:#E8EEEB; --ink-2:#AEBDB8; --ink-3:#7F908A;
+      --line:#26332F; --line-2:#1D2826;
+      --accent:#4FBFA3; --accent-ink:#8AD9C3; --accent-soft:#16302A;
+      --brass:#C9A94F; --brass-soft:#2A2415;
+      --good:#54B983; --mid:#D2A63F; --low:#E27C6C;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 12px 32px -12px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme: dark;
+    --paper:#0C1312; --card:#141D1B; --sunk:#101917;
+    --ink:#E8EEEB; --ink-2:#AEBDB8; --ink-3:#7F908A;
+    --line:#26332F; --line-2:#1D2826;
+    --accent:#4FBFA3; --accent-ink:#8AD9C3; --accent-soft:#16302A;
+    --brass:#C9A94F; --brass-soft:#2A2415;
+    --good:#54B983; --mid:#D2A63F; --low:#E27C6C;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 12px 32px -12px rgba(0,0,0,.6);
+  }
+  :root[data-theme="light"]{
+    color-scheme: light;
+    --paper:#F1F3F0; --card:#FFFFFF; --sunk:#E8EBE7;
+    --ink:#141F1C; --ink-2:#41514C; --ink-3:#71827C;
+    --line:#D6DDD8; --line-2:#E7EBE7;
+    --accent:#0E6B59; --accent-ink:#0A4F42; --accent-soft:#DDEBE7;
+    --brass:#8E7128; --brass-soft:#F1E9D3;
+    --good:#1E7A4C; --mid:#8C6410; --low:#AA3A2C;
+    --shadow:0 1px 2px rgba(20,31,28,.05), 0 12px 32px -12px rgba(20,31,28,.18);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:var(--f-body); font-size:15px; line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{font-family:var(--f-display); font-weight:700; margin:0; text-wrap:balance; line-height:1.35}
+  button,input,select,textarea{font:inherit; color:inherit}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:4px}
+
+  .bar{
+    position:sticky; top:0; z-index:40;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+    padding:12px 20px;
+    background:color-mix(in srgb, var(--card) 88%, transparent);
+    backdrop-filter:blur(10px); border-bottom:1px solid var(--line);
+  }
+  .brand{display:flex; align-items:center; gap:10px; margin-inline-end:auto}
+  .seal{
+    width:34px; height:34px; flex:none; border-radius:8px; background:var(--accent); color:#fff;
+    display:grid; place-items:center; font-family:var(--f-display); font-weight:700; font-size:15px;
+    box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--brass) 55%, transparent);
+  }
+  .brand h1{font-size:17px; letter-spacing:-.01em}
+  .brand p{margin:0; font-size:12px; color:var(--ink-3)}
+
+  .btn{
+    display:inline-flex; align-items:center; gap:7px; padding:8px 15px; border-radius:8px;
+    cursor:pointer; border:1px solid var(--line); background:var(--card); color:var(--ink);
+    font-size:14px; font-weight:600; white-space:nowrap;
+    transition:background .15s, border-color .15s, transform .08s;
+  }
+  .btn:hover:not([disabled]){border-color:color-mix(in srgb, var(--accent) 45%, var(--line))}
+  .btn:active:not([disabled]){transform:translateY(1px)}
+  .btn[disabled]{opacity:.42; cursor:not-allowed}
+  .btn[hidden]{display:none}   /* display:inline-flex أعلاه يتغلّب على [hidden] الافتراضية */
+  .btn-main{background:var(--accent); border-color:var(--accent); color:#fff}
+  .btn-main:hover:not([disabled]){background:var(--accent-ink); border-color:var(--accent-ink)}
+  .btn-ghost{background:transparent}
+  .btn-sm{padding:5px 11px; font-size:13px; font-weight:500}
+  .btn-danger{color:var(--low); border-color:color-mix(in srgb, var(--low) 32%, var(--line))}
+  .btn svg{width:15px; height:15px; flex:none}
+
+  .shell{max-width:1320px; margin:0 auto; padding:20px 20px 70px; display:flex; flex-direction:column; gap:14px}
+
+  .step{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); overflow:hidden;
+  }
+  .step > header{
+    display:flex; align-items:center; gap:11px; padding:11px 16px; flex-wrap:wrap;
+    border-bottom:1px solid var(--line-2);
+    background:linear-gradient(to bottom, color-mix(in srgb, var(--accent-soft) 42%, var(--card)), var(--card));
+  }
+  .step > header h2{font-size:14.5px}
+  .step > header .state{margin-inline-start:auto; font-size:12.5px; color:var(--ink-3)}
+  .step .body{padding:14px 16px; display:flex; flex-direction:column; gap:13px}
+
+  /* ---------- stat tiles: one row, no plot — value in ink, meaning in the label ---------- */
+  .tiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(122px,1fr)); gap:9px}
+  .tile{
+    border:1px solid var(--line); border-radius:9px; background:var(--sunk);
+    padding:9px 12px; display:flex; flex-direction:column; gap:1px;
+  }
+  .tile .v{font-family:var(--f-display); font-size:22px; font-weight:700; font-variant-numeric:tabular-nums; line-height:1.2}
+  .tile .k{font-size:11.5px; color:var(--ink-3)}
+  .tile .s{font-size:11px; color:var(--ink-3)}
+  .tile.warn{border-color:color-mix(in srgb, var(--mid) 45%, var(--line)); background:color-mix(in srgb, var(--brass-soft) 55%, var(--sunk))}
+  .tile.warn .v{color:var(--mid)}
+
+  .note{
+    display:flex; gap:9px; padding:10px 13px; border-radius:8px; font-size:13px;
+    background:var(--sunk); border:1px solid var(--line-2); color:var(--ink-2);
+  }
+  .note b{color:var(--ink)}
+  .note .m{width:3px; border-radius:2px; background:var(--brass); flex:none}
+
+  .tools{display:flex; gap:9px; flex-wrap:wrap; align-items:flex-end}
+  .grow{flex:1 1 230px}
+  label.fld{display:flex; flex-direction:column; gap:5px; font-size:11.5px; color:var(--ink-3)}
+  label.chk{display:flex; align-items:center; gap:7px; font-size:13px; color:var(--ink-2); padding-bottom:7px; cursor:pointer}
+  select, input[type="text"], input[type="tel"], input[type="date"], input[type="email"],
+  input[type="number"], input[type="search"], textarea{
+    padding:7px 10px; border:1px solid var(--line); border-radius:7px;
+    background:var(--card); font-size:13.5px; max-width:100%; width:100%;
+  }
+  textarea{resize:vertical; min-height:62px; font-size:13.5px}
+  select:focus, input:focus, textarea:focus{border-color:var(--accent); outline:none}
+  .search{position:relative}
+  .search input{padding-inline-start:32px}
+  .search svg{
+    position:absolute; inset-inline-start:10px; top:50%; transform:translateY(-50%);
+    width:15px; height:15px; color:var(--ink-3); pointer-events:none;
+  }
+
+  .tw{overflow-x:auto; border-top:1px solid var(--line-2)}
+  table{border-collapse:collapse; width:100%; font-size:13.5px}
+  th,td{padding:7px 10px; text-align:start; border-bottom:1px solid var(--line-2); white-space:nowrap}
+  th{
+    font-size:11.5px; color:var(--ink-3); font-weight:600; letter-spacing:.02em;
+    position:sticky; top:0; background:var(--card); z-index:2; cursor:pointer; user-select:none;
+  }
+  th.plain{cursor:default}
+  th .ar{color:var(--accent); font-size:10px}
+  td{font-variant-numeric:tabular-nums; color:var(--ink-2)}
+  td.nm{color:var(--ink); font-weight:600}
+  tbody tr:hover{background:color-mix(in srgb, var(--accent-soft) 34%, transparent)}
+  tbody tr:last-child td{border-bottom:0}
+  .num{text-align:center; font-variant-numeric:tabular-nums}
+
+  .pill{
+    display:inline-block; min-width:34px; text-align:center; padding:1px 8px; border-radius:20px;
+    font-size:12px; font-weight:700; color:#fff; font-variant-numeric:tabular-nums;
+  }
+  /* العدّادات: الرمادي عدد عادي، والذهبي فالأحمر تصاعد — ولا أخضر هنا،
+     فالأخضر يقرأ «جيد» ولا شيء جيد في يوم غياب أو مخالفة. */
+  .pill.n{background:var(--sunk); color:var(--ink-2); border:1px solid var(--line-2); font-weight:600}
+  .pill.m{background:var(--mid)} .pill.l{background:var(--low)}
+  .pill.none{background:transparent; color:var(--ink-3); font-weight:500}
+  .tag{
+    display:inline-block; padding:1px 8px; border-radius:6px; font-size:11.5px; font-weight:600;
+    background:var(--sunk); border:1px solid var(--line-2); color:var(--ink-2);
+  }
+  .tag.on{background:var(--accent-soft); border-color:color-mix(in srgb,var(--accent) 30%,var(--line)); color:var(--accent-ink)}
+  .tag.off{background:color-mix(in srgb,var(--low) 12%,var(--sunk)); border-color:color-mix(in srgb,var(--low) 28%,var(--line)); color:var(--low)}
+  .tag.mid{background:var(--brass-soft); border-color:color-mix(in srgb,var(--mid) 30%,var(--line)); color:var(--mid)}
+  :root[data-theme="dark"] .tag.on, :root[data-theme="dark"] .tag.off, :root[data-theme="dark"] .tag.mid{color:var(--ink)}
+
+  .inc{
+    border:0; background:transparent; color:var(--ink-3); cursor:pointer; font-size:13px;
+    padding:0 3px; border-radius:4px; opacity:0; transition:opacity .12s;
+  }
+  tr:hover .inc, .inc:focus-visible{opacity:1}
+  .inc:hover{color:var(--accent); background:var(--accent-soft)}
+
+  .rowbtns{display:flex; gap:4px}
+  .icon{
+    width:26px; height:26px; display:grid; place-items:center; border-radius:6px; cursor:pointer;
+    border:1px solid var(--line); background:var(--card); color:var(--ink-2);
+  }
+  .icon:hover{border-color:color-mix(in srgb, var(--accent) 45%, var(--line)); color:var(--accent)}
+  .icon.del:hover{border-color:color-mix(in srgb, var(--low) 45%, var(--line)); color:var(--low)}
+  .icon svg{width:14px; height:14px}
+
+  .empty{font-size:13.5px; color:var(--ink-3); text-align:center; padding:26px 10px}
+
+  dialog{
+    border:1px solid var(--line); border-radius:12px; background:var(--card); color:var(--ink);
+    padding:0; box-shadow:var(--shadow); width:min(880px, 94vw); max-height:90vh;
+  }
+  dialog::backdrop{background:rgba(10,20,18,.42); backdrop-filter:blur(2px)}
+  dialog header{
+    display:flex; align-items:center; gap:10px; padding:13px 17px; border-bottom:1px solid var(--line-2);
+    background:linear-gradient(to bottom, color-mix(in srgb, var(--accent-soft) 42%, var(--card)), var(--card));
+    position:sticky; top:0; z-index:3;
+  }
+  dialog header h2{font-size:15px; margin-inline-end:auto}
+  dialog .body{padding:15px 17px; overflow:auto; max-height:66vh; display:flex; flex-direction:column; gap:15px}
+  dialog footer{
+    display:flex; gap:9px; padding:12px 17px; border-top:1px solid var(--line-2); background:var(--card);
+    position:sticky; bottom:0;
+  }
+  dialog footer .sp{margin-inline-start:auto}
+  fieldset{border:1px solid var(--line-2); border-radius:9px; padding:12px 14px 14px; margin:0}
+  legend{font-family:var(--f-display); font-size:12.5px; font-weight:700; color:var(--accent-ink); padding:0 6px}
+  :root[data-theme="dark"] legend{color:var(--accent)}
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:11px}
+  .grid .wide{grid-column:1/-1}
+
+  #toasts{position:fixed; inset-block-end:18px; inset-inline-start:18px; z-index:90; display:flex; flex-direction:column; gap:8px}
+  .toast{
+    display:flex; align-items:center; gap:9px; padding:10px 14px; border-radius:9px;
+    background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow);
+    font-size:13.5px; max-width:min(430px,86vw); animation:rise .22s ease-out;
+  }
+  .toast .b{width:4px; align-self:stretch; border-radius:2px; background:var(--accent); flex:none}
+  .toast.err .b{background:var(--low)} .toast.warn .b{background:var(--mid)}
+  @keyframes rise{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none}}
+  @media (prefers-reduced-motion: reduce){*{animation:none !important; transition:none !important}}
+
+  @media print{
+    .bar, .tools, .rowbtns, .note, #toasts, .noprint{display:none !important}
+    body{background:#fff}
+    .shell{max-width:none; padding:0}
+    .step{border:0; box-shadow:none}
+    .tw{overflow:visible}
+    th{position:static}
+    tbody tr{break-inside:avoid}
+  }
+</style>
+
+<div class="bar">
+  <div class="brand">
+    <div class="seal">م</div>
+    <div>
+      <h1>سجل الموظفين</h1>
+      <p>إضافة · بحث · حفظ في المتصفح — بلا خادم</p>
+    </div>
+  </div>
+  <span class="state" id="saved" style="font-size:12px;color:var(--ink-3)"></span>
+  <a class="btn btn-ghost" href="index.html" style="text-decoration:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v14H4zM4 9h16M9 9v10"/></svg>
+    التقرير اليومي
+  </a>
+  <button class="btn" id="bImport">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15V3m0 12 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+    استيراد
+  </button>
+  <button class="btn btn-main" id="bAdd">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+    موظف جديد
+  </button>
+</div>
+
+<div class="shell">
+
+  <section class="step">
+    <header><h2>لمحة</h2><span class="state" id="stCount"></span></header>
+    <div class="body">
+      <div class="tiles" id="tiles"></div>
+      <div class="note noprint"><span class="m"></span><span id="hint">
+        كل شيء يُحفظ تلقائيًا داخل متصفحك على هذا الجهاز — لا يُرفع إلى أي خادم.
+        اضغط <b>+</b> بجانب أي رقم في الجدول لزيادته يومًا/مخالفة، ومع <b>Shift</b> لإنقاصه.
+        واحتفظ بنسخة احتياطية بين حين وآخر من زر <b>نسخة احتياطية</b>.
+      </span></div>
+    </div>
+  </section>
+
+  <section class="step">
+    <header>
+      <h2>الموظفون</h2>
+      <span class="state" id="stShown"></span>
+    </header>
+    <div class="body">
+      <div class="tools">
+        <label class="fld grow"><span>بحث — اسم · جوال · رقم وظيفي · مسمى · فرع … (اضغط <b>/</b>)</span>
+          <span class="search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input type="search" id="q" placeholder="اكتب أي جزء من البيانات…" autocomplete="off">
+          </span>
+        </label>
+        <label class="fld"><span>الفرع</span><select id="fBranch"></select></label>
+        <label class="fld"><span>الحالة</span><select id="fStatus"></select></label>
+        <label class="fld"><span>الأعمدة</span>
+          <select id="fView"><option value="core">أساسية</option><option value="all">كل الحقول</option></select>
+        </label>
+        <label class="chk"><input type="checkbox" id="fAlert"> عليه تنبيه فقط</label>
+      </div>
+      <div class="tools noprint">
+        <button class="btn btn-sm" id="bXlsx">تصدير Excel</button>
+        <button class="btn btn-sm" id="bCsv">تصدير CSV</button>
+        <button class="btn btn-sm" id="bBackup">نسخة احتياطية</button>
+        <button class="btn btn-sm" id="bRestore">استعادة نسخة</button>
+        <button class="btn btn-sm" id="bPrint">طباعة</button>
+        <button class="btn btn-sm btn-danger" id="bWipe" style="margin-inline-start:auto">حذف كل السجل</button>
+      </div>
+    </div>
+    <div class="tw">
+      <table id="tbl">
+        <thead><tr id="thead"></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <p class="empty" id="noRows" hidden></p>
+  </section>
+</div>
+
+<input type="file" id="fileIn" accept=".xlsx,.xlsm,.csv" hidden>
+<input type="file" id="fileJson" accept=".json,application/json" hidden>
+
+<dialog id="dlgEdit">
+  <form method="dialog" id="frm">
+    <header>
+      <h2 id="dlgTitle">موظف جديد</h2>
+      <button class="icon" value="cancel" aria-label="إغلاق" type="submit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </header>
+    <div class="body" id="frmBody"></div>
+    <footer>
+      <button class="btn btn-main" id="bSave" type="button">حفظ</button>
+      <button class="btn btn-ghost" value="cancel" type="submit">إلغاء</button>
+      <span class="sp"></span>
+      <button class="btn btn-danger" id="bDelOne" type="button" hidden>حذف الموظف</button>
+    </footer>
+  </form>
+</dialog>
+
+<dialog id="dlgMap">
+  <header><h2>ربط أعمدة الملف</h2></header>
+  <div class="body">
+    <div class="note"><span class="m"></span><span id="mapInfo"></span></div>
+    <div class="grid" id="mapGrid"></div>
+    <label class="fld" style="max-width:280px"><span>طريقة الإدخال</span>
+      <select id="mapMode">
+        <option value="merge">دمج — تحديث من له نفس الرقم الوظيفي</option>
+        <option value="append">إضافة الكل كسجلات جديدة</option>
+        <option value="replace">استبدال السجل كاملًا بالملف</option>
+      </select>
+    </label>
+  </div>
+  <footer>
+    <button class="btn btn-main" id="bDoImport" type="button">استيراد</button>
+    <button class="btn btn-ghost" id="bCancelImport" type="button">إلغاء</button>
+  </footer>
+</dialog>
+
+<div id="toasts" aria-live="polite"></div>
+
+<script>
+(() => {
+"use strict";
+const $ = s => document.querySelector(s);
+const STORE = "aogh.staff.v1";
+const DASH = "—";
+
+/* ═════════════════ الحقول ═════════════════
+   كل حقل يُعرَّف مرة واحدة هنا: الجدول والنموذج والتصدير والاستيراد
+   تُبنى كلها من هذه القائمة، فإضافة حقل جديد سطر واحد لا أكثر. */
+const STATUS = ["على رأس العمل", "إجازة", "إجازة مرضية", "موقوف", "منتهي الخدمة"];
+
+const F = [
+  { k:"empNo",  ar:"الرقم الوظيفي", t:"text", g:"أساسية", col:1,
+    h:["employeeno","employeenumber","empno","empid","staffno","staffid","badge","idno","الرقمالوظيفي","رقمالموظف","الرقموظيفي","رقموظيفي"] },
+  { k:"name",   ar:"الاسم", t:"text", g:"أساسية", col:1, req:true,
+    h:["name","employeename","fullname","staffname","الاسم","اسمالموظف","الاسمالكامل"] },
+  { k:"phone",  ar:"رقم الجوال", t:"tel", g:"أساسية", col:1,
+    h:["mobile","mobileno","phone","phoneno","cell","contact","الجوال","رقمالجوال","الهاتف","الجوّال"] },
+  { k:"natId",  ar:"رقم الهوية / الإقامة", t:"text", g:"أساسية", col:2,
+    h:["nationalid","iqama","iqamano","idnumber","nid","الهوية","رقمالهوية","الإقامة","الاقامة"] },
+  { k:"nationality", ar:"الجنسية", t:"text", g:"أساسية", col:2, list:"nationality",
+    h:["nationality","الجنسية"] },
+  { k:"gender", ar:"الجنس", t:"select", opts:["ذكر","أنثى"], g:"أساسية", col:2,
+    h:["gender","sex","الجنس"] },
+  { k:"email",  ar:"البريد الإلكتروني", t:"email", g:"أساسية", col:2,
+    h:["email","mail","البريد","الايميل","الإيميل"] },
+
+  { k:"title",  ar:"المسمى الوظيفي", t:"text", g:"وظيفية", col:1, list:"title",
+    h:["jobtitle","title","position","designation","role","المسمى","المسمىالوظيفي","الوظيفة"] },
+  { k:"branch", ar:"الفرع", t:"text", g:"وظيفية", col:1, list:"branch",
+    h:["branch","center","centre","site","location","facility","الفرع","المركز","الموقع"] },
+  { k:"dept",   ar:"القسم", t:"text", g:"وظيفية", col:2, list:"dept",
+    h:["department","departmentname","dept","section","specialty","القسم","الإدارة","الادارة"] },
+  { k:"manager",ar:"المدير المباشر", t:"text", g:"وظيفية", col:2, list:"manager",
+    h:["manager","supervisor","reportsto","linemanager","المدير","المديرالمباشر","المشرف"] },
+  { k:"startDate", ar:"تاريخ المباشرة", t:"date", g:"وظيفية", col:1,
+    h:["startdate","joindate","joiningdate","hiredate","doj","dateofjoining","المباشرة","تاريخالمباشرة","تاريخالتعيين","تاريخالالتحاق"] },
+  { k:"status", ar:"الحالة", t:"select", opts:STATUS, g:"وظيفية", col:1, dflt:STATUS[0],
+    h:["status","state","employmentstatus","الحالة","الحالةالوظيفية"] },
+  { k:"endDate",ar:"تاريخ نهاية الخدمة", t:"date", g:"وظيفية", col:2,
+    h:["enddate","exitdate","terminationdate","lastworkingday","نهايةالخدمة","تاريخنهايةالخدمة"] },
+  { k:"leave",  ar:"رصيد الإجازة (يوم)", t:"num", g:"وظيفية", col:2,
+    h:["leavebalance","annualleave","vacationbalance","رصيدالإجازة","رصيدالاجازة","الإجازات"] },
+
+  { k:"absence",   ar:"أيام الغياب", t:"num", g:"الانضباط", col:1, cnt:true, hi:3,
+    h:["absence","absent","absencedays","absentdays","الغياب","اياممالغياب","أيامالغياب","ايامالغياب","عددايامالغياب"] },
+  { k:"late",      ar:"أيام التأخير", t:"num", g:"الانضباط", col:1, cnt:true, hi:5,
+    h:["late","latedays","delay","tardiness","التأخير","التاخير","أيامالتأخير","ايامالتاخير","عددايامالتاخير"] },
+  { k:"violations",ar:"المخالفات", t:"num", g:"الانضباط", col:1, cnt:true, hi:2,
+    h:["violation","violations","penalties","المخالفات","عددالمخالفات"] },
+  { k:"warnings",  ar:"الإنذارات", t:"num", g:"الانضباط", col:1, cnt:true, hi:1,
+    h:["warning","warnings","notices","الإنذارات","الانذارات","عددالانذارات","عددالإنذارات"] },
+
+  { k:"contractEnd",  ar:"انتهاء العقد", t:"date", g:"الوثائق", col:2, exp:true,
+    h:["contractend","contractexpiry","contractenddate","انتهاءالعقد","نهايةالعقد"] },
+  { k:"idExpiry",     ar:"انتهاء الهوية / الإقامة", t:"date", g:"الوثائق", col:2, exp:true,
+    h:["idexpiry","iqamaexpiry","idexpirydate","انتهاءالهوية","انتهاءالإقامة","انتهاءالاقامة"] },
+  { k:"licenseNo",    ar:"رقم التصنيف / الرخصة", t:"text", g:"الوثائق", col:2,
+    h:["licenseno","licencenumber","scfhs","classification","registrationno","رقمالرخصة","التصنيف","رقمالتصنيف"] },
+  { k:"licenseExpiry",ar:"انتهاء الرخصة", t:"date", g:"الوثائق", col:2, exp:true,
+    h:["licenseexpiry","licenceexpiry","scfhsexpiry","انتهاءالرخصة","انتهاءالتصنيف"] },
+
+  { k:"notes", ar:"ملاحظات", t:"area", g:"أخرى", col:2,
+    h:["notes","note","remarks","comment","ملاحظات","ملاحظة"] },
+];
+const FMAP = Object.fromEntries(F.map(f => [f.k, f]));
+const GROUPS = ["أساسية", "وظيفية", "الانضباط", "الوثائق", "أخرى"];
+const EXPIRY_SOON = 60;   // يوم قبل الانتهاء يبدأ التنبيه
+
+/* ═════════════════ أدوات ═════════════════ */
+const esc = s => String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+const AR_DIGITS = { "٠":"0","١":"1","٢":"2","٣":"3","٤":"4","٥":"5","٦":"6","٧":"7","٨":"8","٩":"9",
+                    "۰":"0","۱":"1","۲":"2","۳":"3","۴":"4","۵":"5","۶":"6","۷":"7","۸":"8","۹":"9" };
+const latin = s => String(s ?? "").replace(/[٠-٩۰-۹]/g, d => AR_DIGITS[d]);
+
+/* البحث لا يجوز أن يفشل لأن المستخدم كتب «احمد» والسجل فيه «أحمد»،
+   ولا لأن الجوال محفوظ بشرطات — فيُسوّى الطرفان قبل المقارنة. */
+const norm = s => latin(s).toLowerCase()
+  .replace(/[ً-ْٰـ]/g, "")
+  .replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/[ةه]/g, "ه").replace(/[ؤئ]/g, "ء")
+  .replace(/[^0-9a-zء-ي]+/g, " ").trim();
+const key = s => norm(s).replace(/\s+/g, "");
+const num = v => { const n = parseFloat(latin(v).replace(/[^\d.-]/g, "")); return isFinite(n) ? n : 0; };
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+function toast(msg, kind = "") {
+  const t = document.createElement("div");
+  t.className = "toast " + kind;
+  t.innerHTML = '<span class="b"></span><span></span>';
+  t.lastChild.textContent = msg;
+  $("#toasts").append(t);
+  setTimeout(() => { t.style.opacity = 0; t.style.transition = "opacity .3s"; setTimeout(() => t.remove(), 320); },
+             kind === "err" ? 7000 : 3600);
+}
+
+const MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+const today = () => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); };
+const parseISO = s => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s || "")); return m ? new Date(+m[1], +m[2]-1, +m[3]) : null; };
+const daysTo = iso => { const d = parseISO(iso); return d ? Math.round((d - today()) / 864e5) : null; };
+
+function fmtDate(iso) {
+  const d = parseISO(iso);
+  return d ? `${String(d.getDate()).padStart(2,"0")} ${MONTHS[d.getMonth()]} ${d.getFullYear()}` : "";
+}
+
+/* أي صيغة تاريخ قد تخرج من إكسل أو من كتابة يدوية تُردّ إلى ISO،
+   وإلا حُفظت كما هي فلا تضيع القيمة بصمت. */
+function toISO(v) {
+  if (v == null || v === "") return "";
+  if (v instanceof Date) v = v.toISOString().slice(0, 10);
+  let s = latin(String(v)).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  if (/^\d{2,6}(\.\d+)?$/.test(s)) {                       // رقم تسلسلي من إكسل
+    const n = parseFloat(s);
+    if (n > 20000 && n < 60000) {
+      const d = new Date(Date.UTC(1899, 11, 30) + Math.round(n) * 864e5);
+      return d.toISOString().slice(0, 10);
+    }
+  }
+  const m = /^(\d{1,4})[\/\-.](\d{1,2})[\/\-.](\d{1,4})/.exec(s);
+  if (m) {
+    let [, a, b, c] = m;
+    let y, mo, dd;
+    if (a.length === 4) { y = +a; mo = +b; dd = +c; }
+    else { dd = +a; mo = +b; y = +c; if (y < 100) y += y > 50 ? 1900 : 2000; }
+    if (mo > 12 && dd <= 12) { const t = mo; mo = dd; dd = t; }
+    if (y > 1900 && mo >= 1 && mo <= 12 && dd >= 1 && dd <= 31)
+      return `${y}-${String(mo).padStart(2,"0")}-${String(dd).padStart(2,"0")}`;
+  }
+  return s;
+}
+
+function serviceText(r) {
+  const from = parseISO(r.startDate); if (!from) return "";
+  const to = parseISO(r.endDate) || today();
+  let months = (to.getFullYear() - from.getFullYear()) * 12 + (to.getMonth() - from.getMonth());
+  if (to.getDate() < from.getDate()) months--;
+  if (months < 0) return "";
+  const y = Math.floor(months / 12), m = months % 12;
+  if (y && m) return `${y} سنة و${m} شهر`;
+  if (y) return `${y} سنة`;
+  return `${m} شهر`;
+}
+
+/* تنبيهات الوثائق: منتهية أو على وشك — تُعرَض عند اسم الموظف وتُعدّ في البطاقات. */
+function alertsOf(r) {
+  const out = [];
+  for (const f of F) {
+    if (!f.exp || !r[f.k]) continue;
+    const d = daysTo(r[f.k]);
+    if (d == null) continue;
+    if (d < 0) out.push({ f, d, txt: `${f.ar}: منتهية منذ ${Math.abs(d)} يوم` });
+    else if (d <= EXPIRY_SOON) out.push({ f, d, txt: `${f.ar}: بعد ${d} يوم` });
+  }
+  return out;
+}
+
+/* ═════════════════ الحفظ ═════════════════ */
+let rows = [];
+let dirtyTimer = null;
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORE);
+    if (!raw) return [];
+    const box = JSON.parse(raw);
+    const list = Array.isArray(box) ? box : (box.rows || []);
+    return list.map(clean);
+  } catch (e) { toast("تعذّرت قراءة السجل المحفوظ — بُدئ سجل فارغ", "err"); return []; }
+}
+
+function clean(o = {}) {
+  const r = { id: o.id || uid() };
+  for (const f of F) {
+    let v = o[f.k];
+    if (f.t === "num") r[f.k] = v === "" || v == null ? 0 : num(v);
+    else if (f.t === "date") r[f.k] = toISO(v);
+    else r[f.k] = v == null ? "" : String(v).trim();
+  }
+  if (!r.status) r.status = STATUS[0];
+  return r;
+}
+
+function save() {
+  try {
+    localStorage.setItem(STORE, JSON.stringify({ v: 1, updated: new Date().toISOString(), rows }));
+    const t = new Date();
+    $("#saved").textContent = "حُفظ " + String(t.getHours()).padStart(2,"0") + ":" + String(t.getMinutes()).padStart(2,"0");
+    clearTimeout(dirtyTimer);
+    dirtyTimer = setTimeout(() => { $("#saved").textContent = ""; }, 4000);
+  } catch (e) {
+    toast("تعذّر الحفظ — قد تكون ذاكرة المتصفح ممتلئة. صدِّر نسخة احتياطية الآن.", "err");
+  }
+}
+
+/* ═════════════════ الجدول ═════════════════ */
+const view = { q: "", branch: "", status: "", alert: false, cols: "core", sort: "name", dir: 1 };
+
+const colsShown = () => F.filter(f => view.cols === "all" || f.col === 1);
+
+function matches(r) {
+  if (view.branch && r.branch !== view.branch) return false;
+  if (view.status && r.status !== view.status) return false;
+  if (view.alert && !alertsOf(r).length) return false;
+  if (!view.q) return true;
+  const hay = norm(F.map(f => r[f.k]).join(" ") + " " + fmtDate(r.startDate));
+  const bare = hay.replace(/\s+/g, "");
+  return view.q.split(" ").every(w => hay.includes(w) || bare.includes(w));
+}
+
+function sorted(list) {
+  const f = FMAP[view.sort];
+  return [...list].sort((a, b) => {
+    let x, y;
+    if (view.sort === "service") { x = a.startDate || "9999"; y = b.startDate || "9999"; }
+    else if (f && f.t === "num") { x = num(a[f.k]); y = num(b[f.k]); }
+    else if (f && f.t === "date") { x = a[f.k] || "9999"; y = b[f.k] || "9999"; }
+    else { x = norm(a[view.sort]); y = norm(b[view.sort]); }
+    if (x < y) return -view.dir;
+    if (x > y) return view.dir;
+    return 0;
+  });
+}
+
+function pillClass(f, v) {
+  if (!v) return "none";
+  const hi = f.hi ?? 3;
+  if (v >= hi * 2) return "l";
+  if (v >= hi) return "m";
+  return "n";
+}
+
+function cellHtml(r, f) {
+  const v = r[f.k];
+  if (f.cnt) {
+    const n = num(v);
+    return `<span class="pill ${pillClass(f, n)}">${n}</span>` +
+           `<button class="inc" data-inc="${f.k}" data-id="${r.id}" title="زيادة — ومع Shift إنقاص">+</button>`;
+  }
+  /* «14 MAR 2021» داخل صفحة RTL يُعاد ترتيبه إلى «MAR 2021 14»
+     ما لم يُعزَل التاريخ في جزيرة LTR. */
+  if (f.t === "date") return v ? `<bdi dir="ltr">${esc(fmtDate(v))}</bdi>` : `<span style="color:var(--ink-3)">${DASH}</span>`;
+  if (f.k === "status") {
+    const cls = v === STATUS[0] ? "on" : v === STATUS[4] ? "off" : "mid";
+    return `<span class="tag ${cls}">${esc(v || DASH)}</span>`;
+  }
+  if (f.k === "phone" && v) return `<a href="tel:${esc(latin(v).replace(/[^\d+]/g,""))}" style="color:inherit">${esc(v)}</a>`;
+  if (f.k === "name") {
+    const al = alertsOf(r);
+    const flag = al.length ? ` <span class="tag mid" title="${esc(al.map(a=>a.txt).join(" · "))}">تنبيه ${al.length}</span>` : "";
+    return esc(v || DASH) + flag;
+  }
+  return esc(v) || `<span style="color:var(--ink-3)">${DASH}</span>`;
+}
+
+function renderHead() {
+  const cols = colsShown();
+  const th = f => {
+    const on = view.sort === f.k;
+    const ar = on ? `<span class="ar">${view.dir === 1 ? "▲" : "▼"}</span>` : "";
+    return `<th data-sort="${f.k}" class="${f.cnt ? "num" : ""}">${esc(f.ar)} ${ar}</th>`;
+  };
+  let html = cols.map(th).join("");
+  if (view.cols === "all")
+    html += `<th data-sort="service">مدة الخدمة ${view.sort === "service" ? `<span class="ar">${view.dir===1?"▲":"▼"}</span>` : ""}</th>`;
+  html += `<th class="plain noprint"></th>`;
+  $("#thead").innerHTML = html;
+}
+
+function renderRows() {
+  const cols = colsShown();
+  const list = sorted(rows.filter(matches));
+  $("#stShown").textContent = list.length === rows.length
+    ? `${rows.length} موظف`
+    : `${list.length} من ${rows.length}`;
+
+  const body = list.map(r => {
+    let tds = cols.map(f =>
+      `<td class="${f.k === "name" ? "nm" : ""} ${f.cnt ? "num" : ""}">${cellHtml(r, f)}</td>`).join("");
+    if (view.cols === "all") tds += `<td>${esc(serviceText(r)) || DASH}</td>`;
+    tds += `<td class="noprint"><span class="rowbtns">
+      <button class="icon" data-edit="${r.id}" title="تعديل" aria-label="تعديل">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h4L20 8l-4-4L4 16v4Z"/></svg></button>
+      <button class="icon del" data-del="${r.id}" title="حذف" aria-label="حذف">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M9 7V5h6v2m-8 0 1 13h8l1-13"/></svg></button>
+      </span></td>`;
+    return `<tr data-row="${r.id}">${tds}</tr>`;
+  }).join("");
+
+  $("#tbody").innerHTML = body;
+  const none = $("#noRows");
+  none.hidden = list.length > 0;
+  none.textContent = rows.length === 0
+    ? "لا يوجد موظفون بعد — ابدأ بزر «موظف جديد» أو استورد ملف إكسل."
+    : "لا نتائج تطابق البحث أو التصفية.";
+}
+
+function renderTiles() {
+  const on = rows.filter(r => r.status === STATUS[0]).length;
+  const branches = new Set(rows.map(r => r.branch).filter(Boolean)).size;
+  const sum = k => rows.reduce((n, r) => n + num(r[k]), 0);
+  const alerted = rows.filter(r => alertsOf(r).length).length;
+  const tile = (v, k, s, cls = "") =>
+    `<div class="tile ${cls}"><span class="v">${v}</span><span class="k">${esc(k)}</span>${s ? `<span class="s">${esc(s)}</span>` : ""}</div>`;
+  $("#tiles").innerHTML = [
+    tile(rows.length, "موظف مسجَّل", on === rows.length ? "" : `${on} على رأس العمل`),
+    tile(branches, "فرع", ""),
+    tile(sum("absence"), "يوم غياب", "مجموع السجل"),
+    tile(sum("late"), "يوم تأخير", "مجموع السجل"),
+    tile(sum("violations"), "مخالفة", "مجموع السجل"),
+    tile(sum("warnings"), "إنذار", "مجموع السجل"),
+    alerted ? tile(alerted, "وثيقة تنتهي قريبًا", `خلال ${EXPIRY_SOON} يومًا أو منتهية`, "warn") : "",
+  ].join("");
+  $("#stCount").textContent = rows.length ? "" : "السجل فارغ";
+}
+
+function fillFilters() {
+  const opt = (v, txt, sel) => `<option value="${esc(v)}"${sel ? " selected" : ""}>${esc(txt)}</option>`;
+  const branches = [...new Set(rows.map(r => r.branch).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ar"));
+  $("#fBranch").innerHTML = opt("", "كل الفروع", !view.branch) + branches.map(b => opt(b, b, view.branch === b)).join("");
+  $("#fStatus").innerHTML = opt("", "كل الحالات", !view.status) + STATUS.map(s => opt(s, s, view.status === s)).join("");
+}
+
+function refresh() { fillFilters(); renderTiles(); renderHead(); renderRows(); }
+
+/* ═════════════════ النموذج ═════════════════ */
+let editing = null;
+
+function listFor(f) {
+  const vals = [...new Set(rows.map(r => r[f.k]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ar"));
+  if (!vals.length) return "";
+  const id = "dl_" + f.k;
+  return `<datalist id="${id}">${vals.map(v => `<option value="${esc(v)}">`).join("")}</datalist>`;
+}
+
+function openEdit(r) {
+  editing = r;
+  $("#dlgTitle").textContent = r ? (r.name || "تعديل موظف") : "موظف جديد";
+  $("#bDelOne").hidden = !r;
+  const val = f => r ? r[f.k] ?? "" : (f.dflt ?? (f.t === "num" ? 0 : ""));
+  $("#frmBody").innerHTML = GROUPS.map(g => {
+    const fs = F.filter(f => f.g === g);
+    if (!fs.length) return "";
+    return `<fieldset><legend>${esc(g)}</legend><div class="grid">` + fs.map(f => {
+      const v = val(f);
+      let input;
+      if (f.t === "select")
+        input = `<select data-k="${f.k}"><option value=""></option>` +
+                f.opts.map(o => `<option${o === v ? " selected" : ""}>${esc(o)}</option>`).join("") + `</select>`;
+      else if (f.t === "area")
+        input = `<textarea data-k="${f.k}" rows="2">${esc(v)}</textarea>`;
+      else if (f.t === "num")
+        input = `<input type="number" min="0" step="1" data-k="${f.k}" value="${esc(v || 0)}">`;
+      else {
+        const type = f.t === "date" ? "date" : f.t === "tel" ? "tel" : f.t === "email" ? "email" : "text";
+        const dl = f.list ? ` list="dl_${f.k}"` : "";
+        input = `<input type="${type}"${dl} data-k="${f.k}" value="${esc(v)}"${f.req ? " required" : ""}>`;
+      }
+      return `<label class="fld${f.t === "area" ? " wide" : ""}"><span>${esc(f.ar)}${f.req ? " *" : ""}</span>${input}${f.list ? listFor(f) : ""}</label>`;
+    }).join("") + `</div></fieldset>`;
+  }).join("");
+  $("#dlgEdit").showModal();
+  setTimeout(() => { const el = $('#frmBody [data-k="name"]'); if (el && !r) el.focus(); }, 30);
+}
+
+function readForm() {
+  const o = {};
+  for (const el of $("#frmBody").querySelectorAll("[data-k]")) {
+    const f = FMAP[el.dataset.k];
+    o[f.k] = f.t === "num" ? Math.max(0, num(el.value)) : el.value.trim();
+  }
+  return o;
+}
+
+function commitForm() {
+  const o = readForm();
+  if (!o.name && !o.empNo) { toast("اكتب الاسم أو الرقم الوظيفي على الأقل", "err"); return; }
+  const dup = o.empNo && rows.find(r => r.empNo && key(r.empNo) === key(o.empNo) && r !== editing);
+  if (dup) { toast(`الرقم الوظيفي ${o.empNo} مستخدم لدى ${dup.name || "موظف آخر"}`, "err"); return; }
+  if (editing) Object.assign(editing, clean({ ...editing, ...o }));
+  else rows.push(clean(o));
+  save(); refresh();
+  $("#dlgEdit").close();
+  toast(editing ? "حُفظ التعديل" : "أُضيف الموظف");
+  editing = null;
+}
+
+function removeRow(id) {
+  const i = rows.findIndex(r => r.id === id);
+  if (i < 0) return;
+  const r = rows[i];
+  if (!confirm(`حذف «${r.name || r.empNo || "السجل"}» نهائيًا؟`)) return;
+  rows.splice(i, 1);
+  save(); refresh();
+  toast("حُذف السجل");
+}
+
+/* ═════════════════ ZIP + قراءة الجداول ═════════════════ */
+const CRC = (() => { const t = new Uint32Array(256);
+  for (let i = 0; i < 256; i++){ let c = i; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c>>>1) : c>>>1; t[i] = c>>>0; }
+  return t; })();
+const crc32 = u8 => { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = CRC[(c ^ u8[i]) & 255] ^ (c>>>8); return (c ^ 0xFFFFFFFF)>>>0; };
+const pipe = (u8, tr) => new Response(new Blob([u8]).stream().pipeThrough(tr)).arrayBuffer().then(b => new Uint8Array(b));
+
+async function zipRead(ab) {
+  const u8 = new Uint8Array(ab), dv = new DataView(ab);
+  let e = -1;
+  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 66000); i--) if (dv.getUint32(i, true) === 0x06054b50) { e = i; break; }
+  if (e < 0) throw new Error("الملف ليس حزمة ZIP صالحة");
+  const count = dv.getUint16(e + 10, true);
+  let off = dv.getUint32(e + 16, true);
+  const dec = new TextDecoder(), map = new Map();
+  for (let n = 0; n < count; n++) {
+    if (dv.getUint32(off, true) !== 0x02014b50) break;
+    const method = dv.getUint16(off + 10, true), csize = dv.getUint32(off + 20, true);
+    const nl = dv.getUint16(off + 28, true), el = dv.getUint16(off + 30, true), cl = dv.getUint16(off + 32, true);
+    const lho = dv.getUint32(off + 42, true);
+    const name = dec.decode(u8.subarray(off + 46, off + 46 + nl));
+    if (!name.endsWith("/")) map.set(name, { method, csize, lho });
+    off += 46 + nl + el + cl;
+  }
+  const out = new Map();
+  for (const [name, it] of map) {
+    const nl = dv.getUint16(it.lho + 26, true), el = dv.getUint16(it.lho + 28, true);
+    const raw = u8.subarray(it.lho + 30 + nl + el, it.lho + 30 + nl + el + it.csize);
+    if (it.method === 0) out.set(name, raw);
+    else if (it.method === 8) out.set(name, await pipe(raw, new DecompressionStream("deflate-raw")));
+    else throw new Error("ضغط غير مدعوم داخل الملف");
+  }
+  return out;
+}
+
+async function zipWrite(parts, mime) {
+  const enc = new TextEncoder(), locals = [], centrals = [];
+  const now = new Date();
+  const time = ((now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1)) & 0xFFFF;
+  const date = (((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate()) & 0xFFFF;
+  let offset = 0;
+  for (const [name, data0] of parts) {
+    const data = typeof data0 === "string" ? enc.encode(data0) : data0;
+    const nm = enc.encode(name), crc = crc32(data);
+    let body = data, method = 0;
+    try { const d = await pipe(data, new CompressionStream("deflate-raw")); if (d.length < data.length) { body = d; method = 8; } } catch {}
+    const lh = new Uint8Array(30 + nm.length), lv = new DataView(lh.buffer);
+    lv.setUint32(0, 0x04034b50, true); lv.setUint16(4, 20, true); lv.setUint16(6, 0x0800, true);
+    lv.setUint16(8, method, true); lv.setUint16(10, time, true); lv.setUint16(12, date, true);
+    lv.setUint32(14, crc, true); lv.setUint32(18, body.length, true); lv.setUint32(22, data.length, true);
+    lv.setUint16(26, nm.length, true); lh.set(nm, 30);
+    locals.push(lh, body);
+    const ch = new Uint8Array(46 + nm.length), cv = new DataView(ch.buffer);
+    cv.setUint32(0, 0x02014b50, true); cv.setUint16(4, 20, true); cv.setUint16(6, 20, true);
+    cv.setUint16(8, 0x0800, true); cv.setUint16(10, method, true);
+    cv.setUint16(12, time, true); cv.setUint16(14, date, true);
+    cv.setUint32(16, crc, true); cv.setUint32(20, body.length, true); cv.setUint32(24, data.length, true);
+    cv.setUint16(28, nm.length, true); cv.setUint32(42, offset, true); ch.set(nm, 46);
+    centrals.push(ch);
+    offset += lh.length + body.length;
+  }
+  const cd = centrals.reduce((n, c) => n + c.length, 0);
+  const eo = new Uint8Array(22), ev = new DataView(eo.buffer);
+  ev.setUint32(0, 0x06054b50, true);
+  ev.setUint16(8, parts.size, true); ev.setUint16(10, parts.size, true);
+  ev.setUint32(12, cd, true); ev.setUint32(16, offset, true);
+  return new Blob([...locals, ...centrals, eo], { type: mime });
+}
+
+function download(blob, name) {
+  const url = URL.createObjectURL(blob), a = document.createElement("a");
+  a.href = url; a.download = name; a.style.display = "none";
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+const colIdx = ref => { let n = 0; for (const ch of ref) { const c = ch.charCodeAt(0); if (c >= 65 && c <= 90) n = n * 26 + (c - 64); else break; } return n - 1; };
+const RT = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+
+async function readSheet(file) {
+  if (/\.csv$/i.test(file.name)) {
+    let txt = await file.text();
+    if (txt.charCodeAt(0) === 0xFEFF) txt = txt.slice(1);
+    const grid = [];
+    let row = [], cell = "", q = false;
+    for (let i = 0; i < txt.length; i++) {
+      const ch = txt[i];
+      if (q) { if (ch === '"') { if (txt[i+1] === '"') { cell += '"'; i++; } else q = false; } else cell += ch; }
+      else if (ch === '"') q = true;
+      else if (ch === ",") { row.push(cell); cell = ""; }
+      else if (ch === "\n") { row.push(cell); grid.push(row); row = []; cell = ""; }
+      else if (ch !== "\r") cell += ch;
+    }
+    if (cell !== "" || row.length) { row.push(cell); grid.push(row); }
+    return grid.map(r => r.map(c => c.trim()));
+  }
+  const parts = await zipRead(await file.arrayBuffer());
+  const dec = new TextDecoder();
+  const doc = n => { const b = parts.get(n); return b ? new DOMParser().parseFromString(dec.decode(b), "application/xml") : null; };
+  const shared = [];
+  const ss = doc("xl/sharedStrings.xml");
+  if (ss) for (const si of ss.getElementsByTagName("si")) {
+    let s = "";
+    for (const t of si.getElementsByTagName("t")) if (t.parentNode.nodeName !== "rPh") s += t.textContent;
+    shared.push(s);
+  }
+  let path = null;
+  const wb = doc("xl/workbook.xml"), rels = doc("xl/_rels/workbook.xml.rels");
+  const sh = wb && wb.getElementsByTagName("sheet")[0];
+  if (sh && rels) {
+    const rid = sh.getAttribute("r:id") || sh.getAttributeNS(RT, "id");
+    for (const r of rels.getElementsByTagName("Relationship"))
+      if (r.getAttribute("Id") === rid) path = "xl/" + r.getAttribute("Target").replace(/^\/?xl\//, "").replace(/^\//, "");
+  }
+  if (!path || !parts.has(path)) path = [...parts.keys()].find(n => /^xl\/worksheets\/[^/]+\.xml$/.test(n));
+  if (!path) throw new Error("لا توجد ورقة عمل داخل الملف");
+  const ws = doc(path), grid = [];
+  for (const row of ws.getElementsByTagName("row")) {
+    const cells = [];
+    for (const c of row.getElementsByTagName("c")) {
+      const r = c.getAttribute("r"), i = r ? colIdx(r) : cells.length, t = c.getAttribute("t");
+      let v = "";
+      if (t === "inlineStr") v = [...c.getElementsByTagName("t")].map(x => x.textContent).join("");
+      else { const vn = c.getElementsByTagName("v")[0], raw = vn ? vn.textContent : "";
+             v = t === "s" ? (shared[+raw] ?? "") : raw; }
+      cells[i] = String(v).trim();
+    }
+    grid.push(cells);
+  }
+  return grid;
+}
+
+/* ═════════════════ التصدير ═════════════════ */
+const exportRows = () => sorted(rows.filter(matches));
+
+function tableData() {
+  const heads = F.map(f => f.ar).concat("مدة الخدمة");
+  const body = exportRows().map(r =>
+    F.map(f => f.t === "num" ? num(r[f.k]) : (f.t === "date" ? (r[f.k] || "") : (r[f.k] || "")))
+     .concat(serviceText(r)));
+  return { heads, body };
+}
+
+function exportCsv() {
+  const { heads, body } = tableData();
+  const q = v => { const s = String(v ?? ""); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const csv = [heads, ...body].map(r => r.map(q).join(",")).join("\r\n");
+  download(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }), fileName("csv"));
+  toast(`صُدِّر ${body.length} صفًا بصيغة CSV`);
+}
+
+const colRef = i => { let s = "", n = i + 1; while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = (n - m - 1) / 26; } return s; };
+
+async function exportXlsx() {
+  const { heads, body } = tableData();
+  const cell = (v, r, c, st) => {
+    if (v === "" || v == null) return "";
+    const ref = colRef(c) + r, s = st ? ` s="${st}"` : "";
+    if (typeof v === "number" && isFinite(v)) return `<c r="${ref}"${s}><v>${v}</v></c>`;
+    return `<c r="${ref}"${s} t="inlineStr"><is><t xml:space="preserve">${esc(v)}</t></is></c>`;
+  };
+  const rowsXml = [`<row r="1">${heads.map((h, i) => cell(h, 1, i, 1)).join("")}</row>`]
+    .concat(body.map((r, ri) => `<row r="${ri + 2}">${r.map((v, i) => cell(v, ri + 2, i, 0)).join("")}</row>`)).join("");
+  const cols = heads.map((h, i) => `<col min="${i+1}" max="${i+1}" width="${Math.min(34, Math.max(12, h.length + 6))}" customWidth="1"/>`).join("");
+  const last = colRef(heads.length - 1);
+  const NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
+  const parts = new Map([
+    ["[Content_Types].xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`],
+    ["_rels/.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${RT}/officeDocument" Target="xl/workbook.xml"/></Relationships>`],
+    ["xl/_rels/workbook.xml.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${RT}/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="${RT}/styles" Target="styles.xml"/></Relationships>`],
+    ["xl/workbook.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="${NS}" xmlns:r="${RT}"><sheets><sheet name="الموظفون" sheetId="1" r:id="rId1"/></sheets></workbook>`],
+    ["xl/styles.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="${NS}"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF0E6B59"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`],
+    ["xl/worksheets/sheet1.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="${NS}"><sheetViews><sheetView rightToLeft="1" tabSelected="1" workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>${cols}</cols><sheetData>${rowsXml}</sheetData><autoFilter ref="A1:${last}${body.length + 1}"/></worksheet>`],
+  ]);
+  const blob = await zipWrite(parts, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  download(blob, fileName("xlsx"));
+  toast(`صُدِّر ${body.length} صفًا بصيغة Excel`);
+}
+
+function fileName(ext) {
+  const d = new Date();
+  const stamp = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  return `Employees_${stamp}.${ext}`;
+}
+
+function backup() {
+  download(new Blob([JSON.stringify({ v: 1, updated: new Date().toISOString(), rows }, null, 2)],
+                    { type: "application/json" }), fileName("json"));
+  toast("نُزّلت نسخة احتياطية كاملة");
+}
+
+async function restore(file) {
+  try {
+    const box = JSON.parse(await file.text());
+    const list = Array.isArray(box) ? box : box.rows;
+    if (!Array.isArray(list)) throw new Error("bad");
+    if (rows.length && !confirm(`استعادة النسخة تستبدل السجل الحالي (${rows.length} موظفًا). متابعة؟`)) return;
+    rows = list.map(clean);
+    save(); refresh();
+    toast(`استُعيد ${rows.length} موظفًا`);
+  } catch (e) { toast("الملف ليس نسخة احتياطية صالحة", "err"); }
+}
+
+/* ═════════════════ الاستيراد ═════════════════ */
+let pending = null;   // { headers, body, guess }
+
+function findHeaderRow(grid) {
+  let best = 0, bestScore = -1;
+  for (let i = 0; i < Math.min(grid.length, 25); i++) {
+    const cells = (grid[i] || []).filter(c => c !== "" && c != null);
+    if (cells.length < 2) continue;
+    const hit = cells.filter(c => F.some(f => f.h.includes(key(c)))).length;
+    const score = cells.length + hit * 4;
+    if (score > bestScore) { bestScore = score; best = i; }
+  }
+  return best;
+}
+
+/* المطابقة على مرحلتين: التامة أولًا لكل الحقول ثم الجزئية.
+   لولا ذلك لالتقط «رقم الهوية» عمود `Iqama Expiry` بمطابقة جزئية
+   قبل أن يصل الدور إلى «انتهاء الهوية» صاحب المطابقة التامة. */
+function guessMap(headers) {
+  const used = new Set(), map = {};
+  const take = (f, idx) => { map[f.k] = idx; used.add(idx); };
+  for (const f of F) {
+    const idx = headers.findIndex((h, i) => !used.has(i) && h && f.h.includes(key(h)));
+    if (idx >= 0) take(f, idx);
+  }
+  for (const f of F) {
+    if (map[f.k] != null) continue;
+    const idx = headers.findIndex((h, i) => !used.has(i) && h && f.h.some(x => x.length > 3 && key(h).includes(x)));
+    if (idx >= 0) take(f, idx);
+  }
+  return map;
+}
+
+async function pickFile(file) {
+  try {
+    const grid = await readSheet(file);
+    const hr = findHeaderRow(grid);
+    const headers = (grid[hr] || []).map(h => String(h ?? "").trim());
+    const body = grid.slice(hr + 1).filter(r => (r || []).some(c => c !== "" && c != null));
+    if (!headers.length || !body.length) { toast("لم يُعثر على بيانات داخل الملف", "err"); return; }
+    pending = { headers, body, map: guessMap(headers) };
+    openMap(file.name);
+  } catch (e) { toast("تعذّرت قراءة الملف: " + e.message, "err"); }
+}
+
+function openMap(fname) {
+  const { headers, body, map } = pending;
+  $("#mapInfo").innerHTML = `الملف <b>${esc(fname)}</b> — ${body.length} صفًا و${headers.length} عمودًا. راجع الربط ثم استورد.`;
+  const opts = i => headers.map((h, j) =>
+    `<option value="${j}"${map[i] === j ? " selected" : ""}>${esc(h || "عمود " + (j + 1))}</option>`).join("");
+  $("#mapGrid").innerHTML = F.map(f =>
+    `<label class="fld"><span>${esc(f.ar)}</span><select data-map="${f.k}">
+       <option value="">— بلا —</option>${opts(f.k)}</select></label>`).join("");
+  $("#dlgMap").showModal();
+}
+
+function doImport() {
+  const map = {};
+  for (const el of $("#mapGrid").querySelectorAll("[data-map]"))
+    if (el.value !== "") map[el.dataset.map] = +el.value;
+  if (!Object.keys(map).length) { toast("اربط عمودًا واحدًا على الأقل", "err"); return; }
+
+  const mode = $("#mapMode").value;
+  const incoming = pending.body.map(r => {
+    const o = {};
+    for (const [k, i] of Object.entries(map)) {
+      const f = FMAP[k], v = r[i];
+      o[k] = f.t === "num" ? num(v) : f.t === "date" ? toISO(v) : String(v ?? "").trim();
+    }
+    return o;
+  }).filter(o => o.name || o.empNo);
+
+  if (!incoming.length) { toast("لا صفوف صالحة — لا اسم ولا رقم وظيفي", "err"); return; }
+
+  let added = 0, updated = 0;
+  if (mode === "replace") {
+    if (!confirm(`استبدال السجل الحالي (${rows.length} موظفًا) بـ ${incoming.length} من الملف؟`)) return;
+    rows = incoming.map(clean); added = rows.length;
+  } else {
+    for (const o of incoming) {
+      const hit = mode === "merge" && o.empNo && rows.find(r => r.empNo && key(r.empNo) === key(o.empNo));
+      if (hit) {
+        for (const [k, v] of Object.entries(o)) if (v !== "" && v != null) hit[k] = v;
+        Object.assign(hit, clean(hit));
+        updated++;
+      } else { rows.push(clean(o)); added++; }
+    }
+  }
+  save(); refresh();
+  $("#dlgMap").close();
+  pending = null;
+  toast(`استُورد الملف — ${added} جديدًا${updated ? ` و${updated} محدَّثًا` : ""}`);
+}
+
+/* ═════════════════ الربط ═════════════════ */
+$("#bAdd").addEventListener("click", () => openEdit(null));
+$("#bSave").addEventListener("click", commitForm);
+$("#frm").addEventListener("submit", e => { if (e.submitter && e.submitter.value === "cancel") editing = null; });
+$("#frmBody").addEventListener("keydown", e => {
+  if (e.key === "Enter" && e.target.tagName !== "TEXTAREA") { e.preventDefault(); commitForm(); }
+});
+$("#bDelOne").addEventListener("click", () => {
+  if (!editing) return;
+  const id = editing.id;
+  $("#dlgEdit").close(); editing = null;
+  removeRow(id);
+});
+
+$("#tbody").addEventListener("click", e => {
+  const inc = e.target.closest("[data-inc]");
+  if (inc) {
+    const r = rows.find(x => x.id === inc.dataset.id);
+    if (r) { r[inc.dataset.inc] = Math.max(0, num(r[inc.dataset.inc]) + (e.shiftKey ? -1 : 1)); save(); refresh(); }
+    return;
+  }
+  const ed = e.target.closest("[data-edit]");
+  if (ed) { openEdit(rows.find(x => x.id === ed.dataset.edit)); return; }
+  const del = e.target.closest("[data-del]");
+  if (del) { removeRow(del.dataset.del); return; }
+  const tr = e.target.closest("[data-row]");
+  if (tr && !e.target.closest("a")) openEdit(rows.find(x => x.id === tr.dataset.row));
+});
+
+$("#thead").addEventListener("click", e => {
+  const th = e.target.closest("[data-sort]"); if (!th) return;
+  const k = th.dataset.sort;
+  if (view.sort === k) view.dir = -view.dir; else { view.sort = k; view.dir = 1; }
+  renderHead(); renderRows();
+});
+
+let qTimer = null;
+$("#q").addEventListener("input", e => {
+  clearTimeout(qTimer);
+  qTimer = setTimeout(() => { view.q = norm(e.target.value); renderRows(); }, 90);
+});
+$("#fBranch").addEventListener("change", e => { view.branch = e.target.value; renderRows(); });
+$("#fStatus").addEventListener("change", e => { view.status = e.target.value; renderRows(); });
+$("#fAlert").addEventListener("change", e => { view.alert = e.target.checked; renderRows(); });
+$("#fView").addEventListener("change", e => { view.cols = e.target.value; renderHead(); renderRows(); });
+
+$("#bImport").addEventListener("click", () => $("#fileIn").click());
+$("#fileIn").addEventListener("change", e => { const f = e.target.files[0]; e.target.value = ""; if (f) pickFile(f); });
+$("#bRestore").addEventListener("click", () => $("#fileJson").click());
+$("#fileJson").addEventListener("change", e => { const f = e.target.files[0]; e.target.value = ""; if (f) restore(f); });
+$("#bDoImport").addEventListener("click", doImport);
+$("#bCancelImport").addEventListener("click", () => { $("#dlgMap").close(); pending = null; });
+$("#bCsv").addEventListener("click", exportCsv);
+$("#bXlsx").addEventListener("click", () => exportXlsx().catch(err => toast("تعذّر التصدير: " + err.message, "err")));
+$("#bBackup").addEventListener("click", backup);
+$("#bPrint").addEventListener("click", () => window.print());
+$("#bWipe").addEventListener("click", () => {
+  if (!rows.length) { toast("السجل فارغ أصلًا"); return; }
+  if (!confirm(`حذف كل السجل (${rows.length} موظفًا) نهائيًا؟ نزِّل نسخة احتياطية أولًا إن أردت.`)) return;
+  rows = []; save(); refresh();
+  toast("مُسح السجل بالكامل", "warn");
+});
+
+document.addEventListener("keydown", e => {
+  if (e.key === "/" && !/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) { e.preventDefault(); $("#q").focus(); }
+  if (e.key.toLowerCase() === "n" && (e.ctrlKey || e.metaKey) && !e.shiftKey) { e.preventDefault(); openEdit(null); }
+});
+
+window.addEventListener("beforeunload", () => { if (dirtyTimer) save(); });
+
+rows = load();
+refresh();
+if (!rows.length) $("#saved").textContent = "";
+})();
+</script>
+</html>
