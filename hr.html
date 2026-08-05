@@ -988,8 +988,10 @@ const L = {
                     "Record loaded for editing — change what you need, then press Add to save the update."],
   "h.exists":      ["الرقم {0} مسجَّل باسم «{1}» — «إضافة» ستحدّث بياناته.",
                     "ID {0} already belongs to “{1}” — Add will update that record."],
-  "h.found":       ["طابق البحثَ {0} سجلًا — النتائج في الجدول تحت النموذج.",
-                    "{0} records matched — see the table below the form."],
+  "h.filled":      ["ظهرت بيانات «{0}» في الخانات — عدّل ما تشاء ثم اضغط «إضافة» لحفظ التعديل.",
+                    "“{0}” is now in the fields — edit what you need, then press Add to save."],
+  "h.found":       ["طابق البحثَ {0} سجلًا — اضغط أي صف في الجدول لتظهر بياناته في الخانات.",
+                    "{0} records matched — click a row in the table to load it into the fields."],
   "h.none":        ["لا سجل يطابق هذه الشروط.", "No record matches these criteria."],
   "h.all":         ["عُرضت كل السجلات — املأ أي خانة ثم اضغط «بحث» للتصفية.",
                     "Showing all records — fill any field then press Search to filter."],
@@ -1576,7 +1578,9 @@ function openModal(id) {
 }
 const closeModal = id => { $(id).hidden = true; };
 
-/* بحث: كل خانة مملوءة شرط، والنص يُطابَق جزئيًا والعدد يُطابَق تمامًا */
+/* بحث: كل خانة مملوءة شرط، والنص يُطابَق جزئيًا والعدد يُطابَق تمامًا.
+   وإن انطبق الشرط على سجل واحد — كالبحث بالرقم الوظيفي — مُلئت خانات
+   النموذج ببياناته كاملة، وإلا فالجدول يعرض المطابقين لتختار منهم. */
 function doSearch() {
   const v = formValues(), crit = {};
   for (const f of FIELDS) {
@@ -1587,11 +1591,22 @@ function doSearch() {
   }
   state.crit = crit;
   state.shown = ROWS_PAGE;
+  const hits = matches();
+
+  if (!Object.keys(crit).length) { render(); hint(t("h.all")); return; }
+
+  if (hits.length === 1) {
+    const r = hits[0];
+    fillForm(r);                 /* البيانات تنزل في الخانات لا تحت الصفحة */
+    state.current = r.id;
+    state.hit = r.id;
+    render();
+    hint(t("h.filled", r.name || r.id), "warn");
+    return;
+  }
+
   render();
-  const n = matches().length;
-  if (!Object.keys(crit).length) hint(t("h.all"));
-  else if (n) hint(t("h.found", fmt(n)));
-  else hint(t("h.none"), "bad");
+  hint(hits.length ? t("h.found", fmt(hits.length)) : t("h.none"), hits.length ? "" : "bad");
   $("#results").scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
