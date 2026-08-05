@@ -173,67 +173,45 @@ button,input,select,textarea{ font:inherit; color:inherit; }
 }
 .count b{ color:var(--ink); font-weight:700; }
 
-/* ═══════════════ شبكة البطاقات ═══════════════ */
-.cards{ display:grid; grid-template-columns:repeat(auto-fill, minmax(272px, 1fr)); gap:14px; margin-top:20px; }
-.ecard{
-  position:relative; text-align:start; cursor:pointer; overflow:hidden;
-  background:var(--card); border:1px solid var(--line); border-top:3px solid var(--c, var(--brand));
-  border-radius:14px; box-shadow:var(--shadow); padding:15px 16px 13px;
-  display:flex; flex-direction:column; gap:12px;
-  transition:transform .13s ease, box-shadow .13s ease, border-color .13s ease;
+/* ═══════════════ جدول القاعدة ═══════════════ */
+.sheet{ max-width:1180px; margin:28px auto 0; }
+.sheet-head{ display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; margin-bottom:10px; }
+.sheet-head h2{ font-size:16px; }
+.count{ margin:0; font-size:12.5px; color:var(--ink-3); }
+.count b{ color:var(--ink); font-weight:700; }
+.tbl{
+  overflow:auto; max-height:66vh; background:var(--card);
+  border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow);
 }
-.ecard:hover{ transform:translateY(-2px); box-shadow:var(--shadow-lg); }
-.ecard:focus-visible{ outline:2px solid var(--brand); outline-offset:2px; }
-.ecard .head{ display:flex; align-items:center; gap:10px; min-width:0; padding-inline-end:34px; }
-.ecard .file{
-  position:absolute; inset-inline-end:12px; top:13px; width:28px; height:28px;
-  display:grid; place-items:center; border-radius:8px; cursor:pointer;
+table.db{ width:100%; min-width:1580px; border-collapse:separate; border-spacing:0; font-size:12.5px; }
+table.db thead th{
+  position:sticky; top:0; z-index:2; background:var(--sunk); text-align:start;
+  padding:8px 10px; border-bottom:1px solid var(--line); white-space:nowrap;
+  font-family:var(--f-display); font-size:11px; font-weight:700; color:var(--ink-2);
+}
+table.db thead th small{ display:block; font-family:var(--f-mono); font-size:9.5px; font-weight:400; color:var(--ink-3); }
+table.db thead th.key{ color:var(--brand); }
+table.db thead th.act{ width:40px; }
+table.db td{ padding:7px 10px; border-bottom:1px solid var(--line-2); white-space:nowrap; }
+table.db td.empty{ color:var(--ink-3); }
+table.db td.br{ border-inline-start:3px solid var(--c, transparent); }
+table.db tbody tr{ cursor:pointer; }
+table.db tbody tr:hover td{ background:var(--sunk); }
+table.db tbody tr:last-child td{ border-bottom:0; }
+table.db tbody tr.hit td{ background:var(--brand-soft); }
+table.db tbody tr.hit td:first-child{ box-shadow:inset 3px 0 0 var(--brand); }
+.rowfile{
+  width:26px; height:26px; display:grid; place-items:center; border-radius:7px; cursor:pointer;
   border:1px solid var(--line); background:var(--card); color:var(--ink-3);
 }
-.ecard .file:hover{ background:var(--brand-soft); color:var(--brand); border-color:var(--brand); }
-.ecard .file svg{ width:14px; height:14px; }
-.av{
-  width:40px; height:40px; flex:none; border-radius:11px; display:grid; place-items:center;
-  font-family:var(--f-display); font-weight:700; font-size:14px; color:var(--ink);
-  background:color-mix(in srgb, var(--c, var(--brand)) 20%, var(--card));
-  box-shadow:inset 0 0 0 1.5px color-mix(in srgb, var(--c, var(--brand)) 55%, transparent);
-}
-.av.lg{ width:64px; height:64px; border-radius:18px; font-size:22px; }
-.ecard .head .who{ min-width:0; }
-.ecard .head b{ display:block; font-family:var(--f-display); font-size:14.5px; line-height:1.4;
-  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.ecard .head small{ display:block; color:var(--ink-3); font-size:11.5px; }
-.chips{ display:flex; gap:6px; flex-wrap:wrap; }
-.chip{
-  display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:600;
-  padding:3px 10px; border-radius:999px; background:var(--sunk);
-  border:1px solid var(--line); color:var(--ink-2); white-space:nowrap;
-}
-.chip .dot{ width:7px; height:7px; border-radius:50%; background:var(--tone, var(--ink-3)); flex:none; }
-
-/* شبكة الحقول داخل البطاقة وداخل الملف */
-.kv{ display:grid; grid-template-columns:repeat(auto-fit, minmax(118px, 1fr)); gap:7px; }
-.kv > div{ background:var(--sunk); border-radius:9px; padding:7px 10px; min-width:0; }
-.kv dt{ font-size:10.5px; color:var(--ink-3); font-weight:600; margin:0 0 1px; }
-.kv dd{ margin:0; font-size:12.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.kv dd.none{ color:var(--ink-3); font-weight:400; }
-.ecard .kv{ grid-template-columns:repeat(2, minmax(0,1fr)); }
-.ecard .kv > div.wide{ grid-column:1 / -1; }
-.badges{ display:flex; gap:5px; flex-wrap:wrap; border-top:1px solid var(--line-2); padding-top:10px; margin-top:auto; }
-.badge{
-  display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700;
-  padding:3px 9px; border-radius:7px;
-  background:var(--tone-soft); color:var(--tone-ink); border:1px solid color-mix(in srgb, var(--tone) 30%, transparent);
-}
-.badge em{ font-style:normal; font-weight:600; opacity:.85; }
-.badge.clean{ background:var(--good-soft); color:var(--good); border-color:color-mix(in srgb, var(--good) 30%, transparent); }
-.t-warn{ --tone:var(--warn); --tone-soft:var(--warn-soft); --tone-ink:var(--warn); }
-.t-serious{ --tone:var(--serious); --tone-soft:var(--serious-soft); --tone-ink:var(--serious); }
-.t-crit{ --tone:var(--crit); --tone-soft:var(--crit-soft); --tone-ink:var(--crit); }
-.t-good{ --tone:var(--good); --tone-soft:var(--good-soft); --tone-ink:var(--good); }
-.t-brand{ --tone:var(--brand); --tone-soft:var(--brand-soft); --tone-ink:var(--brand-ink); }
-
-.more{ display:flex; justify-content:center; margin-top:22px; }
+.rowfile:hover{ background:var(--brand-soft); color:var(--brand); border-color:var(--brand); }
+.rowfile svg{ width:13px; height:13px; }
+.flagcell{ font-family:var(--f-mono); font-weight:700; }
+.flagcell.warn{ color:var(--warn); }
+.flagcell.serious{ color:var(--serious); }
+.flagcell.crit{ color:var(--crit); }
+.more{ display:flex; justify-content:center; margin-top:16px; }
+.dbnote{ font-size:12px; color:var(--ink-3); margin:12px 0 0; }
 
 /* ═══════════════ الحالات الفارغة ═══════════════ */
 .state{
@@ -263,26 +241,7 @@ button,input,select,textarea{ font:inherit; color:inherit; }
 #mView{ z-index:80; }
 #mEmp{ z-index:90; }   /* نموذج الإدخال يعلو ملف الموظف الذي فُتح منه */
 
-/* ═══════════════ شاشة القاعدة ═══════════════ */
-.dbmeta{ display:grid; grid-template-columns:repeat(auto-fit, minmax(148px,1fr)); gap:10px; margin-bottom:16px; }
-.dbmeta > div{ background:var(--sunk); border:1px solid var(--line); border-radius:11px; padding:10px 12px; min-width:0; }
-.dbmeta dt{ font-size:11px; color:var(--ink-3); font-weight:600; margin-bottom:1px; }
-.dbmeta dd{ margin:0; font-size:13px; font-weight:700; line-height:1.45; overflow-wrap:anywhere; }
-.tbl{ overflow:auto; border:1px solid var(--line); border-radius:12px; max-height:58vh; background:var(--card); }
-table.db{ width:100%; min-width:1560px; border-collapse:separate; border-spacing:0; font-size:12.5px; }
-table.db thead th{
-  position:sticky; top:0; z-index:2; background:var(--sunk); text-align:start;
-  padding:8px 10px; border-bottom:1px solid var(--line); white-space:nowrap;
-  font-family:var(--f-display); font-size:11px; font-weight:700; color:var(--ink-2);
-}
-table.db thead th small{ display:block; font-family:var(--f-mono); font-size:9.5px; font-weight:400; color:var(--ink-3); }
-table.db thead th.key{ color:var(--brand); }
-table.db td{ padding:7px 10px; border-bottom:1px solid var(--line-2); white-space:nowrap; }
-table.db td.empty{ color:var(--ink-3); }
-table.db tbody tr{ cursor:pointer; }
-table.db tbody tr:hover td{ background:var(--sunk); }
-table.db tbody tr:last-child td{ border-bottom:0; }
-.dbnote{ font-size:12px; color:var(--ink-3); margin:12px 0 0; }
+
 .mhead{
   display:flex; align-items:center; gap:12px; padding:15px 20px;
   border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--card); z-index:2;
@@ -406,7 +365,7 @@ input[aria-invalid="true"]{ border-color:var(--crit); background:var(--crit-soft
 @media (max-width:600px){
   .appbar-in{ padding:9px 14px; }
   .wrap{ padding:18px 14px 70px; }
-  .cards{ grid-template-columns:1fr; }
+  .sheet{ margin-top:20px; }
 }
 </style>
 
@@ -418,10 +377,6 @@ input[aria-invalid="true"]{ border-color:var(--crit); background:var(--crit-soft
     </div>
     <span class="grow"></span>
     <div class="tools">
-      <button class="tbtn" id="btnDb" title="عرض قاعدة البيانات">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5.5" rx="8" ry="3"/><path d="M4 5.5v13c0 1.7 3.6 3 8 3s8-1.3 8-3v-13"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>
-        قاعدة البيانات
-      </button>
       <button class="tbtn" id="btnImport" title="استيراد من إكسل">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m8 11 4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
         استيراد
@@ -455,31 +410,20 @@ input[aria-invalid="true"]{ border-color:var(--crit); background:var(--crit-soft
     </div>
   </section>
 
-  <p class="count" id="count"></p>
-  <div id="results"></div>
+  <section class="sheet">
+    <div class="sheet-head">
+      <h2>جدول القاعدة</h2>
+      <p class="count" id="count"></p>
+      <span class="grow"></span>
+      <button class="btn" id="dbXlsx">تحميل ‎.xlsx‎</button>
+      <button class="btn" id="dbJson">نسخة ‎.json‎</button>
+    </div>
+    <div id="results"></div>
+  </section>
 </main>
 
 <div id="tip" role="status" aria-live="polite"></div>
 <div id="toasts" aria-live="polite"></div>
-
-<!-- ═══════════ قاعدة البيانات ═══════════ -->
-<div class="modal" id="mDb" hidden>
-  <div class="veil" data-close></div>
-  <div class="box full" role="dialog" aria-modal="true" aria-labelledby="mDbTitle">
-    <div class="mhead">
-      <h3 id="mDbTitle">قاعدة البيانات</h3>
-      <span class="grow"></span>
-      <button class="btn icon ghost" data-close aria-label="إغلاق">✕</button>
-    </div>
-    <div class="mbody" id="dbHost"></div>
-    <div class="mfoot">
-      <button class="btn primary" id="dbXlsx">تحميل القاعدة ‎.xlsx‎</button>
-      <button class="btn" id="dbJson">نسخة احتياطية ‎.json‎</button>
-      <span class="grow"></span>
-      <button class="btn" id="dbNew">صف جديد</button>
-    </div>
-  </div>
-</div>
 
 <!-- ═══════════ ملف الموظف ═══════════ -->
 <div class="modal" id="mView" hidden>
@@ -1089,14 +1033,15 @@ function buildCsv(rows) {
 }
 
 /* ═════════════════════════════════════════════════════════════════
-   6 · الحالة — نموذج واحد يبحث ويضيف، ونتائج في شبكة تحته
+   6 · الحالة — نموذج واحد يبحث ويضيف، وجدول القاعدة تحته
    ═════════════════════════════════════════════════════════════════ */
-const PAGE = 60;   /* عدد البطاقات المعروضة قبل «عرض المزيد» */
+const ROWS_PAGE = 200;   /* صفوف تُعرض دفعة واحدة ثم «عرض المزيد» */
+
 
 const state = {
   rows: [], byId: new Map(),
   crit: {},        /* شروط البحث المأخوذة من خانات النموذج */
-  shown: PAGE, loaded: null, current: null, imp: null,
+  shown: ROWS_PAGE, hit: null, loaded: null, current: null, imp: null,
 };
 
 function reindex() { state.byId = new Map(state.rows.map(r => [r.id, r])); }
@@ -1158,7 +1103,7 @@ function clearForm() {
   for (const f of FIELDS) input(f.k).value = "";
   state.loaded = null;
   state.crit = {};
-  state.shown = PAGE;
+  state.shown = ROWS_PAGE;
   clearInvalid();
   hint("");
   render();
@@ -1189,48 +1134,42 @@ function matches() {
   return [...rows].sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "ar"));
 }
 
-const ICON_FILE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' +
+const ICON_FILE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' +
   '<path d="M4 6a2 2 0 0 1 2-2h5l2 2h5a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M9 13h6M9 17h4"/></svg>';
 
-function cardHtml(r) {
+function rowHtml(r) {
   const c = hueOf(r.branch);
-  const cell = (label, value, mono, wide) =>
-    '<div' + (wide ? ' class="wide"' : "") + "><dt>" + esc(label) + "</dt>" +
-    (value ? '<dd class="' + (mono ? "mono" : "") + '">' + esc(value) + "</dd>" : '<dd class="none">—</dd>') + "</div>";
-  const flags = METRICS.filter(f => r[f.k] > 0);
-  return '<article class="ecard" data-id="' + esc(r.id) + '" tabindex="0" role="button" style="--c:' + c + '">' +
-    '<button class="file" data-file="' + esc(r.id) + '" title="فتح الملف الكامل" aria-label="فتح ملف ' + esc(r.name) + '">' + ICON_FILE + "</button>" +
-    '<div class="head">' +
-      '<span class="av">' + esc(initials(r.name)) + "</span>" +
-      '<span class="who"><b>' + esc(r.name || "—") + "</b>" +
-      '<small class="mono">' + esc(r.id) + "</small></span>" +
-    "</div>" +
-    '<div class="chips">' +
-      (r.branch ? '<span class="chip" style="--tone:' + c + '"><i class="dot"></i>' + esc(r.branch) + "</span>" : "") +
-      (r.department ? '<span class="chip">' + esc(r.department) + "</span>" : "") +
-    "</div>" +
-    '<dl class="kv">' +
-      cell("المسمى الوظيفي", r.jobTitle, false, true) +
-      cell("الجوال", r.mobile, true) +
-      cell("تاريخ التعيين", r.hireDate, true) +
-    "</dl>" +
-    '<div class="badges">' +
-      (flags.length
-        ? flags.map(f => '<span class="badge t-' + f.tone + '">' + esc(f.ar) + " <em>" + fmt(r[f.k]) + "</em></span>").join("")
-        : '<span class="badge clean">سجل نظيف</span>') +
-    "</div></article>";
+  const cells = FIELDS.map((f, i) => {
+    const v = r[f.k];
+    const first = i === 0 ? ' class="mono br" style="--c:' + c + '"' : "";
+    if (f.t === "int")
+      return '<td class="flagcell' + (v > 0 ? " " + f.tone : " empty") + '">' + (v > 0 ? fmt(v) : "—") + "</td>";
+    if (!v) return i === 0 ? "<td" + first + ">—</td>" : '<td class="empty">—</td>';
+    if (i === 0) return "<td" + first + ">" + esc(v) + "</td>";
+    return "<td" + (f.mono || f.t === "date" ? ' class="mono"' : "") + ">" + esc(v) + "</td>";
+  }).join("");
+  return '<tr data-id="' + esc(r.id) + '"' + (state.hit === r.id ? ' class="hit"' : "") + ">" + cells +
+    '<td><button class="rowfile" data-file="' + esc(r.id) + '" title="فتح الملف الكامل" ' +
+    'aria-label="فتح ملف ' + esc(r.name) + '">' + ICON_FILE + "</button></td></tr>";
+}
+
+function tableHtml(rows) {
+  const head = "<tr>" + FIELDS.map(f =>
+    "<th" + (f.k === "id" ? ' class="key"' : "") + ">" + esc(f.ar) + "<small>" + esc(f.xl) + "</small></th>").join("") +
+    '<th class="act" aria-label="الملف"></th></tr>';
+  return '<div class="tbl"><table class="db"><thead>' + head + "</thead><tbody>" +
+    rows.map(rowHtml).join("") + "</tbody></table></div>";
 }
 
 function render() {
   const host = $("#results"), count = $("#count");
   refreshLists();
-  if (!$("#mDb").hidden) renderDb();   /* شاشة القاعدة تبقى مطابقة للمخزن */
 
   if (!state.rows.length) {
     count.innerHTML = "";
     host.innerHTML = '<div class="state"><div class="mark-lg">' + ICON_FILE + "</div>" +
-      "<h3>القاعدة فارغة</h3>" +
-      "<p>املأ النموذج أعلاه واضغط «إضافة» لتسجيل أول موظف، أو استورد ورقة <b>Employees</b> من ملف الإكسل دفعة واحدة.</p>" +
+      "<h3>الجدول فارغ</h3>" +
+      "<p>املأ النموذج أعلاه واضغط «إضافة» فيظهر الصف هنا مباشرة، أو استورد ورقة <b>Employees</b> من ملف الإكسل دفعة واحدة.</p>" +
       '<div class="row">' +
         '<button class="btn primary" data-act="import">استيراد من إكسل</button>' +
         '<button class="btn" data-act="focus">املأ النموذج</button>' +
@@ -1244,21 +1183,32 @@ function render() {
   const crit = keys.map(k => esc(F[k].ar) + " = <b>" + esc(state.crit[k]) + "</b>").join(" · ");
 
   if (!all.length) {
-    count.innerHTML = "";
-    host.innerHTML = '<div class="state"><h3>لا سجل يطابق البحث</h3>' +
-      "<p>الشروط: " + crit + " — امسح ما لا تحتاجه من الخانات ثم اضغط «بحث» مرة أخرى.</p>" +
+    count.innerHTML = "الشروط: " + crit;
+    host.innerHTML = '<div class="state"><h3>لا صف يطابق البحث</h3>' +
+      "<p>امسح ما لا تحتاجه من خانات النموذج ثم اضغط «بحث» مرة أخرى.</p>" +
       '<div class="row"><button class="btn" data-act="clear">مسح النموذج</button></div></div>';
     return;
   }
 
   const page = all.slice(0, state.shown);
-  count.innerHTML = keys.length
-    ? "نتائج البحث · " + crit + " — <b>" + fmt(all.length) + "</b> من <b>" + fmt(state.rows.length) + "</b> سجل"
-    : "كل السجلات: <b>" + fmt(state.rows.length) + "</b>";
-  host.innerHTML = '<div class="cards">' + page.map(cardHtml).join("") + "</div>" +
+  const last = state.rows.reduce((m, r) => (r.updatedAt && r.updatedAt > m ? r.updatedAt : m), "");
+  count.innerHTML = (keys.length
+      ? "نتائج البحث · " + crit + " — <b>" + fmt(all.length) + "</b> من <b>" + fmt(state.rows.length) + "</b>"
+      : "<b>" + fmt(state.rows.length) + "</b> سجلًا في القاعدة") +
+    (last ? ' <span class="muted">· آخر تحديث ' + esc(last.slice(0, 10)) + "</span>" : "");
+
+  host.innerHTML = tableHtml(page) +
     (all.length > page.length
       ? '<div class="more"><button class="btn" data-act="more">عرض المزيد (' + fmt(all.length - page.length) + ")</button></div>"
-      : "");
+      : "") +
+    '<p class="dbnote">كل صف سجل في مخزن <span class="mono">' + esc(DB.store) + "</span> داخل قاعدة <span class=\"mono\">" +
+    esc(DB.name) + '</span> — اضغط أي صف ليُفتح في النموذج للتعديل، أو أيقونة الملف لعرضه كاملًا.</p>';
+
+  if (state.hit) {
+    const tr = $('tr[data-id="' + CSS.escape(state.hit) + '"]');
+    if (tr) tr.scrollIntoView({ behavior: "smooth", block: "center" });
+    setTimeout(() => { state.hit = null; const t = $("tr.hit"); if (t) t.classList.remove("hit"); }, 2600);
+  }
 }
 
 /* ═════════════════════════════════════════════════════════════════
@@ -1311,57 +1261,7 @@ function openView(id) {
 }
 
 /* ═════════════════════════════════════════════════════════════════
-   10 · شاشة القاعدة — المخزن نفسه معروضًا كما هو
-   ═════════════════════════════════════════════════════════════════ */
-const DB_ROWS = 500;   /* سقف الصفوف المعروضة دفعة واحدة */
-let dbShown = DB_ROWS;
-
-const bytesText = n => n < 1024 ? fmt(n) + " بايت" : n < 1048576
-  ? fmt(Math.round(n / 102.4) / 10) + " كيلوبايت" : fmt(Math.round(n / 104857.6) / 10) + " ميغابايت";
-
-function renderDb() {
-  const host = $("#dbHost");
-  const rows = [...state.rows].sort((a, b) => String(a.id).localeCompare(String(b.id), "ar", { numeric: true }));
-  const bytes = rows.length ? new Blob([JSON.stringify(rows)]).size : 0;
-  const last = rows.reduce((m, r) => (r.updatedAt && r.updatedAt > m ? r.updatedAt : m), "");
-  const lastText = last ? last.slice(0, 10) + " · " + last.slice(11, 16) : "—";
-
-  const meta = [
-    ["اسم القاعدة", DB.name, true],
-    ["نوع التخزين", "IndexedDB", false],
-    ["المخزن", DB.store, true],
-    ["مفتاح السجل", "Employee ID", true],
-    ["عدد السجلات", fmt(rows.length), false],
-    ["عدد الحقول", fmt(FIELDS.length), false],
-    ["الفهارس", "‏5: الفرع · القسم · الجنسية · الاسم · التعيين", false],
-    ["حجم البيانات", bytesText(bytes), false],
-    ["آخر تحديث", lastText, true],
-  ].map(([k, v, mono]) => "<div><dt>" + esc(k) + '</dt><dd' + (mono ? ' class="mono"' : "") + ">" + esc(v) + "</dd></div>").join("");
-
-  const head = "<tr>" + FIELDS.map(f =>
-    "<th" + (f.k === "id" ? ' class="key"' : "") + ">" + esc(f.ar) + "<small>" + esc(f.xl) + "</small></th>").join("") + "</tr>";
-
-  const page = rows.slice(0, dbShown);
-  const body = page.map(r => '<tr data-id="' + esc(r.id) + '">' + FIELDS.map(f => {
-    const v = r[f.k];
-    if (f.t === "int") return '<td class="mono num' + (v ? "" : " empty") + '">' + fmt(v) + "</td>";
-    return v ? '<td' + (f.mono || f.t === "date" ? ' class="mono"' : "") + ">" + esc(v) + "</td>"
-             : '<td class="empty">—</td>';
-  }).join("") + "</tr>").join("");
-
-  host.innerHTML = '<dl class="dbmeta">' + meta + "</dl>" +
-    (rows.length
-      ? '<div class="tbl"><table class="db"><thead>' + head + "</thead><tbody>" + body + "</tbody></table></div>" +
-        (rows.length > page.length
-          ? '<div class="more"><button class="btn" data-db="more">عرض المزيد (' + fmt(rows.length - page.length) + ")</button></div>"
-          : "") +
-        '<p class="dbnote">كل صف سجل واحد في المخزن، وكل عمود حقل من حقول ورقة <b>Employees</b> — اضغط أي صف لفتح ملفه أو تعديله. ' +
-        "البيانات محفوظة داخل هذا المتصفح على هذا الجهاز وحده، ولا تُرفع إلى أي خادم؛ ونسختها كملف تحصل عليها من زرّي الأسفل.</p>"
-      : '<p class="chart-empty">لا سجلات في القاعدة بعد — استورد ملف الإكسل أو أضف صفًا جديدًا.</p>');
-}
-
-/* ═════════════════════════════════════════════════════════════════
-   11 · المؤشرات
+   10 · المؤشرات
    ═════════════════════════════════════════════════════════════════ */
 function tally(k, limit) {
   const m = new Map();
@@ -1460,7 +1360,7 @@ function doSearch() {
     crit[f.k] = val;
   }
   state.crit = crit;
-  state.shown = PAGE;
+  state.shown = ROWS_PAGE;
   render();
   const n = matches().length;
   hint(Object.keys(crit).length
@@ -1488,8 +1388,7 @@ async function addFromForm() {
   await dbPut(rec);
   await reload();
   state.loaded = rec.id;
-  state.crit = { id: rec.id };
-  state.shown = PAGE;
+  state.hit = rec.id;          /* يُبرَز الصف في الجدول ويُمرَّر إليه */
   render();
   hint(exists ? "حُدِّث سجل «" + rec.name + "»." : "أُضيف «" + rec.name + "» إلى القاعدة.", "warn");
   toast(exists ? "حُدِّث السجل" : "أُضيف الموظف", "ok");
@@ -1586,7 +1485,7 @@ async function doImport() {
   await reload();
   closeModal("#mImport");
   state.imp = null; $("#mapHost").innerHTML = "";
-  state.crit = {}; state.shown = PAGE;
+  state.crit = {}; state.shown = ROWS_PAGE;
   render();
   const added = recs.length - updated;
   toast("استُورد " + fmt(recs.length) + " سجلًا (" + fmt(added) + " جديد · " + fmt(updated) + " محدَّث" +
@@ -1701,30 +1600,17 @@ function wire() {
       if (a === "seed") seed();
       if (a === "focus") focusForm();
       if (a === "clear") { clearForm(); focusForm(); }
-      if (a === "more") { state.shown += PAGE; render(); }
+      if (a === "more") { state.shown += ROWS_PAGE; render(); }
       return;
     }
     const file = e.target.closest("[data-file]");
     if (file) { openView(file.dataset.file); return; }
-    const card = e.target.closest(".ecard");
-    if (card) loadIntoForm(card.dataset.id);
-  });
-  $("#results").addEventListener("keydown", e => {
-    if (e.key !== "Enter" && e.key !== " ") return;
-    const card = e.target.closest(".ecard");
-    if (card) { e.preventDefault(); loadIntoForm(card.dataset.id); }
+    const tr = e.target.closest("tr[data-id]");
+    if (tr) loadIntoForm(tr.dataset.id);
   });
 
-  $("#btnDb").addEventListener("click", () => { dbShown = DB_ROWS; renderDb(); openModal("#mDb"); });
-  $("#dbHost").addEventListener("click", e => {
-    const more = e.target.closest("[data-db]");
-    if (more) { dbShown += DB_ROWS; renderDb(); return; }
-    const tr = e.target.closest("tr[data-id]");
-    if (tr) openView(tr.dataset.id);
-  });
   $("#dbXlsx").addEventListener("click", exportXlsx);
   $("#dbJson").addEventListener("click", exportJson);
-  $("#dbNew").addEventListener("click", () => { closeModal("#mDb"); clearForm(); focusForm(); });
 
   $("#btnImport").addEventListener("click", () => openModal("#mImport"));
   $("#btnExport").addEventListener("click", () => openModal("#mExport"));
