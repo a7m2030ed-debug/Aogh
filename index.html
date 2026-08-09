@@ -666,7 +666,9 @@ function tokenizeSlide(xml) {
     hero("TOTAL PATIENTS", ["TOTAL"]);
     hero("CLINIC", ["CLINIC"], ["TARGET", "RATE"]);
     hero("EMERGENCY", ["ER"], ["ER_SOURCE"]);
-    const banner = shapes.find(s => s.t.includes("Cluster Utilization"));
+    /* matched on "utilisation", not the full label, so renaming the banner in
+       the template does not quietly stop it being filled */
+    const banner = shapes.find(s => /utili[sz]ation/i.test(s.t));
     if (banner) injectDashes(banner, ["RATE", "CLINIC", "TARGET"]);
 
     /* branch table: the header row hands over its column positions */
@@ -700,7 +702,7 @@ function tokenizeSlide(xml) {
     hero("TOTAL PATIENTS TODAY", ["BR_TOTAL"]);
     hero("CLINIC", ["BR_CLINIC", "BR_TARGET"]);
     hero("EMERGENCY", ["BR_ER"], null, ["No target assigned", "BR_ER_NOTE"]);
-    const banner = shapes.find(s => s.t.includes("Clinic Utilization"));
+    const banner = shapes.find(s => /utili[sz]ation/i.test(s.t));
     if (banner) injectDashes(banner, ["BR_RATE", "BR_CLINIC", "BR_TARGET"]);
   }
 
