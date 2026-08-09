@@ -666,6 +666,7 @@ function tokenizeSlide(xml) {
     hero("TOTAL PATIENTS", ["TOTAL"]);
     hero("CLINIC", ["CLINIC"], ["TARGET", "RATE"]);
     hero("EMERGENCY", ["ER"], ["ER_SOURCE"]);
+    hero("NO SHOW", ["NOSHOW"], ["NOSHOW_SRC"]);   // a deck may show either card
     /* matched on "utilisation", not the full label, so renaming the banner in
        the template does not quietly stop it being filled */
     const banner = shapes.find(s => /utili[sz]ation/i.test(s.t));
@@ -676,7 +677,8 @@ function tokenizeSlide(xml) {
     if (hdr) {
       const usedPrefixes = new Set();
       const cols = {};
-      for (const [name, key] of [["Clinic", "CLINIC"], ["Target", "TARGET"], ["Emergency", "ER"], ["Total", "TOTAL"], ["Rate", "RATE"]]) {
+      for (const [name, key] of [["Clinic", "CLINIC"], ["Target", "TARGET"], ["Emergency", "ER"],
+                                 ["No Show", "NOSHOW"], ["Total", "TOTAL"], ["Rate", "RATE"]]) {
         const c = shapes.find(s => s.t.trim() === name && NEAR(s.g.y, hdr.g.y, 0.05 * EMU_IN));
         if (c) cols[key] = c.g.x;
       }
@@ -1021,24 +1023,29 @@ function buildPlan() {
     const tot = branches.reduce((a, b) => ({
       clinic: a.clinic + b.calc.clinic, target: a.target + b.calc.target,
       er: a.er + b.calc.ER, total: a.total + b.calc.total,
-    }), { clinic: 0, target: 0, er: 0, total: 0 });
+      noshow: a.noshow + (b.calc.noshow || 0),
+    }), { clinic: 0, target: 0, er: 0, total: 0, noshow: 0 });
     const rate = pct(tot.clinic, tot.target);
+    const nsRate = state.map.noshow ? pct(tot.noshow, tot.target) : null;
     Object.assign(v, {
       TOTAL: tot.total, CLINIC: tot.clinic, TARGET: tot.target,
       RATE: rate == null ? DASH : rate + "%", ER: tot.er || DASH,
       ER_SOURCE: `${branches.filter(b => b.calc.hasER).length} of ${t.prefixes.length || branches.length} branches`,
+      NOSHOW: state.map.noshow ? tot.noshow : DASH,
+      NOSHOW_SRC: nsRate == null ? DASH : `${nsRate}% of scheduled`,
     });
     const pills = {};
     for (const p of t.prefixes) {
       const b = branches.find(x => x.prefix === p.prefix);
       if (!b) {
-        for (const k of ["CLINIC", "TARGET", "ER", "TOTAL", "RATE"]) v[`${p.prefix}_${k}`] = DASH;
+        for (const k of ["CLINIC", "TARGET", "ER", "NOSHOW", "TOTAL", "RATE"]) v[`${p.prefix}_${k}`] = DASH;
         pills[`${p.prefix}_RATE`] = BANDHEX.none;   // no data: never leave a green pill behind
         continue;
       }
       v[`${p.prefix}_CLINIC`] = b.calc.clinic;
       v[`${p.prefix}_TARGET`] = b.calc.target;
       v[`${p.prefix}_ER`] = b.calc.hasER ? b.calc.ER : DASH;
+      v[`${p.prefix}_NOSHOW`] = b.calc.noshow == null ? DASH : b.calc.noshow;
       v[`${p.prefix}_TOTAL`] = b.calc.total;
       v[`${p.prefix}_RATE`] = b.calc.rate == null ? DASH : b.calc.rate + "%";
       pills[`${p.prefix}_RATE`] = BANDHEX[band(b.calc.rate)];
