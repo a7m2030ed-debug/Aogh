@@ -613,10 +613,26 @@ function columnTokens(cell, headerCells) {
   return null;
 }
 
-const prefixOf = label => {
+/* Initials name each summary row's tokens. Two branches can share them —
+   "Al Suwaydi" and "Al Sulaimaniyah" both give AS — so a clash borrows the
+   next letter of the last word rather than silently merging two rows. */
+function prefixOf(label, used) {
   const w = label.trim().split(/\s+/).filter(Boolean);
-  return (w.length > 1 ? w.map(x => x[0]).join("") : (w[0] || "X").slice(0, 2)).toUpperCase().slice(0, 3);
-};
+  const letters = s => String(s).toUpperCase().replace(/[^A-Z]/g, "");
+  let base = (w.length > 1 ? letters(w.map(x => x[0]).join("")) : letters(w[0]).slice(0, 2)) || "XX";
+  base = (base + "XX").slice(0, Math.max(2, Math.min(3, base.length)));
+  if (!used || !used.has(base)) { used && used.add(base); return base; }
+  const tail = letters(w[w.length - 1]);
+  for (let i = 1; i < tail.length; i++) {
+    const cand = base.slice(0, 2) + tail[i];
+    if (!used.has(cand)) { used.add(cand); return cand; }
+  }
+  for (const c of "ABCDEFGHIJKLMNOPQRSTUVWXYZ") {
+    const cand = base.slice(0, 2) + c;
+    if (!used.has(cand)) { used.add(cand); return cand; }
+  }
+  return base;
+}
 
 function tokenizeSlide(xml) {
   const doc = new DOMParser().parseFromString(xml, "application/xml");
@@ -656,13 +672,14 @@ function tokenizeSlide(xml) {
     /* branch table: the header row hands over its column positions */
     const hdr = shapes.find(s => s.t.trim() === "Branch");
     if (hdr) {
+      const usedPrefixes = new Set();
       const cols = {};
       for (const [name, key] of [["Clinic", "CLINIC"], ["Target", "TARGET"], ["Emergency", "ER"], ["Total", "TOTAL"], ["Rate", "RATE"]]) {
         const c = shapes.find(s => s.t.trim() === name && NEAR(s.g.y, hdr.g.y, 0.05 * EMU_IN));
         if (c) cols[key] = c.g.x;
       }
       for (const label of shapes.filter(s => NEAR(s.g.x, hdr.g.x) && s.g.y > hdr.g.y && s.t.trim() && !/—/.test(s.t))) {
-        const pre = prefixOf(label.t);
+        const pre = prefixOf(label.t, usedPrefixes);
         const band = shapes.filter(s => s !== label && /—/.test(s.t) &&
           s.g.y + s.g.cy / 2 >= label.g.y - 0.03 * EMU_IN && s.g.y + s.g.cy / 2 <= label.g.y + label.g.cy + 0.03 * EMU_IN);
         for (const cell of band) {
