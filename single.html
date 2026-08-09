@@ -180,6 +180,13 @@
 
   /* ---------- PDF output ---------- */
   #printer{display:none}
+  /* the print dialog leaves "Background graphics" off by default, which would
+     strip every fill and print the deck in black and white */
+  #printer, #printer *{
+    -webkit-print-color-adjust:exact !important;
+    color-adjust:exact !important;
+    print-color-adjust:exact !important;
+  }
   #printer .sld{
     position:relative; overflow:hidden; background:#fff;
     --pdf-fallback:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
@@ -209,6 +216,10 @@
   <button class="btn" id="bClear" disabled>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M9 7V5h6v2m-8 0 1 13h8l1-13"/></svg>
     مسح والبدء من جديد
+  </button>
+  <button class="btn" id="bPdf" disabled>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V4h12v5M6 18v2h12v-2M4 9h16v9H4z"/></svg>
+    تحميل PDF ملوّن
   </button>
   <button class="btn btn-main" id="bMake" disabled>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 19h16"/></svg>
@@ -263,7 +274,6 @@
     <header>
       <span class="n">٤</span><h2>المعاينة قبل التحميل</h2>
       <span class="state" id="st4"></span>
-      <button class="btn btn-sm btn-ghost" id="bPdf" disabled style="margin-inline-start:10px">تحميل PDF</button>
     </header>
     <div class="body" id="preview">
       <p class="empty">ارفع القالب وملف فرع واحد على الأقل لتظهر المعاينة.</p>
@@ -1478,10 +1488,10 @@ function renderPreview() {
 
   const pdf = document.createElement("div");
   pdf.className = "note";
-  pdf.innerHTML = '<span class="m"></span><span><b>زر «تحميل PDF»</b> أعلى هذه الخطوة يرسم الشرائح ويفتح نافذة الطباعة — ' +
-    "اختر «حفظ بصيغة PDF». يُرسم كل شكل بمكانه ومقاسه من الشريحة نفسها، ويظهر الخط مطابقًا إن كان " +
-    "<code>Plus Jakarta Sans</code> مثبَّتًا على جهازك. وللحصول على PDF مطابق بنسبة 100% يمكنك دائمًا " +
-    "تصدير ملف البوربوينت من PowerPoint عبر ‏File ← Export‏.</span>";
+  pdf.innerHTML = '<span class="m"></span><span><b>زر «تحميل PDF ملوّن»</b> يفتح نافذة الطباعة — اختر ' +
+    "«حفظ بصيغة PDF». الألوان تخرج كاملة دون أن تحتاج تفعيل «Background graphics» في النافذة. " +
+    "ويظهر الخط مطابقًا إن كان <code>Plus Jakarta Sans</code> مثبَّتًا على جهازك، وإلا فالمواضع " +
+    "والمقاسات والألوان تبقى مضبوطة.</span>";
   host.append(pdf);
 
   const unassigned = state.branches.filter(b => !b.prefix);
