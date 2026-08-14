@@ -570,18 +570,17 @@ input[aria-invalid="true"], select[aria-invalid="true"]{ border-color:var(--crit
     <div class="kpis" id="staffKpis" style="margin-bottom:16px"></div>
     <div class="filters">
       <div class="search">
-        <input type="text" id="staffSearch" placeholder="بحث في كل الحقول — اسم · رقم وظيفي · هوية · جوال · مسمى" autocomplete="off">
+        <input type="text" id="staffSearch" placeholder="بحث في كل الحقول — اسم · رقم وظيفي · هوية · جوال · قسم" autocomplete="off">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
       </div>
       <select id="staffDept"><option value="">كل الأقسام</option></select>
-      <select id="staffCat"><option value="">كل الفئات</option></select>
-      <select id="staffStatus"><option value="">كل الحالات</option></select>
+      <select id="staffTitle"><option value="">كل المسميات</option></select>
       <button class="btn" id="staffReset">مسح الترشيح</button>
     </div>
     <div id="staffHost"></div>
     <section class="card" style="margin-top:18px">
       <h2>توزيع الكادر</h2>
-      <p class="cap">عدد الموظفين على رأس العمل بحسب القسم والفئة والجنسية</p>
+      <p class="cap">توزيع كادر الفرع بحسب القسم والمسمى الوظيفي والجنسية</p>
       <div class="charts" id="staffCharts"></div>
     </section>
   </section>
@@ -621,7 +620,7 @@ input[aria-invalid="true"], select[aria-invalid="true"]{ border-color:var(--crit
     <div class="charts" id="capCharts" style="margin-bottom:16px"></div>
     <section class="card">
       <h2>الكادر مقابل الغرف</h2>
-      <p class="cap">لكل قسم: موارده وما هو منها في الخدمة، وطاقته اليومية، وكادره المسجَّل عدا منتهي الخدمة</p>
+      <p class="cap">لكل قسم: موارده وما هو منها في الخدمة، وطاقته اليومية، وكادره المسجَّل</p>
       <div id="capStaffing"></div>
     </section>
   </section>
@@ -782,16 +781,6 @@ input[aria-invalid="true"], select[aria-invalid="true"]{ border-color:var(--crit
    ثلاث وحدات فوق قاعدة واحدة: الموظفون، وسجلات التوثيق المعلَّقة بكل
    موظف، وموارد الفرع. وكل ما تعرضه الواجهة مشتقّ من هذه الجداول.
    ═════════════════════════════════════════════════════════════════ */
-const CATEGORIES = ["طبيب", "طبيب أسنان", "تمريض", "صيدلة", "فني", "إداري", "خدمات"];
-const STATUSES = [
-  { v: "على رأس العمل", tone: "good" },
-  { v: "إجازة",          tone: "brand" },
-  { v: "إيقاف مؤقت",     tone: "serious" },
-  { v: "منتهي الخدمة",   tone: "ink" },
-];
-const STATUS_TONE = Object.fromEntries(STATUSES.map(s => [s.v, s.tone]));
-const ACTIVE = "على رأس العمل";
-
 /* حقول ملف الموظف. expiry: يدخل في التنبيهات · facet: يقترح قيمه من القاعدة
    · hints: عناوين الأعمدة التي يُرشَّح منها الربط عند الاستيراد. */
 const FIELDS = [
@@ -809,53 +798,19 @@ const FIELDS = [
     hints:["dob","dateofbirth","birthdate","تاريخالميلاد"] },
   { k:"nationality",   ar:"الجنسية",                 en:"Nationality",         t:"text", facet:true, g:"identity",
     hints:["nationality","country","الجنسيه"] },
-  { k:"marital",       ar:"الحالة الاجتماعية",       en:"Marital Status",      t:"select", opts:["أعزب","متزوج","مطلق","أرمل"], g:"identity",
-    hints:["marital","maritalstatus","الحالهالاجتماعيه"] },
-
   { k:"mobile",        ar:"الجوال",                  en:"Mobile",              t:"tel", mono:true, g:"contact",
     hints:["mobile","phone","cell","contact","الجوال","الهاتف"] },
   { k:"email",         ar:"البريد الإلكتروني",       en:"Email",               t:"email", g:"contact",
     hints:["email","mail","البريد"] },
-  { k:"address",       ar:"العنوان",                 en:"Address",             t:"text", g:"contact",
-    hints:["address","city","district","العنوان","المدينه"] },
-  { k:"emgName",       ar:"شخص للطوارئ",             en:"Emergency Contact",   t:"text", g:"contact",
-    hints:["emergencycontact","emergencyname","شخصللطوارئ"] },
-  { k:"emgPhone",      ar:"جوال الطوارئ",            en:"Emergency Phone",     t:"tel", mono:true, g:"contact",
-    hints:["emergencyphone","emergencymobile","جوالالطوارئ"] },
 
   { k:"jobTitle",      ar:"المسمى الوظيفي",          en:"Job Title",           t:"text", facet:true, g:"job",
     hints:["jobtitle","title","position","designation","role","المسمى","الوظيفه"] },
-  { k:"category",      ar:"الفئة",                   en:"Category",            t:"select", opts:CATEGORIES, g:"job",
-    hints:["category","staffcategory","type","الفئه"] },
   { k:"department",    ar:"القسم",                   en:"Department",          t:"text", facet:true, g:"job",
     hints:["department","departmentname","dept","specialty","القسم","التخصص"] },
   { k:"manager",       ar:"المدير المباشر",          en:"Manager",             t:"text", facet:true, g:"job",
     hints:["manager","supervisor","reportsto","المدير"] },
   { k:"hireDate",      ar:"تاريخ التعيين",           en:"Hire Date",           t:"date", g:"job",
     hints:["hiredate","joindate","joiningdate","startdate","doj","تاريخالتعيين","المباشره"] },
-  { k:"empType",       ar:"نوع التعاقد",             en:"Employment Type",     t:"select", opts:["دوام كامل","دوام جزئي","زائر","متعاون","تدريب"], g:"job",
-    hints:["employmenttype","contracttype","worktype","نوعالتعاقد"] },
-  { k:"contractEnd",   ar:"نهاية العقد",             en:"Contract End",        t:"date", expiry:true, g:"job",
-    hints:["contractend","contractexpiry","نهايهالعقد"] },
-  { k:"shift",         ar:"الوردية",                 en:"Shift",               t:"select", opts:["صباحي","مسائي","متناوب"], g:"job",
-    hints:["shift","الورديه"] },
-  { k:"status",        ar:"حالة الموظف",             en:"Status",              t:"select", opts:STATUSES.map(s => s.v), g:"job",
-    hints:["status","employeestatus","الحاله"] },
-  { k:"endDate",       ar:"تاريخ انتهاء الخدمة",     en:"End of Service",      t:"date", g:"job",
-    hints:["enddate","terminationdate","lastworkingday","انتهاءالخدمه"] },
-  { k:"salary",        ar:"الراتب الأساسي",          en:"Basic Salary",        t:"int", g:"job",
-    hints:["salary","basicsalary","الراتب"] },
-
-  { k:"scfhsNo",       ar:"رقم تصنيف هيئة التخصصات", en:"SCFHS No.",           t:"text", mono:true, g:"license",
-    hints:["scfhs","scfhsno","classificationno","رقمالتصنيف"] },
-  { k:"scfhsExpiry",   ar:"انتهاء التصنيف",          en:"SCFHS Expiry",        t:"date", expiry:true, g:"license",
-    hints:["scfhsexpiry","classificationexpiry","انتهاءالتصنيف"] },
-  { k:"licenseNo",     ar:"رقم الترخيص المهني",      en:"License No.",         t:"text", mono:true, g:"license",
-    hints:["licenseno","registrationno","رقمالترخيص"] },
-  { k:"licenseExpiry", ar:"انتهاء الترخيص",          en:"License Expiry",      t:"date", expiry:true, g:"license",
-    hints:["licenseexpiry","registrationexpiry","انتهاءالترخيص"] },
-  { k:"blsExpiry",     ar:"انتهاء BLS / ACLS",       en:"BLS / ACLS Expiry",   t:"date", expiry:true, g:"license",
-    hints:["bls","acls","blsexpiry","انتهاءالانعاش"] },
 
   { k:"iqamaExpiry",   ar:"انتهاء الهوية / الإقامة", en:"ID / Iqama Expiry",   t:"date", expiry:true, g:"docs",
     hints:["iqamaexpiry","idexpiry","انتهاءالاقامه","انتهاءالهويه"] },
@@ -874,11 +829,10 @@ const GROUPS = [
   { g:"identity", ar:"البيانات الشخصية" },
   { g:"contact",  ar:"بيانات التواصل" },
   { g:"job",      ar:"البيانات الوظيفية" },
-  { g:"license",  ar:"التصنيف والترخيص" },
   { g:"docs",     ar:"الوثائق وملاحظات" },
 ];
 /* أعمدة جدول «جميع الموظفين» — بقية الحقول تُعرض في ملف الموظف */
-const STAFF_COLS = ["id","name","jobTitle","category","department","status","mobile","nationalId","nationality","hireDate","empType","licenseExpiry","iqamaExpiry"];
+const STAFF_COLS = ["id","name","jobTitle","department","manager","mobile","email","nationalId","nationality","hireDate","iqamaExpiry","passportExpiry"];
 
 /* أنواع التوثيق. range: له من/إلى · amount: خانة رقمية بعنوانها ووحدتها
    · subs: تصنيف فرعي · follow: يُتابَع حتى يُغلق. */
@@ -1120,8 +1074,7 @@ function openDB() {
       if (!d.objectStoreNames.contains(DB.emp)) {
         const st = d.createObjectStore(DB.emp, { keyPath:"id" });
         st.createIndex("department", "department", { unique:false });
-        st.createIndex("category", "category", { unique:false });
-        st.createIndex("status", "status", { unique:false });
+        st.createIndex("jobTitle", "jobTitle", { unique:false });
         st.createIndex("name", "name", { unique:false });
       }
       if (!d.objectStoreNames.contains(DB.rec)) {
@@ -1160,7 +1113,6 @@ function dbPutMany(name, recs) {
 function blankEmp() {
   const o = {};
   for (const f of FIELDS) o[f.k] = f.t === "int" ? 0 : "";
-  o.status = ACTIVE;
   return o;
 }
 function coerceEmp(raw) {
@@ -1173,7 +1125,6 @@ function coerceEmp(raw) {
     else o[f.k] = String(v ?? "").trim().replace(/\s+/g, " ");
   }
   o.id = o.id.replace(/\s/g, "");
-  if (!o.status) o.status = ACTIVE;
   o.createdAt = raw.createdAt || new Date().toISOString();
   o.updatedAt = new Date().toISOString();
   return o;
@@ -1185,11 +1136,9 @@ function validateEmp(rec, isNew) {
   if (!rec.name) e.name = "الاسم مطلوب";
   if (rec.nationalId && !/^\d{10}$/.test(rec.nationalId)) e.nationalId = "عشرة أرقام";
   if (rec.mobile && !/^(\+?966|0)?5\d{8}$/.test(rec.mobile.replace(/[\s-]/g, ""))) e.mobile = "‏05XXXXXXXX";
-  if (rec.emgPhone && !/^(\+?966|0)?[15]\d{8}$/.test(rec.emgPhone.replace(/[\s-]/g, ""))) e.emgPhone = "رقم غير صحيح";
   if (rec.email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(rec.email)) e.email = "صيغة بريد غير صحيحة";
   for (const f of FIELDS) if (f.t === "date" && rec[f.k] && isNaN(new Date(rec[f.k] + "T00:00:00"))) e[f.k] = "تاريخ غير صحيح";
   if (rec.dob && rec.hireDate && rec.hireDate < rec.dob) e.hireDate = "التعيين قبل الميلاد";
-  if (rec.hireDate && rec.endDate && rec.endDate < rec.hireDate) e.endDate = "قبل تاريخ التعيين";
   return e;
 }
 
@@ -1223,9 +1172,9 @@ const ICON = {
 };
 const MODULES = [
   { v:"emp",   ar:"إدارة الموظفين",   en:"Employee Management", icon:"emp",   tone:"brand",
-    desc:"ملف إلكتروني متكامل لكل موظف: بياناته الشخصية والوظيفية، وتصنيفه وتراخيصه، وتوثيق كل ما يجري عليه — إجازة وغياب وتأخير ومخالفة وإنذار وتدريب وتقييم ومستند." },
+    desc:"ملف إلكتروني متكامل لكل موظف: بياناته الشخصية والوظيفية ووثائقه، وتوثيق كل ما يجري عليه — إجازة وغياب وتأخير ومخالفة وإنذار وشكوى وتدريب وتقييم ومستند." },
   { v:"staff", ar:"جميع الموظفين",    en:"All Staff",           icon:"staff", tone:"seal",
-    desc:"قائمة كادر الفرع كاملة بجدول واحد: بحث وترشيح بالقسم والفئة والحالة، وتوزيع الكادر، وتصدير الجدول إلى إكسل." },
+    desc:"قائمة كادر الفرع كاملة بجدول واحد: بحث وترشيح بالقسم والمسمى الوظيفي، وتوزيع الكادر، وتصدير الجدول إلى إكسل." },
   { v:"cap",   ar:"سعة الفرع",        en:"Branch Capacity",     icon:"cap",   tone:"good",
     desc:"غرف الفرع وعياداته وأجهزته وحالتها وتخصيصها، والطاقة الاستيعابية اليومية والأسبوعية، وكفاية الكادر لكل قسم." },
 ];
@@ -1234,7 +1183,7 @@ const state = {
   emps:[], byId:new Map(), recs:[], res:[], branch:{ ...BRANCH_DEFAULT },
   view:"home", cur:null, tab:"data",
   empQ:"", empDept:"",
-  staff:{ q:"", dept:"", cat:"", status:"", shown:200 },
+  staff:{ q:"", dept:"", title:"", shown:200 },
   resF:{ q:"", kind:"", status:"" },
   imp:null, cfm:null,
 };
@@ -1249,7 +1198,6 @@ function reindex() {
 }
 const recsOf = id => state.recs.filter(r => r.empId === id);
 const empName = id => (state.byId.get(id) || {}).name || "";
-const active = () => state.emps.filter(e => e.status === ACTIVE);
 const facetValues = k => uniq(state.emps.map(e => e[k]).filter(Boolean)).sort(byAr);
 const depts = () => uniq(state.emps.map(e => e.department).filter(Boolean).concat(state.res.map(r => r.department).filter(Boolean))).sort(byAr);
 
@@ -1295,7 +1243,7 @@ function renderAll() {
    ═════════════════════════════════════════════════════════════════ */
 function moduleStats(v) {
   if (v === "emp")   return [fmt(state.recs.length) + " سجل توثيق", fmt(state.emps.length) + " ملف"];
-  if (v === "staff") return [fmt(active().length) + " على رأس العمل", fmt(depts().length) + " قسمًا"];
+  if (v === "staff") return [fmt(state.emps.length) + " موظفًا", fmt(depts().length) + " قسمًا"];
   const cap = capacity();
   return [fmt(cap.rooms) + " غرفة", fmt(cap.daily) + " موعدًا يوميًا"];
 }
@@ -1329,7 +1277,6 @@ function renderHome() {
 function alerts() {
   const out = [];
   for (const e of state.emps) {
-    if (e.status === "منتهي الخدمة") continue;
     for (const f of EXPIRY_FIELDS) {
       const s = expiryState(e[f.k]);
       if (s && s.d <= ALERT_DAYS) out.push({ sort:s.d, tone:s.tone, icon:"alert",
@@ -1381,7 +1328,6 @@ function renderEmpList() {
     '<button class="prow' + (e.id === state.cur ? " on" : "") + '" data-emp="' + esc(e.id) + '">' +
       '<span class="av" style="--c:' + hueOf(e.department) + '">' + esc(initials(e.name)) + "</span>" +
       '<span class="pn"><b>' + esc(e.name) + "</b><span>" + esc(e.id + (e.jobTitle ? " · " + e.jobTitle : "")) + "</span></span>" +
-      '<span class="pdot t-' + (STATUS_TONE[e.status] || "ink") + '" title="' + esc(e.status) + '"></span>' +
     "</button>").join("")
     : '<p class="okstate">لا يطابق البحث أحد.</p>';
 }
@@ -1419,7 +1365,7 @@ function renderEmpPane() {
         '<div class="role">' + esc(e.jobTitle || "بلا مسمى") + (e.department ? " · " + esc(e.department) : "") + "</div>" +
         '<div class="idline">' + esc(e.id) + (e.hireDate ? " · في الخدمة " + esc(tenureText(e.hireDate)) : "") + "</div></div>" +
       '<span class="grow"></span>' +
-      '<span class="chip dot t-' + (STATUS_TONE[e.status] || "ink") + '">' + esc(e.status || "—") + "</span>" +
+      (e.department ? '<span class="chip dot t-brand">' + esc(e.department) + "</span>" : "") +
       (openCount ? '<span class="chip t-serious">' + fmt(openCount) + " إجراء مفتوح</span>" : "") +
     "</div>" +
     '<div class="tabs">' + tabs.map(t =>
@@ -1539,31 +1485,32 @@ function empDocs(e, rs) {
 function staffRows() {
   const f = state.staff, q = norm(f.q);
   return state.emps.filter(e =>
-    (!f.dept   || e.department === f.dept) &&
-    (!f.cat    || e.category === f.cat) &&
-    (!f.status || e.status === f.status) &&
+    (!f.dept  || e.department === f.dept) &&
+    (!f.title || e.jobTitle === f.title) &&
     (!q || FIELDS.some(fd => fd.t !== "int" && norm(e[fd.k]).includes(q))));
 }
 
 function renderStaff() {
-  const all = state.emps, on = active();
-  const tenures = on.map(e => yearsBetween(e.hireDate)).filter(v => v != null);
+  const all = state.emps;
+  const tenures = all.map(e => yearsBetween(e.hireDate)).filter(v => v != null);
   const avg = tenures.length ? Math.round(tenures.reduce((s, v) => s + v, 0) / tenures.length * 10) / 10 : null;
   const kpi = (k, v, s, tone) => '<div class="kpi t-' + (tone || "brand") + '"><div class="k">' + esc(k) +
     '</div><div class="v num">' + v + '</div><div class="s">' + esc(s) + "</div></div>";
-  const byStatus = s => all.filter(e => e.status === s).length;
+  /* موظف تقارب إحدى وثائقه الانتهاء أو انتهت */
+  const flagged = all.filter(e => EXPIRY_FIELDS.some(f => { const x = expiryState(e[f.k]); return x && x.d <= ALERT_DAYS; })).length;
+  const year = String(new Date().getFullYear());
+  const hiredThisYear = all.filter(e => yearOf(e.hireDate) === year).length;
 
   $("#staffKpis").innerHTML =
-    kpi("إجمالي الملفات", fmt(all.length), "في قاعدة الفرع", "brand") +
-    kpi("على رأس العمل", fmt(on.length), all.length ? pct(Math.round(on.length / all.length * 100)) + " من الكادر" : "—", "good") +
-    kpi("في إجازة", fmt(byStatus("إجازة")), "حسب حالة الملف", "warn") +
-    kpi("منتهي الخدمة", fmt(byStatus("منتهي الخدمة")), "أرشيف الفرع", "ink") +
-    kpi("الأقسام", fmt(uniq(on.map(e => e.department).filter(Boolean)).length), "بها كادر عامل", "seal") +
-    kpi("متوسط الخدمة", avg == null ? "—" : fmt(avg), "سنة لكل موظف عامل", "brand");
+    kpi("إجمالي الموظفين", fmt(all.length), "ملفًا في قاعدة الفرع", "brand") +
+    kpi("الأقسام", fmt(uniq(all.map(e => e.department).filter(Boolean)).length), "بها كادر", "seal") +
+    kpi("المسميات الوظيفية", fmt(uniq(all.map(e => e.jobTitle).filter(Boolean)).length), "مسمى مختلفًا", "brand") +
+    kpi("متوسط الخدمة", avg == null ? "—" : fmt(avg), "سنة لكل موظف", "good") +
+    kpi("وثائق تحتاج متابعة", fmt(flagged), "موظفًا وثيقته تقارب الانتهاء", flagged ? "warn" : "good") +
+    kpi("تعيينات هذا العام", fmt(hiredThisYear), "موظفًا منذ يناير", "seal");
 
   fillSelect("#staffDept", "كل الأقسام", facetValues("department"), state.staff.dept);
-  fillSelect("#staffCat", "كل الفئات", uniq(all.map(e => e.category).filter(Boolean)).sort(byAr), state.staff.cat);
-  fillSelect("#staffStatus", "كل الحالات", STATUSES.map(s => s.v), state.staff.status);
+  fillSelect("#staffTitle", "كل المسميات", facetValues("jobTitle"), state.staff.title);
 
   const rows = staffRows();
   const host = $("#staffHost");
@@ -1586,7 +1533,6 @@ function renderStaff() {
           const style = i === 0 ? ' style="--c:' + hueOf(e.department) + '"' : "";
           let cell;
           if (!v && v !== 0) cell = "—";
-          else if (k === "status") cell = '<span class="chip dot t-' + (STATUS_TONE[v] || "ink") + '">' + esc(v) + "</span>";
           else if (f.expiry) { const s = expiryState(v); cell = '<span class="chip t-' + s.tone + '">' + esc(v) + "</span>"; }
           else if (f.t === "int") cell = fmt(v);
           else cell = esc(v);
@@ -1602,9 +1548,9 @@ function renderStaff() {
 
   const emp = "موظفًا";
   $("#staffCharts").innerHTML =
-    barChart("حسب القسم", "الكادر على رأس العمل", tally(on, "department", 10), emp, true) +
-    barChart("حسب الفئة", "التوزيع المهني للكادر العامل", tally(on, "category", 8), emp) +
-    barChart("حسب الجنسية", "الكادر العامل", tally(on, "nationality", 6), emp);
+    barChart("حسب القسم", "توزيع الكادر على أقسام الفرع", tally(all, "department", 10), emp, true) +
+    barChart("حسب المسمى الوظيفي", "أكثر المسميات تكرارًا", tally(all, "jobTitle", 8), emp) +
+    barChart("حسب الجنسية", "جنسيات الكادر", tally(all, "nationality", 6), emp);
 }
 
 function fillSelect(sel, all, values, cur) {
@@ -1639,7 +1585,6 @@ function barChart(title, cap, items, unit, byEntity) {
    ٩ · الوحدة الثالثة — سعة الفرع وموارده
    ═════════════════════════════════════════════════════════════════ */
 const SLOT_KINDS = new Set(RES_KINDS.filter(k => k.slots).map(k => k.k));
-const isDoctor = e => e.category === "طبيب" || e.category === "طبيب أسنان";
 
 function capacity() {
   const live = state.res.filter(r => LIVE_STATUS.includes(r.status));
@@ -1751,12 +1696,9 @@ function renderCapacity() {
 }
 
 /* جدول كفاية الكادر: لكل قسم غرفه العاملة وطاقته ومن يعمل فيه */
-/* الكادر هنا هو المسجَّل غير المنتهية خدمته — لا العامل اليوم وحده، فمن
-   في إجازة يظل جزءًا من ملاك القسم عند قياس السعة. */
-const onStaff = () => state.emps.filter(e => e.status !== "منتهي الخدمة");
 function renderStaffing() {
   const names = uniq(state.res.map(r => r.department).filter(Boolean)
-    .concat(onStaff().map(e => e.department).filter(Boolean))).sort(byAr);
+    .concat(state.emps.map(e => e.department).filter(Boolean))).sort(byAr);
   if (!names.length) {
     $("#capStaffing").innerHTML = '<p class="okstate">أضف موارد الفرع وموظفيه ليظهر توزيع الغرف على الأقسام.</p>';
     return;
@@ -1764,33 +1706,27 @@ function renderStaffing() {
   const rows = names.map(d => {
     const rs = state.res.filter(r => r.department === d);
     const liveRooms = rs.filter(r => LIVE_STATUS.includes(r.status));
-    /* العيادات ووحدات الأسنان وحدها هي التي تلزمها كوادر طبية */
-    const clinics = liveRooms.filter(r => r.kind === "clinic" || r.kind === "dental").length;
     const slots = liveRooms.filter(r => SLOT_KINDS.has(r.kind)).reduce((s, r) => s + (Number(r.slots) || 0), 0);
-    const staff = onStaff().filter(e => e.department === d);
-    const docs = staff.filter(isDoctor).length;
-    const nurses = staff.filter(e => e.category === "تمريض").length;
+    const staff = state.emps.filter(e => e.department === d);
+    const perStaff = staff.length ? Math.round(slots / staff.length * 10) / 10 : 0;
     let v;
-    if (clinics && !docs)                     v = { t:"عيادات بلا طبيب", tone:"crit" };
-    else if (liveRooms.length && !staff.length) v = { t:"موارد بلا كادر", tone:"crit" };
-    else if (clinics && docs > clinics)       v = { t:"الأطباء أكثر من العيادات", tone:"warn" };
-    else if (!liveRooms.length && rs.length)  v = { t:"موارد القسم متوقفة", tone:"serious" };
-    else if (!rs.length && staff.length)      v = { t:"بلا مورد مخصَّص", tone:"ink" };
+    if (liveRooms.length && !staff.length)     v = { t:"موارد بلا كادر", tone:"crit" };
+    else if (!liveRooms.length && rs.length)   v = { t:"موارد القسم متوقفة", tone:"serious" };
+    else if (!rs.length && staff.length)       v = { t:"بلا مورد مخصَّص", tone:"ink" };
     else if (liveRooms.length && staff.length) v = { t:"متوازن", tone:"good" };
     else v = { t:"—", tone:"ink" };
-    return { d, rooms:rs.length, liveRooms:liveRooms.length, slots, docs, nurses, staff:staff.length, v };
+    return { d, rooms:rs.length, liveRooms:liveRooms.length, slots, staff:staff.length, perStaff, v };
   });
   $("#capStaffing").innerHTML = '<div class="tbl" style="max-height:none"><table class="db"><thead><tr>' +
-    ["القسم","الموارد","في الخدمة","الطاقة اليومية","أطباء","تمريض","إجمالي الكادر","الحال"]
+    ["القسم","الموارد","في الخدمة","الطاقة اليومية","كادر القسم","مواعيد لكل موظف","الحال"]
       .map(c => "<th>" + esc(c) + "</th>").join("") + "</tr></thead><tbody>" +
     rows.map(r => '<tr style="cursor:default">' +
       '<td class="br" style="--c:' + hueOf(r.d) + '">' + esc(r.d) + "</td>" +
       '<td class="mono">' + fmt(r.rooms) + "</td>" +
       '<td class="mono">' + fmt(r.liveRooms) + "</td>" +
       '<td class="mono">' + fmt(r.slots) + "</td>" +
-      '<td class="mono">' + fmt(r.docs) + "</td>" +
-      '<td class="mono">' + fmt(r.nurses) + "</td>" +
       '<td class="mono">' + fmt(r.staff) + "</td>" +
+      '<td class="mono">' + (r.perStaff ? fmt(r.perStaff) : "—") + "</td>" +
       '<td><span class="chip dot t-' + r.v.tone + '">' + esc(r.v.t) + "</span></td></tr>").join("") +
     "</tbody></table></div>";
 }
@@ -2376,8 +2312,7 @@ function exportSheets() {
         ["إجمالي الموارد", c.rooms], ["الموارد في الخدمة", c.live], ["الغرف التشغيلية العاملة", c.op],
         ["الطاقة اليومية (موعد)", c.daily], ["الطاقة الأسبوعية (موعد)", c.weekly],
         ["ساعات التشغيل يوميًا", c.hours], ["نسبة الجاهزية ٪", c.ready],
-        ["عدد الموظفين", state.emps.length], ["على رأس العمل", active().length],
-        ["سجلات التوثيق", state.recs.length],
+        ["عدد الموظفين", state.emps.length], ["سجلات التوثيق", state.recs.length],
         ["تاريخ التصدير", todayISO()],
       ]) },
   ];
@@ -2426,92 +2361,64 @@ const SEED_BRANCH = { name:"فرع السويدي", code:"SWD", licenseNo:"1010-
 
 const SEED_EMPS = [
   { id:"1001", name:"د. سامي بن عبدالله العتيبي", nameEn:"Sami Alotaibi", nationalId:"1043829175", gender:"ذكر",
-    dob:"1982-04-11", nationality:"سعودي", marital:"متزوج", mobile:"0551234567", email:"sami@branch.sa",
-    address:"الرياض — السويدي", emgName:"عبدالله العتيبي", emgPhone:"0551110022",
-    jobTitle:"استشاري طب أسرة · المدير الطبي", category:"طبيب", department:"طب الأسرة", manager:"أ. تركي بن سعد العنزي",
-    hireDate:"2016-03-01", empType:"دوام كامل", contractEnd:plus(400), shift:"صباحي", status:"على رأس العمل", salary:32000,
-    scfhsNo:"09-R-1188420", scfhsExpiry:plus(310), licenseNo:"PR-448120", licenseExpiry:plus(280), blsExpiry:plus(190),
-    iqamaExpiry:plus(720), passportNo:"K4482017", passportExpiry:plus(900), insuranceNo:"BUPA-99120" },
+    dob:"1982-04-11", nationality:"سعودي", mobile:"0551234567", email:"sami@branch.sa",
+    jobTitle:"استشاري طب أسرة · المدير الطبي", department:"طب الأسرة", manager:"أ. تركي بن سعد العنزي",
+    hireDate:"2016-03-01", iqamaExpiry:plus(720), passportNo:"K4482017", passportExpiry:plus(900), insuranceNo:"BUPA-99120" },
   { id:"1002", name:"د. نورة بنت فهد الحربي", nameEn:"Noura Alharbi", nationalId:"1092837465", gender:"أنثى",
-    dob:"1987-09-23", nationality:"سعودية", marital:"متزوجة", mobile:"0553219876", email:"noura@branch.sa",
-    jobTitle:"أخصائية جلدية", category:"طبيب", department:"الجلدية", manager:"د. سامي بن عبدالله العتيبي",
-    hireDate:"2019-08-15", empType:"دوام كامل", contractEnd:plus(220), shift:"مسائي", status:"على رأس العمل", salary:26000,
-    scfhsNo:"09-R-2204118", scfhsExpiry:plus(120), licenseNo:"PR-551903", licenseExpiry:plus(18), blsExpiry:plus(240),
-    iqamaExpiry:plus(650), insuranceNo:"BUPA-99121" },
+    dob:"1987-09-23", nationality:"سعودية", mobile:"0553219876", email:"noura@branch.sa",
+    jobTitle:"أخصائية جلدية", department:"الجلدية", manager:"د. سامي بن عبدالله العتيبي",
+    hireDate:"2019-08-15", iqamaExpiry:plus(650), insuranceNo:"BUPA-99121" },
   { id:"1003", name:"د. خالد محمود عبدالعزيز", nameEn:"Khaled Mahmoud", nationalId:"2233445566", gender:"ذكر",
-    dob:"1985-01-30", nationality:"مصري", marital:"متزوج", mobile:"0554567123", email:"khaled@branch.sa",
-    jobTitle:"أخصائي أسنان", category:"طبيب أسنان", department:"الأسنان", manager:"د. سامي بن عبدالله العتيبي",
-    hireDate:"2020-02-10", empType:"دوام كامل", contractEnd:plus(150), shift:"متناوب", status:"على رأس العمل", salary:22000,
-    scfhsNo:"09-D-3319007", scfhsExpiry:plus(95), licenseNo:"PR-660112", licenseExpiry:plus(140), blsExpiry:plus(75),
-    iqamaExpiry:plus(25), passportNo:"A18823901", passportExpiry:plus(310), insuranceNo:"BUPA-99122" },
+    dob:"1985-01-30", nationality:"مصري", mobile:"0554567123", email:"khaled@branch.sa",
+    jobTitle:"أخصائي أسنان", department:"الأسنان", manager:"د. سامي بن عبدالله العتيبي",
+    hireDate:"2020-02-10", iqamaExpiry:plus(25), passportNo:"A18823901", passportExpiry:plus(310), insuranceNo:"BUPA-99122" },
   { id:"1004", name:"د. ريم بنت ناصر القحطاني", nameEn:"Reem Alqahtani", nationalId:"1055667788", gender:"أنثى",
-    dob:"1989-06-14", nationality:"سعودية", marital:"عزباء", mobile:"0556781234", email:"reem@branch.sa",
-    jobTitle:"أخصائية نساء وولادة", category:"طبيب", department:"النساء والولادة", manager:"د. سامي بن عبدالله العتيبي",
-    hireDate:"2021-11-01", empType:"دوام كامل", contractEnd:plus(500), shift:"صباحي", status:"إجازة", salary:25000,
-    scfhsNo:"09-R-4410225", scfhsExpiry:plus(400), licenseNo:"PR-771554", licenseExpiry:plus(360), blsExpiry:plus(50),
-    iqamaExpiry:plus(800), insuranceNo:"BUPA-99123" },
+    dob:"1989-06-14", nationality:"سعودية", mobile:"0556781234", email:"reem@branch.sa",
+    jobTitle:"أخصائية نساء وولادة", department:"النساء والولادة", manager:"د. سامي بن عبدالله العتيبي",
+    hireDate:"2021-11-01", iqamaExpiry:plus(800), insuranceNo:"BUPA-99123" },
   { id:"1005", name:"أ. منى بنت سالم الزهراني", nameEn:"Muna Alzahrani", nationalId:"1077889900", gender:"أنثى",
-    dob:"1992-12-02", nationality:"سعودية", marital:"متزوجة", mobile:"0559012345", email:"muna@branch.sa",
-    jobTitle:"ممرضة أولى", category:"تمريض", department:"طب الأسرة", manager:"د. سامي بن عبدالله العتيبي",
-    hireDate:"2018-05-20", empType:"دوام كامل", contractEnd:plus(600), shift:"صباحي", status:"على رأس العمل", salary:11000,
-    scfhsNo:"09-N-5501992", scfhsExpiry:plus(230), licenseNo:"PR-882301", licenseExpiry:plus(210), blsExpiry:plus(320),
-    iqamaExpiry:plus(700), insuranceNo:"BUPA-99124" },
+    dob:"1992-12-02", nationality:"سعودية", mobile:"0559012345", email:"muna@branch.sa",
+    jobTitle:"ممرضة أولى", department:"طب الأسرة", manager:"د. سامي بن عبدالله العتيبي",
+    hireDate:"2018-05-20", iqamaExpiry:plus(700), insuranceNo:"BUPA-99124" },
   { id:"1006", name:"أ. هدى بنت علي الدوسري", nameEn:"Huda Aldosari", nationalId:"1088990011", gender:"أنثى",
-    dob:"1994-03-19", nationality:"سعودية", marital:"عزباء", mobile:"0552345678", email:"huda@branch.sa",
-    jobTitle:"ممرضة أسنان", category:"تمريض", department:"الأسنان", manager:"أ. منى بنت سالم الزهراني",
-    hireDate:"2022-01-09", empType:"دوام كامل", contractEnd:plus(320), shift:"متناوب", status:"على رأس العمل", salary:9000,
-    scfhsNo:"09-N-6612334", scfhsExpiry:plus(45), licenseNo:"PR-993412", licenseExpiry:plus(180), blsExpiry:plus(260),
-    iqamaExpiry:plus(660), insuranceNo:"BUPA-99125" },
+    dob:"1994-03-19", nationality:"سعودية", mobile:"0552345678", email:"huda@branch.sa",
+    jobTitle:"ممرضة أسنان", department:"الأسنان", manager:"أ. منى بنت سالم الزهراني",
+    hireDate:"2022-01-09", iqamaExpiry:plus(45), insuranceNo:"BUPA-99125" },
   { id:"1007", name:"أ. فيصل بن مرزوق المطيري", nameEn:"Faisal Almutairi", nationalId:"1099001122", gender:"ذكر",
-    dob:"1990-07-07", nationality:"سعودي", marital:"متزوج", mobile:"0557890123", email:"faisal@branch.sa",
-    jobTitle:"فني أشعة", category:"فني", department:"الأشعة", manager:"د. سامي بن عبدالله العتيبي",
-    hireDate:"2019-04-14", empType:"دوام كامل", contractEnd:plus(280), shift:"مسائي", status:"على رأس العمل", salary:9500,
-    scfhsNo:"09-T-7723445", scfhsExpiry:plus(160), licenseNo:"PR-104523", licenseExpiry:plus(150), blsExpiry:plus(-12),
-    iqamaExpiry:plus(690), insuranceNo:"BUPA-99126" },
+    dob:"1990-07-07", nationality:"سعودي", mobile:"0557890123", email:"faisal@branch.sa",
+    jobTitle:"فني أشعة", department:"الأشعة", manager:"د. سامي بن عبدالله العتيبي",
+    hireDate:"2019-04-14", iqamaExpiry:plus(690), insuranceNo:"BUPA-99126" },
   { id:"1008", name:"أ. عبدالله بن يحيى الغامدي", nameEn:"Abdullah Alghamdi", nationalId:"1100112233", gender:"ذكر",
-    dob:"1991-10-25", nationality:"سعودي", marital:"متزوج", mobile:"0553456789", email:"abdullah@branch.sa",
-    jobTitle:"فني مختبر", category:"فني", department:"المختبر", manager:"د. سامي بن عبدالله العتيبي",
-    hireDate:"2020-09-01", empType:"دوام كامل", contractEnd:plus(340), shift:"صباحي", status:"على رأس العمل", salary:9000,
-    scfhsNo:"09-T-8834556", scfhsExpiry:plus(270), licenseNo:"PR-215634", licenseExpiry:plus(250), blsExpiry:plus(130),
-    iqamaExpiry:plus(710), insuranceNo:"BUPA-99127" },
+    dob:"1991-10-25", nationality:"سعودي", mobile:"0553456789", email:"abdullah@branch.sa",
+    jobTitle:"فني مختبر", department:"المختبر", manager:"د. سامي بن عبدالله العتيبي",
+    hireDate:"2020-09-01", iqamaExpiry:plus(710), insuranceNo:"BUPA-99127" },
   { id:"1009", name:"أ. لمياء بنت حسن السبيعي", nameEn:"Lamia Alsubaie", nationalId:"1111223344", gender:"أنثى",
-    dob:"1993-02-16", nationality:"سعودية", marital:"عزباء", mobile:"0554321098", email:"lamia@branch.sa",
-    jobTitle:"صيدلانية", category:"صيدلة", department:"الصيدلية", manager:"أ. تركي بن سعد العنزي",
-    hireDate:"2021-06-06", empType:"دوام كامل", contractEnd:plus(55), shift:"متناوب", status:"على رأس العمل", salary:13000,
-    scfhsNo:"09-P-9945667", scfhsExpiry:plus(300), licenseNo:"PR-326745", licenseExpiry:plus(290), blsExpiry:plus(200),
-    iqamaExpiry:plus(730), insuranceNo:"BUPA-99128" },
+    dob:"1993-02-16", nationality:"سعودية", mobile:"0554321098", email:"lamia@branch.sa",
+    jobTitle:"صيدلانية", department:"الصيدلية", manager:"أ. تركي بن سعد العنزي",
+    hireDate:"2021-06-06", iqamaExpiry:plus(730), insuranceNo:"BUPA-99128" },
   { id:"1010", name:"أ. تركي بن سعد العنزي", nameEn:"Turki Alanazi", nationalId:"1122334455", gender:"ذكر",
-    dob:"1986-11-11", nationality:"سعودي", marital:"متزوج", mobile:"0555678901", email:"turki@branch.sa",
-    jobTitle:"مدير الفرع", category:"إداري", department:"الإدارة", manager:"—",
-    hireDate:"2017-01-15", empType:"دوام كامل", contractEnd:plus(700), shift:"صباحي", status:"على رأس العمل", salary:18000,
-    iqamaExpiry:plus(780), insuranceNo:"BUPA-99129" },
+    dob:"1986-11-11", nationality:"سعودي", mobile:"0555678901", email:"turki@branch.sa",
+    jobTitle:"مدير الفرع", department:"الإدارة", manager:"—",
+    hireDate:"2017-01-15", iqamaExpiry:plus(780), insuranceNo:"BUPA-99129" },
   { id:"1011", name:"أ. سارة بنت عمر البقمي", nameEn:"Sarah Albogami", nationalId:"1133445566", gender:"أنثى",
-    dob:"1996-08-08", nationality:"سعودية", marital:"عزباء", mobile:"0556789012", email:"sarah@branch.sa",
-    jobTitle:"موظفة تأمين ومطالبات", category:"إداري", department:"التأمين", manager:"أ. تركي بن سعد العنزي",
-    hireDate:"2023-03-12", empType:"دوام كامل", contractEnd:plus(40), shift:"صباحي", status:"على رأس العمل", salary:7500,
-    iqamaExpiry:plus(640), insuranceNo:"BUPA-99130" },
+    dob:"1996-08-08", nationality:"سعودية", mobile:"0556789012", email:"sarah@branch.sa",
+    jobTitle:"موظفة تأمين ومطالبات", department:"التأمين", manager:"أ. تركي بن سعد العنزي",
+    hireDate:"2023-03-12", iqamaExpiry:plus(640), insuranceNo:"BUPA-99130" },
   { id:"1012", name:"أ. ماجد بن راشد الحارثي", nameEn:"Majed Alharthi", nationalId:"1144556677", gender:"ذكر",
-    dob:"1995-05-05", nationality:"سعودي", marital:"أعزب", mobile:"0557891234", email:"majed@branch.sa",
-    jobTitle:"موظف استقبال", category:"إداري", department:"الاستقبال", manager:"أ. تركي بن سعد العنزي",
-    hireDate:"2022-10-02", empType:"دوام جزئي", contractEnd:plus(210), shift:"مسائي", status:"على رأس العمل", salary:6000,
-    iqamaExpiry:plus(600), insuranceNo:"BUPA-99131" },
+    dob:"1995-05-05", nationality:"سعودي", mobile:"0557891234", email:"majed@branch.sa",
+    jobTitle:"موظف استقبال", department:"الاستقبال", manager:"أ. تركي بن سعد العنزي",
+    hireDate:"2022-10-02", iqamaExpiry:plus(600), insuranceNo:"BUPA-99131" },
   { id:"1013", name:"أ. راجيش كومار", nameEn:"Rajesh Kumar", nationalId:"2244556677", gender:"ذكر",
-    dob:"1988-04-04", nationality:"هندي", marital:"متزوج", mobile:"0558901234", email:"rajesh@branch.sa",
-    jobTitle:"مشرف خدمات مساندة", category:"خدمات", department:"الخدمات المساندة", manager:"أ. تركي بن سعد العنزي",
-    hireDate:"2019-12-01", empType:"دوام كامل", contractEnd:plus(90), shift:"متناوب", status:"على رأس العمل", salary:5500,
-    iqamaExpiry:plus(48), passportNo:"M7719284", passportExpiry:plus(58), insuranceNo:"BUPA-99132" },
-  { id:"1014", name:"د. عبير بنت صالح الشهري", nameEn:"Abeer Alshehri", nationalId:"1155667788", gender:"أنثى",
-    dob:"1984-02-28", nationality:"سعودية", marital:"متزوجة", mobile:"0559123456", email:"abeer@branch.sa",
-    jobTitle:"أخصائية أطفال", category:"طبيب", department:"الأطفال", manager:"د. سامي بن عبدالله العتيبي",
-    hireDate:"2018-09-09", empType:"دوام كامل", shift:"صباحي", status:"منتهي الخدمة", endDate:plus(-45), salary:24000,
-    scfhsNo:"09-R-1157889", scfhsExpiry:plus(-30), licenseNo:"PR-437856", licenseExpiry:plus(-20) },
+    dob:"1988-04-04", nationality:"هندي", mobile:"0558901234", email:"rajesh@branch.sa",
+    jobTitle:"مشرف خدمات مساندة", department:"الخدمات المساندة", manager:"أ. تركي بن سعد العنزي",
+    hireDate:"2019-12-01", iqamaExpiry:plus(48), passportNo:"M7719284", passportExpiry:plus(58), insuranceNo:"BUPA-99132" },
 ];
 
 const SEED_RECS = [
   { empId:"1001", type:"evaluation", sub:"سنوي", date:plus(-60), amount:94, title:"تقييم الأداء السنوي ٢٠٢٥",
     details:"أداء متميز في إدارة العيادة وضبط أوقات الانتظار.", by:"أ. تركي العنزي", status:"" },
   { empId:"1002", type:"leave", sub:"سنوية", date:plus(-40), from:plus(-40), to:plus(-26), amount:15,
-    title:"إجازة سنوية ١٥ يومًا", details:"غطّت الفترة د. عبير الشهري.", by:"الموارد البشرية" },
+    title:"إجازة سنوية ١٥ يومًا", details:"غُطّيت العيادة بجدول مناوبة بديل.", by:"الموارد البشرية" },
   { empId:"1003", type:"late", sub:"دخول متأخر", date:plus(-12), amount:35, title:"تأخير ٣٥ دقيقة عن بداية الوردية",
     details:"أُبلغ شفهيًا، والتزم بعدها.", by:"أ. تركي العنزي" },
   { empId:"1003", type:"training", sub:"CME", date:plus(-90), from:plus(-92), to:plus(-90), amount:12,
@@ -2525,15 +2432,13 @@ const SEED_RECS = [
   { empId:"1007", type:"violation", sub:"سلامة المرضى", date:plus(-20), title:"عدم التحقق من هوية المريض قبل التصوير",
     details:"رُصد في جولة الجودة، وأُعيد التدريب على سياسة التحقق المزدوج.", by:"الجودة", status:"مفتوح" },
   { empId:"1009", type:"document", sub:"عقد", date:plus(-30), title:"نسخة عقد العمل الموقَّع",
-    details:"العقد ينتهي قريبًا ويحتاج تجديدًا.", by:"الموارد البشرية" },
+    details:"محفوظة في ملف الموظفة الورقي وفي المرفقات.", by:"الموارد البشرية" },
   { empId:"1011", type:"complaint", sub:"شكوى مريض", date:plus(-5), title:"شكوى على تأخر اعتماد التأمين",
     details:"المريض انتظر ٥٠ دقيقة لاعتماد الموافقة. جارٍ مراجعة الإجراء مع شركة التأمين.", by:"خدمة العملاء", status:"مفتوح" },
   { empId:"1012", type:"jobchange", sub:"تغيير مسمى", date:plus(-75), title:"نقل من الخدمات إلى الاستقبال",
     details:"بناءً على طلبه وحاجة العمل.", by:"الموارد البشرية" },
   { empId:"1013", type:"note", date:plus(-3), title:"تنبيه: الإقامة والجواز يقتربان من الانتهاء",
     details:"بدأت إجراءات التجديد لدى شؤون الموظفين.", by:"شؤون الموظفين" },
-  { empId:"1014", type:"jobchange", sub:"إنهاء خدمة", date:plus(-45), title:"إنهاء خدمة بنهاية العقد",
-    details:"صُرفت المستحقات وسُلّم إخلاء الطرف.", by:"الموارد البشرية" },
 ];
 
 const SEED_RES = [
@@ -2545,7 +2450,7 @@ const SEED_RES = [
   { code:"C-104", name:"عيادة النساء والولادة", kind:"clinic", department:"النساء والولادة", floor:"الثاني", status:"جاهزة",
     assignedTo:"1004", slots:22, hours:7 },
   { code:"C-105", name:"عيادة الأطفال", kind:"clinic", department:"الأطفال", floor:"الثاني", status:"خارج الخدمة",
-    slots:0, hours:0, notes:"مغلقة بعد انتهاء خدمة أخصائية الأطفال — بانتظار التعيين." },
+    slots:0, hours:0, notes:"مغلقة بانتظار تعيين أخصائي أطفال." },
   { code:"D-201", name:"وحدة أسنان ١", kind:"dental", department:"الأسنان", floor:"الثاني", status:"مشغولة",
     assignedTo:"1003", slots:18, hours:8, serial:"DNT-44120", lastMaint:plus(-160), nextMaint:plus(20) },
   { code:"D-202", name:"وحدة أسنان ٢", kind:"dental", department:"الأسنان", floor:"الثاني", status:"تحت الصيانة",
@@ -2642,7 +2547,7 @@ function wire() {
       if (a === "goEmp")      go("emp");
       if (a === "newRes")     openResForm(null);
       if (a === "moreStaff")  { state.staff.shown += ROWS_PAGE; renderStaff(); }
-      if (a === "resetStaff") { state.staff = { q:"", dept:"", cat:"", status:"", shown:ROWS_PAGE };
+      if (a === "resetStaff") { state.staff = { q:"", dept:"", title:"", shown:ROWS_PAGE };
                                 $("#staffSearch").value = ""; renderStaff(); }
       return;
     }
@@ -2688,12 +2593,11 @@ function wire() {
 
   /* الوحدة الثانية */
   const sf = () => { state.staff.shown = ROWS_PAGE; renderStaff(); };
-  $("#staffSearch").oninput  = e => { state.staff.q = e.target.value; sf(); };
-  $("#staffDept").onchange   = e => { state.staff.dept = e.target.value; sf(); };
-  $("#staffCat").onchange    = e => { state.staff.cat = e.target.value; sf(); };
-  $("#staffStatus").onchange = e => { state.staff.status = e.target.value; sf(); };
-  $("#staffReset").onclick   = () => { state.staff = { q:"", dept:"", cat:"", status:"", shown:ROWS_PAGE };
-                                       $("#staffSearch").value = ""; renderStaff(); };
+  $("#staffSearch").oninput = e => { state.staff.q = e.target.value; sf(); };
+  $("#staffDept").onchange  = e => { state.staff.dept = e.target.value; sf(); };
+  $("#staffTitle").onchange = e => { state.staff.title = e.target.value; sf(); };
+  $("#staffReset").onclick  = () => { state.staff = { q:"", dept:"", title:"", shown:ROWS_PAGE };
+                                      $("#staffSearch").value = ""; renderStaff(); };
   $("#staffXlsx").onclick = async () => {
     const rows = staffRows();
     const blob = await buildXlsx([{ name:"Employees",
