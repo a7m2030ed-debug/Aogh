@@ -1,0 +1,2803 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>نظام إدارة وتوثيق الفرع الطبي — Pilot</title>
+</head>
+<body>
+<style>
+/* ═══════════════ tokens ═══════════════ */
+:root{
+  color-scheme: light;
+  --paper:#EEF0F6; --card:#FFFFFF; --sunk:#F5F6FA;
+  --ink:#131834; --ink-2:#4B5273; --ink-3:#7C84A4;
+  --line:#DDE1EC; --line-2:#EAEDF4;
+  --brand:#2E3A8C; --brand-2:#4551B8; --brand-ink:#1E2668; --brand-soft:#E5E8F8; --on-brand:#FFFFFF;
+  --seal:#96671A; --seal-soft:#F4EAD6;
+  --good:#1C7A55; --good-soft:#DFF1E9;
+  --warn:#8E640F; --warn-soft:#F7EBD3;
+  --serious:#A9501E; --serious-soft:#FAE6DA;
+  --crit:#A82838; --crit-soft:#FAE1E4;
+  --bar:#2a78d6; --grid:#E6E9F1;
+  --c1:#2a78d6; --c2:#eb6834; --c3:#1baf7a; --c4:#eda100;
+  --c5:#e87ba4; --c6:#008300; --c7:#4a3aa7; --c8:#e34948;
+  --shadow:0 1px 2px rgba(19,24,52,.05), 0 10px 26px -14px rgba(19,24,52,.20);
+  --shadow-lg:0 2px 6px rgba(19,24,52,.08), 0 28px 60px -20px rgba(19,24,52,.32);
+  --f-display:"Noto Kufi Arabic","Sakkal Majalla","Segoe UI",Tahoma,sans-serif;
+  --f-body:"Noto Sans Arabic","Segoe UI",Tahoma,Arial,sans-serif;
+  --f-mono:ui-monospace,"Cascadia Mono","SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --paper:#0B0E1B; --card:#141829; --sunk:#101425;
+    --ink:#E8EBF5; --ink-2:#AAB2CE; --ink-3:#7B84A5;
+    --line:#252B44; --line-2:#1C2135;
+    --brand:#8892F2; --brand-2:#A2AAF7; --brand-ink:#B9BFFA; --brand-soft:#1D2246; --on-brand:#0B0E1B;
+    --seal:#D2A65A; --seal-soft:#2A2314;
+    --good:#4FBF8B; --good-soft:#102A22;
+    --warn:#D9A83F; --warn-soft:#2C2412;
+    --serious:#E4864F; --serious-soft:#2E1E14;
+    --crit:#E5697A; --crit-soft:#2E1720;
+    --bar:#3987e5; --grid:#212741;
+    --c1:#3987e5; --c2:#d95926; --c3:#199e70; --c4:#c98500;
+    --c5:#d55181; --c6:#008300; --c7:#9085e9; --c8:#e66767;
+    --shadow:0 1px 2px rgba(0,0,0,.45), 0 10px 26px -14px rgba(0,0,0,.7);
+    --shadow-lg:0 2px 6px rgba(0,0,0,.5), 0 28px 60px -20px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --paper:#0B0E1B; --card:#141829; --sunk:#101425;
+  --ink:#E8EBF5; --ink-2:#AAB2CE; --ink-3:#7B84A5;
+  --line:#252B44; --line-2:#1C2135;
+  --brand:#8892F2; --brand-2:#A2AAF7; --brand-ink:#B9BFFA; --brand-soft:#1D2246; --on-brand:#0B0E1B;
+  --seal:#D2A65A; --seal-soft:#2A2314;
+  --good:#4FBF8B; --good-soft:#102A22;
+  --warn:#D9A83F; --warn-soft:#2C2412;
+  --serious:#E4864F; --serious-soft:#2E1E14;
+  --crit:#E5697A; --crit-soft:#2E1720;
+  --bar:#3987e5; --grid:#212741;
+  --c1:#3987e5; --c2:#d95926; --c3:#199e70; --c4:#c98500;
+  --c5:#d55181; --c6:#008300; --c7:#9085e9; --c8:#e66767;
+  --shadow:0 1px 2px rgba(0,0,0,.45), 0 10px 26px -14px rgba(0,0,0,.7);
+  --shadow-lg:0 2px 6px rgba(0,0,0,.5), 0 28px 60px -20px rgba(0,0,0,.8);
+}
+/* درجات الحالة — تُستعمل بطاقات وحبّات وحدود */
+.t-good{ --tone:var(--good); --tone-soft:var(--good-soft); --tone-ink:var(--good); }
+.t-warn{ --tone:var(--warn); --tone-soft:var(--warn-soft); --tone-ink:var(--warn); }
+.t-serious{ --tone:var(--serious); --tone-soft:var(--serious-soft); --tone-ink:var(--serious); }
+.t-crit{ --tone:var(--crit); --tone-soft:var(--crit-soft); --tone-ink:var(--crit); }
+.t-brand{ --tone:var(--brand); --tone-soft:var(--brand-soft); --tone-ink:var(--brand-ink); }
+.t-seal{ --tone:var(--seal); --tone-soft:var(--seal-soft); --tone-ink:var(--seal); }
+.t-ink{ --tone:var(--ink-3); --tone-soft:var(--sunk); --tone-ink:var(--ink-2); }
+
+*{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; }
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:var(--f-body); font-size:14px; line-height:1.65;
+  -webkit-text-size-adjust:100%;
+}
+h1,h2,h3,h4{ font-family:var(--f-display); margin:0; font-weight:700; line-height:1.35; text-wrap:balance; }
+button,input,select,textarea{ font:inherit; color:inherit; }
+:focus-visible{ outline:2px solid var(--brand); outline-offset:2px; border-radius:6px; }
+.num{ font-variant-numeric:tabular-nums; }
+.mono{ font-family:var(--f-mono); font-variant-numeric:tabular-nums; letter-spacing:-.01em; }
+.muted{ color:var(--ink-3); }
+.grow{ flex:1; }
+.nowrap{ white-space:nowrap; }
+
+/* ═══════════════ الشريط العلوي ═══════════════ */
+.appbar{
+  background:linear-gradient(180deg, #24336E, #1C2755);
+  color:#FFFFFF; border-bottom:3px solid var(--seal);
+  position:sticky; top:0; z-index:40;
+}
+:root[data-theme="dark"] .appbar,
+:root:where(:not([data-theme="light"])) .appbar{ background:linear-gradient(180deg, #1A2450, #131B3C); }
+.appbar-in{
+  max-width:1320px; margin:0 auto; padding:10px 20px;
+  display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+}
+.mark{
+  width:38px; height:38px; flex:none; display:grid; place-items:center; border-radius:10px;
+  background:#FFFFFF; color:#1C2755; cursor:pointer; border:0;
+}
+.mark svg{ width:22px; height:22px; }
+.org{ display:flex; flex-direction:column; line-height:1.3; min-width:0; }
+.org b{ font-family:var(--f-display); font-size:17px; letter-spacing:.01em; }
+.org em{ font-style:normal; font-size:11.5px; color:#B9C2E8; }
+.tools{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.tbtn{
+  display:inline-flex; align-items:center; justify-content:center; gap:6px; cursor:pointer;
+  height:34px; padding:0 11px; border-radius:9px; font-size:12.5px; font-weight:600;
+  color:#EAEEFB; background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.20);
+  transition:background .15s, border-color .15s;
+}
+.tbtn:hover{ background:rgba(255,255,255,.20); border-color:rgba(255,255,255,.38); }
+.tbtn:focus-visible{ outline:2px solid #fff; outline-offset:2px; }
+.tbtn svg{ width:15px; height:15px; flex:none; }
+.tbtn.only{ width:34px; padding:0; }
+.tbtn.on{ background:#FFFFFF; color:#1C2755; border-color:#FFFFFF; }
+
+/* شريط الوحدات تحت الشريط العلوي */
+.navbar{ background:var(--card); border-bottom:1px solid var(--line); position:sticky; top:57px; z-index:35; }
+.navbar-in{ max-width:1320px; margin:0 auto; padding:0 20px; display:flex; gap:2px; overflow-x:auto; }
+.nav{
+  display:inline-flex; align-items:center; gap:7px; cursor:pointer; white-space:nowrap;
+  padding:11px 14px; border:0; background:transparent; color:var(--ink-2);
+  font-size:13px; font-weight:600; border-bottom:2.5px solid transparent;
+}
+.nav svg{ width:16px; height:16px; }
+.nav:hover{ color:var(--ink); background:var(--sunk); }
+.nav.on{ color:var(--brand); border-bottom-color:var(--brand); }
+.nav .pill{
+  font-family:var(--f-mono); font-size:10.5px; padding:1px 6px; border-radius:999px;
+  background:var(--sunk); color:var(--ink-3); border:1px solid var(--line);
+}
+.nav.on .pill{ background:var(--brand-soft); color:var(--brand-ink); border-color:transparent; }
+
+/* ═══════════════ الأزرار ═══════════════ */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:7px; cursor:pointer;
+  padding:9px 15px; border-radius:10px; border:1px solid var(--line);
+  background:var(--card); color:var(--ink); font-size:13px; font-weight:600;
+  transition:background .15s, border-color .15s, transform .06s;
+}
+.btn:hover{ background:var(--sunk); border-color:var(--ink-3); }
+.btn:active{ transform:translateY(1px); }
+.btn.primary{ background:var(--brand); border-color:var(--brand); color:var(--on-brand); }
+.btn.primary:hover{ background:var(--brand-2); border-color:var(--brand-2); }
+.btn.ghost{ background:transparent; }
+.btn.danger{ color:var(--crit); border-color:color-mix(in srgb, var(--crit) 35%, var(--line)); }
+.btn.danger:hover{ background:var(--crit-soft); }
+.btn.sm{ padding:6px 11px; font-size:12px; border-radius:8px; }
+.btn.icon{ padding:8px; width:36px; height:36px; }
+.btn[disabled]{ opacity:.45; cursor:not-allowed; }
+.btn svg{ width:16px; height:16px; flex:none; }
+
+/* ═══════════════ التخطيط العام ═══════════════ */
+.wrap{ max-width:1320px; margin:0 auto; padding:22px 20px 80px; }
+.view[hidden]{ display:none; }
+.vhead{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+.vhead h1{ font-size:20px; }
+.vhead .sub{ font-size:12.5px; color:var(--ink-3); font-family:var(--f-mono); }
+.card{
+  background:var(--card); border:1px solid var(--line); border-radius:14px;
+  box-shadow:var(--shadow); padding:18px 20px;
+}
+.card > h2{ font-size:15px; margin-bottom:3px; }
+.card > .cap{ font-size:12px; color:var(--ink-3); margin:0 0 14px; }
+.lbl{
+  font-family:var(--f-display); font-size:11px; font-weight:700; letter-spacing:.1em;
+  color:var(--seal); margin:0 0 8px;
+}
+
+/* ═══════════════ الصفحة الرئيسية ═══════════════ */
+.hero{ text-align:center; padding:14px 0 22px; }
+.hero h1{ font-size:24px; }
+.hero p{ margin:7px 0 0; color:var(--ink-3); font-size:13.5px; }
+.hero .stamp{
+  display:inline-block; margin-top:10px; padding:3px 12px; border-radius:999px;
+  background:var(--seal-soft); color:var(--seal); font-size:11.5px; font-weight:700;
+  border:1px solid color-mix(in srgb, var(--seal) 28%, transparent);
+}
+.modules{ display:grid; grid-template-columns:repeat(auto-fit, minmax(260px,1fr)); gap:16px; }
+.module{
+  text-align:start; cursor:pointer; font:inherit; color:inherit;
+  background:var(--card); border:1px solid var(--line); border-radius:18px;
+  box-shadow:var(--shadow); padding:22px 22px 18px;
+  display:flex; flex-direction:column; gap:4px;
+  transition:transform .12s, box-shadow .18s, border-color .18s;
+}
+.module:hover{ transform:translateY(-3px); box-shadow:var(--shadow-lg); border-color:color-mix(in srgb, var(--tone) 45%, var(--line)); }
+.module .mi{
+  width:56px; height:56px; border-radius:16px; display:grid; place-items:center; margin-bottom:12px;
+  background:var(--tone-soft); color:var(--tone-ink);
+  border:1px solid color-mix(in srgb, var(--tone) 25%, transparent);
+}
+.module .mi svg{ width:27px; height:27px; }
+.module b{ font-family:var(--f-display); font-size:17px; }
+.module em{ font-style:normal; font-family:var(--f-mono); font-size:11.5px; color:var(--ink-3); letter-spacing:.02em; }
+.module p{ margin:8px 0 14px; font-size:12.5px; color:var(--ink-2); line-height:1.6; }
+.module .mfoot{ margin-top:auto; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.module .mstat{
+  font-family:var(--f-mono); font-size:11.5px; padding:3px 9px; border-radius:8px;
+  background:var(--sunk); border:1px solid var(--line); color:var(--ink-2);
+}
+.module .go{ margin-inline-start:auto; color:var(--tone-ink); font-size:12.5px; font-weight:700; }
+.homegrid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(320px,1fr)); gap:16px; margin-top:20px; align-items:start; }
+
+/* ═══════════════ البطاقات الرقمية ═══════════════ */
+.kpis{ display:grid; grid-template-columns:repeat(auto-fit, minmax(148px,1fr)); gap:11px; }
+.kpi{ padding:13px 15px; border-radius:12px; background:var(--card); border:1px solid var(--line); border-top:3px solid var(--tone, var(--line)); }
+.kpi .k{ font-size:11.5px; color:var(--ink-3); font-weight:600; }
+.kpi .v{ font-family:var(--f-display); font-size:26px; font-weight:700; line-height:1.2; color:var(--tone-ink, var(--ink)); }
+.kpi .s{ font-size:11.5px; color:var(--ink-3); }
+.tiles{ display:grid; grid-template-columns:repeat(auto-fit, minmax(126px,1fr)); gap:10px; }
+.tile{ padding:12px 13px; border-radius:11px; border:1px solid var(--line); background:var(--card); border-top:3px solid var(--tone, var(--line)); }
+.tile .k{ font-size:11.5px; color:var(--ink-3); font-weight:600; }
+.tile .v{ font-family:var(--f-display); font-size:23px; font-weight:700; line-height:1.2; color:var(--tone-ink, var(--ink)); }
+.tile .s{ font-size:11.5px; color:var(--ink-3); }
+
+/* ═══════════════ التنبيهات ═══════════════ */
+.alerts{ display:flex; flex-direction:column; gap:8px; max-height:340px; overflow:auto; }
+.alert{
+  display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:10px;
+  background:var(--tone-soft); border:1px solid color-mix(in srgb, var(--tone) 25%, transparent);
+  cursor:pointer; text-align:start; width:100%; font:inherit; color:inherit;
+}
+.alert:hover{ border-color:var(--tone); }
+.alert .ai{ width:26px; height:26px; flex:none; display:grid; place-items:center; border-radius:8px; background:var(--card); color:var(--tone-ink); }
+.alert .ai svg{ width:14px; height:14px; }
+.alert .at{ min-width:0; }
+.alert .at b{ display:block; font-size:12.5px; font-weight:700; }
+.alert .at span{ font-size:11.5px; color:var(--ink-2); }
+.alert .ad{ margin-inline-start:auto; font-family:var(--f-mono); font-size:11.5px; font-weight:700; color:var(--tone-ink); white-space:nowrap; }
+.okstate{ padding:22px 10px; text-align:center; color:var(--ink-3); font-size:12.5px; }
+
+/* ═══════════════ الجداول ═══════════════ */
+.tbl{ overflow:auto; max-height:62vh; background:var(--card); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); }
+table.db{ width:100%; border-collapse:separate; border-spacing:0; font-size:12.5px; }
+table.db thead th{
+  position:sticky; top:0; z-index:2; background:var(--sunk); text-align:start;
+  padding:8px 10px; border-bottom:1px solid var(--line); white-space:nowrap;
+  font-family:var(--f-display); font-size:11px; font-weight:700; color:var(--ink-2);
+}
+table.db thead th small{ display:block; font-family:var(--f-mono); font-size:9.5px; font-weight:400; color:var(--ink-3); }
+table.db thead th.key{ color:var(--brand); }
+table.db td{ padding:7px 10px; border-bottom:1px solid var(--line-2); white-space:nowrap; }
+table.db td.wrap{ white-space:normal; min-width:220px; }
+table.db td.empty{ color:var(--ink-3); }
+table.db td.br{ border-inline-start:3px solid var(--c, transparent); }
+table.db tbody tr{ cursor:pointer; }
+table.db tbody tr:hover td{ background:var(--sunk); }
+table.db tbody tr:last-child td{ border-bottom:0; }
+table.db tbody tr.hit td{ background:var(--brand-soft); }
+table.db tfoot td{ padding:8px 10px; border-top:1px solid var(--line); background:var(--sunk); font-weight:700; }
+.more{ display:flex; justify-content:center; margin-top:14px; }
+.dbnote{ font-size:12px; color:var(--ink-3); margin:12px 0 0; }
+.chip{
+  display:inline-flex; align-items:center; gap:5px; padding:2px 9px; border-radius:999px;
+  background:var(--tone-soft); color:var(--tone-ink); font-size:11.5px; font-weight:700;
+  border:1px solid color-mix(in srgb, var(--tone) 26%, transparent); white-space:nowrap;
+}
+.chip.dot::before{ content:""; width:6px; height:6px; border-radius:50%; background:var(--tone); }
+
+/* ═══════════════ أشرطة الترشيح ═══════════════ */
+.filters{ display:flex; gap:9px; flex-wrap:wrap; align-items:center; margin-bottom:14px; }
+.search{ position:relative; flex:1 1 240px; min-width:180px; }
+.search input{ width:100%; padding:9px 36px 9px 12px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--ink); }
+.search svg{ position:absolute; inset-inline-end:11px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:var(--ink-3); pointer-events:none; }
+/* المرشِّحات في سطر واحد: يُبطَل عرض ‎100%‎ العام على الحقول داخلها */
+.filters select{ width:auto; padding:9px 11px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--ink); min-width:132px; }
+
+/* ═══════════════ إدارة الموظفين — لوحان ═══════════════ */
+.split{ display:grid; grid-template-columns:290px minmax(0,1fr); gap:16px; align-items:start; }
+@media (max-width:900px){ .split{ grid-template-columns:1fr; } }
+.picker{ background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); overflow:hidden; position:sticky; top:104px; }
+.picker .ph{ padding:12px 13px; border-bottom:1px solid var(--line); display:flex; flex-direction:column; gap:9px; }
+/* داخل عمود، ‎flex-basis‎ يقاس بالارتفاع — فتُلغى مرونة خانة البحث هنا */
+.picker .ph .search{ flex:none; }
+.picker .plist{ max-height:60vh; overflow:auto; }
+.prow{
+  display:flex; align-items:center; gap:10px; width:100%; text-align:start; font:inherit; color:inherit;
+  padding:9px 13px; background:transparent; border:0; border-bottom:1px solid var(--line-2); cursor:pointer;
+}
+.prow:hover{ background:var(--sunk); }
+.prow.on{ background:var(--brand-soft); }
+.prow.on .pn b{ color:var(--brand-ink); }
+.av{
+  width:32px; height:32px; flex:none; border-radius:50%; display:grid; place-items:center;
+  background:color-mix(in srgb, var(--c, var(--brand)) 16%, var(--card)); color:var(--c, var(--brand));
+  border:1px solid color-mix(in srgb, var(--c, var(--brand)) 32%, transparent);
+  font-family:var(--f-display); font-size:12px; font-weight:700;
+}
+.av.lg{ width:52px; height:52px; font-size:18px; }
+.pn{ min-width:0; }
+.pn b{ display:block; font-size:12.5px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pn span{ display:block; font-size:11px; color:var(--ink-3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pdot{ margin-inline-start:auto; width:8px; height:8px; border-radius:50%; background:var(--tone, var(--line)); flex:none; }
+
+/* ملف الموظف */
+.file-head{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding-bottom:14px; border-bottom:1px solid var(--line); }
+.file-head h2{ font-size:19px; }
+.file-head .role{ color:var(--ink-2); font-size:13px; }
+.file-head .idline{ font-family:var(--f-mono); font-size:12px; color:var(--ink-3); }
+.tabs{ display:flex; gap:3px; margin:14px 0 16px; border-bottom:1px solid var(--line); overflow-x:auto; }
+.tab{
+  padding:8px 13px; border:0; background:transparent; cursor:pointer; font:inherit; white-space:nowrap;
+  font-size:12.5px; font-weight:600; color:var(--ink-2); border-bottom:2.5px solid transparent; margin-bottom:-1px;
+}
+.tab:hover{ color:var(--ink); }
+.tab.on{ color:var(--brand); border-bottom-color:var(--brand); }
+.tab .pill{ font-family:var(--f-mono); font-size:10.5px; padding:1px 6px; border-radius:999px; background:var(--sunk); border:1px solid var(--line); margin-inline-start:5px; }
+.sec{ margin-top:18px; }
+.kv{ display:grid; grid-template-columns:repeat(auto-fit, minmax(190px,1fr)); gap:9px; }
+.kv > div{ padding:9px 12px; border-radius:10px; background:var(--sunk); border:1px solid var(--line-2); min-width:0; }
+.kv dt{ font-size:11px; color:var(--ink-3); font-weight:600; }
+.kv dd{ margin:1px 0 0; font-size:13px; font-weight:600; overflow-wrap:anywhere; }
+.kv dd.none{ color:var(--ink-3); font-weight:400; }
+.kv dd .sub{ font-weight:400; font-size:11.5px; color:var(--ink-3); }
+
+/* ═══════════════ سطر التوثيق ═══════════════ */
+.timeline{ display:flex; flex-direction:column; gap:10px; }
+.trec{
+  display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:12px; align-items:start;
+  padding:12px 14px; border-radius:12px; background:var(--card);
+  border:1px solid var(--line); border-inline-start:3px solid var(--tone, var(--line));
+}
+.trec .ti{ width:30px; height:30px; border-radius:9px; display:grid; place-items:center; background:var(--tone-soft); color:var(--tone-ink); }
+.trec .ti svg{ width:15px; height:15px; }
+.trec .tb{ min-width:0; }
+.trec .tb .top{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.trec .tb b{ font-size:13px; }
+.trec .tb .det{ margin:4px 0 0; font-size:12.5px; color:var(--ink-2); white-space:pre-wrap; overflow-wrap:anywhere; }
+.trec .tb .meta{ margin-top:6px; font-size:11.5px; color:var(--ink-3); display:flex; gap:10px; flex-wrap:wrap; }
+.trec .tr{ display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+.trec .tdate{ font-family:var(--f-mono); font-size:11.5px; color:var(--ink-3); white-space:nowrap; }
+.trec .amt{ font-family:var(--f-display); font-size:17px; font-weight:700; color:var(--tone-ink); }
+.rowbtns{ display:flex; gap:4px; }
+.iconbtn{
+  width:26px; height:26px; display:grid; place-items:center; border-radius:7px; cursor:pointer;
+  border:1px solid var(--line); background:var(--card); color:var(--ink-3);
+}
+.iconbtn:hover{ background:var(--brand-soft); color:var(--brand); border-color:var(--brand); }
+.iconbtn.del:hover{ background:var(--crit-soft); color:var(--crit); border-color:var(--crit); }
+.iconbtn svg{ width:13px; height:13px; }
+.attach{
+  display:inline-flex; align-items:center; gap:6px; padding:3px 9px; border-radius:8px; cursor:pointer;
+  background:var(--sunk); border:1px solid var(--line); color:var(--brand); font-size:11.5px; font-weight:600;
+}
+.attach:hover{ background:var(--brand-soft); }
+.attach svg{ width:12px; height:12px; }
+
+/* ═══════════════ الرسوم ═══════════════ */
+.charts{ display:grid; grid-template-columns:repeat(auto-fit, minmax(290px,1fr)); gap:14px; }
+.chart{ padding:16px; border-radius:12px; border:1px solid var(--line); background:var(--card); box-shadow:var(--shadow); }
+.chart h3{ font-size:13.5px; margin-bottom:2px; }
+.chart .cap{ font-size:11.5px; color:var(--ink-3); margin:0 0 13px; }
+.bars{ display:flex; flex-direction:column; gap:9px; }
+.bar-row{ display:grid; grid-template-columns:minmax(66px, 32%) 1fr auto; gap:10px; align-items:center; font-size:12.5px; }
+.bar-row .lb{ color:var(--ink-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bar-track{ position:relative; height:11px; background:var(--grid); border-radius:4px; }
+.bar-fill{ position:absolute; inset-inline-start:0; top:0; height:100%; background:var(--bar); border-radius:4px 0 0 4px; min-width:3px; }
+.bar-row .vl{ font-family:var(--f-mono); font-size:12px; color:var(--ink-2); min-width:2.5ch; }
+.chart-empty{ padding:24px 0; text-align:center; color:var(--ink-3); font-size:12.5px; }
+.meter{ position:relative; height:12px; border-radius:6px; background:var(--grid); overflow:hidden; }
+.meter i{ position:absolute; inset-inline-start:0; top:0; height:100%; background:var(--tone, var(--bar)); }
+
+/* ═══════════════ الحالات الفارغة ═══════════════ */
+.state{
+  text-align:center; padding:44px 24px; background:var(--card);
+  border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow);
+}
+.state .mark-lg{
+  width:58px; height:58px; margin:0 auto 15px; border-radius:16px; display:grid; place-items:center;
+  background:var(--brand-soft); color:var(--brand);
+  border:1px solid color-mix(in srgb, var(--brand) 25%, transparent);
+}
+.state .mark-lg svg{ width:27px; height:27px; }
+.state h3{ font-size:16.5px; margin-bottom:6px; }
+.state p{ margin:0 auto 16px; max-width:52ch; color:var(--ink-3); font-size:13px; }
+.state .row{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+
+/* ═══════════════ النوافذ والنماذج ═══════════════ */
+.modal{ position:fixed; inset:0; z-index:70; display:grid; place-items:center; padding:18px; }
+.modal[hidden]{ display:none; }
+.modal .veil{ position:absolute; inset:0; background:rgba(11,14,27,.55); backdrop-filter:blur(2px); }
+.modal .box{
+  position:relative; width:min(760px, 100%); max-height:88vh; overflow:auto;
+  background:var(--card); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow-lg);
+}
+.modal .box.wide{ width:min(1020px, 100%); }
+#mRec{ z-index:80; }
+#mConfirm{ z-index:95; }
+.mhead{
+  display:flex; align-items:center; gap:12px; padding:15px 20px;
+  border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--card); z-index:2;
+}
+.mhead h3{ font-size:16px; }
+.mbody{ padding:20px; }
+.mfoot{
+  display:flex; gap:8px; align-items:center; padding:13px 20px;
+  border-top:1px solid var(--line); position:sticky; bottom:0; background:var(--card);
+}
+fieldset{ border:0; padding:0; margin:0 0 18px; }
+fieldset legend{
+  font-family:var(--f-display); font-size:11px; font-weight:700; letter-spacing:.1em;
+  color:var(--seal); padding:0; margin-bottom:9px;
+}
+.fgrid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(190px,1fr)); gap:12px; }
+.fgrid label{ display:flex; flex-direction:column; gap:5px; font-size:12px; font-weight:600; color:var(--ink-2); min-width:0; }
+.fgrid label.full{ grid-column:1 / -1; }
+.fgrid label b{ color:var(--crit); }
+input[type="text"], input[type="date"], input[type="time"], input[type="email"], input[type="tel"], input[type="number"], select, textarea{
+  padding:9px 11px; border-radius:9px; border:1px solid var(--line);
+  background:var(--card); color:var(--ink); width:100%; min-width:0;
+}
+textarea{ resize:vertical; min-height:72px; font-family:inherit; line-height:1.6; }
+input:read-only{ background:var(--sunk); color:var(--ink-2); }
+.err{ color:var(--crit); font-size:11.5px; font-weight:600; }
+.err:empty{ display:none; }
+input[aria-invalid="true"], select[aria-invalid="true"]{ border-color:var(--crit); background:var(--crit-soft); }
+.note{
+  padding:11px 13px; border-radius:10px; font-size:12.5px;
+  background:var(--brand-soft); color:var(--brand-ink);
+  border:1px solid color-mix(in srgb, var(--brand) 22%, transparent);
+}
+.note.bad{ background:var(--crit-soft); color:var(--crit); border-color:color-mix(in srgb, var(--crit) 28%, transparent); }
+.note.ok{ background:var(--good-soft); color:var(--good); border-color:color-mix(in srgb, var(--good) 28%, transparent); }
+.drop{
+  border:1.5px dashed var(--line); border-radius:13px; padding:24px 18px; text-align:center;
+  background:var(--sunk); cursor:pointer; transition:border-color .15s, background .15s;
+}
+.drop:hover, .drop.over{ border-color:var(--brand); background:var(--brand-soft); }
+.drop b{ display:block; font-family:var(--f-display); font-size:14px; margin-bottom:3px; }
+.drop span{ font-size:12px; color:var(--ink-3); }
+.maprow{ display:grid; grid-template-columns:minmax(110px,1fr) minmax(130px,1.2fr); gap:8px; align-items:center; padding:5px 0; }
+.maprow > span{ font-size:12.5px; font-weight:600; }
+
+#toasts{ position:fixed; inset-block-end:18px; inset-inline-start:50%; transform:translateX(50%); z-index:100; display:flex; flex-direction:column; gap:8px; align-items:center; }
+.toast{
+  background:var(--ink); color:var(--paper); padding:10px 16px; border-radius:10px;
+  font-size:13px; font-weight:600; box-shadow:var(--shadow-lg); animation:pop .2s ease;
+}
+.toast.err{ background:var(--crit-soft); color:var(--crit); box-shadow:var(--shadow-lg), inset 0 0 0 1px color-mix(in srgb, var(--crit) 35%, transparent); }
+.toast.ok{ background:var(--good-soft); color:var(--good); box-shadow:var(--shadow-lg), inset 0 0 0 1px color-mix(in srgb, var(--good) 35%, transparent); }
+@keyframes pop{ from{ opacity:0; transform:translateY(8px); } }
+@media (prefers-reduced-motion: reduce){ *{ animation-duration:.01ms !important; transition-duration:.01ms !important; } }
+
+@media (max-width:600px){
+  .appbar-in{ padding:9px 14px; }
+  .navbar{ top:auto; position:static; }
+  .wrap{ padding:16px 14px 64px; }
+  .modal{ padding:0; }
+  .modal .box{ max-height:100vh; height:100%; border-radius:0; }
+}
+
+/* الطباعة: ورقة الموظف وحدها */
+.printonly{ display:none; }
+@media print{
+  .appbar, .navbar, #toasts, .tabs, .filters, .picker, .mfoot, .mhead .btn, .rowbtns, .btn, .vhead{ display:none !important; }
+  .split{ display:block !important; }          /* بلا عمود المنتقي يأخذ الملف الورقة كلها */
+  .printonly{
+    display:block; margin-bottom:12px; padding-bottom:8px; border-bottom:2px solid var(--seal);
+    font-family:var(--f-display); font-size:13px; font-weight:700;
+  }
+  .printonly span{ float:inline-end; font-weight:400; font-size:11.5px; color:var(--ink-3); }
+  .modal:not([hidden]){ position:static; display:block; padding:0; }
+  .modal .veil{ display:none !important; }
+  .modal .box{ width:auto; max-height:none; overflow:visible; border:0; box-shadow:none; }
+  .view[hidden]{ display:none !important; }
+  body{ background:#fff; }
+  .card, .trec, .chart{ box-shadow:none; break-inside:avoid; }
+  .tbl{ max-height:none; overflow:visible; }
+}
+</style>
+
+<header class="appbar">
+  <div class="appbar-in">
+    <button class="mark" id="btnHome" title="الصفحة الرئيسية" aria-label="الصفحة الرئيسية">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V9.5L12 3l8 6.5V21a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M12 10v6M9 13h6"/></svg>
+    </button>
+    <div class="org">
+      <b id="barBranch">الفرع الطبي</b>
+      <em>نظام إدارة وتوثيق الفرع — نسخة تجريبية Pilot</em>
+    </div>
+    <span class="grow"></span>
+    <div class="tools">
+      <button class="tbtn" id="btnImport" title="استيراد موظفين من إكسل">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m8 11 4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+        <span>استيراد</span>
+      </button>
+      <button class="tbtn" id="btnExport" title="تصدير قاعدة البيانات">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V9"/><path d="m8 13 4-4 4 4"/><path d="M4 5V4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v1"/></svg>
+        <span>تصدير</span>
+      </button>
+      <button class="tbtn only" id="btnTheme" title="تبديل السمة" aria-label="تبديل السمة">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<nav class="navbar">
+  <div class="navbar-in" id="navbar"></div>
+</nav>
+
+<main class="wrap">
+
+  <!-- ═══════════ الصفحة الرئيسية ═══════════ -->
+  <section class="view" id="v-home">
+    <div class="hero">
+      <h1>نظام إدارة وتوثيق الفرع الطبي</h1>
+      <p>مكان واحد منظَّم: توثيق الموظفين · بيانات كادر الفرع · القدرة الاستيعابية والموارد</p>
+      <span class="stamp">Pilot — فرع واحد · ثلاث وحدات · قاعدة بيانات واحدة</span>
+    </div>
+    <div class="modules" id="homeModules"></div>
+    <div class="homegrid">
+      <section class="card">
+        <h2>تنبيهات تحتاج متابعة</h2>
+        <p class="cap">وثائق وتصنيفات وعقود قاربت الانتهاء أو انتهت، وصيانة مستحقة</p>
+        <div id="homeAlerts"></div>
+      </section>
+      <section class="card">
+        <h2>آخر ما وُثِّق</h2>
+        <p class="cap">أحدث عشرة سجلات في ملفات الموظفين</p>
+        <div id="homeFeed"></div>
+      </section>
+    </div>
+  </section>
+
+  <!-- ═══════════ ١ · إدارة الموظفين ═══════════ -->
+  <section class="view" id="v-emp" hidden>
+    <div class="vhead">
+      <h1>إدارة الموظفين</h1>
+      <span class="sub">Employee Management</span>
+      <span class="grow"></span>
+      <button class="btn primary" id="btnNewEmp">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        موظف جديد
+      </button>
+    </div>
+    <div class="split">
+      <aside class="picker">
+        <div class="ph">
+          <div class="search">
+            <input type="text" id="empSearch" placeholder="ابحث بالاسم أو الرقم الوظيفي" autocomplete="off">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          </div>
+          <select id="empFilterDept"><option value="">كل الأقسام</option></select>
+        </div>
+        <div class="plist" id="empList"></div>
+      </aside>
+      <div id="empPane"></div>
+    </div>
+  </section>
+
+  <!-- ═══════════ ٢ · جميع الموظفين ═══════════ -->
+  <section class="view" id="v-staff" hidden>
+    <div class="vhead">
+      <h1>جميع الموظفين</h1>
+      <span class="sub">All Staff</span>
+      <span class="grow"></span>
+      <button class="btn" id="staffXlsx">تحميل ‎.xlsx‎</button>
+      <button class="btn" id="staffCsv">تحميل ‎.csv‎</button>
+    </div>
+    <div class="kpis" id="staffKpis" style="margin-bottom:16px"></div>
+    <div class="filters">
+      <div class="search">
+        <input type="text" id="staffSearch" placeholder="بحث في كل الحقول — اسم · رقم وظيفي · هوية · جوال · مسمى" autocomplete="off">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      </div>
+      <select id="staffDept"><option value="">كل الأقسام</option></select>
+      <select id="staffCat"><option value="">كل الفئات</option></select>
+      <select id="staffStatus"><option value="">كل الحالات</option></select>
+      <button class="btn" id="staffReset">مسح الترشيح</button>
+    </div>
+    <div id="staffHost"></div>
+    <section class="card" style="margin-top:18px">
+      <h2>توزيع الكادر</h2>
+      <p class="cap">عدد الموظفين على رأس العمل بحسب القسم والفئة والجنسية</p>
+      <div class="charts" id="staffCharts"></div>
+    </section>
+  </section>
+
+  <!-- ═══════════ ٣ · سعة الفرع ═══════════ -->
+  <section class="view" id="v-cap" hidden>
+    <div class="vhead">
+      <h1>القدرة الاستيعابية وموارد الفرع</h1>
+      <span class="sub">Branch Capacity</span>
+      <span class="grow"></span>
+      <button class="btn" id="btnBranch">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+        بيانات الفرع
+      </button>
+      <button class="btn primary" id="btnNewRes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        مورد جديد
+      </button>
+    </div>
+    <div class="kpis" id="capKpis" style="margin-bottom:16px"></div>
+    <div id="branchCard" style="margin-bottom:16px"></div>
+    <section class="card" style="margin-bottom:16px">
+      <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:12px">
+        <h2 style="margin:0">موارد الفرع</h2>
+        <p class="cap" style="margin:0">الغرف والعيادات والأجهزة — الحالة والتخصيص والطاقة اليومية</p>
+      </div>
+      <div class="filters">
+        <div class="search">
+          <input type="text" id="resSearch" placeholder="بحث بالكود أو الاسم أو القسم" autocomplete="off">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        </div>
+        <select id="resKind"><option value="">كل الأنواع</option></select>
+        <select id="resStatus"><option value="">كل الحالات</option></select>
+      </div>
+      <div id="resHost"></div>
+    </section>
+    <div class="charts" id="capCharts" style="margin-bottom:16px"></div>
+    <section class="card">
+      <h2>الكادر مقابل الغرف</h2>
+      <p class="cap">لكل قسم: موارده وما هو منها في الخدمة، وطاقته اليومية، وكادره المسجَّل عدا منتهي الخدمة</p>
+      <div id="capStaffing"></div>
+    </section>
+  </section>
+
+</main>
+
+<div id="toasts" aria-live="polite"></div>
+
+<!-- ═══════════ نموذج بيانات الموظف ═══════════ -->
+<div class="modal" id="mEmp" hidden>
+  <div class="veil" data-close></div>
+  <div class="box wide" role="dialog" aria-modal="true" aria-labelledby="mEmpTitle">
+    <div class="mhead">
+      <h3 id="mEmpTitle">ملف موظف جديد</h3>
+      <span class="grow"></span>
+      <button class="btn icon ghost" data-close aria-label="إغلاق">✕</button>
+    </div>
+    <div class="mbody"><form id="empForm" autocomplete="off"></form></div>
+    <div class="mfoot">
+      <button class="btn primary" id="empSave">حفظ</button>
+      <button class="btn" data-close>إلغاء</button>
+      <span class="grow"></span>
+      <span class="muted" id="empFormNote" style="font-size:12px"></span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ نموذج سجل التوثيق ═══════════ -->
+<div class="modal" id="mRec" hidden>
+  <div class="veil" data-close></div>
+  <div class="box" role="dialog" aria-modal="true" aria-labelledby="mRecTitle">
+    <div class="mhead">
+      <h3 id="mRecTitle">توثيق جديد</h3>
+      <span class="grow"></span>
+      <button class="btn icon ghost" data-close aria-label="إغلاق">✕</button>
+    </div>
+    <div class="mbody">
+      <form id="recForm" autocomplete="off"></form>
+      <input type="file" id="recFile" hidden>
+    </div>
+    <div class="mfoot">
+      <button class="btn primary" id="recSave">حفظ التوثيق</button>
+      <button class="btn" data-close>إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ نموذج المورد ═══════════ -->
+<div class="modal" id="mRes" hidden>
+  <div class="veil" data-close></div>
+  <div class="box" role="dialog" aria-modal="true" aria-labelledby="mResTitle">
+    <div class="mhead">
+      <h3 id="mResTitle">مورد جديد</h3>
+      <span class="grow"></span>
+      <button class="btn icon ghost" data-close aria-label="إغلاق">✕</button>
+    </div>
+    <div class="mbody"><form id="resForm" autocomplete="off"></form></div>
+    <div class="mfoot">
+      <button class="btn primary" id="resSave">حفظ</button>
+      <button class="btn" data-close>إلغاء</button>
+      <span class="grow"></span>
+      <button class="btn danger" id="resDelete" hidden>حذف المورد</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ بيانات الفرع ═══════════ -->
+<div class="modal" id="mBranch" hidden>
+  <div class="veil" data-close></div>
+  <div class="box" role="dialog" aria-modal="true" aria-labelledby="mBranchTitle">
+    <div class="mhead">
+      <h3 id="mBranchTitle">بيانات الفرع</h3>
+      <span class="grow"></span>
+      <button class="btn icon ghost" data-close aria-label="إغلاق">✕</button>
+    </div>
+    <div class="mbody"><form id="branchForm" autocomplete="off"></form></div>
+    <div class="mfoot">
+      <button class="btn primary" id="branchSave">حفظ</button>
+      <button class="btn" data-close>إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ الاستيراد ═══════════ -->
+<div class="modal" id="mImport" hidden>
+  <div class="veil" data-close></div>
+  <div class="box wide" role="dialog" aria-modal="true" aria-labelledby="mImpTitle">
+    <div class="mhead">
+      <h3 id="mImpTitle">استيراد موظفين من إكسل</h3>
+      <span class="grow"></span>
+      <button class="btn icon ghost" data-close aria-label="إغلاق">✕</button>
+    </div>
+    <div class="mbody">
+      <div class="drop" id="drop" tabindex="0" role="button">
+        <b>اسحب الملف هنا أو اضغط للاختيار</b>
+        <span>يقبل ‎.xlsx‎ و‎.csv‎ — يُكتشف سطر العناوين تلقائيًا، ولا يُرفع الملف إلى أي خادم</span>
+      </div>
+      <input type="file" id="impFile" accept=".xlsx,.xlsm,.csv" hidden>
+      <div id="mapHost" style="margin-top:18px"></div>
+    </div>
+    <div class="mfoot">
+      <button class="btn primary" id="btnDoImport" disabled>استيراد السجلات</button>
+      <button class="btn" data-close>إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ التصدير والنسخ الاحتياطي ═══════════ -->
+<div class="modal" id="mExport" hidden>
+  <div class="veil" data-close></div>
+  <div class="box" role="dialog" aria-modal="true" aria-labelledby="mExpTitle">
+    <div class="mhead">
+      <h3 id="mExpTitle">تصدير قاعدة البيانات</h3>
+      <span class="grow"></span>
+      <button class="btn icon ghost" data-close aria-label="إغلاق">✕</button>
+    </div>
+    <div class="mbody">
+      <p class="muted" style="margin-top:0; font-size:13px">
+        ملف إكسل بأربع أوراق: <b>Employees</b> بيانات الموظفين · <b>Records</b> سجلات التوثيق ·
+        <b>Resources</b> موارد الفرع · <b>Branch</b> بطاقة الفرع. والنسخة الاحتياطية ‎.json‎ تحمل القاعدة كاملة
+        بمرفقاتها، وتُستعاد من الزر نفسه.
+      </p>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:14px">
+        <button class="btn primary" id="expXlsx">تحميل ‎.xlsx‎</button>
+        <button class="btn" id="expJson">نسخة احتياطية ‎.json‎</button>
+        <button class="btn" id="expRestore">استعادة من ‎.json‎</button>
+        <input type="file" id="restoreFile" accept=".json" hidden>
+      </div>
+      <hr style="border:0; border-top:1px solid var(--line); margin:20px 0">
+      <div style="display:flex; gap:8px; flex-wrap:wrap">
+        <button class="btn" id="btnSeed">تحميل بيانات تجريبية</button>
+        <button class="btn danger" id="btnWipe">مسح كل البيانات</button>
+      </div>
+      <p class="muted" style="font-size:12px; margin-bottom:0" id="storageNote"></p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ تأكيد ═══════════ -->
+<div class="modal" id="mConfirm" hidden>
+  <div class="veil" data-close></div>
+  <div class="box" style="width:min(430px,100%)" role="dialog" aria-modal="true" aria-labelledby="mCfmTitle">
+    <div class="mhead"><h3 id="mCfmTitle">تأكيد</h3></div>
+    <div class="mbody"><p id="cfmText" style="margin:0; font-size:13.5px"></p></div>
+    <div class="mfoot">
+      <button class="btn danger" id="cfmYes">تأكيد</button>
+      <button class="btn" data-close>إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* ═════════════════════════════════════════════════════════════════
+   ١ · المخطَّط
+   ثلاث وحدات فوق قاعدة واحدة: الموظفون، وسجلات التوثيق المعلَّقة بكل
+   موظف، وموارد الفرع. وكل ما تعرضه الواجهة مشتقّ من هذه الجداول.
+   ═════════════════════════════════════════════════════════════════ */
+const CATEGORIES = ["طبيب", "طبيب أسنان", "تمريض", "صيدلة", "فني", "إداري", "خدمات"];
+const STATUSES = [
+  { v: "على رأس العمل", tone: "good" },
+  { v: "إجازة",          tone: "brand" },
+  { v: "إيقاف مؤقت",     tone: "serious" },
+  { v: "منتهي الخدمة",   tone: "ink" },
+];
+const STATUS_TONE = Object.fromEntries(STATUSES.map(s => [s.v, s.tone]));
+const ACTIVE = "على رأس العمل";
+
+/* حقول ملف الموظف. expiry: يدخل في التنبيهات · facet: يقترح قيمه من القاعدة
+   · hints: عناوين الأعمدة التي يُرشَّح منها الربط عند الاستيراد. */
+const FIELDS = [
+  { k:"id",            ar:"الرقم الوظيفي",          en:"Employee ID",         t:"text", req:true, mono:true, g:"identity",
+    hints:["employeeid","empid","employeeno","staffid","staffno","id","الرقمالوظيفي","رقمالموظف"] },
+  { k:"name",          ar:"الاسم",                   en:"Name",                t:"text", req:true, g:"identity",
+    hints:["name","employeename","fullname","staffname","arabicname","الاسم"] },
+  { k:"nameEn",        ar:"الاسم بالإنجليزية",       en:"Name (EN)",           t:"text", g:"identity",
+    hints:["nameen","englishname","fullnameenglish","الاسمبالانجليزي"] },
+  { k:"nationalId",    ar:"رقم الهوية / الإقامة",    en:"National ID",         t:"text", mono:true, g:"identity",
+    hints:["nationalid","iqama","iqamano","idnumber","nid","رقمالهويه","الهويه"] },
+  { k:"gender",        ar:"الجنس",                   en:"Gender",              t:"select", opts:["ذكر","أنثى"], g:"identity",
+    hints:["gender","sex","الجنس"] },
+  { k:"dob",           ar:"تاريخ الميلاد",           en:"Date of Birth",       t:"date", g:"identity",
+    hints:["dob","dateofbirth","birthdate","تاريخالميلاد"] },
+  { k:"nationality",   ar:"الجنسية",                 en:"Nationality",         t:"text", facet:true, g:"identity",
+    hints:["nationality","country","الجنسيه"] },
+  { k:"marital",       ar:"الحالة الاجتماعية",       en:"Marital Status",      t:"select", opts:["أعزب","متزوج","مطلق","أرمل"], g:"identity",
+    hints:["marital","maritalstatus","الحالهالاجتماعيه"] },
+
+  { k:"mobile",        ar:"الجوال",                  en:"Mobile",              t:"tel", mono:true, g:"contact",
+    hints:["mobile","phone","cell","contact","الجوال","الهاتف"] },
+  { k:"email",         ar:"البريد الإلكتروني",       en:"Email",               t:"email", g:"contact",
+    hints:["email","mail","البريد"] },
+  { k:"address",       ar:"العنوان",                 en:"Address",             t:"text", g:"contact",
+    hints:["address","city","district","العنوان","المدينه"] },
+  { k:"emgName",       ar:"شخص للطوارئ",             en:"Emergency Contact",   t:"text", g:"contact",
+    hints:["emergencycontact","emergencyname","شخصللطوارئ"] },
+  { k:"emgPhone",      ar:"جوال الطوارئ",            en:"Emergency Phone",     t:"tel", mono:true, g:"contact",
+    hints:["emergencyphone","emergencymobile","جوالالطوارئ"] },
+
+  { k:"jobTitle",      ar:"المسمى الوظيفي",          en:"Job Title",           t:"text", facet:true, g:"job",
+    hints:["jobtitle","title","position","designation","role","المسمى","الوظيفه"] },
+  { k:"category",      ar:"الفئة",                   en:"Category",            t:"select", opts:CATEGORIES, g:"job",
+    hints:["category","staffcategory","type","الفئه"] },
+  { k:"department",    ar:"القسم",                   en:"Department",          t:"text", facet:true, g:"job",
+    hints:["department","departmentname","dept","specialty","القسم","التخصص"] },
+  { k:"manager",       ar:"المدير المباشر",          en:"Manager",             t:"text", facet:true, g:"job",
+    hints:["manager","supervisor","reportsto","المدير"] },
+  { k:"hireDate",      ar:"تاريخ التعيين",           en:"Hire Date",           t:"date", g:"job",
+    hints:["hiredate","joindate","joiningdate","startdate","doj","تاريخالتعيين","المباشره"] },
+  { k:"empType",       ar:"نوع التعاقد",             en:"Employment Type",     t:"select", opts:["دوام كامل","دوام جزئي","زائر","متعاون","تدريب"], g:"job",
+    hints:["employmenttype","contracttype","worktype","نوعالتعاقد"] },
+  { k:"contractEnd",   ar:"نهاية العقد",             en:"Contract End",        t:"date", expiry:true, g:"job",
+    hints:["contractend","contractexpiry","نهايهالعقد"] },
+  { k:"shift",         ar:"الوردية",                 en:"Shift",               t:"select", opts:["صباحي","مسائي","متناوب"], g:"job",
+    hints:["shift","الورديه"] },
+  { k:"status",        ar:"حالة الموظف",             en:"Status",              t:"select", opts:STATUSES.map(s => s.v), g:"job",
+    hints:["status","employeestatus","الحاله"] },
+  { k:"endDate",       ar:"تاريخ انتهاء الخدمة",     en:"End of Service",      t:"date", g:"job",
+    hints:["enddate","terminationdate","lastworkingday","انتهاءالخدمه"] },
+  { k:"salary",        ar:"الراتب الأساسي",          en:"Basic Salary",        t:"int", g:"job",
+    hints:["salary","basicsalary","الراتب"] },
+
+  { k:"scfhsNo",       ar:"رقم تصنيف هيئة التخصصات", en:"SCFHS No.",           t:"text", mono:true, g:"license",
+    hints:["scfhs","scfhsno","classificationno","رقمالتصنيف"] },
+  { k:"scfhsExpiry",   ar:"انتهاء التصنيف",          en:"SCFHS Expiry",        t:"date", expiry:true, g:"license",
+    hints:["scfhsexpiry","classificationexpiry","انتهاءالتصنيف"] },
+  { k:"licenseNo",     ar:"رقم الترخيص المهني",      en:"License No.",         t:"text", mono:true, g:"license",
+    hints:["licenseno","registrationno","رقمالترخيص"] },
+  { k:"licenseExpiry", ar:"انتهاء الترخيص",          en:"License Expiry",      t:"date", expiry:true, g:"license",
+    hints:["licenseexpiry","registrationexpiry","انتهاءالترخيص"] },
+  { k:"blsExpiry",     ar:"انتهاء BLS / ACLS",       en:"BLS / ACLS Expiry",   t:"date", expiry:true, g:"license",
+    hints:["bls","acls","blsexpiry","انتهاءالانعاش"] },
+
+  { k:"iqamaExpiry",   ar:"انتهاء الهوية / الإقامة", en:"ID / Iqama Expiry",   t:"date", expiry:true, g:"docs",
+    hints:["iqamaexpiry","idexpiry","انتهاءالاقامه","انتهاءالهويه"] },
+  { k:"passportNo",    ar:"رقم الجواز",              en:"Passport No.",        t:"text", mono:true, g:"docs",
+    hints:["passport","passportno","رقمالجواز"] },
+  { k:"passportExpiry",ar:"انتهاء الجواز",           en:"Passport Expiry",     t:"date", expiry:true, g:"docs",
+    hints:["passportexpiry","انتهاءالجواز"] },
+  { k:"insuranceNo",   ar:"رقم التأمين الطبي",       en:"Insurance No.",       t:"text", mono:true, g:"docs",
+    hints:["insurance","insuranceno","رقمالتامين"] },
+  { k:"notes",         ar:"ملاحظات",                 en:"Notes",               t:"area", g:"docs",
+    hints:["notes","remarks","ملاحظات"] },
+];
+const F = Object.fromEntries(FIELDS.map(f => [f.k, f]));
+const EXPIRY_FIELDS = FIELDS.filter(f => f.expiry);
+const GROUPS = [
+  { g:"identity", ar:"البيانات الشخصية" },
+  { g:"contact",  ar:"بيانات التواصل" },
+  { g:"job",      ar:"البيانات الوظيفية" },
+  { g:"license",  ar:"التصنيف والترخيص" },
+  { g:"docs",     ar:"الوثائق وملاحظات" },
+];
+/* أعمدة جدول «جميع الموظفين» — بقية الحقول تُعرض في ملف الموظف */
+const STAFF_COLS = ["id","name","jobTitle","category","department","status","mobile","nationalId","nationality","hireDate","empType","licenseExpiry","iqamaExpiry"];
+
+/* أنواع التوثيق. range: له من/إلى · amount: خانة رقمية بعنوانها ووحدتها
+   · subs: تصنيف فرعي · follow: يُتابَع حتى يُغلق. */
+const REC_TYPES = [
+  { k:"leave",      ar:"إجازة",        en:"Leave",         tone:"brand",   icon:"cal", range:true,
+    amount:{ ar:"عدد الأيام", unit:"يوم" }, subs:["سنوية","مرضية","اضطرارية","بدون راتب","وضع","أبوة","حج","زواج","وفاة"] },
+  { k:"absence",    ar:"غياب",         en:"Absence",       tone:"warn",    icon:"alert", range:true,
+    amount:{ ar:"عدد الأيام", unit:"يوم" }, subs:["بعذر","بدون عذر"] },
+  { k:"late",       ar:"تأخير",        en:"Late",          tone:"warn",    icon:"clock",
+    amount:{ ar:"دقائق التأخير", unit:"دقيقة" }, subs:["دخول متأخر","خروج مبكر"] },
+  { k:"violation",  ar:"مخالفة",       en:"Violation",     tone:"serious", icon:"alert", follow:true,
+    subs:["انضباط الدوام","سلوك مهني","الزي والهوية","سياسات المنشأة","سلامة المرضى","خصوصية البيانات"] },
+  { k:"warning",    ar:"إنذار",        en:"Warning",       tone:"crit",    icon:"alert", follow:true,
+    subs:["تنبيه شفهي","إنذار كتابي أول","إنذار كتابي ثانٍ","إنذار نهائي","خصم"] },
+  { k:"complaint",  ar:"شكوى",         en:"Complaint",     tone:"serious", icon:"chat", follow:true,
+    subs:["شكوى مريض","شكوى زميل","ملاحظة إدارية"] },
+  { k:"training",   ar:"تدريب",        en:"Training",      tone:"good",    icon:"book", range:true,
+    amount:{ ar:"عدد الساعات", unit:"ساعة" }, subs:["داخلي","خارجي","إلزامي","CME"] },
+  { k:"evaluation", ar:"تقييم أداء",   en:"Evaluation",    tone:"brand",   icon:"star",
+    amount:{ ar:"الدرجة من ١٠٠", unit:"من ١٠٠" }, subs:["فترة تجربة","نصف سنوي","سنوي"] },
+  { k:"commend",    ar:"شكر وتقدير",   en:"Commendation",  tone:"good",    icon:"star", subs:["من الإدارة","من مريض","من زميل"] },
+  { k:"jobchange",  ar:"إجراء وظيفي",  en:"Job Action",    tone:"brand",   icon:"swap",
+    subs:["ترقية","نقل","تعديل راتب","تغيير مسمى","تجديد عقد","تمديد فترة تجربة","إنهاء خدمة"] },
+  { k:"document",   ar:"مستند",        en:"Document",      tone:"seal",    icon:"file",
+    subs:["عقد","سيرة ذاتية","شهادة علمية","تصنيف","ترخيص","هوية","إخلاء طرف","تقرير طبي"] },
+  { k:"note",       ar:"ملاحظة",       en:"Note",          tone:"ink",     icon:"note" },
+];
+const RT = Object.fromEntries(REC_TYPES.map(r => [r.k, r]));
+
+/* موارد الفرع. slots: غرفة تشغيلية لها طاقة مواعيد يومية · maint: تُتابَع صيانتها. */
+const RES_KINDS = [
+  { k:"clinic",    ar:"عيادة",           en:"Clinic",         slots:true },
+  { k:"dental",    ar:"وحدة أسنان",      en:"Dental Unit",    slots:true },
+  { k:"procedure", ar:"غرفة إجراءات",    en:"Procedure Room", slots:true },
+  { k:"imaging",   ar:"أشعة",            en:"Imaging",        slots:true, maint:true },
+  { k:"lab",       ar:"مختبر",           en:"Laboratory",     maint:true },
+  { k:"pharmacy",  ar:"صيدلية",          en:"Pharmacy" },
+  { k:"bed",       ar:"سرير مراقبة",     en:"Observation Bed" },
+  { k:"device",    ar:"جهاز طبي",        en:"Medical Device", maint:true },
+  { k:"reception", ar:"استقبال",         en:"Reception" },
+  { k:"office",    ar:"مكتب إداري",      en:"Office" },
+  { k:"other",     ar:"أخرى",            en:"Other" },
+];
+const RK = Object.fromEntries(RES_KINDS.map(k => [k.k, k]));
+const RES_STATUS = [
+  { v:"جاهزة",        tone:"good",    live:true },
+  { v:"مشغولة",       tone:"brand",   live:true },
+  { v:"تحت الصيانة",  tone:"warn" },
+  { v:"خارج الخدمة",  tone:"crit" },
+];
+const RES_TONE = Object.fromEntries(RES_STATUS.map(s => [s.v, s.tone]));
+const LIVE_STATUS = RES_STATUS.filter(s => s.live).map(s => s.v);
+
+const RES_FIELDS = [
+  { k:"code",       ar:"الكود / الرقم", t:"text", req:true, mono:true },
+  { k:"name",       ar:"الاسم",          t:"text", req:true },
+  { k:"kind",       ar:"النوع",          t:"select", opts:RES_KINDS.map(k => k.ar) },
+  { k:"department", ar:"القسم / التخصص", t:"text", facet:true },
+  { k:"floor",      ar:"الدور",          t:"text" },
+  { k:"status",     ar:"الحالة",         t:"select", opts:RES_STATUS.map(s => s.v) },
+  { k:"assignedTo", ar:"مخصَّصة لـ",     t:"emp" },
+  { k:"slots",      ar:"مواعيد اليوم",   t:"int" },
+  { k:"hours",      ar:"ساعات التشغيل",  t:"int" },
+  { k:"serial",     ar:"الرقم التسلسلي", t:"text", mono:true },
+  { k:"lastMaint",  ar:"آخر صيانة",      t:"date" },
+  { k:"nextMaint",  ar:"الصيانة القادمة",t:"date" },
+  { k:"notes",      ar:"ملاحظات",        t:"area" },
+];
+
+const BRANCH_FIELDS = [
+  { k:"name",          ar:"اسم الفرع",         t:"text", req:true },
+  { k:"code",          ar:"كود الفرع",         t:"text", mono:true },
+  { k:"licenseNo",     ar:"رقم ترخيص المنشأة", t:"text", mono:true },
+  { k:"licenseExpiry", ar:"انتهاء الترخيص",    t:"date" },
+  { k:"city",          ar:"المدينة",           t:"text" },
+  { k:"address",       ar:"العنوان",           t:"text" },
+  { k:"phone",         ar:"الهاتف",            t:"tel", mono:true },
+  { k:"manager",       ar:"مدير الفرع",        t:"text" },
+  { k:"openTime",      ar:"بداية الدوام",      t:"time" },
+  { k:"closeTime",     ar:"نهاية الدوام",      t:"time" },
+  { k:"workDays",      ar:"أيام العمل أسبوعيًا", t:"int" },
+  { k:"notes",         ar:"ملاحظات",           t:"area" },
+];
+const BRANCH_DEFAULT = { name:"الفرع الطبي", code:"", licenseNo:"", licenseExpiry:"", city:"", address:"",
+  phone:"", manager:"", openTime:"08:00", closeTime:"22:00", workDays:6, notes:"" };
+
+const ALERT_DAYS = 60;      /* نافذة التنبيه لانتهاء الوثائق */
+const MAINT_DAYS = 30;      /* نافذة التنبيه للصيانة */
+const MAX_ATTACH = 3 * 1024 * 1024;
+
+/* ═════════════════════════════════════════════════════════════════
+   ٢ · أدوات عامة
+   ═════════════════════════════════════════════════════════════════ */
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const norm = s => String(s ?? "").toLowerCase().replace(/[\s_\-./\\()]/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/[ىي]/g, "ي");
+const uniq = a => [...new Set(a)];
+const nf = new Intl.NumberFormat("ar-SA-u-nu-latn");
+const fmt = n => nf.format(n);
+const pct = n => fmt(n) + "٪";
+const byAr = (a, b) => String(a).localeCompare(String(b), "ar");
+
+function toast(msg, kind) {
+  const el = document.createElement("div");
+  el.className = "toast" + (kind ? " " + kind : "");
+  el.textContent = msg;
+  $("#toasts").append(el);
+  setTimeout(() => { el.style.opacity = "0"; el.style.transition = "opacity .3s"; }, 2800);
+  setTimeout(() => el.remove(), 3200);
+}
+
+function save(blob, name) {
+  const url = URL.createObjectURL(blob), a = document.createElement("a");
+  a.href = url; a.download = name; a.style.display = "none";
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+/* لون هوية ثابت لكل قسم — يُشتق من اسمه لا من ترتيبه، فلا يتبدّل بالترشيح */
+const slotOf = v => { let h = 0; for (let i = 0; i < v.length; i++) h = (h * 31 + v.charCodeAt(i)) >>> 0; return h % 8; };
+let _hueKey = null, _hueMap = new Map();
+function hueMap() {
+  const list = uniq(state.emps.map(r => r.department).filter(Boolean)).sort(byAr);
+  const k = list.join(" ");
+  if (k === _hueKey) return _hueMap;
+  const used = new Set(), m = new Map();
+  for (const d of list) {
+    let s = slotOf(d), n = 0;
+    while (used.has(s) && n < 8) { s = (s + 1) % 8; n++; }
+    used.add(s); m.set(d, s + 1);
+  }
+  _hueKey = k; _hueMap = m;
+  return m;
+}
+const hueOf = s => (s ? "var(--c" + (hueMap().get(s) || slotOf(String(s)) + 1) + ")" : "var(--ink-3)");
+const initials = name => {
+  const p = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!p.length) return "؟";
+  return (p[0][0] || "") + (p.length > 1 ? p[p.length - 1][0] || "" : "");
+};
+
+/* ── التواريخ ──────────────────────────────────────────────────── */
+const MON = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+const pad = n => String(n).padStart(2, "0");
+const iso = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+const todayISO = () => iso(new Date());
+
+/* يقبل رقم إكسل التسلسلي وصيغ النص الشائعة، ويخرج دائمًا YYYY-MM-DD */
+function toISO(v) {
+  if (v == null || v === "") return "";
+  const s = String(v).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  if (/^\d+(\.\d+)?$/.test(s)) {
+    const n = parseFloat(s);
+    if (n >= 1000 && n <= 80000) {
+      const d = new Date(Date.UTC(1899, 11, 30) + Math.round(n) * 86400000);
+      return d.getUTCFullYear() + "-" + pad(d.getUTCMonth() + 1) + "-" + pad(d.getUTCDate());
+    }
+    return "";
+  }
+  let m = /^(\d{1,2})[-/\s](\d{1,2})[-/\s](\d{4})$/.exec(s);
+  if (m) {
+    let [, a, b, y] = m, dd = +a, mm = +b;
+    if (dd <= 12 && mm > 12) { const t = dd; dd = mm; mm = t; }
+    if (mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31) return y + "-" + pad(mm) + "-" + pad(dd);
+    return "";
+  }
+  m = /^(\d{1,2})[-/\s]([A-Za-z]{3,})[-/\s](\d{4})$/.exec(s);
+  if (m) {
+    const mi = MON.indexOf(m[2].slice(0, 3).toLowerCase());
+    if (mi >= 0) return m[3] + "-" + pad(mi + 1) + "-" + pad(+m[1]);
+  }
+  const t = Date.parse(s);
+  return isFinite(t) ? iso(new Date(t)) : "";
+}
+
+const DAY = 86400000;
+function daysUntil(isoDate) {
+  if (!isoDate) return null;
+  const d = new Date(isoDate + "T00:00:00");
+  if (isNaN(d)) return null;
+  const n = new Date();
+  return Math.round((d - new Date(n.getFullYear(), n.getMonth(), n.getDate())) / DAY);
+}
+function yearsBetween(isoDate, to = new Date()) {
+  if (!isoDate) return null;
+  const d = new Date(isoDate + "T00:00:00");
+  if (isNaN(d)) return null;
+  let y = to.getFullYear() - d.getFullYear();
+  const m = to.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && to.getDate() < d.getDate())) y--;
+  return y < 0 ? null : y;
+}
+function tenureText(isoDate) {
+  if (!isoDate) return "";
+  const d = new Date(isoDate + "T00:00:00");
+  if (isNaN(d)) return "";
+  const now = new Date();
+  let months = (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth());
+  if (now.getDate() < d.getDate()) months--;
+  if (months < 0) return "";
+  const y = Math.floor(months / 12), mo = months % 12;
+  if (y && mo) return fmt(y) + " سنة و" + fmt(mo) + " شهرًا";
+  if (y) return fmt(y) + " سنة";
+  return fmt(mo) + " شهرًا";
+}
+/* حكم على تاريخ انتهاء: نصّه ودرجته ومقدار قربه */
+function expiryState(isoDate) {
+  const d = daysUntil(isoDate);
+  if (d == null) return null;
+  if (d < 0)  return { d, tone:"crit",    txt:"منتهية منذ " + fmt(-d) + " يومًا" };
+  if (d === 0) return { d, tone:"crit",   txt:"تنتهي اليوم" };
+  if (d <= 30) return { d, tone:"serious", txt:"بعد " + fmt(d) + " يومًا" };
+  if (d <= ALERT_DAYS) return { d, tone:"warn", txt:"بعد " + fmt(d) + " يومًا" };
+  return { d, tone:"good", txt:"سارية" };
+}
+const fileSize = n => n < 1024 ? fmt(n) + " بايت"
+  : n < 1048576 ? fmt(Math.round(n / 1024)) + " ك.ب"
+  : fmt(Math.round(n / 104857.6) / 10) + " م.ب";
+const daysBetweenInc = (a, b) => {
+  if (!a || !b) return 0;
+  const x = new Date(a + "T00:00:00"), y = new Date(b + "T00:00:00");
+  if (isNaN(x) || isNaN(y) || y < x) return 0;
+  return Math.round((y - x) / DAY) + 1;
+};
+
+/* ═════════════════════════════════════════════════════════════════
+   ٣ · القاعدة — IndexedDB واحدة لثلاث الوحدات
+   ═════════════════════════════════════════════════════════════════ */
+const DB = { name:"aogh_branch", ver:1, emp:"employees", rec:"records", res:"resources", meta:"meta" };
+let db = null;
+
+function openDB() {
+  return new Promise((res, rej) => {
+    const rq = indexedDB.open(DB.name, DB.ver);
+    rq.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains(DB.emp)) {
+        const st = d.createObjectStore(DB.emp, { keyPath:"id" });
+        st.createIndex("department", "department", { unique:false });
+        st.createIndex("category", "category", { unique:false });
+        st.createIndex("status", "status", { unique:false });
+        st.createIndex("name", "name", { unique:false });
+      }
+      if (!d.objectStoreNames.contains(DB.rec)) {
+        const st = d.createObjectStore(DB.rec, { keyPath:"rid", autoIncrement:true });
+        st.createIndex("empId", "empId", { unique:false });
+        st.createIndex("type", "type", { unique:false });
+        st.createIndex("date", "date", { unique:false });
+      }
+      if (!d.objectStoreNames.contains(DB.res)) {
+        const st = d.createObjectStore(DB.res, { keyPath:"rsid", autoIncrement:true });
+        st.createIndex("kind", "kind", { unique:false });
+        st.createIndex("department", "department", { unique:false });
+      }
+      if (!d.objectStoreNames.contains(DB.meta)) d.createObjectStore(DB.meta, { keyPath:"k" });
+    };
+    rq.onsuccess = () => res(rq.result);
+    rq.onerror = () => rej(rq.error);
+  });
+}
+const st = (name, mode) => db.transaction(name, mode).objectStore(name);
+const req = r => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+const dbAll   = name => req(st(name, "readonly").getAll());
+const dbGet   = (name, k) => req(st(name, "readonly").get(k));
+const dbPut   = (name, rec) => req(st(name, "readwrite").put(rec));
+const dbDel   = (name, k) => req(st(name, "readwrite").delete(k));
+const dbClear = name => req(st(name, "readwrite").clear());
+function dbPutMany(name, recs) {
+  return new Promise((res, rej) => {
+    const t = db.transaction(name, "readwrite"), s = t.objectStore(name);
+    for (const r of recs) s.put(r);
+    t.oncomplete = res; t.onerror = () => rej(t.error);
+  });
+}
+
+/* ── تنظيف السجلات وقيودها ─────────────────────────────────────── */
+function blankEmp() {
+  const o = {};
+  for (const f of FIELDS) o[f.k] = f.t === "int" ? 0 : "";
+  o.status = ACTIVE;
+  return o;
+}
+function coerceEmp(raw) {
+  const o = blankEmp();
+  for (const f of FIELDS) {
+    const v = raw[f.k];
+    if (f.t === "int") { const n = Math.round(Number(String(v ?? "").replace(/[^\d.-]/g, ""))); o[f.k] = isFinite(n) && n > 0 ? n : 0; }
+    else if (f.t === "date") o[f.k] = toISO(v);
+    else if (f.t === "area") o[f.k] = String(v ?? "").trim();
+    else o[f.k] = String(v ?? "").trim().replace(/\s+/g, " ");
+  }
+  o.id = o.id.replace(/\s/g, "");
+  if (!o.status) o.status = ACTIVE;
+  o.createdAt = raw.createdAt || new Date().toISOString();
+  o.updatedAt = new Date().toISOString();
+  return o;
+}
+function validateEmp(rec, isNew) {
+  const e = {};
+  if (!rec.id) e.id = "الرقم الوظيفي مطلوب";
+  else if (isNew && state.byId.has(rec.id)) e.id = "هذا الرقم مسجَّل لموظف آخر";
+  if (!rec.name) e.name = "الاسم مطلوب";
+  if (rec.nationalId && !/^\d{10}$/.test(rec.nationalId)) e.nationalId = "عشرة أرقام";
+  if (rec.mobile && !/^(\+?966|0)?5\d{8}$/.test(rec.mobile.replace(/[\s-]/g, ""))) e.mobile = "‏05XXXXXXXX";
+  if (rec.emgPhone && !/^(\+?966|0)?[15]\d{8}$/.test(rec.emgPhone.replace(/[\s-]/g, ""))) e.emgPhone = "رقم غير صحيح";
+  if (rec.email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(rec.email)) e.email = "صيغة بريد غير صحيحة";
+  for (const f of FIELDS) if (f.t === "date" && rec[f.k] && isNaN(new Date(rec[f.k] + "T00:00:00"))) e[f.k] = "تاريخ غير صحيح";
+  if (rec.dob && rec.hireDate && rec.hireDate < rec.dob) e.hireDate = "التعيين قبل الميلاد";
+  if (rec.hireDate && rec.endDate && rec.endDate < rec.hireDate) e.endDate = "قبل تاريخ التعيين";
+  return e;
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   ٤ · الأيقونات والحالة
+   ═════════════════════════════════════════════════════════════════ */
+const svg = (p, w) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (w || 2) +
+  '" stroke-linecap="round" stroke-linejoin="round">' + p + "</svg>";
+const ICON = {
+  home:  svg('<path d="M4 21V9.5L12 3l8 6.5V21a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/>'),
+  emp:   svg('<circle cx="12" cy="8" r="4"/><path d="M4.5 21v-1.2A5.8 5.8 0 0 1 10.3 14h3.4a5.8 5.8 0 0 1 5.8 5.8V21"/>'),
+  staff: svg('<path d="M7 3h10a1 1 0 0 1 1 1v17l-6-3-6 3V4a1 1 0 0 1 1-1z"/><path d="M9 8h6M9 12h4"/>'),
+  cap:   svg('<path d="M3 21h18"/><path d="M5 21V8l7-4 7 4v13"/><path d="M12 10v5M9.5 12.5h5"/>'),
+  alert: svg('<path d="M10.3 3.9 2.6 17a1.6 1.6 0 0 0 1.4 2.4h16a1.6 1.6 0 0 0 1.4-2.4L13.7 3.9a1.6 1.6 0 0 0-2.8 0z"/><path d="M12 9v4"/><circle cx="12" cy="16.6" r=".6" fill="currentColor"/>'),
+  clock: svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
+  cal:   svg('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>'),
+  chat:  svg('<path d="M21 12a8 8 0 0 1-8 8H7l-4 3v-6.5A8 8 0 0 1 11 4h2a8 8 0 0 1 8 8z"/>'),
+  book:  svg('<path d="M4 5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M8 7h7M8 11h7"/>'),
+  star:  svg('<path d="m12 3.6 2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.8l5.9-.8z"/>'),
+  swap:  svg('<path d="M4 8h13l-3-3M20 16H7l3 3"/>'),
+  file:  svg('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>'),
+  note:  svg('<path d="M5 4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1z"/><path d="M8 8h8M8 12h8M8 16h5"/>'),
+  ok:    svg('<path d="m5 13 4 4L19 7"/>', 2.3),
+  edit:  svg('<path d="M4 20h4L20 8a2.1 2.1 0 0 0-3-3L5 17z"/>'),
+  trash: svg('<path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/>'),
+  print: svg('<path d="M7 8V4h10v4"/><rect x="4" y="8" width="16" height="8" rx="2"/><path d="M7 14h10v6H7z"/>'),
+  plus:  svg('<path d="M12 5v14M5 12h14"/>'),
+  clip:  svg('<path d="M20 11.5 12.5 19a4.6 4.6 0 0 1-6.5-6.5l8-8a3 3 0 0 1 4.3 4.3l-8 8a1.5 1.5 0 0 1-2.1-2.1l7.3-7.3"/>'),
+  wrench: svg('<path d="M15.5 3.5a5 5 0 0 0-6.3 6.3L3 16v5h5l6.2-6.2a5 5 0 0 0 6.3-6.3l-3.2 3.2-2.8-.7-.7-2.8z"/>'),
+  door:  svg('<path d="M4 21h16"/><path d="M6 21V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v17"/><circle cx="14.5" cy="12" r="1" fill="currentColor"/>'),
+};
+const MODULES = [
+  { v:"emp",   ar:"إدارة الموظفين",   en:"Employee Management", icon:"emp",   tone:"brand",
+    desc:"ملف إلكتروني متكامل لكل موظف: بياناته الشخصية والوظيفية، وتصنيفه وتراخيصه، وتوثيق كل ما يجري عليه — إجازة وغياب وتأخير ومخالفة وإنذار وتدريب وتقييم ومستند." },
+  { v:"staff", ar:"جميع الموظفين",    en:"All Staff",           icon:"staff", tone:"seal",
+    desc:"قائمة كادر الفرع كاملة بجدول واحد: بحث وترشيح بالقسم والفئة والحالة، وتوزيع الكادر، وتصدير الجدول إلى إكسل." },
+  { v:"cap",   ar:"سعة الفرع",        en:"Branch Capacity",     icon:"cap",   tone:"good",
+    desc:"غرف الفرع وعياداته وأجهزته وحالتها وتخصيصها، والطاقة الاستيعابية اليومية والأسبوعية، وكفاية الكادر لكل قسم." },
+];
+
+const state = {
+  emps:[], byId:new Map(), recs:[], res:[], branch:{ ...BRANCH_DEFAULT },
+  view:"home", cur:null, tab:"data",
+  empQ:"", empDept:"",
+  staff:{ q:"", dept:"", cat:"", status:"", shown:200 },
+  resF:{ q:"", kind:"", status:"" },
+  imp:null, cfm:null,
+};
+const ROWS_PAGE = 200;
+
+function reindex() {
+  state.emps.sort((a, b) => byAr(a.name, b.name));
+  state.byId = new Map(state.emps.map(e => [e.id, e]));
+  state.recs.sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.rid || 0) - (a.rid || 0));
+  state.res.sort((a, b) => String(a.code).localeCompare(String(b.code), "ar", { numeric:true }));
+  _hueKey = null;
+}
+const recsOf = id => state.recs.filter(r => r.empId === id);
+const empName = id => (state.byId.get(id) || {}).name || "";
+const active = () => state.emps.filter(e => e.status === ACTIVE);
+const facetValues = k => uniq(state.emps.map(e => e[k]).filter(Boolean)).sort(byAr);
+const depts = () => uniq(state.emps.map(e => e.department).filter(Boolean).concat(state.res.map(r => r.department).filter(Boolean))).sort(byAr);
+
+async function loadAll() {
+  const [emps, recs, res, meta] = await Promise.all([dbAll(DB.emp), dbAll(DB.rec), dbAll(DB.res), dbGet(DB.meta, "branch")]);
+  state.emps = emps; state.recs = recs; state.res = res;
+  state.branch = { ...BRANCH_DEFAULT, ...(meta ? meta.v : {}) };
+  reindex();
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   ٥ · التنقّل بين الوحدات
+   ═════════════════════════════════════════════════════════════════ */
+function buildNav() {
+  $("#navbar").innerHTML =
+    '<button class="nav" data-view="home">' + ICON.home + "الرئيسية</button>" +
+    MODULES.map(m => '<button class="nav" data-view="' + m.v + '">' + ICON[m.icon] + esc(m.ar) +
+      '<span class="pill" data-count="' + m.v + '"></span></button>').join("");
+}
+function go(view, opts) {
+  state.view = view;
+  if (opts && opts.id) { state.cur = opts.id; state.tab = opts.tab || "data"; }
+  for (const s of $$(".view")) s.hidden = s.id !== "v-" + view;
+  for (const b of $$(".nav")) b.classList.toggle("on", b.dataset.view === view);
+  if (location.hash !== "#/" + view) history.replaceState(null, "", "#/" + view);
+  window.scrollTo({ top:0, behavior:"instant" in window ? "instant" : "auto" });
+  renderAll();
+}
+
+function renderAll() {
+  $("#barBranch").textContent = state.branch.name || "الفرع الطبي";
+  document.title = (state.branch.name || "الفرع الطبي") + " — نظام إدارة وتوثيق الفرع";
+  const counts = { emp:state.emps.length, staff:state.emps.length, cap:state.res.length };
+  for (const p of $$("[data-count]")) p.textContent = fmt(counts[p.dataset.count] || 0);
+  if (state.view === "home")  renderHome();
+  if (state.view === "emp")   renderEmpModule();
+  if (state.view === "staff") renderStaff();
+  if (state.view === "cap")   renderCapacity();
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   ٦ · الصفحة الرئيسية — الوحدات الثلاث والتنبيهات
+   ═════════════════════════════════════════════════════════════════ */
+function moduleStats(v) {
+  if (v === "emp")   return [fmt(state.recs.length) + " سجل توثيق", fmt(state.emps.length) + " ملف"];
+  if (v === "staff") return [fmt(active().length) + " على رأس العمل", fmt(depts().length) + " قسمًا"];
+  const cap = capacity();
+  return [fmt(cap.rooms) + " غرفة", fmt(cap.daily) + " موعدًا يوميًا"];
+}
+function renderHome() {
+  $("#homeModules").innerHTML = MODULES.map(m =>
+    '<button class="module t-' + m.tone + '" data-go="' + m.v + '">' +
+      '<span class="mi">' + ICON[m.icon] + "</span>" +
+      "<b>" + esc(m.ar) + "</b><em>" + esc(m.en) + "</em>" +
+      "<p>" + esc(m.desc) + "</p>" +
+      '<span class="mfoot">' + moduleStats(m.v).map(s => '<span class="mstat">' + esc(s) + "</span>").join("") +
+        '<span class="go">افتح ←</span></span>' +
+    "</button>").join("");
+
+  const al = alerts();
+  $("#homeAlerts").innerHTML = al.length
+    ? '<div class="alerts">' + al.slice(0, 40).map(a =>
+        '<button class="alert t-' + a.tone + '" data-go="' + a.view + '"' +
+          (a.id ? ' data-id="' + esc(a.id) + '"' : "") + (a.tab ? ' data-tab2="' + a.tab + '"' : "") + ">" +
+          '<span class="ai">' + ICON[a.icon] + "</span>" +
+          '<span class="at"><b>' + esc(a.title) + "</b><span>" + esc(a.sub) + "</span></span>" +
+          '<span class="ad">' + esc(a.right) + "</span></button>").join("") + "</div>"
+    : '<p class="okstate">' + ICON.ok + " لا شيء يقارب الانتهاء — الوثائق والتراخيص والصيانة كلها ضمن مدّتها.</p>";
+
+  const feed = state.recs.slice(0, 10);
+  $("#homeFeed").innerHTML = feed.length
+    ? '<div class="timeline">' + feed.map(r => recCard(r, true)).join("") + "</div>"
+    : '<p class="okstate">لم يُسجَّل توثيق بعد. افتح «إدارة الموظفين» واختر موظفًا ثم أضف سجلًا.</p>';
+}
+
+/* تنبيهات الوحدات الثلاث في قائمة واحدة، مرتَّبة بالأقرب استحقاقًا */
+function alerts() {
+  const out = [];
+  for (const e of state.emps) {
+    if (e.status === "منتهي الخدمة") continue;
+    for (const f of EXPIRY_FIELDS) {
+      const s = expiryState(e[f.k]);
+      if (s && s.d <= ALERT_DAYS) out.push({ sort:s.d, tone:s.tone, icon:"alert",
+        title:e.name, sub:f.ar + " · " + e[f.k], right:s.txt, view:"emp", id:e.id, tab:"docs" });
+    }
+  }
+  for (const r of state.res) {
+    const s = expiryState(r.nextMaint);
+    if (s && s.d <= MAINT_DAYS) out.push({ sort:s.d, tone:s.tone, icon:"wrench",
+      title:r.name || r.code, sub:"صيانة " + (RK[r.kind] ? RK[r.kind].ar : "") + " · " + r.nextMaint, right:s.txt, view:"cap" });
+    if (r.status === "خارج الخدمة") out.push({ sort:-900, tone:"crit", icon:"door",
+      title:r.name || r.code, sub:"خارج الخدمة — لا تدخل في طاقة الفرع", right:"موقوفة", view:"cap" });
+  }
+  /* ترخيص المنشأة يُنبَّه له مبكرًا — تسعون يومًا لا ستون */
+  const b = expiryState(state.branch.licenseExpiry);
+  if (b && b.d <= 90) out.push({ sort:b.d - 1000, tone:b.d <= ALERT_DAYS ? b.tone : "warn", icon:"alert",
+    title:state.branch.name || "الفرع", sub:"ترخيص المنشأة · " + state.branch.licenseExpiry,
+    right:b.d <= ALERT_DAYS ? b.txt : "بعد " + fmt(b.d) + " يومًا", view:"cap" });
+  for (const r of state.recs) {
+    if (r.status === "مفتوح" && RT[r.type] && RT[r.type].follow)
+      out.push({ sort:-500, tone:RT[r.type].tone, icon:RT[r.type].icon,
+        title:empName(r.empId) || r.empId, sub:RT[r.type].ar + " مفتوح · " + (r.title || r.sub || ""), right:r.date,
+        view:"emp", id:r.empId, tab:"log" });
+  }
+  return out.sort((a, b2) => a.sort - b2.sort);
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   ٧ · الوحدة الأولى — إدارة الموظفين وتوثيقهم
+   ═════════════════════════════════════════════════════════════════ */
+function renderEmpModule() {
+  const sel = $("#empFilterDept"), keep = state.empDept;
+  sel.innerHTML = '<option value="">كل الأقسام</option>' + depts().map(d => '<option>' + esc(d) + "</option>").join("");
+  sel.value = keep;
+  renderEmpList();
+  renderEmpPane();
+}
+
+function empListRows() {
+  const q = norm(state.empQ);
+  return state.emps.filter(e =>
+    (!state.empDept || e.department === state.empDept) &&
+    (!q || norm(e.name).includes(q) || norm(e.nameEn).includes(q) || norm(e.id).includes(q) ||
+      norm(e.jobTitle).includes(q) || norm(e.nationalId).includes(q)));
+}
+function renderEmpList() {
+  const rows = empListRows();
+  $("#empList").innerHTML = rows.length ? rows.map(e =>
+    '<button class="prow' + (e.id === state.cur ? " on" : "") + '" data-emp="' + esc(e.id) + '">' +
+      '<span class="av" style="--c:' + hueOf(e.department) + '">' + esc(initials(e.name)) + "</span>" +
+      '<span class="pn"><b>' + esc(e.name) + "</b><span>" + esc(e.id + (e.jobTitle ? " · " + e.jobTitle : "")) + "</span></span>" +
+      '<span class="pdot t-' + (STATUS_TONE[e.status] || "ink") + '" title="' + esc(e.status) + '"></span>' +
+    "</button>").join("")
+    : '<p class="okstate">لا يطابق البحث أحد.</p>';
+}
+
+function renderEmpPane() {
+  const host = $("#empPane");
+  if (!state.emps.length) {
+    host.innerHTML = emptyState(ICON.emp, "لا توجد ملفات موظفين بعد",
+      "ابدأ بإضافة أول موظف في الفرع، أو استورد كشف الموظفين من ملف إكسل موجود لديك.",
+      [["primary", "newEmp", "إضافة موظف"], ["", "import", "استيراد من إكسل"], ["ghost", "seed", "بيانات تجريبية"]]);
+    return;
+  }
+  const e = state.cur ? state.byId.get(state.cur) : null;
+  if (!e) {
+    host.innerHTML = emptyState(ICON.staff, "اختر موظفًا من القائمة",
+      "ملف الموظف يجمع بياناته الأساسية والوظيفية، وتوثيق كل ما يجري عليه، وحالة وثائقه وتراخيصه.", []);
+    return;
+  }
+
+  const rs = recsOf(e.id);
+  const openCount = rs.filter(r => r.status === "مفتوح").length;
+  const expSoon = EXPIRY_FIELDS.map(f => expiryState(e[f.k])).filter(s => s && s.d <= ALERT_DAYS).length;
+  const tabs = [
+    { k:"data", ar:"البيانات", n:null },
+    { k:"log",  ar:"سجل التوثيق", n:rs.length },
+    { k:"docs", ar:"الوثائق والصلاحية", n:expSoon || null },
+  ];
+
+  host.innerHTML = '<section class="card">' +
+    '<div class="printonly">' + esc(state.branch.name || "الفرع الطبي") + " — ملف موظف" +
+      "<span>طُبع في " + esc(todayISO()) + "</span></div>" +
+    '<div class="file-head">' +
+      '<span class="av lg" style="--c:' + hueOf(e.department) + '">' + esc(initials(e.name)) + "</span>" +
+      "<div><h2>" + esc(e.name) + "</h2>" +
+        '<div class="role">' + esc(e.jobTitle || "بلا مسمى") + (e.department ? " · " + esc(e.department) : "") + "</div>" +
+        '<div class="idline">' + esc(e.id) + (e.hireDate ? " · في الخدمة " + esc(tenureText(e.hireDate)) : "") + "</div></div>" +
+      '<span class="grow"></span>' +
+      '<span class="chip dot t-' + (STATUS_TONE[e.status] || "ink") + '">' + esc(e.status || "—") + "</span>" +
+      (openCount ? '<span class="chip t-serious">' + fmt(openCount) + " إجراء مفتوح</span>" : "") +
+    "</div>" +
+    '<div class="tabs">' + tabs.map(t =>
+      '<button class="tab' + (state.tab === t.k ? " on" : "") + '" data-tab="' + t.k + '">' + esc(t.ar) +
+      (t.n ? '<span class="pill">' + fmt(t.n) + "</span>" : "") + "</button>").join("") + "</div>" +
+    (state.tab === "data" ? empData(e) : state.tab === "log" ? empLog(e, rs) : empDocs(e, rs)) +
+  "</section>";
+}
+
+function emptyState(icon, title, body, buttons) {
+  return '<div class="state"><div class="mark-lg">' + icon + "</div><h3>" + esc(title) + "</h3><p>" + esc(body) + "</p>" +
+    (buttons.length ? '<div class="row">' + buttons.map(b =>
+      '<button class="btn ' + b[0] + '" data-act="' + b[1] + '">' + esc(b[2]) + "</button>").join("") + "</div>" : "") + "</div>";
+}
+
+/* ── تبويب البيانات ────────────────────────────────────────────── */
+function empData(e) {
+  const cell = f => {
+    let v = e[f.k], sub = "";
+    if (f.k === "dob") { const a = yearsBetween(v); if (a != null) sub = " (" + fmt(a) + " سنة)"; }
+    if (f.k === "hireDate" && v) sub = " (" + tenureText(v) + ")";
+    if (f.t === "int" && v) v = fmt(v);
+    let html;
+    if (!v && v !== 0) html = '<dd class="none">—</dd>';
+    else if (f.k === "email") html = '<dd><a href="mailto:' + esc(v) + '" style="color:var(--brand)">' + esc(v) + "</a></dd>";
+    else if (f.t === "tel") html = '<dd><a class="mono" href="tel:' + esc(v) + '" style="color:var(--brand)">' + esc(v) + "</a></dd>";
+    else html = "<dd" + (f.mono ? ' class="mono"' : "") + ">" + esc(v) + (sub ? '<span class="sub">' + esc(sub) + "</span>" : "") + "</dd>";
+    return "<div><dt>" + esc(f.ar) + "</dt>" + html + "</div>";
+  };
+  return GROUPS.map(g => '<section class="sec"><p class="lbl">' + esc(g.ar) + '</p><dl class="kv">' +
+      FIELDS.filter(f => f.g === g.g).map(cell).join("") + "</dl></section>").join("") +
+    '<div class="sec" style="display:flex; gap:8px; flex-wrap:wrap">' +
+      '<button class="btn primary" data-act="editEmp">' + ICON.edit + "تعديل البيانات</button>" +
+      '<button class="btn" data-act="addRec">' + ICON.plus + "توثيق جديد</button>" +
+      '<button class="btn" data-act="printEmp">' + ICON.print + "طباعة الملف</button>" +
+      '<span class="grow"></span>' +
+      '<button class="btn danger" data-act="delEmp">' + ICON.trash + "حذف الملف</button>" +
+    "</div>";
+}
+
+/* ── تبويب سجل التوثيق ─────────────────────────────────────────── */
+function yearOf(d) { return String(d || "").slice(0, 4); }
+function empLog(e, rs) {
+  const y = String(new Date().getFullYear());
+  const sum = k => rs.filter(r => r.type === k && yearOf(r.date) === y).reduce((s, r) => s + (Number(r.amount) || 0), 0);
+  const cnt = k => rs.filter(r => r.type === k && yearOf(r.date) === y).length;
+  const tiles = [
+    { ar:"أيام إجازة", v:sum("leave"),   s:"هذا العام", tone:"brand" },
+    { ar:"أيام غياب",  v:sum("absence"), s:"هذا العام", tone:"warn" },
+    { ar:"مرات تأخير", v:cnt("late"),    s:"هذا العام", tone:"warn" },
+    { ar:"مخالفات",    v:cnt("violation"), s:"هذا العام", tone:"serious" },
+    { ar:"إنذارات",    v:cnt("warning"), s:"هذا العام", tone:"crit" },
+    { ar:"ساعات تدريب", v:sum("training"), s:"هذا العام", tone:"good" },
+  ];
+  return '<div class="tiles" style="margin-bottom:16px">' + tiles.map(t =>
+      '<div class="tile t-' + t.tone + '"' + (t.v ? "" : ' style="--tone:var(--line); --tone-ink:var(--ink-3)"') + ">" +
+      '<div class="k">' + esc(t.ar) + '</div><div class="v num">' + fmt(t.v) + '</div><div class="s">' + esc(t.s) + "</div></div>").join("") + "</div>" +
+    '<p class="lbl">أضف توثيقًا</p><div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px">' +
+      REC_TYPES.map(t => '<button class="btn sm t-' + t.tone + '" data-newrec="' + t.k + '" ' +
+        'style="border-color:color-mix(in srgb, var(--tone) 32%, var(--line)); color:var(--tone-ink)">' +
+        ICON[t.icon] + esc(t.ar) + "</button>").join("") + "</div>" +
+    (rs.length
+      ? '<div class="timeline">' + rs.map(r => recCard(r, false)).join("") + "</div>"
+      : '<p class="okstate">لا سجلات بعد لهذا الموظف — كل ما يوثَّق يظهر هنا بترتيب زمني.</p>');
+}
+
+function recCard(r, withName) {
+  const t = RT[r.type] || RT.note;
+  const amt = Number(r.amount) || 0;
+  const range = r.from && r.to && r.from !== r.to ? r.from + " ← " + r.to : "";
+  return '<article class="trec t-' + t.tone + '" data-rec="' + r.rid + '">' +
+    '<span class="ti">' + ICON[t.icon] + "</span>" +
+    '<div class="tb"><div class="top">' +
+      "<b>" + esc(r.title || t.ar) + "</b>" +
+      '<span class="chip t-' + t.tone + '">' + esc(t.ar + (r.sub ? " · " + r.sub : "")) + "</span>" +
+      (r.status === "مفتوح" ? '<span class="chip t-serious">مفتوح</span>' : "") +
+      (withName ? '<span class="muted" style="font-size:11.5px">' + esc(empName(r.empId) || r.empId) + "</span>" : "") +
+    "</div>" +
+    (r.details ? '<p class="det">' + esc(r.details) + "</p>" : "") +
+    '<div class="meta">' +
+      (range ? "<span>" + esc(range) + "</span>" : "") +
+      (r.by ? "<span>سجَّله: " + esc(r.by) + "</span>" : "") +
+      (r.file ? '<button class="attach" data-file="' + r.rid + '">' + ICON.clip + esc(r.file.name) + "</button>" : "") +
+    "</div></div>" +
+    '<div class="tr"><span class="tdate">' + esc(r.date || "") + "</span>" +
+      (amt ? '<span class="amt num">' + fmt(amt) + '<span class="muted" style="font-size:11px; font-weight:400"> ' +
+        esc(t.amount ? t.amount.unit : "") + "</span></span>" : "") +
+      '<span class="rowbtns"><button class="iconbtn" data-editrec="' + r.rid + '" title="تعديل">' + ICON.edit + "</button>" +
+      '<button class="iconbtn del" data-delrec="' + r.rid + '" title="حذف">' + ICON.trash + "</button></span>" +
+    "</div></article>";
+}
+
+/* ── تبويب الوثائق والصلاحية ───────────────────────────────────── */
+function empDocs(e, rs) {
+  const rows = EXPIRY_FIELDS.map(f => {
+    const s = expiryState(e[f.k]);
+    return '<tr><td>' + esc(f.ar) + "</td>" +
+      '<td class="mono">' + (e[f.k] ? esc(e[f.k]) : '<span class="empty">—</span>') + "</td>" +
+      "<td>" + (s ? '<span class="chip dot t-' + s.tone + '">' + esc(s.txt) + "</span>"
+                  : '<span class="muted">غير مسجَّل</span>') + "</td></tr>";
+  }).join("");
+  const docs = rs.filter(r => r.file);
+  return '<section class="sec"><p class="lbl">صلاحية الوثائق والتراخيص</p>' +
+    '<div class="tbl" style="max-height:none"><table class="db"><thead><tr>' +
+      "<th>الوثيقة</th><th>تاريخ الانتهاء</th><th>الحالة</th></tr></thead><tbody>" + rows + "</tbody></table></div>" +
+    '<p class="dbnote">التنبيه يبدأ قبل ' + fmt(ALERT_DAYS) + ' يومًا من الانتهاء، ويظهر في الصفحة الرئيسية أيضًا.</p></section>' +
+    '<section class="sec"><p class="lbl">المرفقات في سجل التوثيق</p>' +
+    (docs.length
+      ? '<div class="timeline">' + docs.map(r => recCard(r, false)).join("") + "</div>"
+      : '<p class="okstate">لا مرفقات. أي سجل توثيق يقبل إرفاق ملف — عقد أو شهادة أو صورة وثيقة.</p>') +
+    "</section>";
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   ٨ · الوحدة الثانية — جميع الموظفين
+   ═════════════════════════════════════════════════════════════════ */
+function staffRows() {
+  const f = state.staff, q = norm(f.q);
+  return state.emps.filter(e =>
+    (!f.dept   || e.department === f.dept) &&
+    (!f.cat    || e.category === f.cat) &&
+    (!f.status || e.status === f.status) &&
+    (!q || FIELDS.some(fd => fd.t !== "int" && norm(e[fd.k]).includes(q))));
+}
+
+function renderStaff() {
+  const all = state.emps, on = active();
+  const tenures = on.map(e => yearsBetween(e.hireDate)).filter(v => v != null);
+  const avg = tenures.length ? Math.round(tenures.reduce((s, v) => s + v, 0) / tenures.length * 10) / 10 : null;
+  const kpi = (k, v, s, tone) => '<div class="kpi t-' + (tone || "brand") + '"><div class="k">' + esc(k) +
+    '</div><div class="v num">' + v + '</div><div class="s">' + esc(s) + "</div></div>";
+  const byStatus = s => all.filter(e => e.status === s).length;
+
+  $("#staffKpis").innerHTML =
+    kpi("إجمالي الملفات", fmt(all.length), "في قاعدة الفرع", "brand") +
+    kpi("على رأس العمل", fmt(on.length), all.length ? pct(Math.round(on.length / all.length * 100)) + " من الكادر" : "—", "good") +
+    kpi("في إجازة", fmt(byStatus("إجازة")), "حسب حالة الملف", "warn") +
+    kpi("منتهي الخدمة", fmt(byStatus("منتهي الخدمة")), "أرشيف الفرع", "ink") +
+    kpi("الأقسام", fmt(uniq(on.map(e => e.department).filter(Boolean)).length), "بها كادر عامل", "seal") +
+    kpi("متوسط الخدمة", avg == null ? "—" : fmt(avg), "سنة لكل موظف عامل", "brand");
+
+  fillSelect("#staffDept", "كل الأقسام", facetValues("department"), state.staff.dept);
+  fillSelect("#staffCat", "كل الفئات", uniq(all.map(e => e.category).filter(Boolean)).sort(byAr), state.staff.cat);
+  fillSelect("#staffStatus", "كل الحالات", STATUSES.map(s => s.v), state.staff.status);
+
+  const rows = staffRows();
+  const host = $("#staffHost");
+  if (!all.length) {
+    host.innerHTML = emptyState(ICON.staff, "لا يوجد موظفون في القاعدة",
+      "أضف الموظفين من وحدة «إدارة الموظفين»، أو استورد كشفًا جاهزًا من ملف إكسل.",
+      [["primary", "import", "استيراد من إكسل"], ["", "goEmp", "إدارة الموظفين"], ["ghost", "seed", "بيانات تجريبية"]]);
+  } else if (!rows.length) {
+    host.innerHTML = emptyState(ICON.staff, "لا نتائج للترشيح الحالي", "غيّر كلمة البحث أو أعد ضبط المرشِّحات.",
+      [["", "resetStaff", "مسح الترشيح"]]);
+  } else {
+    const page = rows.slice(0, state.staff.shown);
+    host.innerHTML =
+      '<div class="tbl"><table class="db"><thead><tr>' +
+        STAFF_COLS.map(k => '<th' + (k === "id" ? ' class="key"' : "") + ">" + esc(F[k].ar) +
+          "<small>" + esc(F[k].en) + "</small></th>").join("") + "</tr></thead><tbody>" +
+        page.map(e => '<tr data-emp="' + esc(e.id) + '">' + STAFF_COLS.map((k, i) => {
+          const f = F[k], v = e[k];
+          const cls = (i === 0 ? "br " : "") + (f.mono || f.t === "date" ? "mono " : "") + (v ? "" : "empty");
+          const style = i === 0 ? ' style="--c:' + hueOf(e.department) + '"' : "";
+          let cell;
+          if (!v && v !== 0) cell = "—";
+          else if (k === "status") cell = '<span class="chip dot t-' + (STATUS_TONE[v] || "ink") + '">' + esc(v) + "</span>";
+          else if (f.expiry) { const s = expiryState(v); cell = '<span class="chip t-' + s.tone + '">' + esc(v) + "</span>"; }
+          else if (f.t === "int") cell = fmt(v);
+          else cell = esc(v);
+          return "<td" + (cls.trim() ? ' class="' + cls.trim() + '"' : "") + style + ">" + cell + "</td>";
+        }).join("") + "</tr>").join("") +
+        "</tbody></table></div>" +
+      (rows.length > page.length
+        ? '<div class="more"><button class="btn" data-act="moreStaff">عرض ' + fmt(rows.length - page.length) + " صفًا إضافيًا</button></div>"
+        : "") +
+      '<p class="dbnote">' + fmt(rows.length) + " صفًا من " + fmt(all.length) +
+      " — اضغط أي صف لفتح ملف الموظف في وحدة إدارة الموظفين.</p>";
+  }
+
+  const emp = "موظفًا";
+  $("#staffCharts").innerHTML =
+    barChart("حسب القسم", "الكادر على رأس العمل", tally(on, "department", 10), emp, true) +
+    barChart("حسب الفئة", "التوزيع المهني للكادر العامل", tally(on, "category", 8), emp) +
+    barChart("حسب الجنسية", "الكادر العامل", tally(on, "nationality", 6), emp);
+}
+
+function fillSelect(sel, all, values, cur) {
+  const el = $(sel);
+  el.innerHTML = '<option value="">' + esc(all) + "</option>" + values.map(v => "<option>" + esc(v) + "</option>").join("");
+  el.value = cur || "";
+}
+function tally(rows, k, limit) {
+  const m = new Map();
+  for (const r of rows) { const v = r[k] || "غير محدَّد"; m.set(v, (m.get(v) || 0) + 1); }
+  let arr = [...m].map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value);
+  if (limit && arr.length > limit) {
+    const rest = arr.slice(limit - 1).reduce((s, x) => s + x.value, 0);
+    arr = arr.slice(0, limit - 1).concat({ label:"أخرى", value:rest });
+  }
+  return arr;
+}
+/* byEntity: يلوَّن الشريط بلون هوية القسم نفسه المستعمل في الجداول */
+function barChart(title, cap, items, unit, byEntity) {
+  const max = Math.max(1, ...items.map(i => i.value));
+  const body = items.length ? '<div class="bars">' + items.map(i =>
+      '<div class="bar-row" title="' + esc(i.label + " · " + fmt(i.value) + " " + unit) + '">' +
+      '<span class="lb">' + esc(i.label) + "</span>" +
+      '<span class="bar-track"><span class="bar-fill" style="width:' + (i.value / max * 100).toFixed(1) + "%" +
+        (byEntity ? ";background:" + hueOf(i.label) : "") + '"></span></span>' +
+      '<span class="vl">' + fmt(i.value) + "</span></div>").join("") + "</div>"
+    : '<p class="chart-empty">لا بيانات بعد</p>';
+  return '<section class="chart"><h3>' + esc(title) + '</h3><p class="cap">' + esc(cap) + "</p>" + body + "</section>";
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   ٩ · الوحدة الثالثة — سعة الفرع وموارده
+   ═════════════════════════════════════════════════════════════════ */
+const SLOT_KINDS = new Set(RES_KINDS.filter(k => k.slots).map(k => k.k));
+const isDoctor = e => e.category === "طبيب" || e.category === "طبيب أسنان";
+
+function capacity() {
+  const live = state.res.filter(r => LIVE_STATUS.includes(r.status));
+  const op = live.filter(r => SLOT_KINDS.has(r.kind));
+  const daily = op.reduce((s, r) => s + (Number(r.slots) || 0), 0);
+  const days = Number(state.branch.workDays) || 6;
+  return {
+    rooms: state.res.length,
+    live: live.length,
+    op: op.length,
+    slotRooms: state.res.filter(r => SLOT_KINDS.has(r.kind)).length,
+    daily, weekly: daily * days, days,
+    hours: op.reduce((s, r) => s + (Number(r.hours) || 0), 0),
+    maint: state.res.filter(r => r.status === "تحت الصيانة").length,
+    off: state.res.filter(r => r.status === "خارج الخدمة").length,
+    ready: state.res.length ? Math.round(live.length / state.res.length * 100) : 0,
+  };
+}
+
+function resRows() {
+  const f = state.resF, q = norm(f.q);
+  return state.res.filter(r =>
+    (!f.kind   || r.kind === f.kind) &&
+    (!f.status || r.status === f.status) &&
+    (!q || [r.code, r.name, r.department, r.floor, r.serial, empName(r.assignedTo)].some(v => norm(v).includes(q))));
+}
+
+function renderCapacity() {
+  const c = capacity(), b = state.branch;
+  const kpi = (k, v, s, tone) => '<div class="kpi t-' + (tone || "brand") + '"><div class="k">' + esc(k) +
+    '</div><div class="v num">' + v + '</div><div class="s">' + esc(s) + "</div></div>";
+
+  $("#capKpis").innerHTML =
+    kpi("موارد الفرع", fmt(c.rooms), fmt(c.live) + " منها في الخدمة", "brand") +
+    kpi("غرف تشغيلية", fmt(c.op), "عيادات وأسنان وإجراءات وأشعة", "good") +
+    kpi("الطاقة اليومية", fmt(c.daily), "موعدًا في اليوم", "seal") +
+    kpi("الطاقة الأسبوعية", fmt(c.weekly), fmt(c.days) + " أيام عمل", "seal") +
+    kpi("ساعات التشغيل", fmt(c.hours), "ساعة/يوم لكل الغرف العاملة", "brand") +
+    kpi("جاهزية الموارد", pct(c.ready), fmt(c.maint) + " صيانة · " + fmt(c.off) + " خارج الخدمة",
+        c.ready >= 85 ? "good" : c.ready >= 60 ? "warn" : "crit");
+
+  const bcell = f => {
+    const v = b[f.k];
+    return "<div><dt>" + esc(f.ar) + "</dt>" + (v || v === 0
+      ? "<dd" + (f.mono ? ' class="mono"' : "") + ">" + esc(f.t === "int" ? fmt(v) : v) + "</dd>"
+      : '<dd class="none">—</dd>') + "</div>";
+  };
+  const lic = expiryState(b.licenseExpiry);
+  $("#branchCard").innerHTML = '<section class="card">' +
+    '<div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px">' +
+      "<h2 style='margin:0'>" + esc(b.name || "الفرع") + "</h2>" +
+      (b.code ? '<span class="chip t-brand mono">' + esc(b.code) + "</span>" : "") +
+      (lic ? '<span class="chip dot t-' + lic.tone + '">ترخيص المنشأة: ' + esc(lic.txt) + "</span>" : "") +
+      '<span class="grow"></span>' +
+      '<span class="muted" style="font-size:12px">' + esc((b.openTime || "") + (b.closeTime ? " – " + b.closeTime : "")) + "</span>" +
+    "</div><dl class='kv'>" + BRANCH_FIELDS.filter(f => f.k !== "notes").map(bcell).join("") + "</dl>" +
+    (b.notes ? '<p class="dbnote">' + esc(b.notes) + "</p>" : "") + "</section>";
+
+  fillSelect("#resKind", "كل الأنواع", RES_KINDS.map(k => k.ar), RK[state.resF.kind] ? RK[state.resF.kind].ar : "");
+  fillSelect("#resStatus", "كل الحالات", RES_STATUS.map(s => s.v), state.resF.status);
+
+  const rows = resRows(), host = $("#resHost");
+  if (!state.res.length) {
+    host.innerHTML = emptyState(ICON.cap, "لم تُسجَّل موارد بعد",
+      "أضف غرف الفرع وعياداته وأجهزته لتُحتسب الطاقة الاستيعابية اليومية والأسبوعية.",
+      [["primary", "newRes", "إضافة مورد"], ["ghost", "seed", "بيانات تجريبية"]]);
+  } else if (!rows.length) {
+    host.innerHTML = emptyState(ICON.cap, "لا نتائج للترشيح الحالي", "غيّر كلمة البحث أو أعد ضبط المرشِّحات.", []);
+  } else {
+    const cols = ["الكود","الاسم","النوع","القسم","الدور","الحالة","مخصَّصة لـ","مواعيد/يوم","ساعات","الصيانة القادمة"];
+    host.innerHTML = '<div class="tbl"><table class="db"><thead><tr>' +
+      cols.map(c => "<th>" + esc(c) + "</th>").join("") + "</tr></thead><tbody>" +
+      rows.map(r => {
+        const m = expiryState(r.nextMaint);
+        return '<tr data-res="' + r.rsid + '">' +
+          '<td class="br mono" style="--c:' + hueOf(r.department) + '">' + esc(r.code) + "</td>" +
+          "<td>" + esc(r.name || "—") + "</td>" +
+          "<td>" + esc(RK[r.kind] ? RK[r.kind].ar : r.kind) + "</td>" +
+          "<td" + (r.department ? "" : ' class="empty"') + ">" + esc(r.department || "—") + "</td>" +
+          "<td" + (r.floor ? "" : ' class="empty"') + ">" + esc(r.floor || "—") + "</td>" +
+          '<td><span class="chip dot t-' + (RES_TONE[r.status] || "ink") + '">' + esc(r.status) + "</span></td>" +
+          "<td" + (r.assignedTo ? "" : ' class="empty"') + ">" + esc(empName(r.assignedTo) || r.assignedTo || "—") + "</td>" +
+          '<td class="mono">' + (r.slots ? fmt(r.slots) : "—") + "</td>" +
+          '<td class="mono">' + (r.hours ? fmt(r.hours) : "—") + "</td>" +
+          '<td class="mono">' + (m ? '<span class="chip t-' + m.tone + '">' + esc(r.nextMaint) + "</span>" : "—") + "</td>" +
+        "</tr>";
+      }).join("") +
+      "</tbody><tfoot><tr><td colspan='7'>مجموع المعروض</td>" +
+        "<td class='mono'>" + fmt(rows.reduce((s, r) => s + (Number(r.slots) || 0), 0)) + "</td>" +
+        "<td class='mono'>" + fmt(rows.reduce((s, r) => s + (Number(r.hours) || 0), 0)) + "</td><td></td></tr></tfoot>" +
+      "</table></div><p class='dbnote'>اضغط أي صف لتعديل المورد. الطاقة اليومية تُحتسب من الغرف التشغيلية في الخدمة وحدها.</p>";
+  }
+
+  const kindTally = RES_KINDS.map(k => ({ label:k.ar, value:state.res.filter(r => r.kind === k.k).length }))
+    .filter(i => i.value).sort((a, b2) => b2.value - a.value);
+  const statusTally = RES_STATUS.map(s => ({ label:s.v, value:state.res.filter(r => r.status === s.v).length })).filter(i => i.value);
+  const deptSlots = (() => {
+    const m = new Map();
+    for (const r of state.res) if (SLOT_KINDS.has(r.kind) && LIVE_STATUS.includes(r.status))
+      m.set(r.department || "غير محدَّد", (m.get(r.department || "غير محدَّد") || 0) + (Number(r.slots) || 0));
+    return [...m].map(([label, value]) => ({ label, value })).sort((a, b2) => b2.value - a.value);
+  })();
+  $("#capCharts").innerHTML =
+    barChart("الموارد حسب النوع", "كل ما سُجِّل في الفرع", kindTally, "مورد") +
+    barChart("الطاقة اليومية حسب القسم", "مواعيد الغرف العاملة", deptSlots, "موعد", true) +
+    barChart("حالة الموارد", "جاهزية الفرع اليوم", statusTally, "مورد");
+
+  renderStaffing();
+}
+
+/* جدول كفاية الكادر: لكل قسم غرفه العاملة وطاقته ومن يعمل فيه */
+/* الكادر هنا هو المسجَّل غير المنتهية خدمته — لا العامل اليوم وحده، فمن
+   في إجازة يظل جزءًا من ملاك القسم عند قياس السعة. */
+const onStaff = () => state.emps.filter(e => e.status !== "منتهي الخدمة");
+function renderStaffing() {
+  const names = uniq(state.res.map(r => r.department).filter(Boolean)
+    .concat(onStaff().map(e => e.department).filter(Boolean))).sort(byAr);
+  if (!names.length) {
+    $("#capStaffing").innerHTML = '<p class="okstate">أضف موارد الفرع وموظفيه ليظهر توزيع الغرف على الأقسام.</p>';
+    return;
+  }
+  const rows = names.map(d => {
+    const rs = state.res.filter(r => r.department === d);
+    const liveRooms = rs.filter(r => LIVE_STATUS.includes(r.status));
+    /* العيادات ووحدات الأسنان وحدها هي التي تلزمها كوادر طبية */
+    const clinics = liveRooms.filter(r => r.kind === "clinic" || r.kind === "dental").length;
+    const slots = liveRooms.filter(r => SLOT_KINDS.has(r.kind)).reduce((s, r) => s + (Number(r.slots) || 0), 0);
+    const staff = onStaff().filter(e => e.department === d);
+    const docs = staff.filter(isDoctor).length;
+    const nurses = staff.filter(e => e.category === "تمريض").length;
+    let v;
+    if (clinics && !docs)                     v = { t:"عيادات بلا طبيب", tone:"crit" };
+    else if (liveRooms.length && !staff.length) v = { t:"موارد بلا كادر", tone:"crit" };
+    else if (clinics && docs > clinics)       v = { t:"الأطباء أكثر من العيادات", tone:"warn" };
+    else if (!liveRooms.length && rs.length)  v = { t:"موارد القسم متوقفة", tone:"serious" };
+    else if (!rs.length && staff.length)      v = { t:"بلا مورد مخصَّص", tone:"ink" };
+    else if (liveRooms.length && staff.length) v = { t:"متوازن", tone:"good" };
+    else v = { t:"—", tone:"ink" };
+    return { d, rooms:rs.length, liveRooms:liveRooms.length, slots, docs, nurses, staff:staff.length, v };
+  });
+  $("#capStaffing").innerHTML = '<div class="tbl" style="max-height:none"><table class="db"><thead><tr>' +
+    ["القسم","الموارد","في الخدمة","الطاقة اليومية","أطباء","تمريض","إجمالي الكادر","الحال"]
+      .map(c => "<th>" + esc(c) + "</th>").join("") + "</tr></thead><tbody>" +
+    rows.map(r => '<tr style="cursor:default">' +
+      '<td class="br" style="--c:' + hueOf(r.d) + '">' + esc(r.d) + "</td>" +
+      '<td class="mono">' + fmt(r.rooms) + "</td>" +
+      '<td class="mono">' + fmt(r.liveRooms) + "</td>" +
+      '<td class="mono">' + fmt(r.slots) + "</td>" +
+      '<td class="mono">' + fmt(r.docs) + "</td>" +
+      '<td class="mono">' + fmt(r.nurses) + "</td>" +
+      '<td class="mono">' + fmt(r.staff) + "</td>" +
+      '<td><span class="chip dot t-' + r.v.tone + '">' + esc(r.v.t) + "</span></td></tr>").join("") +
+    "</tbody></table></div>";
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   ١٠ · النماذج والنوافذ
+   ═════════════════════════════════════════════════════════════════ */
+let lastFocus = null;
+function openModal(sel) {
+  lastFocus = document.activeElement;
+  $(sel).hidden = false;
+  const first = $(sel + " input, " + sel + " select, " + sel + " textarea, " + sel + " button.primary");
+  if (first) setTimeout(() => first.focus(), 30);
+}
+function closeModal(sel) {
+  $(sel).hidden = true;
+  if (lastFocus && document.contains(lastFocus)) lastFocus.focus();
+}
+function confirmBox(text, fn) {
+  $("#cfmText").textContent = text;
+  state.cfm = fn;
+  openModal("#mConfirm");
+}
+
+function facetList(k) { return k === "department" ? depts() : facetValues(k); }
+
+function fieldHtml(f, val, ns) {
+  const req = f.req ? ' <b>*</b>' : "";
+  let ctl;
+  if (f.t === "select") {
+    ctl = '<select name="' + f.k + '"><option value=""></option>' +
+      f.opts.map(o => "<option" + (String(val ?? "") === o ? " selected" : "") + ">" + esc(o) + "</option>").join("") + "</select>";
+  } else if (f.t === "emp") {
+    ctl = '<select name="' + f.k + '"><option value="">—</option>' + state.emps.map(e =>
+      '<option value="' + esc(e.id) + '"' + (val === e.id ? " selected" : "") + ">" +
+      esc(e.name + (e.jobTitle ? " — " + e.jobTitle : "")) + "</option>").join("") + "</select>";
+  } else if (f.t === "area") {
+    ctl = '<textarea name="' + f.k + '" rows="3">' + esc(val || "") + "</textarea>";
+  } else {
+    const type = f.t === "int" ? "number" : f.t === "date" ? "date" : f.t === "time" ? "time"
+               : f.t === "email" ? "email" : f.t === "tel" ? "tel" : "text";
+    const dl = f.facet ? ns + "-dl-" + f.k : null;
+    ctl = '<input name="' + f.k + '" type="' + type + '" value="' + esc(val ?? "") + '"' +
+      (f.t === "int" ? ' min="0" step="1"' : "") + (dl ? ' list="' + dl + '"' : "") +
+      (f.mono ? ' class="mono"' : "") + ">" +
+      (dl ? '<datalist id="' + dl + '">' + facetList(f.k).map(v => '<option value="' + esc(v) + '">').join("") + "</datalist>" : "");
+  }
+  /* العنوان والنجمة في عنصر واحد — وإلا نزلت النجمة سطرًا في عمود ‎flex‎ */
+  return '<label' + (f.t === "area" ? ' class="full"' : "") + "><span>" + esc(f.ar) + req + "</span>" + ctl +
+    '<span class="err" data-err="' + f.k + '"></span></label>';
+}
+function readForm(root, fields) {
+  const o = {};
+  for (const f of fields) {
+    const el = root.querySelector('[name="' + f.k + '"]');
+    o[f.k] = el ? el.value : "";
+  }
+  return o;
+}
+function showErrors(root, errs) {
+  for (const el of root.querySelectorAll("[name]")) el.removeAttribute("aria-invalid");
+  for (const el of root.querySelectorAll(".err")) el.textContent = "";
+  let first = null;
+  for (const k of Object.keys(errs)) {
+    const el = root.querySelector('[name="' + k + '"]'), sp = root.querySelector('[data-err="' + k + '"]');
+    if (el) { el.setAttribute("aria-invalid", "true"); first = first || el; }
+    if (sp) sp.textContent = errs[k];
+  }
+  if (first) first.focus();
+}
+
+/* ── ملف الموظف: إضافة وتعديل ──────────────────────────────────── */
+let editEmpId = null;
+function openEmpForm(id) {
+  editEmpId = id || null;
+  const e = id ? state.byId.get(id) : blankEmp();
+  $("#mEmpTitle").textContent = id ? "تعديل ملف — " + e.name : "ملف موظف جديد";
+  $("#empFormNote").textContent = id ? "الرقم الوظيفي " + e.id : "الحقول المعلَّمة بـ * مطلوبة";
+  $("#empForm").innerHTML = GROUPS.map(g =>
+    "<fieldset><legend>" + esc(g.ar) + '</legend><div class="fgrid">' +
+    FIELDS.filter(f => f.g === g.g).map(f => fieldHtml(f, e[f.k], "emp")).join("") + "</div></fieldset>").join("");
+  openModal("#mEmp");
+}
+async function saveEmpForm() {
+  const form = $("#empForm");
+  const old = editEmpId ? state.byId.get(editEmpId) : null;
+  const rec = coerceEmp({ ...readForm(form, FIELDS), createdAt: old ? old.createdAt : "" });
+  const isNew = !old || rec.id !== old.id;
+  const errs = validateEmp(rec, isNew);
+  if (Object.keys(errs).length) { showErrors(form, errs); toast("راجع الحقول المعلَّمة", "err"); return; }
+
+  await dbPut(DB.emp, rec);
+  if (old && rec.id !== old.id) {                       /* تغيّر المفتاح: انقل ما يشير إليه */
+    const moved = state.recs.filter(r => r.empId === old.id).map(r => ({ ...r, empId:rec.id }));
+    if (moved.length) await dbPutMany(DB.rec, moved);
+    const res = state.res.filter(r => r.assignedTo === old.id).map(r => ({ ...r, assignedTo:rec.id }));
+    if (res.length) await dbPutMany(DB.res, res);
+    await dbDel(DB.emp, old.id);
+  }
+  await loadAll();
+  state.cur = rec.id;
+  closeModal("#mEmp");
+  toast(old ? "حُدِّث ملف " + rec.name : "أُضيف ملف " + rec.name, "ok");
+  renderAll();
+}
+
+/* ── سجل التوثيق: نموذج يتشكّل حسب نوع السجل ───────────────────── */
+let recDraft = null;   /* { rid?, empId, type, ...قيم النموذج, file } */
+
+function openRecForm(empId, type, rid) {
+  const old = rid ? state.recs.find(r => r.rid === rid) : null;
+  recDraft = old ? { ...old } : {
+    empId, type: type || "note", sub:"", date: todayISO(), from:"", to:"",
+    amount:"", title:"", details:"", by:"", status:"", file:null,
+  };
+  $("#mRecTitle").textContent = (old ? "تعديل توثيق — " : "توثيق جديد — ") + (empName(recDraft.empId) || recDraft.empId);
+  drawRecForm();
+  openModal("#mRec");
+}
+function drawRecForm() {
+  const d = recDraft, t = RT[d.type] || RT.note;
+  const lab = (ar, ctl, full) => '<label' + (full ? ' class="full"' : "") + ">" + esc(ar) + ctl + "</label>";
+  const fld = [];
+  fld.push(lab("نوع التوثيق", '<select name="type">' + REC_TYPES.map(x =>
+    '<option value="' + x.k + '"' + (x.k === d.type ? " selected" : "") + ">" + esc(x.ar) + "</option>").join("") + "</select>"));
+  if (t.subs) fld.push(lab("التصنيف", '<select name="sub"><option value=""></option>' + t.subs.map(s =>
+    "<option" + (s === d.sub ? " selected" : "") + ">" + esc(s) + "</option>").join("") + "</select>"));
+  fld.push(lab("التاريخ", '<input name="date" type="date" value="' + esc(d.date || "") + '">'));
+  if (t.range) {
+    fld.push(lab("من", '<input name="from" type="date" value="' + esc(d.from || "") + '">'));
+    fld.push(lab("إلى", '<input name="to" type="date" value="' + esc(d.to || "") + '">'));
+  }
+  if (t.amount) fld.push(lab(t.amount.ar, '<input name="amount" type="number" min="0" step="1" value="' + esc(d.amount ?? "") + '">'));
+  if (t.follow) fld.push(lab("حالة الإجراء", '<select name="status"><option value="مغلق"' + (d.status !== "مفتوح" ? " selected" : "") +
+    '>مغلق</option><option value="مفتوح"' + (d.status === "مفتوح" ? " selected" : "") + ">مفتوح — يحتاج متابعة</option></select>"));
+  fld.push(lab("العنوان", '<input name="title" type="text" value="' + esc(d.title || "") + '" placeholder="سطر واحد يلخّص السجل">', true));
+  fld.push(lab("التفاصيل", '<textarea name="details" rows="4" placeholder="ما جرى، والإجراء المتَّخذ، ومن حضره">' + esc(d.details || "") + "</textarea>", true));
+  fld.push(lab("سجَّله", '<input name="by" type="text" value="' + esc(d.by || "") + '" placeholder="اسم من وثَّق السجل">'));
+
+  const file = d.file
+    ? '<div class="note ok" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap">' + ICON.clip +
+      "<b>" + esc(d.file.name) + "</b><span>" + esc(fileSize(d.file.size)) + "</span>" +
+      '<span class="grow"></span><button type="button" class="btn sm danger" data-rmfile>إزالة</button></div>'
+    : '<div class="drop" data-pick><b>إرفاق ملف بالسجل</b><span>صورة وثيقة أو ‎PDF‎ — يُحفظ داخل القاعدة في المتصفح، حتى ‎3‎ ميجابايت</span></div>';
+
+  $("#recForm").innerHTML = '<div class="fgrid">' + fld.join("") + "</div>" +
+    '<div style="margin-top:14px">' + file + "</div>";
+}
+function readRecForm() {
+  const form = $("#recForm");
+  const get = n => { const el = form.querySelector('[name="' + n + '"]'); return el ? el.value : ""; };
+  const d = recDraft;
+  d.type = get("type") || "note";
+  d.sub = get("sub"); d.date = get("date"); d.from = get("from"); d.to = get("to");
+  d.amount = get("amount"); d.title = get("title").trim(); d.details = get("details").trim();
+  d.by = get("by").trim(); d.status = get("status");
+  return d;
+}
+async function saveRecForm() {
+  const d = readRecForm(), t = RT[d.type] || RT.note;
+  if (!d.date) { toast("التاريخ مطلوب", "err"); return; }
+  if (t.range && d.from && d.to && d.to < d.from) { toast("«إلى» قبل «من»", "err"); return; }
+  /* المدة تُحتسب من المدى ما لم يكتبها المستخدم */
+  let amount = d.amount === "" ? "" : Math.max(0, Math.round(Number(d.amount) || 0));
+  if (t.range && t.amount && amount === "" && d.from && d.to) amount = daysBetweenInc(d.from, d.to);
+  const rec = {
+    empId: d.empId, type: d.type, sub: d.sub || "", date: d.date,
+    from: t.range ? d.from : "", to: t.range ? d.to : "",
+    amount: t.amount ? (amount === "" ? 0 : amount) : 0,
+    title: d.title || (t.ar + (d.sub ? " — " + d.sub : "")),
+    details: d.details, by: d.by,
+    status: t.follow ? (d.status || "مغلق") : "",
+    file: d.file || null,
+    createdAt: d.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  if (d.rid) rec.rid = d.rid;
+  await dbPut(DB.rec, rec);
+  await loadAll();
+  state.cur = rec.empId; state.tab = "log";
+  closeModal("#mRec");
+  toast(d.rid ? "حُدِّث السجل" : "أُضيف السجل إلى ملف " + (empName(rec.empId) || rec.empId), "ok");
+  renderAll();
+}
+/* المرفق يُقرأ نصًّا (data URL) ليُحفظ في القاعدة ويعود في نسخة ‎json‎ */
+function attachRecFile(f) {
+  if (!f) return;
+  if (f.size > MAX_ATTACH) { toast("الملف أكبر من ‎3‎ ميجابايت", "err"); return; }
+  const fr = new FileReader();
+  fr.onload = () => {
+    readRecForm();
+    recDraft.file = { name:f.name, type:f.type || "application/octet-stream", size:f.size, data:fr.result };
+    drawRecForm();
+  };
+  fr.onerror = () => toast("تعذّرت قراءة الملف", "err");
+  fr.readAsDataURL(f);
+}
+/* المرفق مخزَّن نصًّا (data URL) فيُعاد إلى ملف عند التحميل */
+function openAttachment(rid) {
+  const r = state.recs.find(x => x.rid === rid);
+  if (!r || !r.file) return;
+  const bin = atob(String(r.file.data).split(",")[1] || "");
+  const u8 = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  save(new Blob([u8], { type:r.file.type }), r.file.name);
+}
+
+/* ── الموارد ───────────────────────────────────────────────────── */
+let editResId = null;
+function openResForm(rsid) {
+  editResId = rsid || null;
+  const r = rsid ? state.res.find(x => x.rsid === rsid) : { status:"جاهزة", kind:"clinic" };
+  const view = { ...r, kind: RK[r.kind] ? RK[r.kind].ar : "" };
+  $("#mResTitle").textContent = rsid ? "تعديل مورد — " + (r.name || r.code) : "مورد جديد";
+  $("#resDelete").hidden = !rsid;
+  $("#resForm").innerHTML = '<div class="fgrid">' +
+    RES_FIELDS.map(f => fieldHtml(f, view[f.k], "res")).join("") + "</div>" +
+    '<p class="dbnote">«مواعيد اليوم» تدخل في الطاقة الاستيعابية للغرف التشغيلية (عيادة · أسنان · إجراءات · أشعة) وهي في الخدمة.</p>';
+  openModal("#mRes");
+}
+async function saveResForm() {
+  const form = $("#resForm"), raw = readForm(form, RES_FIELDS);
+  const errs = {};
+  if (!String(raw.code || "").trim()) errs.code = "الكود مطلوب";
+  if (!String(raw.name || "").trim()) errs.name = "الاسم مطلوب";
+  if (raw.lastMaint && raw.nextMaint && raw.nextMaint < raw.lastMaint) errs.nextMaint = "قبل آخر صيانة";
+  if (Object.keys(errs).length) { showErrors(form, errs); return; }
+  const kind = (RES_KINDS.find(k => k.ar === raw.kind) || RES_KINDS[0]).k;
+  const rec = {
+    code: String(raw.code).trim(), name: String(raw.name).trim(), kind,
+    department: String(raw.department || "").trim(), floor: String(raw.floor || "").trim(),
+    status: raw.status || "جاهزة", assignedTo: raw.assignedTo || "",
+    slots: Math.max(0, Math.round(Number(raw.slots) || 0)),
+    hours: Math.max(0, Math.round(Number(raw.hours) || 0)),
+    serial: String(raw.serial || "").trim(),
+    lastMaint: toISO(raw.lastMaint), nextMaint: toISO(raw.nextMaint),
+    notes: String(raw.notes || "").trim(),
+    updatedAt: new Date().toISOString(),
+  };
+  if (editResId) rec.rsid = editResId;
+  await dbPut(DB.res, rec);
+  await loadAll();
+  closeModal("#mRes");
+  toast(editResId ? "حُدِّث المورد" : "أُضيف المورد", "ok");
+  renderAll();
+}
+
+/* ── بطاقة الفرع ───────────────────────────────────────────────── */
+function openBranchForm() {
+  $("#branchForm").innerHTML = '<div class="fgrid">' +
+    BRANCH_FIELDS.map(f => fieldHtml(f, state.branch[f.k], "br")).join("") + "</div>" +
+    '<p class="dbnote">اسم الفرع يظهر في الشريط العلوي وفي ملفات التصدير. وأيام العمل تضرب الطاقة اليومية لتخرج الأسبوعية.</p>';
+  openModal("#mBranch");
+}
+async function saveBranchForm() {
+  const raw = readForm($("#branchForm"), BRANCH_FIELDS);
+  const b = { ...BRANCH_DEFAULT };
+  for (const f of BRANCH_FIELDS) {
+    const v = raw[f.k];
+    b[f.k] = f.t === "int" ? Math.max(0, Math.round(Number(v) || 0)) : f.t === "date" ? toISO(v) : String(v ?? "").trim();
+  }
+  if (!b.name) { toast("اسم الفرع مطلوب", "err"); return; }
+  if (!b.workDays) b.workDays = 6;
+  await dbPut(DB.meta, { k:"branch", v:b });
+  state.branch = b;
+  closeModal("#mBranch");
+  toast("حُفظت بيانات الفرع", "ok");
+  renderAll();
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   ١١ · حزم ZIP — قراءة إكسل وكتابته داخل المتصفح بلا مكتبات
+   ═════════════════════════════════════════════════════════════════ */
+const RELT = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+const CRC = (() => { const t = new Uint32Array(256);
+  for (let i = 0; i < 256; i++) { let c = i; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[i] = c >>> 0; }
+  return t; })();
+const crc32 = u8 => { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = CRC[(c ^ u8[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+const pipe = (u8, tr) => new Response(new Blob([u8]).stream().pipeThrough(tr)).arrayBuffer().then(b => new Uint8Array(b));
+
+async function zipRead(ab) {
+  const u8 = new Uint8Array(ab), dv = new DataView(ab);
+  let e = -1;
+  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 66000); i--) if (dv.getUint32(i, true) === 0x06054b50) { e = i; break; }
+  if (e < 0) throw new Error("الملف ليس ‎xlsx‎ سليمًا");
+  const count = dv.getUint16(e + 10, true);
+  let off = dv.getUint32(e + 16, true);
+  const dec = new TextDecoder(), map = new Map();
+  for (let n = 0; n < count; n++) {
+    if (dv.getUint32(off, true) !== 0x02014b50) break;
+    const method = dv.getUint16(off + 10, true), csize = dv.getUint32(off + 20, true);
+    const nl = dv.getUint16(off + 28, true), el = dv.getUint16(off + 30, true), cl = dv.getUint16(off + 32, true);
+    const lho = dv.getUint32(off + 42, true);
+    const name = dec.decode(u8.subarray(off + 46, off + 46 + nl));
+    if (!name.endsWith("/")) map.set(name, { method, csize, lho });
+    off += 46 + nl + el + cl;
+  }
+  const out = new Map();
+  for (const [name, it] of map) {
+    const nl = dv.getUint16(it.lho + 26, true), el = dv.getUint16(it.lho + 28, true);
+    const raw = u8.subarray(it.lho + 30 + nl + el, it.lho + 30 + nl + el + it.csize);
+    if (it.method === 0) out.set(name, raw);
+    else if (it.method === 8) out.set(name, await pipe(raw, new DecompressionStream("deflate-raw")));
+    else throw new Error("طريقة ضغط غير مدعومة داخل الملف");
+  }
+  return out;
+}
+
+async function zipWrite(parts, mime) {
+  const enc = new TextEncoder(), locals = [], centrals = [];
+  const now = new Date();
+  const time = ((now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1)) & 0xFFFF;
+  const date = (((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate()) & 0xFFFF;
+  let offset = 0, n = 0;
+  for (const [name, data0] of parts) {
+    const data = typeof data0 === "string" ? enc.encode(data0) : data0;
+    const nm = enc.encode(name), crc = crc32(data);
+    let body = data, method = 0;
+    try { const d = await pipe(data, new CompressionStream("deflate-raw")); if (d.length < data.length) { body = d; method = 8; } } catch {}
+    const lh = new Uint8Array(30 + nm.length), lv = new DataView(lh.buffer);
+    lv.setUint32(0, 0x04034b50, true); lv.setUint16(4, 20, true); lv.setUint16(6, 0x0800, true);
+    lv.setUint16(8, method, true); lv.setUint16(10, time, true); lv.setUint16(12, date, true);
+    lv.setUint32(14, crc, true); lv.setUint32(18, body.length, true); lv.setUint32(22, data.length, true);
+    lv.setUint16(26, nm.length, true); lh.set(nm, 30);
+    locals.push(lh, body);
+    const ch = new Uint8Array(46 + nm.length), cv = new DataView(ch.buffer);
+    cv.setUint32(0, 0x02014b50, true); cv.setUint16(4, 20, true); cv.setUint16(6, 20, true);
+    cv.setUint16(8, 0x0800, true); cv.setUint16(10, method, true);
+    cv.setUint16(12, time, true); cv.setUint16(14, date, true);
+    cv.setUint32(16, crc, true); cv.setUint32(20, body.length, true); cv.setUint32(24, data.length, true);
+    cv.setUint16(28, nm.length, true); cv.setUint32(42, offset, true); ch.set(nm, 46);
+    centrals.push(ch);
+    offset += lh.length + body.length;
+    n++;
+  }
+  const cd = centrals.reduce((s, c) => s + c.length, 0);
+  const eo = new Uint8Array(22), ev = new DataView(eo.buffer);
+  ev.setUint32(0, 0x06054b50, true);
+  ev.setUint16(8, n, true); ev.setUint16(10, n, true);
+  ev.setUint32(12, cd, true); ev.setUint32(16, offset, true);
+  return new Blob([...locals, ...centrals, eo], { type: mime });
+}
+
+/* ── قراءة ورقة العمل ──────────────────────────────────────────── */
+const colIdx = ref => { let n = 0; for (const ch of ref) { const c = ch.charCodeAt(0); if (c >= 65 && c <= 90) n = n * 26 + (c - 64); else break; } return n - 1; };
+const colRef = i => { let s = "", n = i + 1; while (n > 0) { const r = (n - 1) % 26; s = String.fromCharCode(65 + r) + s; n = Math.floor((n - 1) / 26); } return s; };
+
+function parseCSV(txt) {
+  if (txt.charCodeAt(0) === 0xFEFF) txt = txt.slice(1);
+  const grid = []; let row = [], cell = "", q = false;
+  for (let i = 0; i < txt.length; i++) {
+    const ch = txt[i];
+    if (q) { if (ch === '"') { if (txt[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === ",") { row.push(cell); cell = ""; }
+    else if (ch === "\n") { row.push(cell); grid.push(row); row = []; cell = ""; }
+    else if (ch !== "\r") cell += ch;
+  }
+  if (cell !== "" || row.length) { row.push(cell); grid.push(row); }
+  return grid.map(r => r.map(c => c.trim()));
+}
+
+async function readWorkbook(file) {
+  if (/\.csv$/i.test(file.name)) return [{ name:file.name.replace(/\.csv$/i, ""), grid:parseCSV(await file.text()) }];
+  const parts = await zipRead(await file.arrayBuffer());
+  const dec = new TextDecoder();
+  const doc = n => { const b = parts.get(n); return b ? new DOMParser().parseFromString(dec.decode(b), "application/xml") : null; };
+  const shared = [];
+  const ss = doc("xl/sharedStrings.xml");
+  if (ss) for (const si of ss.getElementsByTagName("si")) {
+    let s = "";
+    for (const tn of si.getElementsByTagName("t")) if (tn.parentNode.nodeName !== "rPh") s += tn.textContent;
+    shared.push(s);
+  }
+  const wb = doc("xl/workbook.xml"), rels = doc("xl/_rels/workbook.xml.rels");
+  const relMap = new Map();
+  if (rels) for (const r of rels.getElementsByTagName("Relationship"))
+    relMap.set(r.getAttribute("Id"), "xl/" + r.getAttribute("Target").replace(/^\/?xl\//, "").replace(/^\//, ""));
+  const sheets = [];
+  if (wb) for (const sh of wb.getElementsByTagName("sheet")) {
+    const rid = sh.getAttribute("r:id") || sh.getAttributeNS(RELT, "id");
+    const path = relMap.get(rid);
+    if (path && parts.has(path)) sheets.push({ name:sh.getAttribute("name") || "", path });
+  }
+  if (!sheets.length) {
+    const p = [...parts.keys()].find(n => /^xl\/worksheets\/[^/]+\.xml$/.test(n));
+    if (!p) throw new Error("لا توجد ورقة عمل في الملف");
+    sheets.push({ name:"Sheet1", path:p });
+  }
+  return sheets.map(s => {
+    const ws = doc(s.path), grid = [];
+    for (const row of ws.getElementsByTagName("row")) {
+      const cells = [];
+      for (const c of row.getElementsByTagName("c")) {
+        const r = c.getAttribute("r"), i = r ? colIdx(r) : cells.length, tp = c.getAttribute("t");
+        let v = "";
+        if (tp === "inlineStr") v = [...c.getElementsByTagName("t")].map(x => x.textContent).join("");
+        else { const vn = c.getElementsByTagName("v")[0], raw = vn ? vn.textContent : "";
+               v = tp === "s" ? (shared[+raw] ?? "") : raw; }
+        cells[i] = String(v).trim();
+      }
+      const rn = +row.getAttribute("r");
+      if (rn) grid[rn - 1] = cells; else grid.push(cells);
+    }
+    for (let i = 0; i < grid.length; i++) if (!grid[i]) grid[i] = [];
+    return { name:s.name, grid };
+  });
+}
+
+const isNumish = v => v !== "" && v != null && isFinite(parseFloat(String(v).replace(/[^\d.-]/g, ""))) && /^[\s\d.,%+-]+$/.test(String(v));
+
+/* سطر العناوين قد لا يكون الأول: يُختار أعرض سطر نصّي تُطابَق عناوينه */
+function findHeaderRow(grid) {
+  let best = 0, bestScore = -1;
+  for (let i = 0; i < Math.min(grid.length, 30); i++) {
+    const cells = (grid[i] || []).filter(c => c !== "" && c != null);
+    if (cells.length < 2) continue;
+    const textish = cells.filter(c => !isNumish(c)).length / cells.length;
+    const matched = cells.filter(c => FIELDS.some(f => f.hints.includes(norm(c)) || norm(f.en) === norm(c) || norm(f.ar) === norm(c))).length;
+    const score = cells.length * textish + matched * 5 + (textish === 1 ? 3 : 0);
+    if (score > bestScore) { bestScore = score; best = i; }
+  }
+  return best;
+}
+function guessMap(headers) {
+  const map = {}, taken = new Set();
+  for (const f of FIELDS) {
+    let hit = -1;
+    headers.forEach((h, i) => {
+      if (hit >= 0 || taken.has(i) || !h) return;
+      const k = norm(h);
+      if (k === norm(f.en) || k === norm(f.ar) || f.hints.includes(k)) hit = i;
+    });
+    if (hit < 0) headers.forEach((h, i) => {
+      if (hit >= 0 || taken.has(i) || !h) return;
+      const k = norm(h);
+      if (f.hints.some(x => x.length > 3 && (k.includes(x) || x.includes(k)))) hit = i;
+    });
+    if (hit >= 0) { map[f.k] = hit; taken.add(hit); }
+  }
+  return map;
+}
+
+/* ── الاستيراد ─────────────────────────────────────────────────── */
+async function loadImportFile(file) {
+  try {
+    const sheets = await readWorkbook(file);
+    const scored = sheets.map(s => {
+      const h = findHeaderRow(s.grid), headers = s.grid[h] || [];
+      const map = guessMap(headers);
+      return { name:s.name, grid:s.grid, h, headers, map, score:Object.keys(map).length };
+    }).sort((a, b) => b.score - a.score);
+    state.imp = scored[0];
+    if (!state.imp || !state.imp.headers.length) throw new Error("لم يُعثر على سطر عناوين");
+    drawMap();
+    $("#btnDoImport").disabled = false;
+  } catch (err) {
+    $("#mapHost").innerHTML = '<div class="note bad">تعذّرت قراءة الملف: ' + esc(err.message) + "</div>";
+    $("#btnDoImport").disabled = true;
+  }
+}
+function drawMap() {
+  const im = state.imp;
+  const opts = k => '<option value="">— لا يُستورد —</option>' + im.headers.map((h, i) =>
+    '<option value="' + i + '"' + (im.map[k] === i ? " selected" : "") + ">" + esc(h || "عمود " + (i + 1)) + "</option>").join("");
+  const rows = im.grid.slice(im.h + 1).filter(r => r.some(c => c !== "" && c != null));
+  $("#mapHost").innerHTML =
+    '<div class="note">ورقة <b>' + esc(im.name) + "</b> · سطر العناوين رقم " + fmt(im.h + 1) +
+      " · " + fmt(rows.length) + " صفًا للاستيراد. الصفوف بلا رقم وظيفي أو بلا اسم تُتجاوز، والأرقام المسجَّلة تُحدَّث.</div>" +
+    '<div style="margin-top:14px; display:grid; grid-template-columns:repeat(auto-fit, minmax(260px,1fr)); gap:4px 18px">' +
+      FIELDS.map(f => '<div class="maprow"><span>' + esc(f.ar) + (f.req ? " *" : "") +
+        '</span><select data-map="' + f.k + '">' + opts(f.k) + "</select></div>").join("") +
+    "</div>";
+}
+async function runImport() {
+  const im = state.imp;
+  if (!im) return;
+  for (const sel of $$("#mapHost [data-map]")) {
+    const v = sel.value;
+    if (v === "") delete im.map[sel.dataset.map]; else im.map[sel.dataset.map] = +v;
+  }
+  const rows = im.grid.slice(im.h + 1);
+  let added = 0, updated = 0, skipped = 0;
+  const out = [];
+  for (const row of rows) {
+    if (!row || !row.some(c => c !== "" && c != null)) continue;
+    const raw = {};
+    for (const k of Object.keys(im.map)) raw[k] = row[im.map[k]] ?? "";
+    const id = String(raw.id ?? "").trim().replace(/\s/g, "");
+    if (!id || !String(raw.name ?? "").trim()) { skipped++; continue; }
+    const old = state.byId.get(id);
+    out.push(coerceEmp(old ? { ...old, ...raw } : raw));
+    if (old) updated++; else added++;
+  }
+  if (!out.length) { toast("لا صفوف صالحة للاستيراد", "err"); return; }
+  await dbPutMany(DB.emp, out);
+  await loadAll();
+  closeModal("#mImport");
+  toast("أُضيف " + fmt(added) + " · حُدِّث " + fmt(updated) + (skipped ? " · تُجوِّز " + fmt(skipped) : ""), "ok");
+  renderAll();
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   ١٢ · التصدير — مصنّف بأربع أوراق، ونسخة ‎json‎ كاملة
+   ═════════════════════════════════════════════════════════════════ */
+const xe = s => String(s ?? "").replace(/[&<>]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;" }[c]));
+const XLNS = 'xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"';
+const XHEAD = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+
+function cellXml(ref, value, num, style) {
+  const s = style ? ' s="' + style + '"' : "";
+  if (value === "" || value == null) return style ? '<c r="' + ref + '"' + s + "/>" : "";
+  if (num) return '<c r="' + ref + '"' + s + "><v>" + Number(value) + "</v></c>";
+  return '<c r="' + ref + '" t="inlineStr"' + s + '><is><t xml:space="preserve">' + xe(value) + "</t></is></c>";
+}
+function sheetXml(cols, rows) {
+  const colsXml = cols.map((c, i) => '<col min="' + (i + 1) + '" max="' + (i + 1) + '" width="' + (c.w || 17) + '" customWidth="1"/>').join("");
+  const head = '<row r="1" ht="22" customHeight="1">' + cols.map((c, i) => cellXml(colRef(i) + "1", c.h, false, 1)).join("") + "</row>";
+  /* عمود موسوم بـ num يُكتب رقمًا، وكذلك أي قيمة رقمية في ورقة مختلطة كورقة الفرع */
+  const body = rows.map((r, ri) => '<row r="' + (ri + 2) + '">' +
+    cols.map((c, i) => cellXml(colRef(i) + (ri + 2), r[i], !!c.num || typeof r[i] === "number")).join("") + "</row>").join("");
+  return XHEAD + "<worksheet " + XLNS + '><sheetViews><sheetView workbookViewId="0">' +
+    '<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>' +
+    '<sheetFormatPr defaultRowHeight="15"/><cols>' + colsXml + "</cols><sheetData>" + head + body + "</sheetData>" +
+    '<autoFilter ref="A1:' + colRef(cols.length - 1) + Math.max(1, rows.length + 1) + '"/></worksheet>';
+}
+const STYLES = XHEAD + "<styleSheet " + XLNS + '><fonts count="2">' +
+  '<font><sz val="11"/><color theme="1"/><name val="Calibri"/></font>' +
+  '<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font></fonts>' +
+  '<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>' +
+  '<fill><patternFill patternType="solid"><fgColor rgb="FF2E3A8C"/><bgColor indexed="64"/></patternFill></fill></fills>' +
+  '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>' +
+  '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+  '<cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
+  '<xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1">' +
+  '<alignment vertical="center"/></xf></cellXfs>' +
+  '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
+
+function buildXlsx(sheets) {
+  const parts = new Map();
+  parts.set("[Content_Types].xml", XHEAD + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+    '<Default Extension="xml" ContentType="application/xml"/>' +
+    '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+    sheets.map((s, i) => '<Override PartName="/xl/worksheets/sheet' + (i + 1) +
+      '.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join("") +
+    '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>');
+  parts.set("_rels/.rels", XHEAD + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="' + RELT + '/officeDocument" Target="xl/workbook.xml"/></Relationships>');
+  parts.set("xl/workbook.xml", XHEAD + "<workbook " + XLNS + ' xmlns:r="' + RELT + '"><sheets>' +
+    sheets.map((s, i) => '<sheet name="' + xe(s.name) + '" sheetId="' + (i + 1) + '" r:id="rId' + (i + 1) + '"/>').join("") +
+    '</sheets><calcPr calcId="191029" fullCalcOnLoad="1"/></workbook>');
+  parts.set("xl/_rels/workbook.xml.rels", XHEAD + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    sheets.map((s, i) => '<Relationship Id="rId' + (i + 1) + '" Type="' + RELT + '/worksheet" Target="worksheets/sheet' + (i + 1) + '.xml"/>').join("") +
+    '<Relationship Id="rId' + (sheets.length + 1) + '" Type="' + RELT + '/styles" Target="styles.xml"/></Relationships>');
+  parts.set("xl/styles.xml", STYLES);
+  sheets.forEach((s, i) => parts.set("xl/worksheets/sheet" + (i + 1) + ".xml", sheetXml(s.cols, s.rows)));
+  return zipWrite(parts, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+}
+
+function exportSheets() {
+  const c = capacity();
+  return [
+    { name:"Employees",
+      cols:FIELDS.map(f => ({ h:f.en, num:f.t === "int", w:f.k === "name" ? 26 : f.k === "email" ? 26 : 17 })),
+      rows:state.emps.map(e => FIELDS.map(f => e[f.k])) },
+    { name:"Records",
+      cols:[{ h:"Employee ID" }, { h:"Employee Name", w:24 }, { h:"Type" }, { h:"Sub Type" }, { h:"Date" },
+            { h:"From" }, { h:"To" }, { h:"Amount", num:true }, { h:"Title", w:30 }, { h:"Details", w:44 },
+            { h:"Recorded By" }, { h:"Status" }, { h:"Attachment", w:22 }],
+      rows:state.recs.map(r => [r.empId, empName(r.empId), (RT[r.type] || {}).ar || r.type, r.sub, r.date,
+            r.from, r.to, r.amount || "", r.title, r.details, r.by, r.status, r.file ? r.file.name : ""]) },
+    { name:"Resources",
+      cols:[{ h:"Code" }, { h:"Name", w:24 }, { h:"Kind" }, { h:"Department" }, { h:"Floor" }, { h:"Status" },
+            { h:"Assigned To", w:24 }, { h:"Slots/Day", num:true }, { h:"Hours/Day", num:true }, { h:"Serial" },
+            { h:"Last Maintenance" }, { h:"Next Maintenance" }, { h:"Notes", w:34 }],
+      rows:state.res.map(r => [r.code, r.name, (RK[r.kind] || {}).ar || r.kind, r.department, r.floor, r.status,
+            empName(r.assignedTo), r.slots || "", r.hours || "", r.serial, r.lastMaint, r.nextMaint, r.notes]) },
+    { name:"Branch",
+      cols:[{ h:"Item", w:26 }, { h:"Value", w:34 }],
+      rows:BRANCH_FIELDS.map(f => [f.ar, state.branch[f.k]]).concat([
+        ["—", ""],
+        ["إجمالي الموارد", c.rooms], ["الموارد في الخدمة", c.live], ["الغرف التشغيلية العاملة", c.op],
+        ["الطاقة اليومية (موعد)", c.daily], ["الطاقة الأسبوعية (موعد)", c.weekly],
+        ["ساعات التشغيل يوميًا", c.hours], ["نسبة الجاهزية ٪", c.ready],
+        ["عدد الموظفين", state.emps.length], ["على رأس العمل", active().length],
+        ["سجلات التوثيق", state.recs.length],
+        ["تاريخ التصدير", todayISO()],
+      ]) },
+  ];
+}
+async function exportXlsx() {
+  const blob = await buildXlsx(exportSheets());
+  save(blob, (state.branch.name || "الفرع") + " — قاعدة الفرع " + todayISO() + ".xlsx");
+  toast("نزل المصنّف بأربع أوراق", "ok");
+}
+function exportJson() {
+  const dump = { app:"aogh-branch", ver:1, exportedAt:new Date().toISOString(),
+    branch:state.branch, employees:state.emps, records:state.recs, resources:state.res };
+  save(new Blob([JSON.stringify(dump, null, 1)], { type:"application/json" }),
+    "aogh-branch-backup-" + todayISO() + ".json");
+}
+async function restoreJson(file) {
+  let dump;
+  try { dump = JSON.parse(await file.text()); } catch { toast("ملف ‎json‎ غير صالح", "err"); return; }
+  if (!dump || dump.app !== "aogh-branch" || !Array.isArray(dump.employees)) { toast("هذه ليست نسخة من هذا النظام", "err"); return; }
+  confirmBox("ستحلّ النسخة الاحتياطية محلّ كل ما في القاعدة الآن: " +
+    fmt(dump.employees.length) + " موظفًا و" + fmt((dump.records || []).length) + " سجلًا و" +
+    fmt((dump.resources || []).length) + " موردًا. هل تتابع؟", async () => {
+    await Promise.all([dbClear(DB.emp), dbClear(DB.rec), dbClear(DB.res)]);
+    await dbPutMany(DB.emp, dump.employees.map(coerceEmp));
+    if (dump.records && dump.records.length) await dbPutMany(DB.rec, dump.records);
+    if (dump.resources && dump.resources.length) await dbPutMany(DB.res, dump.resources);
+    if (dump.branch) await dbPut(DB.meta, { k:"branch", v:{ ...BRANCH_DEFAULT, ...dump.branch } });
+    await loadAll();
+    closeModal("#mExport");
+    toast("استُعيدت النسخة الاحتياطية", "ok");
+    renderAll();
+  });
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   ١٣ · بيانات تجريبية — فرع كامل لتجربة الوحدات الثلاث
+   التواريخ نسبية لليوم، فتظهر التنبيهات في الصفحة الرئيسية كما تظهر
+   في الاستعمال الحقيقي.
+   ═════════════════════════════════════════════════════════════════ */
+const plus = n => { const d = new Date(); d.setDate(d.getDate() + n); return iso(d); };
+
+const SEED_BRANCH = { name:"فرع السويدي", code:"SWD", licenseNo:"1010-45-7788", licenseExpiry:plus(75),
+  city:"الرياض", address:"حي السويدي — طريق الأمير سعد بن عبدالرحمن", phone:"0112345678",
+  manager:"أ. تركي بن سعد العنزي", openTime:"08:00", closeTime:"22:00", workDays:6,
+  notes:"دوام مقسَّم على فترتين، والجمعة إجازة." };
+
+const SEED_EMPS = [
+  { id:"1001", name:"د. سامي بن عبدالله العتيبي", nameEn:"Sami Alotaibi", nationalId:"1043829175", gender:"ذكر",
+    dob:"1982-04-11", nationality:"سعودي", marital:"متزوج", mobile:"0551234567", email:"sami@branch.sa",
+    address:"الرياض — السويدي", emgName:"عبدالله العتيبي", emgPhone:"0551110022",
+    jobTitle:"استشاري طب أسرة · المدير الطبي", category:"طبيب", department:"طب الأسرة", manager:"أ. تركي بن سعد العنزي",
+    hireDate:"2016-03-01", empType:"دوام كامل", contractEnd:plus(400), shift:"صباحي", status:"على رأس العمل", salary:32000,
+    scfhsNo:"09-R-1188420", scfhsExpiry:plus(310), licenseNo:"PR-448120", licenseExpiry:plus(280), blsExpiry:plus(190),
+    iqamaExpiry:plus(720), passportNo:"K4482017", passportExpiry:plus(900), insuranceNo:"BUPA-99120" },
+  { id:"1002", name:"د. نورة بنت فهد الحربي", nameEn:"Noura Alharbi", nationalId:"1092837465", gender:"أنثى",
+    dob:"1987-09-23", nationality:"سعودية", marital:"متزوجة", mobile:"0553219876", email:"noura@branch.sa",
+    jobTitle:"أخصائية جلدية", category:"طبيب", department:"الجلدية", manager:"د. سامي بن عبدالله العتيبي",
+    hireDate:"2019-08-15", empType:"دوام كامل", contractEnd:plus(220), shift:"مسائي", status:"على رأس العمل", salary:26000,
+    scfhsNo:"09-R-2204118", scfhsExpiry:plus(120), licenseNo:"PR-551903", licenseExpiry:plus(18), blsExpiry:plus(240),
+    iqamaExpiry:plus(650), insuranceNo:"BUPA-99121" },
+  { id:"1003", name:"د. خالد محمود عبدالعزيز", nameEn:"Khaled Mahmoud", nationalId:"2233445566", gender:"ذكر",
+    dob:"1985-01-30", nationality:"مصري", marital:"متزوج", mobile:"0554567123", email:"khaled@branch.sa",
+    jobTitle:"أخصائي أسنان", category:"طبيب أسنان", department:"الأسنان", manager:"د. سامي بن عبدالله العتيبي",
+    hireDate:"2020-02-10", empType:"دوام كامل", contractEnd:plus(150), shift:"متناوب", status:"على رأس العمل", salary:22000,
+    scfhsNo:"09-D-3319007", scfhsExpiry:plus(95), licenseNo:"PR-660112", licenseExpiry:plus(140), blsExpiry:plus(75),
+    iqamaExpiry:plus(25), passportNo:"A18823901", passportExpiry:plus(310), insuranceNo:"BUPA-99122" },
+  { id:"1004", name:"د. ريم بنت ناصر القحطاني", nameEn:"Reem Alqahtani", nationalId:"1055667788", gender:"أنثى",
+    dob:"1989-06-14", nationality:"سعودية", marital:"عزباء", mobile:"0556781234", email:"reem@branch.sa",
+    jobTitle:"أخصائية نساء وولادة", category:"طبيب", department:"النساء والولادة", manager:"د. سامي بن عبدالله العتيبي",
+    hireDate:"2021-11-01", empType:"دوام كامل", contractEnd:plus(500), shift:"صباحي", status:"إجازة", salary:25000,
+    scfhsNo:"09-R-4410225", scfhsExpiry:plus(400), licenseNo:"PR-771554", licenseExpiry:plus(360), blsExpiry:plus(50),
+    iqamaExpiry:plus(800), insuranceNo:"BUPA-99123" },
+  { id:"1005", name:"أ. منى بنت سالم الزهراني", nameEn:"Muna Alzahrani", nationalId:"1077889900", gender:"أنثى",
+    dob:"1992-12-02", nationality:"سعودية", marital:"متزوجة", mobile:"0559012345", email:"muna@branch.sa",
+    jobTitle:"ممرضة أولى", category:"تمريض", department:"طب الأسرة", manager:"د. سامي بن عبدالله العتيبي",
+    hireDate:"2018-05-20", empType:"دوام كامل", contractEnd:plus(600), shift:"صباحي", status:"على رأس العمل", salary:11000,
+    scfhsNo:"09-N-5501992", scfhsExpiry:plus(230), licenseNo:"PR-882301", licenseExpiry:plus(210), blsExpiry:plus(320),
+    iqamaExpiry:plus(700), insuranceNo:"BUPA-99124" },
+  { id:"1006", name:"أ. هدى بنت علي الدوسري", nameEn:"Huda Aldosari", nationalId:"1088990011", gender:"أنثى",
+    dob:"1994-03-19", nationality:"سعودية", marital:"عزباء", mobile:"0552345678", email:"huda@branch.sa",
+    jobTitle:"ممرضة أسنان", category:"تمريض", department:"الأسنان", manager:"أ. منى بنت سالم الزهراني",
+    hireDate:"2022-01-09", empType:"دوام كامل", contractEnd:plus(320), shift:"متناوب", status:"على رأس العمل", salary:9000,
+    scfhsNo:"09-N-6612334", scfhsExpiry:plus(45), licenseNo:"PR-993412", licenseExpiry:plus(180), blsExpiry:plus(260),
+    iqamaExpiry:plus(660), insuranceNo:"BUPA-99125" },
+  { id:"1007", name:"أ. فيصل بن مرزوق المطيري", nameEn:"Faisal Almutairi", nationalId:"1099001122", gender:"ذكر",
+    dob:"1990-07-07", nationality:"سعودي", marital:"متزوج", mobile:"0557890123", email:"faisal@branch.sa",
+    jobTitle:"فني أشعة", category:"فني", department:"الأشعة", manager:"د. سامي بن عبدالله العتيبي",
+    hireDate:"2019-04-14", empType:"دوام كامل", contractEnd:plus(280), shift:"مسائي", status:"على رأس العمل", salary:9500,
+    scfhsNo:"09-T-7723445", scfhsExpiry:plus(160), licenseNo:"PR-104523", licenseExpiry:plus(150), blsExpiry:plus(-12),
+    iqamaExpiry:plus(690), insuranceNo:"BUPA-99126" },
+  { id:"1008", name:"أ. عبدالله بن يحيى الغامدي", nameEn:"Abdullah Alghamdi", nationalId:"1100112233", gender:"ذكر",
+    dob:"1991-10-25", nationality:"سعودي", marital:"متزوج", mobile:"0553456789", email:"abdullah@branch.sa",
+    jobTitle:"فني مختبر", category:"فني", department:"المختبر", manager:"د. سامي بن عبدالله العتيبي",
+    hireDate:"2020-09-01", empType:"دوام كامل", contractEnd:plus(340), shift:"صباحي", status:"على رأس العمل", salary:9000,
+    scfhsNo:"09-T-8834556", scfhsExpiry:plus(270), licenseNo:"PR-215634", licenseExpiry:plus(250), blsExpiry:plus(130),
+    iqamaExpiry:plus(710), insuranceNo:"BUPA-99127" },
+  { id:"1009", name:"أ. لمياء بنت حسن السبيعي", nameEn:"Lamia Alsubaie", nationalId:"1111223344", gender:"أنثى",
+    dob:"1993-02-16", nationality:"سعودية", marital:"عزباء", mobile:"0554321098", email:"lamia@branch.sa",
+    jobTitle:"صيدلانية", category:"صيدلة", department:"الصيدلية", manager:"أ. تركي بن سعد العنزي",
+    hireDate:"2021-06-06", empType:"دوام كامل", contractEnd:plus(55), shift:"متناوب", status:"على رأس العمل", salary:13000,
+    scfhsNo:"09-P-9945667", scfhsExpiry:plus(300), licenseNo:"PR-326745", licenseExpiry:plus(290), blsExpiry:plus(200),
+    iqamaExpiry:plus(730), insuranceNo:"BUPA-99128" },
+  { id:"1010", name:"أ. تركي بن سعد العنزي", nameEn:"Turki Alanazi", nationalId:"1122334455", gender:"ذكر",
+    dob:"1986-11-11", nationality:"سعودي", marital:"متزوج", mobile:"0555678901", email:"turki@branch.sa",
+    jobTitle:"مدير الفرع", category:"إداري", department:"الإدارة", manager:"—",
+    hireDate:"2017-01-15", empType:"دوام كامل", contractEnd:plus(700), shift:"صباحي", status:"على رأس العمل", salary:18000,
+    iqamaExpiry:plus(780), insuranceNo:"BUPA-99129" },
+  { id:"1011", name:"أ. سارة بنت عمر البقمي", nameEn:"Sarah Albogami", nationalId:"1133445566", gender:"أنثى",
+    dob:"1996-08-08", nationality:"سعودية", marital:"عزباء", mobile:"0556789012", email:"sarah@branch.sa",
+    jobTitle:"موظفة تأمين ومطالبات", category:"إداري", department:"التأمين", manager:"أ. تركي بن سعد العنزي",
+    hireDate:"2023-03-12", empType:"دوام كامل", contractEnd:plus(40), shift:"صباحي", status:"على رأس العمل", salary:7500,
+    iqamaExpiry:plus(640), insuranceNo:"BUPA-99130" },
+  { id:"1012", name:"أ. ماجد بن راشد الحارثي", nameEn:"Majed Alharthi", nationalId:"1144556677", gender:"ذكر",
+    dob:"1995-05-05", nationality:"سعودي", marital:"أعزب", mobile:"0557891234", email:"majed@branch.sa",
+    jobTitle:"موظف استقبال", category:"إداري", department:"الاستقبال", manager:"أ. تركي بن سعد العنزي",
+    hireDate:"2022-10-02", empType:"دوام جزئي", contractEnd:plus(210), shift:"مسائي", status:"على رأس العمل", salary:6000,
+    iqamaExpiry:plus(600), insuranceNo:"BUPA-99131" },
+  { id:"1013", name:"أ. راجيش كومار", nameEn:"Rajesh Kumar", nationalId:"2244556677", gender:"ذكر",
+    dob:"1988-04-04", nationality:"هندي", marital:"متزوج", mobile:"0558901234", email:"rajesh@branch.sa",
+    jobTitle:"مشرف خدمات مساندة", category:"خدمات", department:"الخدمات المساندة", manager:"أ. تركي بن سعد العنزي",
+    hireDate:"2019-12-01", empType:"دوام كامل", contractEnd:plus(90), shift:"متناوب", status:"على رأس العمل", salary:5500,
+    iqamaExpiry:plus(48), passportNo:"M7719284", passportExpiry:plus(58), insuranceNo:"BUPA-99132" },
+  { id:"1014", name:"د. عبير بنت صالح الشهري", nameEn:"Abeer Alshehri", nationalId:"1155667788", gender:"أنثى",
+    dob:"1984-02-28", nationality:"سعودية", marital:"متزوجة", mobile:"0559123456", email:"abeer@branch.sa",
+    jobTitle:"أخصائية أطفال", category:"طبيب", department:"الأطفال", manager:"د. سامي بن عبدالله العتيبي",
+    hireDate:"2018-09-09", empType:"دوام كامل", shift:"صباحي", status:"منتهي الخدمة", endDate:plus(-45), salary:24000,
+    scfhsNo:"09-R-1157889", scfhsExpiry:plus(-30), licenseNo:"PR-437856", licenseExpiry:plus(-20) },
+];
+
+const SEED_RECS = [
+  { empId:"1001", type:"evaluation", sub:"سنوي", date:plus(-60), amount:94, title:"تقييم الأداء السنوي ٢٠٢٥",
+    details:"أداء متميز في إدارة العيادة وضبط أوقات الانتظار.", by:"أ. تركي العنزي", status:"" },
+  { empId:"1002", type:"leave", sub:"سنوية", date:plus(-40), from:plus(-40), to:plus(-26), amount:15,
+    title:"إجازة سنوية ١٥ يومًا", details:"غطّت الفترة د. عبير الشهري.", by:"الموارد البشرية" },
+  { empId:"1003", type:"late", sub:"دخول متأخر", date:plus(-12), amount:35, title:"تأخير ٣٥ دقيقة عن بداية الوردية",
+    details:"أُبلغ شفهيًا، والتزم بعدها.", by:"أ. تركي العنزي" },
+  { empId:"1003", type:"training", sub:"CME", date:plus(-90), from:plus(-92), to:plus(-90), amount:12,
+    title:"ورشة زراعة الأسنان", details:"معتمدة من الهيئة السعودية للتخصصات الصحية.", by:"التدريب" },
+  { empId:"1005", type:"commend", sub:"من مريض", date:plus(-18), title:"شكر من مريض على حسن التعامل",
+    details:"ورد الشكر عبر استبيان رضا المرضى.", by:"خدمة العملاء" },
+  { empId:"1006", type:"absence", sub:"بدون عذر", date:plus(-9), from:plus(-9), to:plus(-9), amount:1,
+    title:"غياب يوم كامل بدون إشعار", details:"لم يُقدَّم عذر خلال ٤٨ ساعة.", by:"أ. منى الزهراني" },
+  { empId:"1006", type:"warning", sub:"إنذار كتابي أول", date:plus(-7), title:"إنذار كتابي أول — غياب بدون عذر",
+    details:"بناءً على غياب يوم ‎" + plus(-9) + "‎ ولائحة الانضباط.", by:"الموارد البشرية", status:"مفتوح" },
+  { empId:"1007", type:"violation", sub:"سلامة المرضى", date:plus(-20), title:"عدم التحقق من هوية المريض قبل التصوير",
+    details:"رُصد في جولة الجودة، وأُعيد التدريب على سياسة التحقق المزدوج.", by:"الجودة", status:"مفتوح" },
+  { empId:"1009", type:"document", sub:"عقد", date:plus(-30), title:"نسخة عقد العمل الموقَّع",
+    details:"العقد ينتهي قريبًا ويحتاج تجديدًا.", by:"الموارد البشرية" },
+  { empId:"1011", type:"complaint", sub:"شكوى مريض", date:plus(-5), title:"شكوى على تأخر اعتماد التأمين",
+    details:"المريض انتظر ٥٠ دقيقة لاعتماد الموافقة. جارٍ مراجعة الإجراء مع شركة التأمين.", by:"خدمة العملاء", status:"مفتوح" },
+  { empId:"1012", type:"jobchange", sub:"تغيير مسمى", date:plus(-75), title:"نقل من الخدمات إلى الاستقبال",
+    details:"بناءً على طلبه وحاجة العمل.", by:"الموارد البشرية" },
+  { empId:"1013", type:"note", date:plus(-3), title:"تنبيه: الإقامة والجواز يقتربان من الانتهاء",
+    details:"بدأت إجراءات التجديد لدى شؤون الموظفين.", by:"شؤون الموظفين" },
+  { empId:"1014", type:"jobchange", sub:"إنهاء خدمة", date:plus(-45), title:"إنهاء خدمة بنهاية العقد",
+    details:"صُرفت المستحقات وسُلّم إخلاء الطرف.", by:"الموارد البشرية" },
+];
+
+const SEED_RES = [
+  { code:"C-101", name:"عيادة طب الأسرة ١", kind:"clinic", department:"طب الأسرة", floor:"الأول", status:"مشغولة",
+    assignedTo:"1001", slots:32, hours:8 },
+  { code:"C-102", name:"عيادة طب الأسرة ٢", kind:"clinic", department:"طب الأسرة", floor:"الأول", status:"جاهزة", slots:28, hours:8 },
+  { code:"C-103", name:"عيادة الجلدية", kind:"clinic", department:"الجلدية", floor:"الأول", status:"مشغولة",
+    assignedTo:"1002", slots:24, hours:7 },
+  { code:"C-104", name:"عيادة النساء والولادة", kind:"clinic", department:"النساء والولادة", floor:"الثاني", status:"جاهزة",
+    assignedTo:"1004", slots:22, hours:7 },
+  { code:"C-105", name:"عيادة الأطفال", kind:"clinic", department:"الأطفال", floor:"الثاني", status:"خارج الخدمة",
+    slots:0, hours:0, notes:"مغلقة بعد انتهاء خدمة أخصائية الأطفال — بانتظار التعيين." },
+  { code:"D-201", name:"وحدة أسنان ١", kind:"dental", department:"الأسنان", floor:"الثاني", status:"مشغولة",
+    assignedTo:"1003", slots:18, hours:8, serial:"DNT-44120", lastMaint:plus(-160), nextMaint:plus(20) },
+  { code:"D-202", name:"وحدة أسنان ٢", kind:"dental", department:"الأسنان", floor:"الثاني", status:"تحت الصيانة",
+    slots:16, hours:8, serial:"DNT-44121", lastMaint:plus(-200), nextMaint:plus(-4) },
+  { code:"P-301", name:"غرفة إجراءات صغرى", kind:"procedure", department:"طب الأسرة", floor:"الأول", status:"جاهزة", slots:8, hours:6 },
+  { code:"X-401", name:"غرفة الأشعة السينية", kind:"imaging", department:"الأشعة", floor:"الأرضي", status:"مشغولة",
+    assignedTo:"1007", slots:26, hours:8, serial:"XR-77802", lastMaint:plus(-100), nextMaint:plus(80) },
+  { code:"L-501", name:"المختبر الرئيسي", kind:"lab", department:"المختبر", floor:"الأرضي", status:"مشغولة",
+    assignedTo:"1008", hours:12, serial:"LAB-2201", lastMaint:plus(-70), nextMaint:plus(110) },
+  { code:"PH-601", name:"الصيدلية", kind:"pharmacy", department:"الصيدلية", floor:"الأرضي", status:"مشغولة",
+    assignedTo:"1009", hours:14 },
+  { code:"B-701", name:"سرير مراقبة ١", kind:"bed", department:"طب الأسرة", floor:"الأول", status:"جاهزة", hours:14 },
+  { code:"B-702", name:"سرير مراقبة ٢", kind:"bed", department:"طب الأسرة", floor:"الأول", status:"جاهزة", hours:14 },
+  { code:"R-801", name:"الاستقبال الرئيسي", kind:"reception", department:"الاستقبال", floor:"الأرضي", status:"مشغولة",
+    assignedTo:"1012", hours:14 },
+  { code:"E-901", name:"جهاز تخطيط القلب", kind:"device", department:"طب الأسرة", floor:"الأول", status:"جاهزة",
+    serial:"ECG-5580", lastMaint:plus(-180), nextMaint:plus(12) },
+  { code:"O-1001", name:"مكتب إدارة الفرع", kind:"office", department:"الإدارة", floor:"الثاني", status:"مشغولة",
+    assignedTo:"1010", hours:8 },
+];
+
+async function seed() {
+  await dbPutMany(DB.emp, SEED_EMPS.map(coerceEmp));
+  await dbPutMany(DB.rec, SEED_RECS.map(r => ({ status:"", sub:"", from:"", to:"", amount:0, details:"", by:"",
+    file:null, createdAt:new Date().toISOString(), ...r })));
+  await dbPutMany(DB.res, SEED_RES.map(r => ({ department:"", floor:"", assignedTo:"", slots:0, hours:0, serial:"",
+    lastMaint:"", nextMaint:"", notes:"", ...r })));
+  await dbPut(DB.meta, { k:"branch", v:{ ...BRANCH_DEFAULT, ...SEED_BRANCH } });
+  await loadAll();
+  toast("حُمِّلت بيانات فرع تجريبي كامل", "ok");
+  renderAll();
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   ١٤ · الأحداث
+   ═════════════════════════════════════════════════════════════════ */
+const THEME_KEY = "aogh_branch_theme";
+function applyTheme(v) {
+  if (v) document.documentElement.dataset.theme = v;
+  else delete document.documentElement.dataset.theme;
+}
+
+function delEmployee(id) {
+  const e = state.byId.get(id);
+  if (!e) return;
+  const n = recsOf(id).length;
+  confirmBox("حذف ملف «" + e.name + "» نهائيًا" + (n ? " مع " + fmt(n) + " سجل توثيق" : "") + "؟", async () => {
+    for (const r of recsOf(id)) await dbDel(DB.rec, r.rid);
+    const freed = state.res.filter(r => r.assignedTo === id).map(r => ({ ...r, assignedTo:"" }));
+    if (freed.length) await dbPutMany(DB.res, freed);
+    await dbDel(DB.emp, id);
+    await loadAll();
+    if (state.cur === id) state.cur = null;
+    closeModal("#mConfirm");
+    toast("حُذف الملف", "ok");
+    renderAll();
+  });
+}
+
+function wire() {
+  /* نقر واحد يخدم كل الأزرار المولَّدة */
+  document.addEventListener("click", async ev => {
+    const q = s => ev.target.closest(s);
+    let el;
+    if ((el = q("[data-close]"))) { closeModal("#" + el.closest(".modal").id); return; }
+    if ((el = q("[data-tab]"))) { state.tab = el.dataset.tab; renderEmpPane(); return; }
+    if ((el = q("[data-editrec]"))) { const r = state.recs.find(x => x.rid === +el.dataset.editrec);
+      if (r) openRecForm(r.empId, r.type, r.rid); return; }
+    if ((el = q("[data-delrec]"))) {
+      const rid = +el.dataset.delrec, r = state.recs.find(x => x.rid === rid);
+      confirmBox("حذف سجل «" + ((r && r.title) || "") + "» نهائيًا؟", async () => {
+        await dbDel(DB.rec, rid); await loadAll(); closeModal("#mConfirm"); toast("حُذف السجل", "ok"); renderAll();
+      });
+      return;
+    }
+    if ((el = q("[data-file]"))) { openAttachment(+el.dataset.file); return; }
+    if ((el = q("[data-newrec]"))) { if (state.cur) openRecForm(state.cur, el.dataset.newrec); return; }
+    if ((el = q(".prow[data-emp]"))) { state.cur = el.dataset.emp; state.tab = "data"; renderEmpModule(); return; }
+    if ((el = q("[data-view]"))) { go(el.dataset.view); return; }
+    if ((el = q("[data-go]"))) { go(el.dataset.go, { id:el.dataset.id, tab:el.dataset.tab2 }); return; }
+    if ((el = q("tr[data-emp]"))) { go("emp", { id:el.dataset.emp }); return; }
+    if ((el = q("tr[data-res]"))) { openResForm(+el.dataset.res); return; }
+    if ((el = q("[data-pick]"))) { $("#recFile").click(); return; }
+    if ((el = q("[data-rmfile]"))) { readRecForm(); recDraft.file = null; drawRecForm(); return; }
+    if ((el = q("[data-act]"))) {
+      const a = el.dataset.act;
+      if (a === "newEmp")     openEmpForm(null);
+      if (a === "editEmp")    openEmpForm(state.cur);
+      if (a === "delEmp")     delEmployee(state.cur);
+      if (a === "addRec")     { if (state.cur) openRecForm(state.cur, "note"); }
+      if (a === "printEmp")   { state.tab = "data"; renderEmpPane(); setTimeout(() => window.print(), 60); }
+      if (a === "import")     openModal("#mImport");
+      if (a === "seed")       seed();
+      if (a === "goEmp")      go("emp");
+      if (a === "newRes")     openResForm(null);
+      if (a === "moreStaff")  { state.staff.shown += ROWS_PAGE; renderStaff(); }
+      if (a === "resetStaff") { state.staff = { q:"", dept:"", cat:"", status:"", shown:ROWS_PAGE };
+                                $("#staffSearch").value = ""; renderStaff(); }
+      return;
+    }
+  });
+
+  document.addEventListener("keydown", ev => {
+    if (ev.key !== "Escape") return;
+    const open = $$(".modal:not([hidden])");
+    if (open.length) closeModal("#" + open[open.length - 1].id);
+  });
+
+  $("#btnHome").onclick  = () => go("home");
+  $("#btnImport").onclick = () => openModal("#mImport");
+  $("#btnExport").onclick = () => { storageNote(); openModal("#mExport"); };
+  $("#btnTheme").onclick = () => {
+    const cur = localStorage.getItem(THEME_KEY) || "";
+    const next = cur === "" ? "light" : cur === "light" ? "dark" : "";
+    localStorage.setItem(THEME_KEY, next);
+    applyTheme(next);
+    toast(next === "" ? "السمة: تتبع النظام" : next === "light" ? "السمة: فاتحة" : "السمة: داكنة");
+  };
+
+  /* الوحدة الأولى */
+  $("#btnNewEmp").onclick = () => openEmpForm(null);
+  $("#empSave").onclick   = saveEmpForm;
+  $("#empSearch").oninput = e => { state.empQ = e.target.value; renderEmpList(); };
+  $("#empFilterDept").onchange = e => { state.empDept = e.target.value; renderEmpList(); };
+  $("#recSave").onclick   = saveRecForm;
+  $("#recForm").addEventListener("change", ev => {
+    if (ev.target.name === "type") { readRecForm(); drawRecForm(); }
+  });
+  /* المرفق: اختيار من الجهاز أو سحب الملف على منطقة الإرفاق */
+  $("#recFile").onchange = ev => { attachRecFile(ev.target.files[0]); ev.target.value = ""; };
+  const zone = ev => ev.target.closest("[data-pick]");
+  $("#recForm").addEventListener("dragover", ev => { const z = zone(ev); if (z) { ev.preventDefault(); z.classList.add("over"); } });
+  $("#recForm").addEventListener("dragleave", ev => { const z = zone(ev); if (z) z.classList.remove("over"); });
+  $("#recForm").addEventListener("drop", ev => {
+    const z = zone(ev);
+    if (!z) return;
+    ev.preventDefault(); z.classList.remove("over");
+    attachRecFile(ev.dataTransfer.files[0]);
+  });
+
+  /* الوحدة الثانية */
+  const sf = () => { state.staff.shown = ROWS_PAGE; renderStaff(); };
+  $("#staffSearch").oninput  = e => { state.staff.q = e.target.value; sf(); };
+  $("#staffDept").onchange   = e => { state.staff.dept = e.target.value; sf(); };
+  $("#staffCat").onchange    = e => { state.staff.cat = e.target.value; sf(); };
+  $("#staffStatus").onchange = e => { state.staff.status = e.target.value; sf(); };
+  $("#staffReset").onclick   = () => { state.staff = { q:"", dept:"", cat:"", status:"", shown:ROWS_PAGE };
+                                       $("#staffSearch").value = ""; renderStaff(); };
+  $("#staffXlsx").onclick = async () => {
+    const rows = staffRows();
+    const blob = await buildXlsx([{ name:"Employees",
+      cols:FIELDS.map(f => ({ h:f.en, num:f.t === "int", w:f.k === "name" ? 26 : 17 })),
+      rows:rows.map(e => FIELDS.map(f => e[f.k])) }]);
+    save(blob, "كادر " + (state.branch.name || "الفرع") + " " + todayISO() + ".xlsx");
+  };
+  $("#staffCsv").onclick = () => {
+    const rows = staffRows();
+    const qv = v => { const s = String(v ?? ""); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    const lines = [FIELDS.map(f => f.en).join(",")].concat(rows.map(e => FIELDS.map(f => qv(e[f.k])).join(",")));
+    save(new Blob(["﻿" + lines.join("\r\n")], { type:"text/csv;charset=utf-8" }),
+      "كادر " + (state.branch.name || "الفرع") + " " + todayISO() + ".csv");
+  };
+
+  /* الوحدة الثالثة */
+  $("#btnNewRes").onclick = () => openResForm(null);
+  $("#btnBranch").onclick = openBranchForm;
+  $("#resSave").onclick   = saveResForm;
+  $("#branchSave").onclick = saveBranchForm;
+  $("#resDelete").onclick = () => {
+    const id = editResId;
+    if (!id) return;
+    const r = state.res.find(x => x.rsid === id);
+    confirmBox("حذف المورد «" + ((r && (r.name || r.code)) || "") + "»؟", async () => {
+      await dbDel(DB.res, id); await loadAll(); closeModal("#mConfirm"); closeModal("#mRes");
+      toast("حُذف المورد", "ok"); renderAll();
+    });
+  };
+  $("#resSearch").oninput  = e => { state.resF.q = e.target.value; renderCapacity(); };
+  $("#resKind").onchange   = e => { const k = RES_KINDS.find(x => x.ar === e.target.value);
+                                    state.resF.kind = k ? k.k : ""; renderCapacity(); };
+  $("#resStatus").onchange = e => { state.resF.status = e.target.value; renderCapacity(); };
+
+  /* الاستيراد والتصدير */
+  const drop = $("#drop"), impFile = $("#impFile");
+  drop.onclick = () => impFile.click();
+  drop.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); impFile.click(); } };
+  drop.ondragover = e => { e.preventDefault(); drop.classList.add("over"); };
+  drop.ondragleave = () => drop.classList.remove("over");
+  drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over");
+                       if (e.dataTransfer.files[0]) loadImportFile(e.dataTransfer.files[0]); };
+  impFile.onchange = () => { if (impFile.files[0]) loadImportFile(impFile.files[0]); impFile.value = ""; };
+  $("#btnDoImport").onclick = runImport;
+
+  $("#expXlsx").onclick = exportXlsx;
+  $("#expJson").onclick = exportJson;
+  $("#expRestore").onclick = () => $("#restoreFile").click();
+  $("#restoreFile").onchange = e => { if (e.target.files[0]) restoreJson(e.target.files[0]); e.target.value = ""; };
+  $("#btnSeed").onclick = () => {
+    if (state.emps.length || state.res.length)
+      confirmBox("ستُضاف البيانات التجريبية إلى ما هو موجود، وتُحدَّث الأرقام المتشابهة. تتابع؟",
+        async () => { closeModal("#mConfirm"); closeModal("#mExport"); await seed(); });
+    else { closeModal("#mExport"); seed(); }
+  };
+  $("#btnWipe").onclick = () => confirmBox("مسح كل الموظفين وسجلات التوثيق والموارد وبيانات الفرع نهائيًا؟", async () => {
+    await Promise.all([dbClear(DB.emp), dbClear(DB.rec), dbClear(DB.res), dbClear(DB.meta)]);
+    await loadAll();
+    state.cur = null;
+    closeModal("#mConfirm"); closeModal("#mExport");
+    toast("مُسحت القاعدة", "ok");
+    renderAll();
+  });
+  /* نافذة التأكيد تُغلق هنا دائمًا، فلا يبقى حجابها فوق الصفحة إن نسي المنادي إغلاقها */
+  $("#cfmYes").onclick = () => { const fn = state.cfm; state.cfm = null; closeModal("#mConfirm"); if (fn) fn(); };
+
+  window.addEventListener("hashchange", () => {
+    const h = (location.hash || "").replace("#/", "");
+    if (["home", "emp", "staff", "cap"].includes(h) && h !== state.view) go(h);
+  });
+}
+
+async function storageNote() {
+  let used = "";
+  try {
+    if (navigator.storage && navigator.storage.estimate) {
+      const est = await navigator.storage.estimate();
+      if (est && est.usage) used = " · المستخدَم " + fmt(Math.max(1, Math.round(est.usage / 1024))) + " ك.ب";
+    }
+  } catch {}
+  $("#storageNote").textContent = "القاعدة محفوظة في متصفح هذا الجهاز وحده (IndexedDB · " + DB.name + ")" + used +
+    ". لا تُرفع أي بيانات إلى خادم — احتفظ بنسخة ‎json‎ قبل مسح بيانات المتصفح.";
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   ١٥ · الإقلاع
+   ═════════════════════════════════════════════════════════════════ */
+(async function init() {
+  applyTheme(localStorage.getItem(THEME_KEY) || "");
+  buildNav();
+  wire();
+  try {
+    db = await openDB();
+    await loadAll();
+  } catch (err) {
+    $("#homeModules").innerHTML = '<div class="note bad">تعذّر فتح قاعدة البيانات في هذا المتصفح: ' +
+      esc(err && err.message ? err.message : String(err)) + "</div>";
+    return;
+  }
+  const h = (location.hash || "").replace("#/", "");
+  go(["home", "emp", "staff", "cap"].includes(h) ? h : "home");
+})();
+
+})();
+</script>
+</body>
+</html>
