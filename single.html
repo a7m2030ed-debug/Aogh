@@ -214,7 +214,7 @@
     <div class="seal">ت</div>
     <div>
       <h1>مُعبِّئ التقرير اليومي</h1>
-      <p>قالبك كما هو + ملفات الإكسل ← عرض تقديمي جاهز <span id="build"></span></p>
+      <p>قالبك كما هو + ملفات الإكسل أو الـ PDF ← عرض تقديمي جاهز <span id="build"></span></p>
     </div>
   </div>
   <button class="btn" id="bClear" disabled>
@@ -249,10 +249,10 @@
     <header><span class="n">٢</span><h2>ملفات الفروع</h2><span class="state" id="st2">لم تُرفع بعد</span></header>
     <div class="body">
       <div class="drop" id="dropX" tabindex="0" role="button">
-        <strong>اسحب ملف إكسل لكل فرع — يمكن اختيار عدة ملفات معًا</strong>
-        <span>xlsx · xlsm · csv</span>
+        <strong>اسحب ملف كل فرع — إكسل أو PDF — ويمكن اختيار عدة ملفات معًا</strong>
+        <span>xlsx · xlsm · csv · pdf</span>
       </div>
-      <input type="file" id="fileX" accept=".xlsx,.xlsm,.csv" multiple hidden>
+      <input type="file" id="fileX" accept=".xlsx,.xlsm,.csv,.pdf" multiple hidden>
       <div id="xlsInfo"></div>
     </div>
   </section>
@@ -302,7 +302,7 @@ document.documentElement.dir  = "rtl";
    and swaps the embedded template. Everything else is shared. */
 const MODE = { single: true };
 /* shown next to the title so a stale cached copy is obvious at a glance */
-const BUILD = "2026-08-09 · PDF ملوّن";
+const BUILD = "2026-08-17 · قراءة ملفات PDF";
 
 const $ = (s, r = document) => r.querySelector(s);
 const EMU_IN = 914400;
@@ -402,6 +402,7 @@ function save(blob, name) {
 const colIdx = ref => { let n = 0; for (const ch of ref) { const c = ch.charCodeAt(0); if (c >= 65 && c <= 90) n = n * 26 + (c - 64); else break; } return n - 1; };
 
 async function readSheet(file) {
+  if (/\.pdf$/i.test(file.name)) return readPdf(file);
   if (/\.csv$/i.test(file.name)) {
     let txt = await file.text();
     if (txt.charCodeAt(0) === 0xFEFF) txt = txt.slice(1);
@@ -451,6 +452,730 @@ async function readSheet(file) {
     }
     grid.push(cells);
   }
+  return grid;
+}
+
+/* ═════════════════ PDF ═════════════════ */
+/* Some branches can only export the daily list as PDF, so the same table is
+   lifted out of the page itself: objects → page content → positioned glyphs →
+   rows and columns. A scanned page holds pictures, not text, and is rejected
+   with a message that says so. */
+
+const L1 = new TextDecoder("latin1");
+const pdfCat = arr => {
+  let n = 0; for (const a of arr) n += a.length;
+  const o = new Uint8Array(n); let p = 0;
+  for (const a of arr) { o.set(a, p); p += a.length; }
+  return o;
+};
+
+/* Trailing bytes after the deflate block are common in the wild, and they make
+   DecompressionStream throw after it already produced the whole object, so what
+   arrived before the error is kept instead of losing the page. */
+async function pdfInflate(u8) {
+  for (const fmt of ["deflate", "deflate-raw"]) {
+    try {
+      const ds = new DecompressionStream(fmt), w = ds.writable.getWriter();
+      w.write(u8).catch(() => {}); w.close().catch(() => {});
+      const rd = ds.readable.getReader(), out = [];
+      let n = 0;
+      try { for (;;) { const r = await rd.read(); if (r.done) break; out.push(r.value); n += r.value.length; } }
+      catch (e) { if (!n) throw e; }
+      if (n) return pdfCat(out);
+    } catch {}
+  }
+  return new Uint8Array(0);
+}
+
+function pdfLzw(u8, early) {
+  const out = [];
+  let dict = [], next = 258, bits = 9, buf = 0, nb = 0, prev = null;
+  const reset = () => { dict = []; for (let i = 0; i < 256; i++) dict[i] = [i]; next = 258; bits = 9; prev = null; };
+  reset();
+  for (let i = 0; i < u8.length; i++) {
+    buf = ((buf << 8) | u8[i]) >>> 0; nb += 8;
+    while (nb >= bits) {
+      const code = (buf >>> (nb - bits)) & ((1 << bits) - 1); nb -= bits;
+      if (code === 256) { reset(); continue; }
+      if (code === 257) return Uint8Array.from(out);
+      let entry = dict[code];
+      if (!entry) { if (!prev) continue; entry = [...prev, prev[0]]; }
+      for (const b of entry) out.push(b);
+      if (prev) dict[next++] = [...prev, entry[0]];
+      prev = entry;
+      if (next + early >= (1 << bits) && bits < 12) bits++;
+    }
+  }
+  return Uint8Array.from(out);
+}
+
+function pdfHex(u8) {
+  const s = L1.decode(u8), h = s.slice(0, s.indexOf(">") < 0 ? s.length : s.indexOf(">")).replace(/[^0-9a-fA-F]/g, "");
+  const o = new Uint8Array(Math.ceil(h.length / 2));
+  for (let i = 0; i < o.length; i++) o[i] = parseInt((h.substr(i * 2, 2) + "0").slice(0, 2), 16);
+  return o;
+}
+
+function pdf85(u8) {
+  const s = L1.decode(u8).replace(/\s/g, "").replace(/^<~/, "");
+  const out = []; let tup = 0, n = 0;
+  for (const ch of s) {
+    if (ch === "~") break;
+    if (ch === "z" && n === 0) { out.push(0, 0, 0, 0); continue; }
+    tup = tup * 85 + (ch.charCodeAt(0) - 33); n++;
+    if (n === 5) { for (let k = 3; k >= 0; k--) out.push((tup >>> (k * 8)) & 255); tup = 0; n = 0; }
+  }
+  if (n) { for (let i = n; i < 5; i++) tup = tup * 85 + 84; for (let k = 3; k >= 4 - (n - 1); k--) out.push((tup >>> (k * 8)) & 255); }
+  return Uint8Array.from(out);
+}
+
+function pdfRL(u8) {
+  const out = [];
+  for (let i = 0; i < u8.length; ) {
+    const l = u8[i++];
+    if (l === 128) break;
+    if (l < 128) { for (let k = 0; k <= l; k++) out.push(u8[i++]); }
+    else { const b = u8[i++]; for (let k = 0; k < 257 - l; k++) out.push(b); }
+  }
+  return Uint8Array.from(out);
+}
+
+/* xref streams and some content are stored as row deltas, exactly like PNG */
+function pdfUnpredict(u8, p, rs) {
+  const pred = +rs(p.Predictor) || 1;
+  if (pred < 2 || !u8.length) return u8;
+  const colors = +rs(p.Colors) || 1, bpc = +rs(p.BitsPerComponent) || 8, cols = +rs(p.Columns) || 1;
+  const bpp = Math.max(1, Math.ceil(colors * bpc / 8)), row = Math.ceil(colors * bpc * cols / 8);
+  if (pred === 2) {
+    if (bpc !== 8) return u8;
+    for (let r = 0; r + row <= u8.length; r += row)
+      for (let i = bpp; i < row; i++) u8[r + i] = (u8[r + i] + u8[r + i - bpp]) & 255;
+    return u8;
+  }
+  const rows = Math.floor(u8.length / (row + 1)), out = new Uint8Array(rows * row);
+  let prev = new Uint8Array(row);
+  for (let r = 0; r < rows; r++) {
+    const ft = u8[r * (row + 1)], cur = out.subarray(r * row, (r + 1) * row);
+    cur.set(u8.subarray(r * (row + 1) + 1, (r + 1) * (row + 1)));
+    for (let i = 0; i < row; i++) {
+      const a = i >= bpp ? cur[i - bpp] : 0, b = prev[i], c = i >= bpp ? prev[i - bpp] : 0;
+      let v = cur[i];
+      if (ft === 1) v += a;
+      else if (ft === 2) v += b;
+      else if (ft === 3) v += (a + b) >> 1;
+      else if (ft === 4) {
+        const q = a + b - c, pa = Math.abs(q - a), pb = Math.abs(q - b), pc = Math.abs(q - c);
+        v += pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
+      }
+      cur[i] = v & 255;
+    }
+    prev = cur;
+  }
+  return out;
+}
+
+/* ---- object syntax ---- */
+const PDF_DELIM = "()<>[]{}/%";
+const pdfIsWs = c => c === 32 || c === 10 || c === 13 || c === 9 || c === 12 || c === 0;
+
+function pdfWs(s, i) {
+  for (;;) {
+    while (i < s.length && pdfIsWs(s.charCodeAt(i))) i++;
+    if (s[i] !== "%") return i;
+    while (i < s.length && s[i] !== "\n" && s[i] !== "\r") i++;
+  }
+}
+
+function pdfName(s, i) {
+  let j = i + 1, out = "";
+  while (j < s.length) {
+    const c = s[j];
+    if (pdfIsWs(c.charCodeAt(0)) || PDF_DELIM.includes(c)) break;
+    if (c === "#" && /^[0-9a-fA-F]{2}$/.test(s.substr(j + 1, 2))) { out += String.fromCharCode(parseInt(s.substr(j + 1, 2), 16)); j += 3; }
+    else { out += c; j++; }
+  }
+  return { v: "/" + out, i: j };
+}
+
+function pdfLit(s, i) {
+  let depth = 1, j = i + 1, out = "";
+  while (j < s.length && depth) {
+    const c = s[j];
+    if (c === "\\") {
+      const n = s[j + 1];
+      if (n === "n") { out += "\n"; j += 2; }
+      else if (n === "r") { out += "\r"; j += 2; }
+      else if (n === "t") { out += "\t"; j += 2; }
+      else if (n === "b") { out += "\b"; j += 2; }
+      else if (n === "f") { out += "\f"; j += 2; }
+      else if (n >= "0" && n <= "7") { const o = /^[0-7]{1,3}/.exec(s.substr(j + 1, 3))[0]; out += String.fromCharCode(parseInt(o, 8) & 255); j += 1 + o.length; }
+      else if (n === "\n") j += 2;
+      else if (n === "\r") { j += 2; if (s[j] === "\n") j++; }
+      else { out += n === undefined ? "" : n; j += 2; }
+    }
+    else if (c === "(") { depth++; out += c; j++; }
+    else if (c === ")") { depth--; if (depth) out += c; j++; }
+    else { out += c; j++; }
+  }
+  return { v: { str: out }, i: j };
+}
+
+/* one value: dict, array, name, string, number, reference, keyword */
+function pdfVal(s, i) {
+  i = pdfWs(s, i);
+  const c = s[i];
+  if (c === undefined) return { v: undefined, i };
+  if (c === "/") return pdfName(s, i);
+  if (c === "(") return pdfLit(s, i);
+  if (c === "[") {
+    const arr = []; let j = i + 1;
+    for (;;) {
+      j = pdfWs(s, j);
+      if (j >= s.length) break;
+      if (s[j] === "]") { j++; break; }
+      const r = pdfVal(s, j);
+      if (r.i <= j) { j++; continue; }
+      j = r.i;
+      if (r.v !== undefined) arr.push(r.v);
+    }
+    return { v: arr, i: j };
+  }
+  if (c === "<") {
+    if (s[i + 1] !== "<") {
+      let j = s.indexOf(">", i + 1); if (j < 0) j = s.length;
+      const h = s.slice(i + 1, j).replace(/[^0-9a-fA-F]/g, "");
+      let out = "";
+      for (let k = 0; k < h.length; k += 2) out += String.fromCharCode(parseInt((h.substr(k, 2) + "0").slice(0, 2), 16));
+      return { v: { str: out }, i: j + 1 };
+    }
+    const d = Object.create(null);
+    let j = i + 2;
+    for (;;) {
+      j = pdfWs(s, j);
+      if (j >= s.length) break;
+      if (s[j] === ">" && s[j + 1] === ">") { j += 2; break; }
+      if (s[j] !== "/") { const r = pdfVal(s, j); j = r.i > j ? r.i : j + 1; continue; }
+      const k = pdfName(s, j);
+      const v = pdfVal(s, k.i);
+      if (v.i <= k.i) { j = k.i + 1; continue; }
+      j = v.i;
+      if (v.v !== undefined) d[k.v.slice(1)] = v.v;
+    }
+    return { v: d, i: j };
+  }
+  if (c === ")" || c === ">" || c === "]" || c === "}" || c === "{") return { v: undefined, i: i + 1 };
+  const n = /^[+-]?(?:\d+\.?\d*|\.\d+)/.exec(s.substr(i, 40));
+  if (n) {
+    const j = i + n[0].length;
+    if (/^\d+$/.test(n[0])) {
+      const r = /^[\s]+(\d+)[\s]+R(?![A-Za-z])/.exec(s.substr(j, 24));
+      if (r) return { v: { ref: true, num: +n[0], gen: +r[1] }, i: j + r[0].length };
+    }
+    return { v: parseFloat(n[0]), i: j };
+  }
+  const w = /^[A-Za-z'"*][A-Za-z0-9'"*]*/.exec(s.substr(i, 32));
+  if (w) {
+    const j = i + w[0].length;
+    if (w[0] === "true") return { v: true, i: j };
+    if (w[0] === "false") return { v: false, i: j };
+    if (w[0] === "null") return { v: null, i: j };
+    return { v: { op: w[0] }, i: j };
+  }
+  return { v: undefined, i: i + 1 };
+}
+
+/* ---- document ---- */
+async function pdfDoc(ab) {
+  const u8 = new Uint8Array(ab), s = L1.decode(u8);
+  if (!s.slice(0, 4096).includes("%PDF-") && !s.includes("obj")) throw new Error("الملف ليس PDF صالحًا");
+
+  /* stream payloads are binary and can imitate "12 0 obj" or "/Encrypt", so
+     their byte ranges are excluded from every scan below */
+  const holes = [];
+  for (let i = s.indexOf("stream"); i >= 0; ) {
+    const e = s.indexOf("endstream", i + 6);
+    if (e < 0) { holes.push([i, s.length]); break; }
+    holes.push([i, e]);
+    i = s.indexOf("stream", e + 9);
+  }
+  const inHole = p => {
+    let lo = 0, hi = holes.length - 1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      if (p < holes[mid][0]) hi = mid - 1;
+      else if (p > holes[mid][1]) lo = mid + 1;
+      else return true;
+    }
+    return false;
+  };
+
+  if (/\/Encrypt[\s/<]/.test(s) && [...s.matchAll(/\/Encrypt[\s/<]/g)].some(m => !inHole(m.index)))
+    throw new Error("ملف PDF محمي بتشفير — أزل الحماية أو صدّر التقرير بصيغة إكسل");
+
+  const offs = new Map(), re = /(\d{1,10})\s+(\d{1,5})\s+obj\b/g;
+  let m;
+  while ((m = re.exec(s))) { if (!inHole(m.index)) offs.set(+m[1], re.lastIndex); }
+  if (!offs.size) throw new Error("لا توجد كائنات داخل ملف الـ PDF");
+
+  const cache = new Map(), extra = new Map();
+  const doc = {};
+  const rs = v => (v && v.ref === true) ? get(v.num) : v;
+
+  const parseAt = i => {
+    const r = pdfVal(s, i);
+    let j = pdfWs(s, r.i);
+    if (!s.startsWith("stream", j) || !r.v || typeof r.v !== "object" || Array.isArray(r.v) || r.v.str) return r.v;
+    j += 6;
+    if (s[j] === "\r") j++;
+    if (s[j] === "\n") j++;
+    const len = rs(r.v.Length);
+    let end = typeof len === "number" && len >= 0 && j + len <= u8.length ? j + len : -1;
+    if (end < 0 || !/^[\s]{0,4}endstream/.test(s.substr(end, 14))) {
+      const e = s.indexOf("endstream", j);
+      end = e < 0 ? u8.length : e;
+      while (end > j && (s[end - 1] === "\n" || s[end - 1] === "\r")) end--;
+    }
+    return { dict: r.v, raw: u8.subarray(j, end) };
+  };
+
+  const get = n => {
+    if (cache.has(n)) return cache.get(n);
+    cache.set(n, null);                       // guards a reference that points at itself
+    const v = offs.has(n) ? parseAt(offs.get(n)) : extra.has(n) ? extra.get(n) : null;
+    cache.set(n, v);
+    return v;
+  };
+
+  const data = async o => {
+    if (!o || !o.raw) return null;
+    let d = o.raw, f = rs(o.dict.Filter);
+    if (!f) return d;
+    const fs = Array.isArray(f) ? f : [f];
+    let pp = rs(o.dict.DecodeParms) ?? rs(o.dict.DP);
+    const ps = Array.isArray(pp) ? pp : [pp];
+    for (let i = 0; i < fs.length; i++) {
+      const name = rs(fs[i]), p = rs(ps[i]) || Object.create(null);
+      if (name === "/FlateDecode" || name === "/Fl") d = pdfUnpredict(await pdfInflate(d), p, rs);
+      else if (name === "/LZWDecode" || name === "/LZW") d = pdfUnpredict(pdfLzw(d, rs(p.EarlyChange) === undefined ? 1 : +rs(p.EarlyChange)), p, rs);
+      else if (name === "/ASCIIHexDecode" || name === "/AHx") d = pdfHex(d);
+      else if (name === "/ASCII85Decode" || name === "/A85") d = pdf85(d);
+      else if (name === "/RunLengthDecode" || name === "/RL") d = pdfRL(d);
+      else if (name === "/Crypt") continue;
+      else return null;                       // an image codec — nothing to read as text
+    }
+    return d;
+  };
+
+  /* modern writers pack the small objects (pages, fonts) into object streams */
+  for (const n of [...offs.keys()]) {
+    const o = get(n);
+    if (!o || !o.raw || o.dict.Type !== "/ObjStm") continue;
+    const d = await data(o);
+    if (!d) continue;
+    const txt = L1.decode(d), count = +rs(o.dict.N) || 0, first = +rs(o.dict.First) || 0;
+    const nums = txt.slice(0, first).trim().split(/\s+/).map(Number);
+    for (let k = 0; k < count; k++) {
+      const on = nums[2 * k], off = nums[2 * k + 1];
+      if (!isFinite(on) || !isFinite(off) || offs.has(on) || extra.has(on)) continue;
+      extra.set(on, pdfVal(txt, first + off).v);
+    }
+  }
+
+  /* the newest /Root wins: an incrementally saved file repeats it */
+  let root = null;
+  for (const r of s.matchAll(/\/Root\s+(\d+)\s+(\d+)\s+R/g)) if (!inHole(r.index)) root = +r[1];
+  const cat = root != null ? get(root) : null;
+
+  const list = [], seen = new Set();
+  const walk = (node, inh, depth) => {
+    const d = node && node.dict ? node.dict : node;
+    if (!d || typeof d !== "object" || Array.isArray(d) || depth > 50 || list.length > 500) return;
+    const next = { Resources: d.Resources ?? inh.Resources, MediaBox: d.MediaBox ?? inh.MediaBox, Rotate: d.Rotate ?? inh.Rotate };
+    const kids = rs(d.Kids);
+    if (Array.isArray(kids) && d.Type !== "/Page") {
+      for (const k of kids) {
+        if (k && k.ref) { if (seen.has(k.num)) continue; seen.add(k.num); }
+        walk(rs(k), next, depth + 1);
+      }
+      return;
+    }
+    if (d.Type === "/Page" || d.Contents) list.push({ d, inh: next });
+  };
+  if (cat) walk(rs(cat.Pages), {}, 0);
+  if (!list.length)                          // a damaged catalog still leaves the pages behind
+    for (const n of [...offs.keys(), ...extra.keys()].sort((a, b) => a - b)) {
+      const o = get(n), d = o && o.dict ? o.dict : o;
+      if (d && typeof d === "object" && d.Type === "/Page") list.push({ d, inh: {} });
+    }
+
+  Object.assign(doc, { rs, get, data, pages: list, fonts: new WeakMap() });
+  return doc;
+}
+
+/* ---- encodings ---- */
+const PDF_WIN = (() => {
+  const a = [];
+  for (let i = 0; i < 256; i++) a[i] = i < 32 ? "" : String.fromCharCode(i);
+  /* WinAnsi spends 0x80-0x9F on typography where Latin-1 keeps control codes */
+  const slot = [0x80, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x89, 0x8A, 0x8B, 0x8C, 0x8E,
+                0x91, 0x92, 0x93, 0x94, 0x95, 0x96, 0x97, 0x98, 0x99, 0x9A, 0x9B, 0x9C, 0x9E, 0x9F];
+  ("20AC 201A 0192 201E 2026 2020 2021 02C6 2030 0160 2039 0152 017D 2018 2019 201C 201D 2022 " +
+   "2013 2014 02DC 2122 0161 203A 0153 017E 0178").split(" ")
+    .forEach((h, i) => a[slot[i]] = String.fromCharCode(parseInt(h, 16)));
+  for (let i = 0x80; i <= 0x9F; i++) if (a[i].charCodeAt(0) < 32) a[i] = "";
+  return a;
+})();
+
+const PDF_GLYPH = (() => {
+  const g = Object.create(null);
+  ("space exclam quotedbl numbersign dollar percent ampersand quotesingle parenleft parenright asterisk plus " +
+   "comma hyphen period slash zero one two three four five six seven eight nine colon semicolon less equal " +
+   "greater question at").split(" ").forEach((n, i) => g[n] = String.fromCharCode(32 + i));
+  for (let c = 65; c <= 90; c++) g[String.fromCharCode(c)] = String.fromCharCode(c);
+  for (let c = 97; c <= 122; c++) g[String.fromCharCode(c)] = String.fromCharCode(c);
+  Object.assign(g, {
+    bracketleft: "[", backslash: "\\", bracketright: "]", asciicircum: "^", underscore: "_", grave: "`",
+    braceleft: "{", bar: "|", braceright: "}", asciitilde: "~", quoteright: "’", quoteleft: "‘",
+    quotedblleft: "“", quotedblright: "”", quotesinglbase: "‚", quotedblbase: "„", endash: "–", emdash: "—",
+    bullet: "•", ellipsis: "…", degree: "°", plusminus: "±", multiply: "×", divide: "÷", minus: "−",
+    periodcentered: "·", section: "§", copyright: "©", registered: "®", trademark: "™", Euro: "€",
+    sterling: "£", yen: "¥", currency: "¤", fraction: "⁄", fi: "fi", fl: "fl", dagger: "†", daggerdbl: "‡",
+    perthousand: "‰", nbspace: " ", uni00A0: " ",
+  });
+  return g;
+})();
+
+function pdfGlyph(n) {
+  if (PDF_GLYPH[n] !== undefined) return PDF_GLYPH[n];
+  const m = /^uni([0-9A-Fa-f]{4})/.exec(n) || /^u([0-9A-Fa-f]{4,6})$/.exec(n);
+  if (m) { try { return String.fromCodePoint(parseInt(m[1], 16)); } catch { return ""; } }
+  return n.length === 1 ? n : "";           // /g37 and friends name a glyph, not a character
+}
+
+function pdfEnc(e, rs) {
+  const t = PDF_WIN.slice();
+  if (!e || typeof e !== "object") return t;
+  const diffs = rs(e.Differences);
+  if (!Array.isArray(diffs)) return t;
+  let code = 0;
+  for (const it0 of diffs) {
+    const it = rs(it0);
+    if (typeof it === "number") code = it | 0;
+    else if (typeof it === "string" && it[0] === "/") { if (code >= 0 && code < 256) t[code] = pdfGlyph(it.slice(1)); code++; }
+  }
+  return t;
+}
+
+/* ToUnicode is what makes a subset-embedded font readable at all */
+function pdfCMap(t) {
+  const map = new Map();
+  const hex = h => {
+    if (h.length <= 2) return h ? String.fromCharCode(parseInt(h, 16)) : "";
+    let o = "";
+    for (let i = 0; i < h.length; i += 4) o += String.fromCharCode(parseInt(h.substr(i, 4).padEnd(4, "0"), 16));
+    return o;
+  };
+  for (const blk of t.match(/beginbfchar([\s\S]*?)endbfchar/g) || []) {
+    const re = /<([0-9A-Fa-f]+)>\s*(?:<([0-9A-Fa-f]*)>|\/([^\s/<>\[\]()]+))/g;
+    let m;
+    while ((m = re.exec(blk))) map.set(parseInt(m[1], 16), m[2] != null ? hex(m[2]) : pdfGlyph(m[3]));
+  }
+  for (const blk of t.match(/beginbfrange([\s\S]*?)endbfrange/g) || []) {
+    const re = /<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>\s*(?:<([0-9A-Fa-f]*)>|\[([\s\S]*?)\])/g;
+    let m;
+    while ((m = re.exec(blk))) {
+      const lo = parseInt(m[1], 16), hi = Math.min(parseInt(m[2], 16), lo + 65535);
+      if (m[3] != null) {
+        const base = hex(m[3]);
+        if (!base) continue;
+        for (let c = lo; c <= hi; c++)
+          map.set(c, base.slice(0, -1) + String.fromCharCode(base.charCodeAt(base.length - 1) + (c - lo)));
+      } else {
+        (m[4].match(/<([0-9A-Fa-f]*)>/g) || []).forEach((h, k) => map.set(lo + k, hex(h.slice(1, -1))));
+      }
+    }
+  }
+  return map;
+}
+
+async function pdfFont(fd, doc) {
+  const rs = doc.rs, f = { two: false, w: new Map(), dw: 500, uni: null, enc: null };
+  if (fd.Subtype === "/Type0") {
+    f.two = true;                             // Identity-H and the CJK CMaps are all two-byte
+    const desc = rs(rs(fd.DescendantFonts)?.[0]) || Object.create(null);
+    f.dw = +rs(desc.DW) || 1000;
+    const W = rs(desc.W);
+    if (Array.isArray(W))
+      for (let i = 0; i < W.length; ) {
+        const a = +rs(W[i]), b = rs(W[i + 1]);
+        if (Array.isArray(b)) { b.forEach((w, k) => f.w.set(a + k, +rs(w) || 0)); i += 2; }
+        else { const end = Math.min(+b, a + 65535), w = +rs(W[i + 2]) || 0; for (let c = a; c <= end; c++) f.w.set(c, w); i += 3; }
+      }
+  } else {
+    const first = +rs(fd.FirstChar) || 0, ws = rs(fd.Widths);
+    if (Array.isArray(ws)) ws.forEach((w, i) => f.w.set(first + i, +rs(w) || 0));
+    const dsc = rs(fd.FontDescriptor) || Object.create(null);
+    f.dw = +rs(dsc.MissingWidth) || (f.w.size ? 0 : 500);
+    f.enc = pdfEnc(rs(fd.Encoding), rs);
+  }
+  const tu = rs(fd.ToUnicode);
+  if (tu && tu.raw) { const d = await doc.data(tu); if (d) f.uni = pdfCMap(L1.decode(d)); }
+  return f;
+}
+
+async function pdfFonts(res, doc) {
+  const out = new Map(), fd = doc.rs(res.Font);
+  if (!fd || typeof fd !== "object") return out;
+  for (const nm of Object.keys(fd)) {
+    const f = doc.rs(fd[nm]);
+    if (!f || typeof f !== "object" || Array.isArray(f) || f.raw) continue;
+    let parsed = doc.fonts.get(f);            // every form re-reading the same font would re-read its CMap
+    if (!parsed) { parsed = await pdfFont(f, doc); doc.fonts.set(f, parsed); }
+    out.set(nm, parsed);
+  }
+  return out;
+}
+
+function pdfDecode(f, bytes) {
+  const out = [], step = f && f.two ? 2 : 1;
+  for (let i = 0; i < bytes.length; i += step) {
+    const code = step === 2 ? (bytes.charCodeAt(i) << 8) | (bytes.charCodeAt(i + 1) || 0) : bytes.charCodeAt(i);
+    let ch = f && f.uni ? f.uni.get(code) : undefined;
+    if (ch === undefined && f && f.enc) ch = f.enc[code];
+    if (ch === undefined) ch = step === 1 ? PDF_WIN[code] ?? "" : "";
+    out.push({ code, ch, w: f && f.w.has(code) ? f.w.get(code) : f ? f.dw : 500 });
+  }
+  return out;
+}
+
+/* ---- page content ---- */
+const pdfMul = (a, b) => [
+  a[0] * b[0] + a[1] * b[2], a[0] * b[1] + a[1] * b[3],
+  a[2] * b[0] + a[3] * b[2], a[2] * b[1] + a[3] * b[3],
+  a[4] * b[0] + a[5] * b[2] + b[4], a[4] * b[1] + a[5] * b[3] + b[5],
+];
+
+/* walks the operators and records where every piece of text landed */
+async function pdfRun(txt, res, doc, ctm, out, depth) {
+  if (depth > 6 || out.length > 200000) return;
+  res = res || Object.create(null);
+  const fonts = await pdfFonts(res, doc), xobj = doc.rs(res.XObject) || Object.create(null);
+  const stack = [];
+  let tm = [1, 0, 0, 1, 0, 0], tlm = tm, font = null, size = 0, tc = 0, tw = 0, th = 1, tl = 0, rise = 0;
+  const args = [];
+  const nums = k => { const a = args.slice(-k); return a.length === k && a.every(v => typeof v === "number") ? a : null; };
+
+  const show = bs => {
+    if (typeof bs !== "string" || !bs.length) return;
+    const start = pdfMul([size * th, 0, 0, size, 0, rise], pdfMul(tm, ctm));
+    let text = "", adv = 0;
+    for (const g of pdfDecode(font, bs)) {
+      text += g.ch;
+      adv += ((g.w / 1000) * size + tc + (g.code === 32 && !(font && font.two) ? tw : 0)) * th;
+    }
+    tm = pdfMul([1, 0, 0, 1, adv, 0], tm);
+    if (!text.trim()) return;
+    const end = pdfMul([size * th, 0, 0, size, 0, rise], pdfMul(tm, ctm));
+    out.push({ x0: start[4], y0: start[5], x1: end[4], y1: end[5], s: text,
+               size: Math.hypot(start[2], start[3]) || Math.abs(size) || 8 });
+  };
+
+  let i = 0;
+  while (i < txt.length) {
+    const r = pdfVal(txt, i);
+    if (r.i <= i) { i++; continue; }
+    i = r.i;
+    const v = r.v;
+    if (v === undefined || v === null || !v.op) { if (v !== undefined) { args.push(v); if (args.length > 80) args.shift(); } continue; }
+    const op = v.op;
+    if (op === "BI") {                        // inline image bytes are not operators
+      let e = txt.indexOf("EI", i);
+      while (e > 0 && !(pdfIsWs(txt.charCodeAt(e - 1)) && (e + 2 >= txt.length || pdfIsWs(txt.charCodeAt(e + 2))))) e = txt.indexOf("EI", e + 2);
+      i = e < 0 ? txt.length : e + 2;
+      args.length = 0;
+      continue;
+    }
+    if (op === "q") stack.push(ctm);
+    else if (op === "Q") ctm = stack.pop() || ctm;
+    else if (op === "cm") { const a = nums(6); if (a) ctm = pdfMul(a, ctm); }
+    else if (op === "BT") tm = tlm = [1, 0, 0, 1, 0, 0];
+    else if (op === "Tf") { const n = args[args.length - 2]; size = +args[args.length - 1] || 0; if (typeof n === "string") font = fonts.get(n.slice(1)) || null; }
+    else if (op === "Td") { const a = nums(2); if (a) tm = tlm = pdfMul([1, 0, 0, 1, a[0], a[1]], tlm); }
+    else if (op === "TD") { const a = nums(2); if (a) { tl = -a[1]; tm = tlm = pdfMul([1, 0, 0, 1, a[0], a[1]], tlm); } }
+    else if (op === "Tm") { const a = nums(6); if (a) tm = tlm = a; }
+    else if (op === "T*") tm = tlm = pdfMul([1, 0, 0, 1, 0, -tl], tlm);
+    else if (op === "TL") { const a = nums(1); if (a) tl = a[0]; }
+    else if (op === "Tc") { const a = nums(1); if (a) tc = a[0]; }
+    else if (op === "Tw") { const a = nums(1); if (a) tw = a[0]; }
+    else if (op === "Tz") { const a = nums(1); if (a) th = a[0] / 100; }
+    else if (op === "Ts") { const a = nums(1); if (a) rise = a[0]; }
+    else if (op === "Tj") { const a = args[args.length - 1]; if (a && a.str != null) show(a.str); }
+    else if (op === "'") { tm = tlm = pdfMul([1, 0, 0, 1, 0, -tl], tlm); const a = args[args.length - 1]; if (a && a.str != null) show(a.str); }
+    else if (op === '"') {
+      const a = args.slice(-3);
+      if (typeof a[0] === "number") tw = a[0];
+      if (typeof a[1] === "number") tc = a[1];
+      tm = tlm = pdfMul([1, 0, 0, 1, 0, -tl], tlm);
+      if (a[2] && a[2].str != null) show(a[2].str);
+    }
+    else if (op === "TJ") {
+      const a = args[args.length - 1];
+      if (Array.isArray(a)) for (const e of a) {
+        if (typeof e === "number") tm = pdfMul([1, 0, 0, 1, (-e / 1000) * size * th, 0], tm);
+        else if (e && e.str != null) show(e.str);
+      }
+    }
+    else if (op === "Do") {
+      const n = args[args.length - 1];
+      if (typeof n === "string") {
+        const o = doc.rs(xobj[n.slice(1)]);
+        if (o && o.raw && o.dict.Subtype === "/Form") {
+          const d = await doc.data(o);
+          if (d) {
+            const mx = doc.rs(o.dict.Matrix);
+            const m = Array.isArray(mx) && mx.length === 6 ? mx.map(Number) : [1, 0, 0, 1, 0, 0];
+            await pdfRun(L1.decode(d), doc.rs(o.dict.Resources) || res, doc, pdfMul(m, ctm), out, depth + 1);
+          }
+        }
+      }
+    }
+    args.length = 0;
+  }
+}
+
+async function pdfPage(pg, doc) {
+  const out = [];
+  const c = doc.rs(pg.d.Contents);
+  const parts = Array.isArray(c) ? c : [c];
+  let buf = "";
+  for (const p of parts) {
+    const o = doc.rs(p);
+    if (o && o.raw) { const d = await doc.data(o); if (d) buf += L1.decode(d) + "\n"; }
+  }
+  if (!buf) return out;
+  await pdfRun(buf, doc.rs(pg.d.Resources ?? pg.inh.Resources), doc, [1, 0, 0, 1, 0, 0], out, 0);
+
+  /* a landscape export usually arrives upright plus /Rotate, so the glyphs are
+     turned into reading orientation before rows are formed */
+  const rot = ((+doc.rs(pg.d.Rotate ?? pg.inh.Rotate) || 0) % 360 + 360) % 360;
+  const turn = (x, y) => rot === 90 ? [y, -x] : rot === 180 ? [-x, -y] : rot === 270 ? [-y, x] : [x, y];
+  return out.map(f => {
+    const [x0, y0] = turn(f.x0, f.y0), [x1, y1] = turn(f.x1, f.y1);
+    return { x: Math.min(x0, x1), y: (y0 + y1) / 2, w: Math.abs(x1 - x0), s: f.s, size: f.size };
+  });
+}
+
+/* ---- layout → grid ---- */
+/* Columns are found once for the whole document from the vertical white gutters
+   the table leaves between its cells, so right-aligned numbers and left-aligned
+   names land in the same column and every page is cut identically. */
+function pdfGrid(perPage) {
+  const lines = [];
+  perPage.forEach((frags, p) => {
+    const sorted = frags.slice().sort((a, b) => b.y - a.y || a.x - b.x);
+    let cur = null;
+    for (const f of sorted) {
+      if (!cur || Math.abs(cur.y - f.y) > Math.max(1.2, (f.size || 8) * 0.45)) { cur = { p, y: f.y, items: [] }; lines.push(cur); }
+      cur.items.push(f);
+    }
+  });
+  for (const l of lines) l.items.sort((a, b) => a.x - b.x);
+  if (!lines.length) return [];
+
+  const sizes = lines.flatMap(l => l.items.map(f => f.size)).sort((a, b) => a - b);
+  const em = sizes[Math.floor(sizes.length / 2)] || 8;
+  const body = lines.filter(l => l.items.length >= 3);
+  const use = body.length >= 3 ? body : lines;
+  let minX = Infinity, maxX = -Infinity;
+  for (const l of use) for (const f of l.items) { minX = Math.min(minX, f.x); maxX = Math.max(maxX, f.x + f.w); }
+
+  const cuts = [];
+  if (isFinite(minX) && maxX - minX > 1 && maxX - minX < 20000) {
+    /* each line votes once per column of pixels, so a single overlong name that
+       spills into the next column cannot erase a gutter the other rows agree on */
+    const bins = new Uint16Array(Math.ceil(maxX - minX) + 2), stamp = new Int32Array(bins.length).fill(-1);
+    use.forEach((l, k) => {
+      for (const f of l.items) {
+        const a = Math.max(0, Math.floor(f.x - minX)), b = Math.min(bins.length - 1, Math.ceil(f.x + f.w - minX));
+        for (let i = a; i <= b; i++) if (stamp[i] !== k) { stamp[i] = k; bins[i]++; }
+      }
+    });
+    const noise = Math.floor(use.length * 0.02), gap = Math.max(3, em * 0.6);
+    let run = 0;
+    for (let i = 0; i < bins.length; i++) {
+      if (bins[i] <= noise) { run++; continue; }
+      if (run >= gap && i - run > 0) cuts.push(minX + i - run / 2);
+      run = 0;
+    }
+  }
+  const colOf = f => {
+    const c = f.x + f.w / 2;
+    let k = 0;
+    while (k < cuts.length && c > cuts[k]) k++;
+    return k;
+  };
+
+  const rows = [], preamble = new Set();
+  const byPage = new Map();
+  for (const l of lines) { if (!byPage.has(l.p)) byPage.set(l.p, []); byPage.get(l.p).push(l); }
+  for (const [p, ls] of [...byPage.entries()].sort((a, b) => a[0] - b[0])) {
+    let started = false;                      // true once this page's table has begun
+    ls.forEach(l => {
+      const cells = [];
+      let prev = null, col = -1;
+      for (const f of l.items) {
+        const c = colOf(f);
+        if (c !== col) { col = c; cells[c] = cells[c] ?? ""; prev = null; }
+        if (prev && f.x - (prev.x + prev.w) > Math.max(0.6, prev.size * 0.2) && !/\s$/.test(cells[c])) cells[c] += " ";
+        cells[c] = (cells[c] ?? "") + f.s;
+        prev = f;
+      }
+      const row = [];
+      for (let i = 0; i < cells.length; i++) row[i] = pdfRtl((cells[i] ?? "").replace(/\s+/g, " ").trim());
+      while (row.length && row[row.length - 1] === "") row.pop();
+      if (!row.length) return;
+      /* Page 2 onwards reprints the title block and the column header. Only what
+         stands above a page's first table-width line can be one of those, so a
+         data row is never mistaken for a repeat. */
+      const wide = row.filter(c => c !== "").length >= 3;
+      if (!started) {
+        const joined = row.join("|");
+        if (p === 0) preamble.add(joined);
+        else if (preamble.has(joined)) { started = wide; return; }
+      }
+      if (wide) started = true;
+      rows.push(row);
+    });
+  }
+  /* "Page 2 of 3" and other furniture printed under the table would otherwise
+     read as a department; once the table has started, a lone cell is not a row */
+  const filled = r => r.filter(c => c !== "").length;
+  const start = rows.findIndex(r => filled(r) >= 3);
+  return start < 0 ? rows : rows.filter((r, i) => i <= start || filled(r) >= 2);
+}
+
+/* Shaped Arabic is stored in the order it is painted, i.e. reversed; the base
+   letters are restored once the run order is put back. Text that never used the
+   presentation forms was written logically and is left alone. */
+function pdfRtl(s) {
+  if (!/[ﭐ-﻿]/.test(s)) return s;
+  const runs = [];
+  for (const ch of s) {
+    const rtl = /[֐-ࣿﭐ-﻿]/.test(ch);
+    if (!runs.length || runs[runs.length - 1].rtl !== rtl) runs.push({ rtl, t: ch });
+    else runs[runs.length - 1].t += ch;
+  }
+  return runs.reverse().map(r => (r.rtl ? [...r.t].reverse().join("") : r.t)).join("").normalize("NFKC").trim();
+}
+
+async function readPdf(file) {
+  const doc = await pdfDoc(await file.arrayBuffer());
+  if (!doc.pages.length) throw new Error("لا توجد صفحات داخل ملف الـ PDF");
+  const perPage = [];
+  for (const pg of doc.pages) perPage.push(await pdfPage(pg, doc));
+  const grid = pdfGrid(perPage);
+  if (!grid.length)
+    throw new Error("لا يوجد نص قابل للقراءة في هذا الـ PDF (يبدو أنه صورة ممسوحة ضوئيًا) — صدّر التقرير بصيغة إكسل");
   return grid;
 }
 
@@ -1544,7 +2269,7 @@ function refresh() {
   $("#bClear").disabled = !state.branches.length;
   $("#assume").innerHTML =
     "<b>القواعد المطبَّقة:</b> الطوارئ تُستثنى من جدول الأطباء وتغذّي بطاقة EMERGENCY وحدها · " +
-    "الأقسام المذكورة أعلاه تتصدّر الجدول بترتيبها، وبقيتها بترتيب ظهورها في ملف الإكسل · " +
+    "الأقسام المذكورة أعلاه تتصدّر الجدول بترتيبها، وبقيتها بترتيب ظهورها في ملف الفرع · " +
     "النسبة = المشاهَد ÷ المتاح، وتلوين الحبّة ‎≥80%‎ أخضر و‎50–79%‎ ذهبي و‎&lt;50%‎ أحمر · " +
     "الخانات غير المستخدمة تُحذف أشكالها من الشريحة.";
 }
@@ -1659,7 +2384,7 @@ if (MODE.single) {
   document.title = "تقرير الفرع اليومي";
   $(".brand h1").textContent = "تقرير الفرع اليومي";
   $(".brand p").firstChild.textContent = "فرع واحد · مع عمود No Show ";   // keeps the build tag
-  $("#dropX strong").textContent = "اسحب ملف إكسل الفرع هنا أو انقر للاختيار";
+  $("#dropX strong").textContent = "اسحب ملف الفرع (إكسل أو PDF) هنا أو انقر للاختيار";
   $("#fileX").multiple = false;
   $("#cSummary").checked = false;
   $("#s2 header h2").textContent = "ملف الفرع";
@@ -1680,6 +2405,6 @@ refresh();
   } catch (e) { toast("تعذّر تحميل القالب المضمَّن: " + e.message, "err"); }
 })();
 if (!("DecompressionStream" in window))
-  toast("متصفحك قديم ولا يدعم فتح ملفات pptx/xlsx — استخدم Chrome أو Edge أو Safari حديثًا.", "err");
+  toast("متصفحك قديم ولا يدعم فتح ملفات pptx/xlsx/pdf — استخدم Chrome أو Edge أو Safari حديثًا.", "err");
 })();
 </script>

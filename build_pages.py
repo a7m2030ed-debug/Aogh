@@ -28,7 +28,7 @@ PAGES = [
     },
 ]
 
-SRC_TITLE = "<title>مُعبِّئ التقرير اليومي — قالب PowerPoint + إكسل</title>"
+SRC_TITLE = "<title>مُعبِّئ التقرير اليومي — قالب PowerPoint + إكسل أو PDF</title>"
 
 def build(page: dict, html: str) -> int:
     tpl = TPL / page["template"]
