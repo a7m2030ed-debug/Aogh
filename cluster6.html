@@ -1290,6 +1290,23 @@ function guessColumns(headers) {
   return map;
 }
 
+/* When every file exported by a centre carries the same headers, correcting
+   the guessed mapping once should be the last time it's ever asked — the
+   correction is kept per header set and reused silently from then on. */
+const MAP_STORE_KEY = "aogh_colmap_v1";
+const mapSignature = headers => [...headers].map(h => h.trim().toLowerCase()).sort().join("|");
+function loadStoredMap(headers) {
+  try { return JSON.parse(localStorage.getItem(MAP_STORE_KEY) || "{}")[mapSignature(headers)] || null; }
+  catch { return null; }
+}
+function saveStoredMap(headers, map) {
+  try {
+    const store = JSON.parse(localStorage.getItem(MAP_STORE_KEY) || "{}");
+    store[mapSignature(headers)] = { ...map };
+    localStorage.setItem(MAP_STORE_KEY, JSON.stringify(store));
+  } catch {}
+}
+
 const fileRows = data => data.map(o => ({
   dept:   String(o[state.map.dept] ?? "").trim(),
   name:   String(o[state.map.doctor] ?? "").trim(),
@@ -2269,6 +2286,13 @@ function mapEditor() {
   h.textContent = "ربط الأعمدة — أي عمود في ملفك يغذّي أي رقم في التقرير";
   box.append(h);
 
+  const mn = document.createElement("div");
+  mn.style.cssText = "font-size:12px; color:var(--ink-3)";
+  mn.textContent = loadStoredMap(state.headers)
+    ? "هذا الربط محفوظ من آخر مرة صحّحته لهذا الشكل من الملفات — لن يُطلب منك مرة أخرى ما دامت عناوين الأعمدة نفسها."
+    : "أي تعديل هنا يُحفظ تلقائيًا لهذا الشكل من الملفات (نفس عناوين الأعمدة)، فلا يُطلب منك مرة أخرى في الملفات القادمة.";
+  box.append(mn);
+
   const grid = document.createElement("div");
   grid.style.cssText = "display:grid; grid-template-columns:repeat(auto-fit,minmax(215px,1fr)); gap:10px";
   for (const f of activeFields()) {
@@ -2287,7 +2311,7 @@ function mapEditor() {
       sel.append(o);
     }
     if (f.need && !state.map[f.key]) sel.style.borderColor = "var(--low)";
-    sel.onchange = () => { state.map[f.key] = sel.value; refresh(); };
+    sel.onchange = () => { state.map[f.key] = sel.value; saveStoredMap(state.headers, state.map); refresh(); };
     l.append(cap, sel);
     grid.append(l);
   }
@@ -2434,8 +2458,12 @@ hookDrop($("#dropX"), $("#fileX"), async files => {
     } catch (e) { toast(`«${f.name}»: ${e.message}`, "err"); }
   }
   datesFromFiles();
-  if (fresh && state.headers.length) state.map = guessColumns(state.headers);
-  else for (const f of activeFields()) if (!state.map[f.key]) state.map[f.key] = guessColumns(state.headers)[f.key] || "";
+  /* a mapping corrected once for this exact set of headers is remembered, so
+     the same daily/weekly file format never needs to be re-mapped by hand */
+  const stored = state.headers.length ? loadStoredMap(state.headers) : null;
+  if (fresh && state.headers.length) state.map = stored ? { ...stored } : guessColumns(state.headers);
+  else for (const f of activeFields())
+    if (!state.map[f.key]) state.map[f.key] = (stored && stored[f.key]) || guessColumns(state.headers)[f.key] || "";
 
   /* Now that the column mapping is settled, catch a cell too garbled to trust
      — two numbers fused into one — before it silently zeroes into a total. */
