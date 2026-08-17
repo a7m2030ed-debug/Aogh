@@ -249,7 +249,7 @@
     <header><span class="n">٢</span><h2>ملفات الفروع</h2><span class="state" id="st2">لم تُرفع بعد</span></header>
     <div class="body">
       <div class="drop" id="dropX" tabindex="0" role="button">
-        <strong>اسحب ملف كل فرع — إكسل أو PDF — ويمكن اختيار عدة ملفات معًا</strong>
+        <strong>اسحب ملف كل فرع — إكسل أو PDF — وعدة أيام للفرع الواحد تصير تقريرًا أسبوعيًا</strong>
         <span>xlsx · xlsm · csv · pdf</span>
       </div>
       <input type="file" id="fileX" accept=".xlsx,.xlsm,.csv,.pdf" multiple hidden>
@@ -262,6 +262,7 @@
     <div class="body">
       <div class="row">
         <label class="fld"><span>تاريخ التقرير</span><input type="date" id="inDate"></label>
+        <label class="fld"><span>إلى تاريخ — لتقرير أسبوعي</span><input type="date" id="inDateEnd"></label>
         <label class="fld"><span>اسم الملف الناتج</span><input type="text" id="inName" value="Cluster2_Daily_Report"></label>
         <label class="fld"><span>أقسام الطوارئ تُعرَف بكلمة</span><input type="text" id="inER" value="Emergency"></label>
         <label class="fld" style="flex:1 1 260px">
@@ -302,7 +303,7 @@ document.documentElement.dir  = "rtl";
    and swaps the embedded template. Everything else is shared. */
 const MODE = { single: false };
 /* shown next to the title so a stale cached copy is obvious at a glance */
-const BUILD = "2026-08-17 · قراءة ملفات PDF";
+const BUILD = "2026-08-17 · PDF + تقرير أسبوعي";
 
 const $ = (s, r = document) => r.querySelector(s);
 const EMU_IN = 914400;
@@ -1273,7 +1274,7 @@ function guessColumns(headers) {
   return map;
 }
 
-const mappedRows = branch => branch.data.map(o => ({
+const fileRows = data => data.map(o => ({
   dept:   String(o[state.map.dept] ?? "").trim(),
   name:   String(o[state.map.doctor] ?? "").trim(),
   target: num(o[state.map.target]),
@@ -1281,8 +1282,55 @@ const mappedRows = branch => branch.data.map(o => ({
   noshow: state.map.noshow ? num(o[state.map.noshow]) : null,
 })).filter(r => r.dept);
 
+/* A weekly report is the same centre exported once a day: its page must show one
+   line per doctor carrying the week's totals, not the same doctor seven times.
+   A branch standing on a single file keeps its rows exactly as they came. */
+const mappedRows = branch => {
+  const parts = branch.parts || [branch];
+  const rows = parts.flatMap(p => fileRows(p.data));
+  if (parts.length < 2) return rows;
+  const by = new Map();
+  for (const r of rows) {
+    const k = r.dept.toLowerCase() + "\u0000" + r.name.toLowerCase();
+    const seen = by.get(k);
+    if (!seen) { by.set(k, { ...r }); continue; }
+    seen.target += r.target;
+    seen.actual += r.actual;
+    if (r.noshow != null) seen.noshow = (seen.noshow || 0) + r.noshow;
+  }
+  return [...by.values()];
+};
+
+/* "Al Malqa 12-08-2025" and "Al Malqa 13-08-2025" are one centre across two days,
+   so the day is no part of the name a file is filed under. */
+const DATEISH = /\b\d{1,4}[-/.]\d{1,2}(?:[-/.]\d{1,4})?\b|\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b|\b\d{1,4}\b/gi;
+const cleanLabel = t => String(t || "").replace(DATEISH, " ").replace(/\s*[-–_.]+\s*/g, " ").replace(/\s+/g, " ").trim();
+const nameKey = t => cleanLabel(t).toLowerCase().replace(/[^a-z\u0600-\u06ff]+/g, "");
+
+/* One branch per template slot. With no slot the centre named inside the file
+   decides, then the file name; and the single-branch page has just the one. */
+const groupKey = b => MODE.single ? "*"
+  : b.prefix || "\u0000" + (nameKey(b.meta && b.meta.branch) || nameKey(b.label) || b.label.trim().toLowerCase());
+
+/* the day drops out of a merged branch's name, and a name typed by hand stays */
+const groupLabel = parts => parts.length < 2 || parts[0].labelTouched ? parts[0].label
+  : cleanLabel(parts[0].meta && parts[0].meta.branch) || cleanLabel(parts[0].label) || parts[0].label;
+
+function groupBranches() {
+  const out = [], by = new Map();
+  for (const b of state.branches) {
+    const g = by.get(groupKey(b));
+    if (g) { g.parts.push(b); continue; }
+    const made = { prefix: b.prefix, meta: b.meta, parts: [b] };
+    Object.defineProperty(made, "label", { get: () => groupLabel(made.parts), enumerable: true });
+    by.set(groupKey(b), made);
+    out.push(made);
+  }
+  return out;
+}
+
 /* ═════════════════ template analysis ═════════════════ */
-const state = { tpl: null, branches: [], date: "", headers: [], map: {} };
+const state = { tpl: null, branches: [], date: "", dateEnd: "", headers: [], map: {} };
 
 const shapesOf = doc => {
   const tree = doc.getElementsByTagNameNS(P, "spTree")[0];
@@ -1514,6 +1562,17 @@ async function loadTemplate(file) {
 /* ═════════════════ report maths ═════════════════ */
 /* the template writes its date as DD MON YYYY, so the report follows suit */
 const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+/* A report covering several days says so on every slide: same month, one name. */
+function reportDate() {
+  const a = state.date, b = state.dateEnd;
+  if (!b || b === a) return formatDate(a);
+  const [x, y] = a <= b ? [a, b] : [b, a];
+  const f = formatDate(y);
+  return x.slice(0, 7) === y.slice(0, 7)
+    ? `${String(+x.slice(8, 10)).padStart(2, "0")} - ${f}`
+    : `${formatDate(x)} - ${f}`;
+}
+
 function formatDate(iso) {
   const d = iso ? new Date(iso + "T00:00:00") : new Date();
   if (isNaN(d)) return iso || "";
@@ -1723,13 +1782,13 @@ function buildPlan() {
   const t = state.tpl;
   if (!t || !state.branches.length) return null;
   const erWord = $("#inER").value.trim();
-  const dateStr = formatDate(state.date);
+  const dateStr = reportDate();
   const capB = t.branch.slots, capC = t.cont ? t.cont.slots : t.branch.slots;
 
   /* Where the template puts a "rows continue" hint inside the last row slot,
      that slot is reserved for it as soon as the branch spills over. */
   const hint = /rows continue/i.test(t.branch.xml);
-  const branches = state.branches.map(b => {
+  const branches = groupBranches().map(b => {
     const c = computeBranch(mappedRows(b), erWord);
     let pages = paginate(c.depts, capB, capC);
     if (hint && pages.length > 1) pages = paginate(c.depts, Math.max(2, capB - 1), capC);
@@ -2102,7 +2161,10 @@ function guessPrefix(label) {
 function renderBranchInfo() {
   const host = $("#xlsInfo");
   host.textContent = "";
-  $("#st2").textContent = state.branches.length ? `${state.branches.length} فرع` : "لم تُرفع بعد";
+  const groups = groupBranches();
+  const merged = groups.filter(g => g.parts.length > 1);
+  $("#st2").textContent = !state.branches.length ? "لم تُرفع بعد"
+    : merged.length ? `${state.branches.length} ملف · ${groups.length} فرع` : `${groups.length} فرع`;
   $("#s2").classList.toggle("done", state.branches.length > 0);
   if (!state.branches.length) return;
   const wrap = document.createElement("div");
@@ -2117,7 +2179,7 @@ function renderBranchInfo() {
     const nameTd = td();
     const inp = document.createElement("input");
     inp.type = "text"; inp.value = b.label; inp.style.width = "180px";
-    inp.oninput = () => { b.label = inp.value; refresh(); };
+    inp.oninput = () => { b.label = inp.value; b.labelTouched = true; refresh(); };
     nameTd.append(inp);
     const selTd = td();
     const sel = document.createElement("select");
@@ -2143,6 +2205,16 @@ function renderBranchInfo() {
     body.append(tr);
   });
   tb.append(body); wrap.append(tb); host.append(wrap);
+
+  if (merged.length) {
+    const n = document.createElement("div");
+    n.className = "note";
+    n.innerHTML = '<span class="m"></span><span></span>';
+    n.lastChild.textContent = "ملفات الفرع الواحد تُدمج في صفحة واحدة، ويُجمع لكل طبيب مجموع أيامه: " +
+      merged.map(g => `${g.label} (${g.parts.length} ملفات)`).join("، ") +
+      (MODE.single ? "." : " — والدمج يتبع خانة القالب، فغيِّرها في الجدول أعلاه لتفصل ملفًا عن فرعه أو تضمّه إليه.");
+    host.append(n);
+  }
   host.append(mapEditor());
 }
 
@@ -2271,7 +2343,8 @@ function refresh() {
     "<b>القواعد المطبَّقة:</b> الطوارئ تُستثنى من جدول الأطباء وتغذّي بطاقة EMERGENCY وحدها · " +
     "الأقسام المذكورة أعلاه تتصدّر الجدول بترتيبها، وبقيتها بترتيب ظهورها في ملف الفرع · " +
     "النسبة = المشاهَد ÷ المتاح، وتلوين الحبّة ‎≥80%‎ أخضر و‎50–79%‎ ذهبي و‎&lt;50%‎ أحمر · " +
-    "الخانات غير المستخدمة تُحذف أشكالها من الشريحة.";
+    "الخانات غير المستخدمة تُحذف أشكالها من الشريحة · " +
+    "ملفات الفرع الواحد تُدمج ويُجمع لكل طبيب مجموع أيامه، وتاريخ التقرير يصير مدى.";
 }
 
 /* ---- wiring ---- */
@@ -2299,11 +2372,6 @@ hookDrop($("#dropT"), $("#fileT"), async files => {
 });
 
 hookDrop($("#dropX"), $("#fileX"), async files => {
-  if (MODE.single) {                 // one branch per report: a new file replaces the old
-    files = files.slice(0, 1);
-    state.branches = [];
-    state.headers = [];
-  }
   const fresh = !state.branches.length;
   for (const f of files) {
     try {
@@ -2313,21 +2381,40 @@ hookDrop($("#dropX"), $("#fileX"), async files => {
         .replace(/[_-]+/g, " ").trim();
       for (const h of headers) if (!state.headers.includes(h)) state.headers.push(h);
       const prefix = guessPrefix(label) || (meta.branch ? guessPrefix(meta.branch) : "");
-      state.branches.push({ file: f.name, label, prefix, headers, data, meta });
-      if (meta.date && !state.dateTouched) { state.date = meta.date; $("#inDate").value = meta.date; }
+      const entry = { file: f.name, label, prefix, headers, data, meta };
+      /* re-exporting a day under its own name corrects that day, it does not add
+         it twice; anything else is another day (or another branch) and joins */
+      const at = state.branches.findIndex(o => o.file === f.name);
+      if (at >= 0) { entry.label = state.branches[at].label; entry.prefix = state.branches[at].prefix; state.branches[at] = entry; }
+      else state.branches.push(entry);
     } catch (e) { toast(`«${f.name}»: ${e.message}`, "err"); }
   }
+  datesFromFiles();
   if (fresh && state.headers.length) state.map = guessColumns(state.headers);
   else for (const f of activeFields()) if (!state.map[f.key]) state.map[f.key] = guessColumns(state.headers)[f.key] || "";
   refresh();
   if (state.branches.length) {
     const missing = activeFields().filter(f => f.need && !state.map[f.key]).map(f => f.label);
-    toast(missing.length ? `اربط الأعمدة الناقصة: ${missing.join("، ")}` : `جاهز: ${state.branches.length} فرع`,
+    const groups = groupBranches().length;
+    const many = state.branches.length > groups ? ` من ${state.branches.length} ملف` : "";
+    toast(missing.length ? `اربط الأعمدة الناقصة: ${missing.join("، ")}` : `جاهز: ${groups} فرع${many}`,
           missing.length ? "warn" : "");
   }
 });
 
+/* The days the files themselves state, unless the user has set the dates. */
+function datesFromFiles() {
+  if (state.dateTouched) return;
+  const days = [...new Set(state.branches.map(b => b.meta && b.meta.date).filter(Boolean))].sort();
+  if (!days.length) return;
+  state.date = days[0];
+  state.dateEnd = days.length > 1 ? days[days.length - 1] : "";
+  $("#inDate").value = state.date;
+  $("#inDateEnd").value = state.dateEnd;
+}
+
 $("#inDate").onchange = e => { state.date = e.target.value; state.dateTouched = true; refresh(); };
+$("#inDateEnd").onchange = e => { state.dateEnd = e.target.value; state.dateTouched = true; refresh(); };
 $("#inER").oninput = () => refresh();
 $("#inOrder").oninput = e => {
   state.deptOrder = e.target.value.split(/[,،\n]/).map(s => s.trim()).filter(Boolean);
@@ -2356,7 +2443,9 @@ $("#bClear").onclick = () => {
   state.dateTouched = false;
   const today = new Date().toISOString().slice(0, 10);
   state.date = today;
+  state.dateEnd = "";
   $("#inDate").value = today;
+  $("#inDateEnd").value = "";
   $("#fileX").value = "";
   $("#printer").textContent = "";
   refresh();
@@ -2384,8 +2473,8 @@ if (MODE.single) {
   document.title = "تقرير الفرع اليومي";
   $(".brand h1").textContent = "تقرير الفرع اليومي";
   $(".brand p").firstChild.textContent = "فرع واحد · مع عمود No Show ";   // keeps the build tag
-  $("#dropX strong").textContent = "اسحب ملف الفرع (إكسل أو PDF) هنا أو انقر للاختيار";
-  $("#fileX").multiple = false;
+  $("#dropX strong").textContent = "اسحب ملف الفرع (إكسل أو PDF) — أو ملف كل يوم لتقرير أسبوعي";
+  $("#fileX").multiple = true;
   $("#cSummary").checked = false;
   $("#s2 header h2").textContent = "ملف الفرع";
 }
