@@ -1198,7 +1198,23 @@ const FIELDS = [
 ];
 
 const key = s => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-const num = v => { const n = parseFloat(String(v ?? "").replace(/[^\d.-]/g, "")); return isFinite(n) ? n : 0; };
+
+/* A slot / seen / no-show count is always a short whole number. Several
+   digits glued together, or two numbers run into one cell, means two PDF or
+   sheet columns fused while the file was read — not a real count — so it's
+   zeroed rather than trusted into a total, and the caller can flag it. */
+const badCount = raw => {
+  const s = String(raw ?? "").trim();
+  if (!s) return false;
+  const tokens = s.split(/\s+/).filter(Boolean);
+  if (tokens.length > 1 && tokens.every(t => /^[\d.,%+-]+$/.test(t))) return true;
+  return s.replace(/[^\d]/g, "").length > 6;
+};
+const num = v => {
+  if (badCount(v)) return 0;
+  const n = parseFloat(String(v ?? "").replace(/[^\d.-]/g, ""));
+  return isFinite(n) ? n : 0;
+};
 
 const isNum = v => v !== "" && v != null && isFinite(parseFloat(String(v).replace(/[^\d.-]/g, ""))) &&
                    /^[\s\d.,%+-]+$/.test(String(v));
@@ -1305,25 +1321,51 @@ const mappedRows = branch => {
    so the day is no part of the name a file is filed under. */
 const DATEISH = /\b\d{1,4}[-/.]\d{1,2}(?:[-/.]\d{1,4})?\b|\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b|\b\d{1,4}\b/gi;
 const cleanLabel = t => String(t || "").replace(DATEISH, " ").replace(/\s*[-–_.]+\s*/g, " ").replace(/\s+/g, " ").trim();
+/* Stripping every date-shaped fragment can occasionally eat the whole label —
+   an all-numeric filename, a name that's mostly digits — so when what's left
+   is too thin to be a real name, the untouched original is kept instead. */
+const safeLabel = raw => {
+  const s = String(raw || "").trim();
+  if (!s) return "";
+  const cleaned = cleanLabel(s);
+  return cleaned.length >= 3 ? cleaned : s;
+};
 const nameKey = t => cleanLabel(t).toLowerCase().replace(/[^a-z\u0600-\u06ff]+/g, "");
 
-/* One branch per template slot. With no slot the centre named inside the file
-   decides, then the file name; and the single-branch page has just the one. */
-const groupKey = b => MODE.single ? "*"
-  : b.prefix || "\u0000" + (nameKey(b.meta && b.meta.branch) || nameKey(b.label) || b.label.trim().toLowerCase());
-
 /* the day drops out of a merged branch's name, and a name typed by hand stays */
-const groupLabel = parts => parts.length < 2 || parts[0].labelTouched ? parts[0].label
-  : cleanLabel(parts[0].meta && parts[0].meta.branch) || cleanLabel(parts[0].label) || parts[0].label;
+const groupLabel = parts => parts.length < 2 || parts[0].labelTouched ? safeLabel(parts[0].label)
+  : safeLabel(parts[0].meta && parts[0].meta.branch) || safeLabel(parts[0].label) || parts[0].label;
 
+/* One branch per template slot when the file's own centre name fuzzy-matches
+   a known slot (guessPrefix). Without a match — an unfamiliar template, or a
+   centre name guessPrefix can't place — files still belonging to the same
+   branch are found by fuzzy-matching their names against each other instead,
+   the same spelling drift handled with no template label to anchor on. */
+function mkGroup(b) {
+  const made = { prefix: b.prefix, key: "", meta: b.meta, parts: [b] };
+  Object.defineProperty(made, "label", { get: () => groupLabel(made.parts), enumerable: true });
+  return made;
+}
 function groupBranches() {
-  const out = [], by = new Map();
+  const out = [];
   for (const b of state.branches) {
-    const g = by.get(groupKey(b));
-    if (g) { g.parts.push(b); continue; }
-    const made = { prefix: b.prefix, meta: b.meta, parts: [b] };
-    Object.defineProperty(made, "label", { get: () => groupLabel(made.parts), enumerable: true });
-    by.set(groupKey(b), made);
+    if (MODE.single) { if (out[0]) { out[0].parts.push(b); continue; } out.push(mkGroup(b)); continue; }
+    if (b.prefix) {
+      const g = out.find(x => x.prefix === b.prefix);
+      if (g) { g.parts.push(b); continue; }
+      out.push(mkGroup(b));
+      continue;
+    }
+    const k = nameKey(b.meta && b.meta.branch) || nameKey(b.label) || b.label.trim().toLowerCase();
+    let best = null, score = 0;
+    for (const x of out) {
+      if (x.prefix || !x.key) continue;
+      const s = k === x.key ? 1 : similarity(k, x.key);
+      if (s > score) { score = s; best = x; }
+    }
+    if (best && score >= 0.45) { best.parts.push(b); continue; }
+    const made = mkGroup(b);
+    made.key = k;
     out.push(made);
   }
   return out;
@@ -2376,9 +2418,11 @@ hookDrop($("#dropX"), $("#fileX"), async files => {
   for (const f of files) {
     try {
       const { headers, data, meta } = readTable(await readSheet(f));
-      const label = f.name.replace(/\.[^.]+$/, "")
-        .replace(/^[0-9a-f]{8}-/i, "")            // upload systems prefix a hash
-        .replace(/[_-]+/g, " ").trim();
+      /* upload systems prefix an 8-char hash; a plain YYYYMMDD-named file also
+         looks like one, so the strip is undone if it left nothing readable */
+      const stem = f.name.replace(/\.[^.]+$/, "");
+      const unhashed = stem.replace(/^[0-9a-f]{8}-/i, "");
+      const label = (unhashed.length >= 3 ? unhashed : stem).replace(/[_-]+/g, " ").trim();
       for (const h of headers) if (!state.headers.includes(h)) state.headers.push(h);
       const prefix = guessPrefix(label) || (meta.branch ? guessPrefix(meta.branch) : "");
       const entry = { file: f.name, label, prefix, headers, data, meta };
@@ -2392,11 +2436,27 @@ hookDrop($("#dropX"), $("#fileX"), async files => {
   datesFromFiles();
   if (fresh && state.headers.length) state.map = guessColumns(state.headers);
   else for (const f of activeFields()) if (!state.map[f.key]) state.map[f.key] = guessColumns(state.headers)[f.key] || "";
+
+  /* Now that the column mapping is settled, catch a cell too garbled to trust
+     — two numbers fused into one — before it silently zeroes into a total. */
+  const flagged = [];
+  for (const f of files) {
+    const entry = state.branches.find(o => o.file === f.name);
+    if (!entry) continue;
+    let bad = 0;
+    for (const row of entry.data)
+      for (const k of ["target", "actual", "noshow"])
+        if (state.map[k] && badCount(row[state.map[k]])) bad++;
+    if (bad) flagged.push(`${entry.file} (${bad})`);
+  }
+
   refresh();
   if (state.branches.length) {
     const missing = activeFields().filter(f => f.need && !state.map[f.key]).map(f => f.label);
     const groups = groupBranches().length;
     const many = state.branches.length > groups ? ` من ${state.branches.length} ملف` : "";
+    if (flagged.length)
+      toast(`قيَم غير مفهومة في هذه الملفات صارت صفرًا بدل رقم خاطئ — راجعها: ${flagged.join("، ")}`, "err");
     toast(missing.length ? `اربط الأعمدة الناقصة: ${missing.join("، ")}` : `جاهز: ${groups} فرع${many}`,
           missing.length ? "warn" : "");
   }
