@@ -53,6 +53,8 @@
 }
 
 *{box-sizing:border-box}
+/* .btn sets a display, which would otherwise win over the hidden attribute */
+[hidden]{display:none !important}
 /* the Arabic shell reads right to left; the report sheet inside it is a
    Latin document and stays left to right whatever wraps the page */
 html{direction:rtl}
@@ -111,6 +113,11 @@ label.fld{display:flex; flex-direction:column; gap:5px; font-size:11.5px; color:
 label.fld input{padding:7px 10px; border:1px solid var(--line); border-radius:7px; background:var(--card); font-size:14px; min-width:150px}
 label.fld input:focus{border-color:var(--brand)}
 label.check{display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--ink-2)}
+.logo-row{display:flex; align-items:center; gap:8px}
+.logo-chip{display:inline-flex; align-items:center; height:34px; padding:3px 7px; border-radius:7px;
+           background:#fff; border:1px solid var(--line)}
+.logo-chip img{height:100%; width:auto; max-width:120px; object-fit:contain; display:block}
+.btn-ghost{background:transparent}
 
 .note{display:flex; gap:8px; align-items:flex-start; font-size:12.5px; color:var(--ink-2); background:var(--sunk); border:1px solid var(--line-2); border-radius:8px; padding:9px 11px}
 .note.warn{background:var(--warn-soft); border-color:color-mix(in srgb, var(--warn) 32%, transparent); color:var(--ink)}
@@ -155,7 +162,7 @@ label.check{display:flex; align-items:center; gap:8px; font-size:13.5px; color:v
   --dash:#c3bfd5;       /* the "–" that stands for a zero                 */
   --rule:#d9d5e8;       /* row hairline                                   */
   --stripe:#faf9fd;     /* even-row wash                                  */
-  --key:#f3f1fa;        /* TOTAL SEEN + TOTAL ORDERS columns              */
+  --key:#f3f1fa;        /* the TOTAL SEEN column                          */
   --band:#eae7f5;       /* subtotal row                                   */
   --track:#e4e0f0;      /* meter track                                    */
   --gold:#c07a2a;       /* the date, % of branch, the "system" tag        */
@@ -171,8 +178,9 @@ label.check{display:flex; align-items:center; gap:8px; font-size:13.5px; color:v
 .page,.page *{-webkit-print-color-adjust:exact !important; color-adjust:exact !important; print-color-adjust:exact !important}
 
 .band{height:32.8pt; background:var(--nav); border-radius:3.5pt; color:#fff; display:flex; align-items:center; padding:0 10.4pt 0 7.5pt; margin-bottom:6.4pt}
-.band .mark{width:17pt; height:17pt; flex:none; margin-inline-end:5pt}
-.band .mark svg{width:100%; height:100%; display:block}
+.band .mark{flex:none; height:24pt; max-width:92pt; margin-inline-end:6pt; padding:2.5pt 3.5pt;
+            border-radius:3pt; background:#fff; display:flex; align-items:center}
+.band .mark img{height:100%; width:auto; max-width:85pt; object-fit:contain; display:block}
 .band .who h1{font:700 9.21pt/1.18 var(--fs); letter-spacing:.065em; color:#fff}
 .band .who p{margin:1.4pt 0 0; font:400 6.91pt/1.15 var(--fs); color:var(--tint-1); white-space:pre-wrap}
 .band .when{margin-inline-start:auto; text-align:right}
@@ -192,7 +200,7 @@ label.check{display:flex; align-items:center; gap:8px; font-size:13.5px; color:v
 .rep td{padding:1.45pt 2.3pt; border-bottom:.5pt solid var(--rule); text-align:center; font:400 7.48pt/1.05 var(--fr); vertical-align:middle}
 .rep .c-prov{text-align:left; font:400 6.91pt/1.1 var(--fs); color:var(--ink-doc); overflow-wrap:anywhere}
 .rep .c-dept{text-align:left; font:400 6.33pt/1.1 var(--fs); color:var(--ink-mut); overflow-wrap:anywhere}
-.rep .c-seen,.rep .c-orders{background:var(--key); font-weight:700}
+.rep .c-seen{background:var(--key); font-weight:700}
 .rep .c-net{font-weight:700; color:var(--nav)}
 .rep .c-pd{text-align:left; white-space:nowrap}
 .rep .c-pb{font:700 6.91pt/1.1 var(--fs); color:var(--gold)}
@@ -261,9 +269,13 @@ label.check{display:flex; align-items:center; gap:8px; font-size:13.5px; color:v
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M9 7V5h6v2m-8 0 1 13h8l1-13"/></svg>
     مسح والبدء من جديد
   </button>
+  <button class="btn" id="bSave" disabled>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 19h16"/></svg>
+    حفظ الملف
+  </button>
   <button class="btn btn-main" id="bPdf" disabled>
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V4h12v5M6 18v2h12v-2M4 9h16v9H4z"/></svg>
-    تحميل PDF
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3h-7v18h13V9zm0 0v6h6M9.5 13.5h5M9.5 17h3"/></svg>
+    فتح الـPDF
   </button>
 </div>
 
@@ -296,6 +308,15 @@ label.check{display:flex; align-items:center; gap:8px; font-size:13.5px; color:v
         <label class="fld"><span>إلى تاريخ</span><input type="date" id="inTo"></label>
         <label class="fld"><span>حسابات النظام تُعرَف بكلمة — مفصولة بفاصلة</span><input type="text" id="inSys" value="Registration"></label>
         <label class="fld" style="flex:1 1 220px"><span>اسم ملف الـPDF</span><input type="text" id="inName" placeholder="Al_Suwaidi_Physician_Detail"></label>
+        <div class="fld">
+          <span>شعار الترويسة</span>
+          <div class="logo-row">
+            <button type="button" class="btn btn-sm" id="bLogo">ارفع الشعار</button>
+            <button type="button" class="btn btn-sm btn-ghost" id="bLogoClear" hidden>إزالة</button>
+            <span class="logo-chip"><img id="logoPrev" alt="الشعار الحالي"></span>
+          </div>
+        </div>
+        <input type="file" id="fileLogo" accept="image/png,image/svg+xml,image/jpeg,image/webp" hidden>
       </div>
       <div class="note"><span class="m"></span><span id="assume">تُملأ هذه الخانات من الملف تلقائيًا، وما تكتبه هنا يبقى مقدَّمًا عليها.</span></div>
     </div>
@@ -662,29 +683,38 @@ const TPL = {
   source: "Meena PHC — Cluster 2  ·  Source: MIS “Service wise Count – Detailed Category Wise”",
 };
 const COLS = [
-  { key: "prov",   head: "PROVIDER",         w: "17.19%", cls: "c-prov", left: true },
-  { key: "dept",   head: "DEPARTMENT",       w: "13.75%", cls: "c-dept", left: true },
-  { key: "seen",   head: "TOTAL SEEN",       w: "6.04%",  cls: "c-seen" },
-  { key: "lab",    head: "LAB",              w: "2.31%",  cls: "c-n" },
-  { key: "rad",    head: "RADIOLOGY",        w: "5.82%",  cls: "c-n" },
-  { key: "proc",   head: "PROCEDURES",       w: "6.62%",  cls: "c-n" },
-  { key: "dent",   head: "DENTAL",           w: "4.02%",  cls: "c-n" },
-  { key: "phys",   head: "PHYSIO",           w: "3.81%",  cls: "c-n" },
-  { key: "home",   head: "HOME CARE",        w: "5.82%",  cls: "c-n" },
-  { key: "other",  head: "OTHER",            w: "3.54%",  cls: "c-n" },
-  { key: "orders", head: "TOTAL ORDERS",     w: "7.40%",  cls: "c-orders" },
-  { key: "net",    head: "NET INCOME (SAR)", w: "8.78%",  cls: "c-net" },
-  { key: "pd",     head: "% OF DEPT",        w: "8.12%",  cls: "c-pd", left: true },
-  { key: "pb",     head: "% OF BRANCH",      w: "6.77%",  cls: "c-pb" },
+  { key: "prov",   head: "PROVIDER",         w: "18.56%", cls: "c-prov", left: true },
+  { key: "dept",   head: "DEPARTMENT",       w: "14.85%", cls: "c-dept", left: true },
+  { key: "seen",   head: "TOTAL SEEN",       w: "6.52%",  cls: "c-seen" },
+  { key: "lab",    head: "LAB",              w: "2.49%",  cls: "c-n" },
+  { key: "rad",    head: "RADIOLOGY",        w: "6.28%",  cls: "c-n" },
+  { key: "proc",   head: "PROCEDURES",       w: "7.15%",  cls: "c-n" },
+  { key: "dent",   head: "DENTAL",           w: "4.34%",  cls: "c-n" },
+  { key: "phys",   head: "PHYSIO",           w: "4.11%",  cls: "c-n" },
+  { key: "home",   head: "HOME CARE",        w: "6.28%",  cls: "c-n" },
+  { key: "other",  head: "OTHER",            w: "3.82%",  cls: "c-n" },
+  { key: "net",    head: "NET INCOME (SAR)", w: "9.48%",  cls: "c-net" },
+  { key: "pd",     head: "% OF DEPT",        w: "8.77%",  cls: "c-pd", left: true },
+  { key: "pb",     head: "% OF BRANCH",      w: "7.31%",  cls: "c-pb" },
 ];
 const DASH = "–";
 const nf = n => Math.round(n).toLocaleString("en-US");
 const pct1 = v => (Math.round(v * 10) / 10).toFixed(1) + "%";
 
-const MARK = '<svg viewBox="0 0 24 24">'
-  + '<path fill="#fff" d="M12 21.2C6.4 17.4 3 14 3 10.1A4.8 4.8 0 0 1 7.9 5.3c1.7 0 3.2.8 4.1 2.1a5 5 0 0 1 4.1-2.1A4.8 4.8 0 0 1 21 10.1c0 3.9-3.4 7.3-9 11.1z"/>'
-  + '<path fill="none" stroke="#2d2460" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" d="M5.6 11.6h2.5l1.4-3.1 2.3 6.2 1.7-4 1 .9h3.9"/>'
-  + "</svg>";
+/* The Meena mark, drawn as the two-tone ribbon M. Upload the brand file in the
+   settings and it replaces this everywhere, in the sheet and in the PDF. */
+const MARK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 100" width="120" height="100">'
+  + '<g fill="none" stroke-width="28" stroke-linecap="round">'
+  + '<path stroke="#c6bee3" d="M67 86V43a19 19 0 0 1 38 0v43"/>'
+  + '<path stroke="#6c5ba8" d="M15 86V43a19 19 0 0 1 38 0v43"/>'
+  + "</g></svg>";
+const MARK = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(MARK_SVG);
+const LOGO_KEY = "aogh_physician_logo";
+const store = {
+  get() { try { return localStorage.getItem(LOGO_KEY); } catch { return null; } },
+  set(v) { try { v ? localStorage.setItem(LOGO_KEY, v) : localStorage.removeItem(LOGO_KEY); } catch {} },
+};
+let logoSrc = store.get() || MARK;
 
 function cell(cls, node) {
   const td = el("td", cls);
@@ -704,7 +734,7 @@ function providerRow(p) {
   if (p.system) prov.append(el("span", "tag", "system"));
   tr.append(prov, cell("c-dept", p.dept), numCell("c-seen", p.seen));
   CATS.forEach(c => tr.append(numCell("c-n", p.cnt[c.key] || 0)));
-  tr.append(cell("c-orders", nf(p.orders)), cell("c-net", nf(p.net)));
+  tr.append(cell("c-net", nf(p.net)));
   const pd = el("td", "c-pd"), wrap = el("div", "wrap");
   const track = el("div", "meter"), fill = el("i");
   fill.style.width = Math.max(0, Math.min(100, p.pctDept)).toFixed(2) + "%";
@@ -718,8 +748,7 @@ function subtotalRow(d) {
   const tr = el("tr", "sub");
   tr.append(cell("c-prov", d.name + " — subtotal"), cell("c-dept", d.list.length + " provider(s)"), numCell("c-seen", d.sum.seen));
   CATS.forEach(c => tr.append(numCell("c-n", d.sum.cnt[c.key] || 0)));
-  tr.append(cell("c-orders", nf(d.sum.orders)), cell("c-net", nf(d.sum.net)),
-            cell("c-pd", "100.0%"), cell("c-pb", pct1(d.sum.pctBranch)));
+  tr.append(cell("c-net", nf(d.sum.net)), cell("c-pd", "100.0%"), cell("c-pb", pct1(d.sum.pctBranch)));
   return tr;
 }
 function grandRow(data) {
@@ -728,8 +757,7 @@ function grandRow(data) {
             cell("c-dept", data.total.providers + " providers · " + data.depts.length + " departments"),
             numCell("c-seen", data.total.seen));
   CATS.forEach(c => tr.append(numCell("c-n", data.total.cnt[c.key] || 0)));
-  tr.append(cell("c-orders", nf(data.total.orders)), cell("c-net", nf(data.total.net)),
-            cell("c-pd", "—"), cell("c-pb", "100.0%"));
+  tr.append(cell("c-net", nf(data.total.net)), cell("c-pd", "—"), cell("c-pb", "100.0%"));
   return tr;
 }
 
@@ -749,7 +777,7 @@ function modelRows(data) {
 function footnoteText(data, meta) {
   let t = "“Total Seen” comes from the MIS Appointment Statistics – Doctor Wise export for the same period; "
         + "a “" + DASH + "” means no appointment records (walk-in activity booked under the ER registration account). "
-        + "“Total Orders” excludes consultation fees. “% of Dept” is the provider’s share of their own department’s net income, "
+        + "Order counts exclude consultation fees. “% of Dept” is the provider’s share of their own department’s net income, "
         + "“% of Branch” their share of the " + nf(data.total.net) + " SAR branch total.";
   if (!data.hasPharmacy) t += " No pharmacy category exists in this MIS export.";
   if (meta.days > 1) t += " Figures are totals for the " + meta.days + " days of the period, not a daily average.";
@@ -761,7 +789,8 @@ function buildPage(opts) {
   const page = el("section", "page");
 
   const band = el("div", "band");
-  const mark = el("div", "mark"); mark.innerHTML = MARK;
+  const mark = el("div", "mark"), img = el("img");
+  img.src = logoSrc; img.alt = ""; mark.append(img);
   const who = el("div", "who");
   who.append(el("h1", null, TPL.org), el("p", null, meta.branch + " Branch  |  " + TPL.kind));
   const when = el("div", "when");
@@ -872,6 +901,290 @@ function fitStage() {
   box.style.height = host.getBoundingClientRect().height + "px";
 }
 
+/* ═════════════════ PDF writer ═════════════════
+   The sheets are already laid out on screen, so the PDF is drawn from that
+   layout rather than from a second copy of the geometry: every box, rule and
+   line of text is read back off the rendered DOM and written out as PDF
+   operators. What you see in the preview is what lands in the file.
+
+   Text uses the base-14 faces, which is why the sheet asks for Arial and Times
+   New Roman: they carry the same widths as Helvetica and Times, so a line
+   measured in the browser sets to the same length on the page. */
+const latin1 = str => { const u = new Uint8Array(str.length); for (let i = 0; i < str.length; i++) u[i] = str.charCodeAt(i) & 255; return u; };
+const WINANSI = { 0x2013: 0x96, 0x2014: 0x97, 0x2018: 0x91, 0x2019: 0x92, 0x201C: 0x93, 0x201D: 0x94,
+                  0x2022: 0x95, 0x2026: 0x85, 0x00B7: 0xB7, 0x2039: 0x8B, 0x203A: 0x9B, 0x00A0: 0x20 };
+function pdfText(t) {
+  let out = "";
+  for (const ch of t) {
+    let c = ch.codePointAt(0);
+    if (c > 255) c = WINANSI[c] ?? 0x3F;
+    if (c === 40 || c === 41 || c === 92) out += "\\";
+    out += String.fromCharCode(c);
+  }
+  return out;
+}
+const f2 = n => String(Math.round(n * 100) / 100);
+function rgbOf(css) {
+  const m = /rgba?\(([^)]+)\)/.exec(css || "");
+  if (!m) return null;
+  const p = m[1].split(",").map(parseFloat);
+  if (p.length > 3 && !(p[3] > 0.02)) return null;
+  return [p[0] / 255, p[1] / 255, p[2] / 255];
+}
+const fillOp = c => `${f2(c[0])} ${f2(c[1])} ${f2(c[2])} rg\n`;
+const boxOp = (x, y, w, h) => `${f2(x)} ${f2(y)} ${f2(w)} ${f2(h)} re f\n`;
+function pillOp(x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  const k = r * 0.5523;
+  return `${f2(x + r)} ${f2(y)} m\n`
+    + `${f2(x + w - r)} ${f2(y)} l\n${f2(x + w - r + k)} ${f2(y)} ${f2(x + w)} ${f2(y + r - k)} ${f2(x + w)} ${f2(y + r)} c\n`
+    + `${f2(x + w)} ${f2(y + h - r)} l\n${f2(x + w)} ${f2(y + h - r + k)} ${f2(x + w - r + k)} ${f2(y + h)} ${f2(x + w - r)} ${f2(y + h)} c\n`
+    + `${f2(x + r)} ${f2(y + h)} l\n${f2(x + r - k)} ${f2(y + h)} ${f2(x)} ${f2(y + h - r + k)} ${f2(x)} ${f2(y + h - r)} c\n`
+    + `${f2(x)} ${f2(y + r)} l\n${f2(x)} ${f2(y + r - k)} ${f2(x + r - k)} ${f2(y)} ${f2(x + r)} ${f2(y)} c\nh f\n`;
+}
+
+/* Adobe's own widths for the base-14 faces, in WinAnsi order from 0x20 up.
+   They let the writer work out how long a run sets in the PDF and scale it
+   to the length the browser measured, so a machine without Arial still
+   produces a sheet whose columns line up. */
+const W32 = {
+  F1: "278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584,350,556,350,222,556,333,1000,556,556,333,1000,667,333,1000,350,611,350,350,222,222,333,333,350,556,1000,333,1000,500,333,944,350,500,667,278,333,556,556,556,556,260,556,333,737,370,556,584,333,737,333,400,584,333,333,333,556,537,278,333,333,365,556,834,834,834,611,667,667,667,667,667,667,1000,722,667,667,667,667,278,278,278,278,722,722,778,778,778,778,778,584,778,722,722,722,722,667,667,611,556,556,556,556,556,556,889,500,556,556,556,556,278,278,278,278,556,556,556,556,556,556,556,584,611,556,556,556,556,500,556,500"
+    .split(",").map(Number),
+  F2: "278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,389,280,389,584,350,556,350,278,556,500,1000,556,556,333,1000,667,333,1000,350,611,350,350,278,278,500,500,350,556,1000,333,1000,556,333,944,350,500,667,278,333,556,556,556,556,280,556,333,737,370,556,584,333,737,333,400,584,333,333,333,611,556,278,333,333,365,556,834,834,834,611,722,722,722,722,722,722,1000,722,667,667,667,667,278,278,278,278,722,722,778,778,778,778,778,584,778,722,722,722,722,667,667,611,556,556,556,556,556,556,889,556,556,556,556,556,278,278,278,278,611,611,611,611,611,611,611,584,611,611,611,611,611,556,611,556"
+    .split(",").map(Number),
+  F4: "250,333,408,500,500,833,778,180,333,333,500,564,250,333,250,278,500,500,500,500,500,500,500,500,500,500,278,278,564,564,564,444,921,722,667,667,722,611,556,722,722,333,389,722,611,889,722,722,556,722,667,556,611,722,722,944,722,722,611,333,278,333,469,500,333,444,500,444,500,444,333,500,500,278,278,500,278,778,500,500,500,500,333,389,278,500,500,722,500,500,444,480,200,480,541,350,500,350,333,500,444,1000,500,500,333,1000,556,333,889,350,611,350,350,333,333,444,444,350,500,1000,333,980,389,333,722,350,444,722,250,333,500,500,500,500,200,500,333,760,276,500,564,333,760,333,400,564,300,300,333,500,453,250,333,300,310,500,750,750,750,444,722,722,722,722,722,722,889,667,611,611,611,611,333,333,333,333,722,722,722,722,722,722,722,564,722,722,722,722,722,722,556,500,444,444,444,444,444,444,667,444,444,444,444,444,278,278,278,278,500,500,500,500,500,500,500,564,500,500,500,500,500,500,500,500"
+    .split(",").map(Number),
+  F5: "250,333,555,500,500,1000,833,278,333,333,500,570,250,333,250,278,500,500,500,500,500,500,500,500,500,500,333,333,570,570,570,500,930,722,667,722,722,667,611,778,778,389,500,778,667,944,722,778,611,778,722,556,667,722,722,1000,722,722,667,333,278,333,581,500,333,500,556,444,556,444,333,500,556,278,333,556,278,833,556,500,556,556,444,389,333,556,500,722,500,500,444,394,220,394,520,350,500,350,333,500,500,1000,500,500,333,1000,556,333,1000,350,667,350,350,333,333,500,500,350,500,1000,333,1000,389,333,722,350,444,722,250,333,500,500,500,500,220,500,333,747,300,500,570,333,747,333,400,570,300,300,333,556,540,250,333,300,330,500,750,750,750,500,722,722,722,722,722,722,1000,722,667,667,667,667,389,389,389,389,722,722,778,778,778,778,778,570,778,722,722,722,722,722,611,556,500,500,500,500,500,500,722,444,444,444,444,444,278,278,278,278,500,556,500,500,500,500,500,570,500,556,556,556,556,500,556,500"
+    .split(",").map(Number),
+};
+W32.F3 = W32.F1;
+
+/* base-14 metrics: where the baseline sits inside the box a Range reports */
+const FACE = {
+  sans:  { asc: 0.905, desc: 0.212, plain: "F1", bold: "F2", italic: "F3" },
+  serif: { asc: 0.891, desc: 0.216, plain: "F4", bold: "F5", italic: "F4" },
+};
+
+/* how long the run sets in the chosen base-14 face, before any scaling */
+function runWidth(str, font, size, track) {
+  let units = 0;
+  for (const ch of str) {
+    let c = ch.codePointAt(0);
+    if (c > 255) c = WINANSI[c] ?? 0x3F;
+    units += c >= 32 ? (W32[font][c - 32] ?? 500) : 0;
+  }
+  return units / 1000 * size + track * str.length;
+}
+
+function drawText(node, ops, ox, oy, H) {
+  const raw = node.nodeValue;
+  if (!raw || !raw.trim()) return;
+  const parent = node.parentElement;
+  if (!parent) return;
+  const cs = getComputedStyle(parent);
+  const col = rgbOf(cs.color) || [0, 0, 0];
+  const size = parseFloat(cs.fontSize) * 0.75;
+  const fam = cs.fontFamily.toLowerCase();
+  const face = FACE[/serif|times/.test(fam) && !/sans/.test(fam) ? "serif" : "sans"];
+  const bold = (parseInt(cs.fontWeight, 10) || 400) >= 600;
+  const font = bold ? face.bold : cs.fontStyle === "italic" ? face.italic : face.plain;
+  const track = parseFloat(cs.letterSpacing) * 0.75 || 0;
+  const pre = /^(pre|pre-wrap|break-spaces)$/.test(cs.whiteSpace);
+  const text = pre ? raw : raw.replace(/\s+/g, " ").replace(/^ +/, "");
+  if (!text) return;
+
+  const range = document.createRange();
+  /* measure exactly the characters that will be written, leading and trailing
+     whitespace left out, so the run is scaled against its own drawn width */
+  const from = raw.search(/\S/), to = raw.search(/\s*$/);
+  range.setStart(node, Math.max(0, from));
+  range.setEnd(node, Math.max(0, to));
+  const rects = [...range.getClientRects()].filter(r => r.width > 0.05 && r.height > 0.05);
+  if (!rects.length) return;
+
+  const put = (str, rect) => {
+    str = str.replace(/\s+$/, "");
+    if (!str) return;
+    const base = rect.top + rect.height * face.asc / (face.asc + face.desc);
+    const natural = runWidth(str, font, size, track);
+    const want = rect.width * 0.75;
+    /* the browser may have set this in a face other than the one the PDF
+       carries; stretch the run to the width it actually occupies */
+    const scale = natural > 0.1 ? Math.min(2, Math.max(0.5, want / natural)) : 1;
+    /* character spacing and horizontal scaling live in the graphics state and
+       outlast BT/ET, so every run states its own or it inherits the last one */
+    ops.push("BT\n" + fillOp(col) + `/${font} ${f2(size)} Tf\n`
+      + `${f2(track)} Tc\n${f2(scale * 100)} Tz\n`
+      + `${f2((rect.left - ox) * 0.75)} ${f2(H - (base - oy) * 0.75)} Td\n`
+      + `(${pdfText(str)}) Tj\nET\n`);
+  };
+
+  if (rects.length === 1) { put(text, rects[0]); return; }
+
+  /* a cell that wrapped: walk the characters and group them by their line */
+  const lines = [];
+  for (let i = 0; i < raw.length; i++) {
+    range.setStart(node, i); range.setEnd(node, i + 1);
+    const r = range.getBoundingClientRect();
+    if (!r.width) continue;
+    const line = lines.find(l => Math.abs(l.top - r.top) < 0.6);
+    if (line) { line.text += raw[i]; line.left = Math.min(line.left, r.left); line.right = Math.max(line.right, r.right); }
+    else lines.push({ text: raw[i], top: r.top, height: r.height, left: r.left, right: r.right });
+  }
+  lines.forEach(l => put(l.text, { top: l.top, height: l.height, left: l.left, width: l.right - l.left }));
+}
+
+function drawBox(elm, ops, ox, oy, H, images) {
+  const cs = getComputedStyle(elm);
+  if (cs.display === "none" || cs.visibility === "hidden") return false;
+  const r = elm.getBoundingClientRect();
+  if (r.width <= 0 || r.height <= 0) return true;
+  const X = (r.left - ox) * 0.75, Y = H - (r.bottom - oy) * 0.75;
+  const W = r.width * 0.75, Hh = r.height * 0.75;
+
+  const bg = rgbOf(cs.backgroundColor);
+  if (bg) {
+    const rad = (parseFloat(cs.borderTopLeftRadius) || 0) * 0.75;
+    ops.push(fillOp(bg) + (rad > 0.4 ? pillOp(X, Y, W, Hh, rad) : boxOp(X, Y, W, Hh)));
+  }
+  for (const side of ["Top", "Bottom"]) {
+    const w = parseFloat(cs[`border${side}Width`]) || 0;
+    if (!w || cs[`border${side}Style`] === "none") continue;
+    const c = rgbOf(cs[`border${side}Color`]);
+    if (!c) continue;
+    ops.push(fillOp(c) + boxOp(X, side === "Top" ? Y + Hh - w * 0.75 : Y, W, w * 0.75));
+  }
+  if (elm.tagName === "IMG" && elm.currentSrc) images.push({ src: elm.currentSrc, X, Y, W, H: Hh });
+  return true;
+}
+
+function walkSheet(node, ops, ox, oy, H, images) {
+  if (node.nodeType === 3) { drawText(node, ops, ox, oy, H); return; }
+  if (node.nodeType !== 1) return;
+  if (!drawBox(node, ops, ox, oy, H, images)) return;
+  for (const child of node.childNodes) walkSheet(child, ops, ox, oy, H, images);
+}
+
+/* the mark is drawn into a canvas at four times its printed size and carried
+   as a JPEG, which keeps one image path for the built-in mark and an uploaded
+   brand file alike */
+async function rasterize(src, wPt, hPt) {
+  const img = new Image();
+  await new Promise((ok, fail) => { img.onload = ok; img.onerror = fail; img.src = src; });
+  const iw = img.naturalWidth || 300, ih = img.naturalHeight || 100;
+  const cw = Math.max(1, Math.round(wPt * 4)), ch = Math.max(1, Math.round(hPt * 4));
+  const cv = document.createElement("canvas");
+  cv.width = cw; cv.height = ch;
+  const cx = cv.getContext("2d");
+  cx.fillStyle = "#fff"; cx.fillRect(0, 0, cw, ch);
+  const s = Math.min(cw / iw, ch / ih), dw = iw * s, dh = ih * s;
+  cx.drawImage(img, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
+  const url = cv.toDataURL("image/jpeg", 0.95), bin = atob(url.slice(url.indexOf(",") + 1));
+  const u8 = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  return { bytes: u8, w: cw, h: ch };
+}
+
+const FONTS = [["F1", "Helvetica"], ["F2", "Helvetica-Bold"], ["F3", "Helvetica-Oblique"],
+               ["F4", "Times-Roman"], ["F5", "Times-Bold"]];
+
+async function makePdf(title) {
+  const host = $("#doc"), keep = host.style.transform;
+  host.style.transform = "none";                     // measure the sheets at 1:1
+  const sheets = [];
+  try {
+    for (const page of host.querySelectorAll(".page")) {
+      const box = page.getBoundingClientRect();
+      const W = box.width * 0.75, H = box.height * 0.75;
+      const ops = [], images = [];
+      walkSheet(page, ops, box.left, box.top, H, images);
+      sheets.push({ W, H, ops, images });
+    }
+  } finally { host.style.transform = keep; }   // the preview goes back to size
+  for (const s of sheets) for (const im of s.images) {
+    try { im.data = await rasterize(im.src, im.W, im.H); } catch { im.data = null; }
+  }
+
+  /* one shared image object per distinct picture keeps the file small */
+  const pool = new Map();
+  sheets.forEach(s => s.images.forEach(im => {
+    if (!im.data) return;
+    const key = im.src + "|" + im.data.w + "x" + im.data.h;
+    if (!pool.has(key)) pool.set(key, im.data);
+    im.key = key;
+  }));
+
+  const chunks = [];
+  let len = 0;
+  const push = d => { const u = typeof d === "string" ? latin1(d) : d; chunks.push(u); len += u.length; };
+  const offsets = [];
+  let next = 1;
+  const reserve = () => next++;
+  const open = n => { offsets[n] = len; push(`${n} 0 obj\n`); };
+  const close = () => push("\nendobj\n");
+
+  const catalogId = reserve(), pagesId = reserve(), infoId = reserve();
+  const fontIds = FONTS.map(() => reserve());
+  const imgIds = new Map([...pool.keys()].map(k => [k, reserve()]));
+  const pageIds = sheets.map(() => ({ page: reserve(), body: reserve() }));
+
+  push("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n");
+  open(catalogId); push(`<< /Type /Catalog /Pages ${pagesId} 0 R >>`); close();
+  open(pagesId);
+  push(`<< /Type /Pages /Count ${sheets.length} /Kids [ ${pageIds.map(p => p.page + " 0 R").join(" ")} ] >>`);
+  close();
+  open(infoId);
+  push(`<< /Title (${pdfText(title)}) /Producer (Meena PHC report page) /Creator (Meena PHC report page) >>`);
+  close();
+  FONTS.forEach(([, name], i) => {
+    open(fontIds[i]);
+    push(`<< /Type /Font /Subtype /Type1 /BaseFont /${name} /Encoding /WinAnsiEncoding >>`);
+    close();
+  });
+  for (const [key, id] of imgIds) {
+    const im = pool.get(key);
+    open(id);
+    push(`<< /Type /XObject /Subtype /Image /Width ${im.w} /Height ${im.h} /ColorSpace /DeviceRGB `
+       + `/BitsPerComponent 8 /Filter /DCTDecode /Length ${im.bytes.length} >>\nstream\n`);
+    push(im.bytes);
+    push("\nendstream");
+    close();
+  }
+  sheets.forEach((s, i) => {
+    let body = s.ops.join("");
+    s.images.forEach(im => {
+      const id = im.key && imgIds.get(im.key);
+      if (id) body += `q\n${f2(im.W)} 0 0 ${f2(im.H)} ${f2(im.X)} ${f2(im.Y)} cm\n/X${id} Do\nQ\n`;
+    });
+    const used = [...new Set(s.images.map(im => im.key && imgIds.get(im.key)).filter(Boolean))];
+    open(pageIds[i].body);
+    push(`<< /Length ${latin1(body).length} >>\nstream\n`);
+    push(body);
+    push("\nendstream");
+    close();
+    open(pageIds[i].page);
+    push(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${f2(s.W)} ${f2(s.H)}] `
+       + `/Resources << /Font << ${FONTS.map(([n], k) => `/${n} ${fontIds[k]} 0 R`).join(" ")} >>`
+       + (used.length ? ` /XObject << ${used.map(id => `/X${id} ${id} 0 R`).join(" ")} >>` : "")
+       + ` >> /Contents ${pageIds[i].body} 0 R >>`);
+    close();
+  });
+
+  const xref = len;
+  const count = next;
+  let table = `xref\n0 ${count}\n0000000000 65535 f \n`;
+  for (let i = 1; i < count; i++) table += String(offsets[i] ?? 0).padStart(10, "0") + " 00000 n \n";
+  push(table);
+  push(`trailer\n<< /Size ${count} /Root ${catalogId} 0 R /Info ${infoId} 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+
+  const out = new Uint8Array(len);
+  let at = 0;
+  for (const c of chunks) { out.set(c, at); at += c.length; }
+  return new Blob([out], { type: "application/pdf" });
+}
+
+window.__makePdf = makePdf;   // the repo's browser checks build a file without clicking
+
 /* ═════════════════ state and wiring ═════════════════ */
 const state = { files: [], sheets: [], mis: null, appt: null, data: null, touched: {}, pages: 0 };
 
@@ -927,7 +1240,7 @@ function refresh() {
   if (state.err) host.append(noticeBox("bad", state.err));
   if (!state.mis) {
     $("#stage").hidden = true; $("#noPreview").hidden = false;
-    $("#bPdf").disabled = true; $("#bClear").disabled = !state.files.length;
+    $("#bPdf").disabled = true; $("#bSave").disabled = true; $("#bClear").disabled = !state.files.length;
     $("#st3").textContent = "";
     return;
   }
@@ -949,7 +1262,7 @@ function refresh() {
 
   $("#stage").hidden = false; $("#noPreview").hidden = true;
   state.pages = renderDoc(d, m);
-  $("#bPdf").disabled = false; $("#bClear").disabled = false;
+  $("#bPdf").disabled = false; $("#bSave").disabled = false; $("#bClear").disabled = false;
   $("#st3").textContent = state.pages + (state.pages === 1 ? " صفحة" : " صفحات");
 
   tiles.append(
@@ -1037,16 +1350,66 @@ $("#bClear").onclick = () => {
   refresh();
 };
 
-/* Chrome names the saved file after the document title, so borrow it for the
-   length of the print dialog and hand it straight back. */
-$("#bPdf").onclick = () => {
+/* The file opens in a tab of its own, where the browser's PDF viewer already
+   offers share, save and print — no print dialog in the way. */
+async function deliverPdf(save) {
   if (!state.data) return;
-  const keep = document.title;
-  document.title = fileName(meta());
-  const back = () => { document.title = keep; removeEventListener("afterprint", back); };
-  addEventListener("afterprint", back);
-  setTimeout(() => { window.print(); setTimeout(back, 1500); }, 30);
+  const name = fileName(meta());
+  /* the tab has to be opened inside the click, before any await, or the
+     browser treats it as a pop-up and blocks it */
+  const tab = save ? null : window.open("", "_blank");
+  const btn = save ? $("#bSave") : $("#bPdf");
+  const label = btn.lastChild.textContent;
+  btn.lastChild.textContent = " يُبنى الملف… ";
+  btn.disabled = true;
+  try {
+    const blob = await makePdf(name);
+    const url = URL.createObjectURL(blob);
+    if (!save && tab) tab.location = url;
+    else {
+      const a = document.createElement("a");
+      a.href = url; a.download = name + ".pdf"; a.style.display = "none";
+      document.body.append(a); a.click(); a.remove();
+      if (!save) toast("المتصفح منع فتح تبويب جديد — نُزِّل الملف بدلًا من ذلك.", "");
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 120000);
+  } catch (e) {
+    if (tab) tab.close();
+    toast("تعذّر بناء الـPDF: " + e.message, "bad");
+  } finally {
+    btn.lastChild.textContent = label;
+    btn.disabled = false;
+  }
+}
+$("#bPdf").onclick = () => deliverPdf(false);
+$("#bSave").onclick = () => deliverPdf(true);
+
+/* the brand file replaces the built-in mark, and stays for the next visit */
+function paintLogo() {
+  $("#logoPrev").src = logoSrc;
+  $("#bLogoClear").hidden = logoSrc === MARK;
+}
+$("#bLogo").onclick = () => $("#fileLogo").click();
+$("#fileLogo").onchange = () => {
+  const f = $("#fileLogo").files[0];
+  $("#fileLogo").value = "";
+  if (!f) return;
+  if (f.size > 900 * 1024) { toast("الشعار أكبر من ٩٠٠ كيلوبايت — اختر نسخة أصغر.", "bad"); return; }
+  const fr = new FileReader();
+  fr.onload = () => {
+    logoSrc = String(fr.result);
+    store.set(logoSrc);
+    paintLogo();
+    if (state.data) refresh();
+    toast("رُكِّب الشعار في الترويسة.", "ok");
+  };
+  fr.readAsDataURL(f);
 };
+$("#bLogoClear").onclick = () => {
+  logoSrc = MARK; store.set(null); paintLogo();
+  if (state.data) refresh();
+};
+paintLogo();
 
 addEventListener("resize", () => { if (state.data) fitStage(); });
 refresh();
