@@ -197,7 +197,7 @@ label.check{display:flex; align-items:center; gap:8px; font-size:13.5px; color:v
 .rep{width:100%; border-collapse:collapse; table-layout:fixed}
 .rep th{background:var(--nav); color:#fff; font:700 5.76pt/1 var(--fs); text-transform:uppercase; padding:3.7pt 2.3pt; text-align:center; white-space:nowrap; overflow:hidden}
 .rep th.l{text-align:left}
-.rep td{padding:1.45pt 2.3pt; border-bottom:.5pt solid var(--rule); text-align:center; font:400 7.48pt/1.05 var(--fr); vertical-align:middle}
+.rep td{padding:1.35pt 2.3pt; border-bottom:.5pt solid var(--rule); text-align:center; font:400 7.48pt/1.05 var(--fr); vertical-align:middle}
 .rep .c-prov{text-align:left; font:400 6.91pt/1.1 var(--fs); color:var(--ink-doc); overflow-wrap:anywhere}
 .rep .c-dept{text-align:left; font:400 6.33pt/1.1 var(--fs); color:var(--ink-mut); overflow-wrap:anywhere}
 .rep .c-seen{background:var(--key); font-weight:700}
@@ -318,6 +318,7 @@ label.check{display:flex; align-items:center; gap:8px; font-size:13.5px; color:v
         </div>
         <input type="file" id="fileLogo" accept="image/png,image/svg+xml,image/jpeg,image/webp" hidden>
       </div>
+      <label class="check"><input type="checkbox" id="cPack" checked> بكج العلاج الطبيعي يُحسب جلسة واحدة — لا بعدد الجلسات التي يغطيها</label>
       <div class="note"><span class="m"></span><span id="assume">تُملأ هذه الخانات من الملف تلقائيًا، وما تكتبه هنا يبقى مقدَّمًا عليها.</span></div>
     </div>
   </section>
@@ -547,7 +548,7 @@ function aggregate(mis, appt, opts) {
   const g = mis.sheet.grid, c = mis.col;
   const people = new Map();     // department + provider ⇢ figures
   const dates = [];
-  let cat = null, skipped = 0, feeNet = 0;
+  let cat = null, skipped = 0, feeNet = 0, packRows = 0, packRaw = 0;
 
   for (let i = mis.headerRow + 1; i < g.length; i++) {
     const row = g[i] || [], first = String(row[0] ?? "").trim();
@@ -570,8 +571,21 @@ function aggregate(mis, appt, opts) {
     const cnt = Math.round(num(row[c.count])), net = c.net >= 0 ? num(row[c.net]) : 0;
     p.net += net;
     if (bucket === "fee") { p.fee += net; feeNet += net; }
-    else { const k = bucket || "other"; p.cnt[k] = (p.cnt[k] || 0) + cnt; }
+    else {
+      const k = bucket || "other";
+      /* A physiotherapy package is billed once for the whole course, and its
+         Count carries the sessions it pays for — six, in this branch's export.
+         The patient attended once on that bill date, and the appointments
+         export already counts that one visit, so the line counts as one
+         session here too. The money is untouched: the package is earned on the
+         day it was billed. */
+      const pack = opts.packOne !== false && k === "phys" && cnt > 1;
+      if (pack) { packRows++; packRaw += cnt; }
+      p.cnt[k] = (p.cnt[k] || 0) + (pack ? 1 : cnt);
+    }
   }
+  if (packRows) notices.push({ kind: "", text: "العلاج الطبيعي: " + packRows + " بكجًا حُسب كل واحد منها جلسة واحدة "
+    + "بدل " + packRaw + " جلسة — الدخل كما هو." });
   if (skipped) notices.push({ kind: "warn", text: skipped + " صفًا بلا اسم مقدّم خدمة أو بلا قسم — لم تدخل الجدول." });
   if (unknownCats.size) notices.push({ kind: "warn", text: "فئة غير معروفة في الملف: " + [...unknownCats].join("، ") + " — أُدرجت في عمود OTHER." });
   if (!seenCats.size) notices.push({ kind: "bad", text: "لم يجد الملف أسطر «Category:» — تأكد أنه تصدير «Service wise Count – Detailed Category Wise»." });
@@ -633,7 +647,7 @@ function aggregate(mis, appt, opts) {
 
   dates.sort((a, b) => a - b);
   return {
-    depts, total, notices, feeNet,
+    depts, total, notices, feeNet, packRows, packRaw,
     billFrom: dates.length ? new Date(dates[0]) : null,
     billTo: dates.length ? new Date(dates[dates.length - 1]) : null,
     billDays: new Set(dates).size,
@@ -779,8 +793,9 @@ function footnoteText(data, meta) {
         + "a “" + DASH + "” means no appointment records (walk-in activity booked under the ER registration account). "
         + "Order counts exclude consultation fees. “% of Dept” is the provider’s share of their own department’s net income, "
         + "“% of Branch” their share of the " + nf(data.total.net) + " SAR branch total.";
+  if (data.packRows) t += " A physiotherapy package counts as one session, not as the sessions it covers; its income is counted in full.";
   if (!data.hasPharmacy) t += " No pharmacy category exists in this MIS export.";
-  if (meta.days > 1) t += " Figures are totals for the " + meta.days + " days of the period, not a daily average.";
+  if (meta.days > 1) t += " Figures are totals for the period, not daily averages.";
   return t;
 }
 
@@ -1245,7 +1260,7 @@ function refresh() {
     return;
   }
   const m = meta();
-  state.data = aggregate(state.mis, state.appt, { sysWords: val("#inSys") });
+  state.data = aggregate(state.mis, state.appt, { sysWords: val("#inSys"), packOne: $("#cPack").checked });
   const d = state.data;
 
   if (!state.touched.branch) $("#inBranch").value = state.wbBranch || "";
@@ -1319,7 +1334,7 @@ async function takeFiles(files) {
   /* the appointments header carries the requested period; when it is missing,
      the Bill Date lines in the services export stand in for it */
   if (!state.wbFrom) {
-    const probe = aggregate(state.mis, state.appt, { sysWords: val("#inSys") });
+    const probe = aggregate(state.mis, state.appt, { sysWords: val("#inSys"), packOne: $("#cPack").checked });
     state.wbFrom = probe.billFrom; state.wbTo = probe.billTo;
   }
   refresh();
@@ -1428,6 +1443,7 @@ $("#bLogoClear").onclick = () => {
 };
 paintLogo();
 
+$("#cPack").onchange = () => { if (state.mis) refresh(); };
 addEventListener("resize", () => { if (state.data) fitStage(); });
 refresh();
 })();
