@@ -53,6 +53,10 @@
 }
 
 *{box-sizing:border-box}
+/* the Arabic shell reads right to left; the report sheet inside it is a
+   Latin document and stays left to right whatever wraps the page */
+html{direction:rtl}
+#doc{direction:ltr}
 body{margin:0; background:var(--paper); color:var(--ink); font-family:var(--f-body); font-size:15px; line-height:1.65; -webkit-font-smoothing:antialiased}
 h1,h2,h3{font-family:var(--f-display); font-weight:700; margin:0; line-height:1.35; text-wrap:balance}
 button,input,select{font:inherit; color:inherit}
