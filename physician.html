@@ -528,7 +528,19 @@ const CATS = [
   { key: "other", label: "OTHER",      test: /^other/ },
 ];
 const FEE_CAT = /doctor fee|physician fee|consultation|^cons\b/;
-const catOf = name => { const n = norm(name); if (FEE_CAT.test(n)) return "fee"; const hit = CATS.find(c => c.test.test(n)); return hit ? hit.key : null; };
+const PACK_CAT = /package|بكج/;
+const bucketOf = name => { const hit = CATS.find(c => c.test.test(norm(name))); return hit ? hit.key : null; };
+/* A category the map does not name is placed by the department that billed it —
+   an unnamed service billed by Physiotherapy is physiotherapy work — and only
+   what neither the category nor the department places falls to OTHER. */
+const catOf = (cat, dept) => {
+  const n = norm(cat);
+  if (FEE_CAT.test(n)) return { key: "fee", byName: true, pack: false };
+  const pack = PACK_CAT.test(n);
+  const hit = pack ? null : bucketOf(n);
+  if (hit) return { key: hit, byName: true, pack: false };
+  return { key: bucketOf(dept) || "other", byName: false, pack };
+};
 
 const nameKey = s => norm(s);
 const bigrams = s => { const g = []; for (let i = 0; i < s.length - 1; i++) g.push(s.slice(i, i + 2)); return g; };
@@ -544,7 +556,7 @@ function similarity(a, b) {
 }
 
 function aggregate(mis, appt, opts) {
-  const notices = [], unknownCats = new Set(), seenCats = new Set();
+  const notices = [], unknownCats = new Map(), seenCats = new Set();
   const g = mis.sheet.grid, c = mis.col;
   const people = new Map();     // department + provider ⇢ figures
   const dates = [];
@@ -563,8 +575,15 @@ function aggregate(mis, appt, opts) {
       continue;
     }
 
-    const bucket = cat == null ? null : catOf(cat);
-    if (cat != null && bucket == null) unknownCats.add(cat);
+    const placed = cat == null ? null : catOf(cat, dept);
+    const bucket = placed && placed.key;
+    /* a category the map does not name is worth reporting whichever way it
+       was placed, since the department decided its column, not the template */
+    if (placed && !placed.byName) {
+      const u = unknownCats.get(cat) || { rows: 0, net: 0, cols: new Set(), pack: placed.pack };
+      u.rows++; u.net += c.net >= 0 ? num(row[c.net]) : 0; u.cols.add(bucket);
+      unknownCats.set(cat, u);
+    }
     const key = dept + "   " + provider;
     let p = people.get(key);
     if (!p) { p = { dept, name: provider, cnt: {}, net: 0, fee: 0 }; people.set(key, p); }
@@ -579,15 +598,22 @@ function aggregate(mis, appt, opts) {
          export already counts that one visit, so the line counts as one
          session here too. The money is untouched: the package is earned on the
          day it was billed. */
-      const pack = opts.packOne !== false && k === "phys" && cnt > 1;
+      /* either the category says package outright, or it is a physiotherapy
+         line billed for more than one session — the six-session course */
+      const pack = opts.packOne !== false && (placed.pack || (k === "phys" && cnt > 1));
       if (pack) { packRows++; packRaw += cnt; }
       p.cnt[k] = (p.cnt[k] || 0) + (pack ? 1 : cnt);
     }
   }
-  if (packRows) notices.push({ kind: "", text: "العلاج الطبيعي: " + packRows + " بكجًا حُسب كل واحد منها جلسة واحدة "
-    + "بدل " + packRaw + " جلسة — الدخل كما هو." });
-  if (skipped) notices.push({ kind: "warn", text: skipped + " صفًا بلا اسم مقدّم خدمة أو بلا قسم — لم تدخل الجدول." });
-  if (unknownCats.size) notices.push({ kind: "warn", text: "فئة غير معروفة في الملف: " + [...unknownCats].join("، ") + " — أُدرجت في عمود OTHER." });
+  if (packRows) notices.push({ kind: "", text: "البكجات: " + arabicCount(packRows, "بكج واحد", "بكجان", "بكجات", "بكجًا")
+    + " حُسب كل واحد منها جلسة واحدة بدل " + arabicCount(packRaw, "جلسة واحدة", "جلستين", "جلسات", "جلسة") + " — الدخل كما هو." });
+  if (skipped) notices.push({ kind: "warn", text: arabicCount(skipped, "صف واحد", "صفان", "صفوف", "صفًّا") + " بلا اسم مقدّم خدمة أو بلا قسم — لم تدخل الجدول." });
+  for (const [name, u] of unknownCats) {
+    const cols = [...u.cols].map(k => (CATS.find(c => c.key === k) || {}).label || "OTHER").join(" · ");
+    notices.push({ kind: u.pack ? "" : "warn",
+      text: "فئة «" + name + "»: " + arabicCount(u.rows, "صف واحد", "صفان", "صفوف", "صفًّا") + " بـ " + nf(u.net) + " ريالًا، وُضعت بحسب قسم كل صف في "
+          + cols + (u.pack ? "، وحُسب كل صف جلسة واحدة." : " — القالب لا يعرف هذه الفئة بالاسم.") });
+  }
   if (!seenCats.size) notices.push({ kind: "bad", text: "لم يجد الملف أسطر «Category:» — تأكد أنه تصدير «Service wise Count – Detailed Category Wise»." });
 
   /* TOTAL SEEN rides in from the appointments export, matched on the name. */
@@ -604,6 +630,16 @@ function aggregate(mis, appt, opts) {
   for (const p of people.values()) {
     const k = nameKey(p.name), direct = seenBy.get(k);
     if (direct) { p.seen = direct.n; direct.used = true; continue; }
+    /* "Abdulaziz Omar" in one export and "Abdulaziz Omar Jubair" in the other
+       are one person: a name of two words or more that opens exactly one name
+       on the other side matches it. One shared word is never enough. */
+    const opens = [...seenBy.keys()].filter(ok => k.split(" ").length > 1
+      && (ok.startsWith(k + " ") || k.startsWith(ok + " ")) && ok.split(" ").length > 1);
+    if (opens.length === 1) {
+      const rec = seenBy.get(opens[0]);
+      p.seen = rec.n; rec.used = true; fuzzy.push(p.name + " ← " + rec.raw);
+      continue;
+    }
     let best = null, score = 0;
     for (const [ok, rec] of seenBy) { const s = similarity(k, ok); if (s > score) { score = s; best = rec; } }
     if (best && score >= 0.82) { p.seen = best.n; best.used = true; fuzzy.push(p.name + " ← " + best.raw); }
@@ -793,7 +829,7 @@ function footnoteText(data, meta) {
         + "a “" + DASH + "” means no appointment records (walk-in activity booked under the ER registration account). "
         + "Order counts exclude consultation fees. “% of Dept” is the provider’s share of their own department’s net income, "
         + "“% of Branch” their share of the " + nf(data.total.net) + " SAR branch total.";
-  if (data.packRows) t += " A physiotherapy package counts as one session, not as the sessions it covers; its income is counted in full.";
+  if (data.packRows) t += " A package counts as one session, not as the sessions it covers; its income is counted in full.";
   if (!data.hasPharmacy) t += " No pharmacy category exists in this MIS export.";
   if (meta.days > 1) t += " Figures are totals for the period, not daily averages.";
   return t;
@@ -1222,7 +1258,9 @@ function fileName(m) {
   return (m.branch.replace(/\s+/g, "_") + "_Physician_Detail_" + tag).replace(/[\\/:*?"<>|]/g, "");
 }
 
-const arabicDays = n => n === 1 ? "يوم واحد" : n === 2 ? "يومان" : n <= 10 ? n + " أيام" : n + " يومًا";
+/* Arabic counts one, two, a few and many differently */
+const arabicCount = (n, one, two, few, many) => n === 1 ? one : n === 2 ? two : n <= 10 ? n + " " + few : n + " " + many;
+const arabicDays = n => arabicCount(n, "يوم واحد", "يومان", "أيام", "يومًا");
 
 const LTR_RUN = /[A-Za-z0-9][A-Za-z0-9 ,.:;()[\]'’\-–—/&%+“”"«»]*[A-Za-z0-9%)\]”"»]|[A-Za-z0-9]/g;
 function bidiText(text) {
