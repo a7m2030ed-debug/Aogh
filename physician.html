@@ -1350,6 +1350,22 @@ $("#bClear").onclick = () => {
   refresh();
 };
 
+/* Published inside a claude.ai artifact the page runs in a frame that may not
+   open tabs or start downloads itself, so there the finished file is handed to
+   the host instead. Served from its own address, this resolves to nothing and
+   the ordinary path runs. */
+const framed = () => typeof window.claude?.use === "function";
+async function hostSave(name, blob) {
+  const downloads = await window.claude.use("downloads").catch(() => null);
+  if (!downloads) return false;
+  try { await downloads.save({ filename: name, data: blob }); }
+  catch (e) {
+    toast(e?.code === "declined" ? "أُلغي الحفظ."
+        : "لا يمكن تسليم الملف من هذه النسخة — افتح الصفحة من رابطها المنشور.", "bad");
+  }
+  return true;
+}
+
 /* The file opens in a tab of its own, where the browser's PDF viewer already
    offers share, save and print — no print dialog in the way. */
 async function deliverPdf(save) {
@@ -1357,13 +1373,14 @@ async function deliverPdf(save) {
   const name = fileName(meta());
   /* the tab has to be opened inside the click, before any await, or the
      browser treats it as a pop-up and blocks it */
-  const tab = save ? null : window.open("", "_blank");
+  const tab = save || framed() ? null : window.open("", "_blank");
   const btn = save ? $("#bSave") : $("#bPdf");
   const label = btn.lastChild.textContent;
   btn.lastChild.textContent = " يُبنى الملف… ";
   btn.disabled = true;
   try {
     const blob = await makePdf(name);
+    if (framed() && await hostSave(name + ".pdf", blob)) return;
     const url = URL.createObjectURL(blob);
     if (!save && tab) tab.location = url;
     else {
