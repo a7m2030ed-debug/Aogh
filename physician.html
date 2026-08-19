@@ -1,0 +1,1056 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تقرير الأطباء التفصيلي — قالب PDF + إكسل</title>
+<style>
+/* ═══════════════ page shell (the Arabic UI around the report) ═══════════════ */
+:root{
+  color-scheme: light;
+  --paper:#EEF0F6; --card:#FFFFFF; --sunk:#F5F6FA;
+  --ink:#131834; --ink-2:#4B5273; --ink-3:#7C84A4;
+  --line:#DDE1EC; --line-2:#EAEDF4;
+  --brand:#2E3A8C; --brand-2:#4551B8; --brand-ink:#1E2668; --brand-soft:#E5E8F8; --on-brand:#FFFFFF;
+  --seal:#96671A; --seal-soft:#F4EAD6;
+  --good:#1C7A55; --good-soft:#DFF1E9;
+  --warn:#8E640F; --warn-soft:#F7EBD3;
+  --crit:#A82838; --crit-soft:#FAE1E4;
+  --shadow:0 1px 2px rgba(19,24,52,.05), 0 10px 26px -14px rgba(19,24,52,.20);
+  --shadow-lg:0 2px 6px rgba(19,24,52,.08), 0 28px 60px -20px rgba(19,24,52,.32);
+  --radius:10px;
+  --f-display:"Noto Kufi Arabic","Sakkal Majalla","Segoe UI",Tahoma,sans-serif;
+  --f-body:"Noto Sans Arabic","Segoe UI",Tahoma,Arial,sans-serif;
+  --f-mono:ui-monospace,"Cascadia Mono","SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --paper:#0B0E1B; --card:#141829; --sunk:#101425;
+    --ink:#E8EBF5; --ink-2:#AAB2CE; --ink-3:#7B84A5;
+    --line:#252B44; --line-2:#1C2135;
+    --brand:#6F7CE0; --brand-2:#8E99EE; --brand-ink:#AAB3F5; --brand-soft:#1B2144; --on-brand:#0B0E1B;
+    --seal:#D5A94F; --seal-soft:#2A2314;
+    --good:#4FBE8E; --good-soft:#13291F;
+    --warn:#D8AC4A; --warn-soft:#2A2313;
+    --crit:#E8697C; --crit-soft:#2E1520;
+    --shadow:0 1px 2px rgba(0,0,0,.45), 0 10px 26px -14px rgba(0,0,0,.7);
+    --shadow-lg:0 2px 6px rgba(0,0,0,.5), 0 28px 60px -20px rgba(0,0,0,.75);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --paper:#0B0E1B; --card:#141829; --sunk:#101425;
+  --ink:#E8EBF5; --ink-2:#AAB2CE; --ink-3:#7B84A5;
+  --line:#252B44; --line-2:#1C2135;
+  --brand:#6F7CE0; --brand-2:#8E99EE; --brand-ink:#AAB3F5; --brand-soft:#1B2144; --on-brand:#0B0E1B;
+  --seal:#D5A94F; --seal-soft:#2A2314;
+  --good:#4FBE8E; --good-soft:#13291F;
+  --warn:#D8AC4A; --warn-soft:#2A2313;
+  --crit:#E8697C; --crit-soft:#2E1520;
+  --shadow:0 1px 2px rgba(0,0,0,.45), 0 10px 26px -14px rgba(0,0,0,.7);
+  --shadow-lg:0 2px 6px rgba(0,0,0,.5), 0 28px 60px -20px rgba(0,0,0,.75);
+}
+
+*{box-sizing:border-box}
+/* the Arabic shell reads right to left; the report sheet inside it is a
+   Latin document and stays left to right whatever wraps the page */
+html{direction:rtl}
+#doc{direction:ltr}
+body{margin:0; background:var(--paper); color:var(--ink); font-family:var(--f-body); font-size:15px; line-height:1.65; -webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--f-display); font-weight:700; margin:0; line-height:1.35; text-wrap:balance}
+button,input,select{font:inherit; color:inherit}
+:focus-visible{outline:2px solid var(--brand); outline-offset:2px; border-radius:4px}
+
+.bar{
+  position:sticky; top:0; z-index:40; display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  padding:12px 20px; background:color-mix(in srgb, var(--card) 88%, transparent);
+  backdrop-filter:blur(10px); border-bottom:1px solid var(--line);
+}
+.brand{display:flex; align-items:center; gap:10px; margin-inline-end:auto}
+.seal{width:34px; height:34px; flex:none; border-radius:9px; background:var(--brand); color:var(--on-brand); display:grid; place-items:center}
+.seal svg{width:20px; height:20px}
+.brand h1{font-size:17px; letter-spacing:-.01em}
+.brand p{margin:0; font-size:12px; color:var(--ink-3)}
+
+.btn{
+  display:inline-flex; align-items:center; gap:7px; padding:8px 15px; border-radius:8px; cursor:pointer;
+  border:1px solid var(--line); background:var(--card); color:var(--ink);
+  font-size:14px; font-weight:600; white-space:nowrap; transition:background .15s, border-color .15s, transform .08s;
+}
+.btn:hover:not([disabled]){border-color:color-mix(in srgb, var(--brand) 45%, var(--line))}
+.btn:active:not([disabled]){transform:translateY(1px)}
+.btn[disabled]{opacity:.42; cursor:not-allowed}
+.btn-main{background:var(--brand); border-color:var(--brand); color:var(--on-brand)}
+.btn-main:hover:not([disabled]){background:var(--brand-ink); border-color:var(--brand-ink)}
+.btn svg{width:15px; height:15px; flex:none}
+
+.shell{max-width:1240px; margin:0 auto; padding:22px 20px 60px; display:flex; flex-direction:column; gap:16px}
+.step{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden}
+.step > header{
+  display:flex; align-items:center; gap:11px; padding:12px 16px; border-bottom:1px solid var(--line-2);
+  background:linear-gradient(to bottom, color-mix(in srgb, var(--brand-soft) 55%, var(--card)), var(--card));
+}
+.step > header .n{width:23px; height:23px; flex:none; border-radius:6px; display:grid; place-items:center; background:var(--brand); color:var(--on-brand); font-size:12px; font-weight:700; font-family:var(--f-display)}
+.step.done > header .n{background:var(--good)}
+.step > header h2{font-size:14.5px}
+.step > header .state{margin-inline-start:auto; font-size:12.5px; color:var(--ink-3)}
+.step .body{padding:16px; display:flex; flex-direction:column; gap:14px}
+
+.drop{
+  border:1.5px dashed color-mix(in srgb, var(--brand) 40%, var(--line)); border-radius:9px; background:var(--sunk);
+  padding:20px 16px; text-align:center; cursor:pointer; display:flex; flex-direction:column; gap:4px;
+  transition:background .15s, border-color .15s;
+}
+.drop:hover,.drop.hot{background:var(--brand-soft); border-color:var(--brand)}
+.drop strong{font-size:14px; font-weight:600}
+.drop span{font-size:12px; color:var(--ink-3); font-family:var(--f-mono)}
+
+.row{display:flex; gap:12px; flex-wrap:wrap}
+label.fld{display:flex; flex-direction:column; gap:5px; font-size:11.5px; color:var(--ink-3)}
+label.fld input{padding:7px 10px; border:1px solid var(--line); border-radius:7px; background:var(--card); font-size:14px; min-width:150px}
+label.fld input:focus{border-color:var(--brand)}
+label.check{display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--ink-2)}
+
+.note{display:flex; gap:8px; align-items:flex-start; font-size:12.5px; color:var(--ink-2); background:var(--sunk); border:1px solid var(--line-2); border-radius:8px; padding:9px 11px}
+.note.warn{background:var(--warn-soft); border-color:color-mix(in srgb, var(--warn) 32%, transparent); color:var(--ink)}
+.note.bad{background:var(--crit-soft); border-color:color-mix(in srgb, var(--crit) 32%, transparent); color:var(--ink)}
+.note b{font-weight:600}
+.note .m{flex:none; width:6px; height:6px; margin-top:7px; border-radius:50%; background:var(--brand)}
+.note.warn .m{background:var(--warn)} .note.bad .m{background:var(--crit)}
+.empty{margin:0; color:var(--ink-3); font-size:13.5px}
+
+.chips{display:flex; flex-wrap:wrap; gap:7px}
+.chip{display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:4px 10px; border-radius:99px; background:var(--sunk); border:1px solid var(--line-2); color:var(--ink-2)}
+.chip b{font-weight:600; color:var(--ink)}
+.chip.ok{background:var(--good-soft); border-color:color-mix(in srgb, var(--good) 30%, transparent)}
+
+.tiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px}
+.tile{background:var(--sunk); border:1px solid var(--line-2); border-radius:9px; padding:10px 12px}
+.tile span{display:block; font-size:11.5px; color:var(--ink-3)}
+.tile b{display:block; font-size:19px; font-weight:700; font-family:var(--f-display); letter-spacing:-.01em}
+
+#toasts{position:fixed; inset-block-end:18px; inset-inline-start:18px; z-index:90; display:flex; flex-direction:column; gap:8px}
+.toast{background:var(--card); border:1px solid var(--line); border-inline-start:3px solid var(--brand); border-radius:8px; box-shadow:var(--shadow-lg); padding:10px 14px; font-size:13.5px; max-width:min(420px,86vw)}
+.toast.bad{border-inline-start-color:var(--crit)}
+.toast.ok{border-inline-start-color:var(--good)}
+
+/* the rendered report is scaled down to fit the preview column */
+#stage{background:var(--sunk); border:1px solid var(--line-2); border-radius:9px; padding:14px; overflow:hidden}
+#stageBox{position:relative}
+#doc{transform-origin:top left}
+#doc .page{box-shadow:var(--shadow-lg); margin-bottom:14pt}
+
+/* ═══════════════ the report itself — a rebuild of the PDF template ═══════════════
+   Every colour, size and offset below was measured off the supplied
+   Al Suwaidi "Physician Detail — Single Table" PDF, so the output keeps the
+   template's design whatever period the workbook covers. Sizes are in points
+   because the page is a point-sized sheet (A4 landscape = 841.89 × 595.28 pt). */
+#doc{
+  --nav:#2d2460;        /* header band, table head, branch-total row      */
+  --nav-2:#7061ab;      /* section badge, meter fill, subtotal hairlines  */
+  --ink-doc:#1e1b33;    /* body ink                                       */
+  --ink-mut:#6b6880;    /* notes, department cell, footer                 */
+  --ink-slab:#3d3a55;   /* lede line                                      */
+  --dash:#c3bfd5;       /* the "–" that stands for a zero                 */
+  --rule:#d9d5e8;       /* row hairline                                   */
+  --stripe:#faf9fd;     /* even-row wash                                  */
+  --key:#f3f1fa;        /* TOTAL SEEN + TOTAL ORDERS columns              */
+  --band:#eae7f5;       /* subtotal row                                   */
+  --track:#e4e0f0;      /* meter track                                    */
+  --gold:#c07a2a;       /* the date, % of branch, the "system" tag        */
+  --tint-1:#c9c3e8; --tint-2:#b6aedc;
+  --fs:"Liberation Sans",Arial,Helvetica,sans-serif;
+  --fr:"Liberation Serif","Times New Roman",Times,serif;
+}
+.page{
+  position:relative; width:841.89pt; height:594.6pt; background:#fff; color:var(--ink-doc);
+  padding:18.4pt 20.7pt 0; overflow:hidden;
+  font-family:var(--fs); direction:ltr; text-align:left; unicode-bidi:isolate;
+}
+.page,.page *{-webkit-print-color-adjust:exact !important; color-adjust:exact !important; print-color-adjust:exact !important}
+
+.band{height:32.8pt; background:var(--nav); border-radius:3.5pt; color:#fff; display:flex; align-items:center; padding:0 10.4pt 0 7.5pt; margin-bottom:6.4pt}
+.band .mark{width:17pt; height:17pt; flex:none; margin-inline-end:5pt}
+.band .mark svg{width:100%; height:100%; display:block}
+.band .who h1{font:700 9.21pt/1.18 var(--fs); letter-spacing:.065em; color:#fff}
+.band .who p{margin:1.4pt 0 0; font:400 6.91pt/1.15 var(--fs); color:var(--tint-1); white-space:pre-wrap}
+.band .when{margin-inline-start:auto; text-align:right}
+.band .when b{display:block; font:700 7.48pt/1.2 var(--fs); color:var(--gold)}
+.band .when span{display:block; margin-top:1.8pt; font:400 5.76pt/1.15 var(--fs); color:var(--tint-2)}
+
+.sect{display:flex; align-items:center; gap:0; margin-bottom:1.6pt}
+.sect .badge{width:11pt; height:10.9pt; flex:none; border-radius:3pt; background:var(--nav-2); color:#fff; font:700 6.33pt/10.9pt var(--fs); text-align:center}
+.sect b{font:700 8.06pt/1.2 var(--fs); color:var(--nav)}
+.sect i{font:400 6.91pt/1.2 var(--fs); color:var(--ink-mut); font-style:normal}
+.lede{margin:0 0 2.7pt; font:400 6.91pt/1.3 var(--fs); color:var(--ink-slab)}
+.lede b{font-weight:700}
+
+.rep{width:100%; border-collapse:collapse; table-layout:fixed}
+.rep th{background:var(--nav); color:#fff; font:700 5.76pt/1 var(--fs); text-transform:uppercase; padding:3.7pt 2.3pt; text-align:center; white-space:nowrap; overflow:hidden}
+.rep th.l{text-align:left}
+.rep td{padding:1.45pt 2.3pt; border-bottom:.5pt solid var(--rule); text-align:center; font:400 7.48pt/1.05 var(--fr); vertical-align:middle}
+.rep .c-prov{text-align:left; font:400 6.91pt/1.1 var(--fs); color:var(--ink-doc); overflow-wrap:anywhere}
+.rep .c-dept{text-align:left; font:400 6.33pt/1.1 var(--fs); color:var(--ink-mut); overflow-wrap:anywhere}
+.rep .c-seen,.rep .c-orders{background:var(--key); font-weight:700}
+.rep .c-net{font-weight:700; color:var(--nav)}
+.rep .c-pd{text-align:left; white-space:nowrap}
+.rep .c-pb{font:700 6.91pt/1.1 var(--fs); color:var(--gold)}
+.rep .nil{color:var(--dash)}
+.rep tbody tr.alt td{background:var(--stripe)}
+.rep .c-pd .wrap{display:flex; align-items:center; gap:2.8pt; height:7.6pt}
+.rep .meter{width:26.5pt; height:4pt; flex:none; border-radius:2pt; background:var(--track); overflow:hidden}
+.rep .meter i{display:block; height:100%; background:var(--nav-2); border-radius:2pt}
+.rep .pv{font:700 6.91pt/1 var(--fs); color:var(--nav)}
+.rep .tag{display:inline-block; margin-inline-start:1.7pt; padding:1.1pt 1.7pt; border-radius:2pt; background:var(--gold); color:#fff; font:400 4.61pt/1 var(--fs); vertical-align:middle; letter-spacing:.02em}
+
+.rep tbody tr.sub td{background:var(--band); border-top:.6pt solid var(--nav-2); border-bottom:.6pt solid var(--nav-2);
+               padding-block:.8pt; font:700 6.91pt/1.1 var(--fr); color:var(--nav)}
+.rep tbody tr.sub .c-prov{font-family:var(--fr); font-weight:700; color:var(--nav)}
+.rep tbody tr.sub .c-dept{font:700 6.91pt/1.15 var(--fs); color:var(--nav)}
+.rep tbody tr.sub .c-pd{font:700 6.91pt/1.15 var(--fr); color:var(--nav)}
+.rep tbody tr.sub .c-pb{font:700 6.91pt/1.15 var(--fs); color:var(--ink-doc)}
+.rep tbody tr.sub .nil{color:var(--nav)}
+
+.rep tbody tr.grand td{background:var(--nav); border-top:.6pt solid var(--nav-2); border-bottom:.6pt solid var(--nav-2);
+                 font:700 7.48pt/1.15 var(--fr); color:#fff}
+.rep tbody tr.grand .c-prov,.rep tbody tr.grand .c-dept{font-family:var(--fr); font-size:7.48pt; font-weight:700; color:#fff}
+/* the template prints this one cell in body ink on the navy bar, which reads as
+   a blank; white keeps the figure legible without touching anything else */
+.rep tbody tr.grand .c-pb{font:700 6.91pt/1.15 var(--fs); color:#fff}
+.rep tbody tr.grand .nil{color:#fff}
+
+.fnote{margin:3pt 0 0; font:italic 6.33pt/1.45 var(--fs); color:var(--ink-mut)}
+.pgfoot{
+  position:absolute; left:20.7pt; right:20.7pt; bottom:11.5pt; display:flex; justify-content:space-between; gap:12pt;
+  border-top:.5pt solid var(--rule); padding-top:4pt; font:400 5.76pt/1.2 var(--fs); color:var(--ink-mut); white-space:pre-wrap;
+}
+
+@page{size:A4 landscape; margin:0}
+/* everything but the sheets steps aside; the shell and the step that holds the
+   preview are flattened rather than hidden, since the sheets live inside them */
+@media print{
+  .bar, #toasts, #s1, #s2, #s3 > header, #notices, #tiles, #noPreview{display:none !important}
+  html,body{background:#fff}
+  .shell{display:block; max-width:none; margin:0; padding:0; gap:0}
+  #s3{border:0; border-radius:0; box-shadow:none; background:none; overflow:visible}
+  #s3 .body{display:block; padding:0; gap:0}
+  #stage{padding:0; border:0; background:none; overflow:visible}
+  #stageBox{height:auto !important}
+  #doc{transform:none !important}
+  #doc .page{box-shadow:none; margin:0; break-after:page; page-break-after:always}
+  #doc .page:last-child{break-after:auto; page-break-after:auto}
+}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="brand">
+    <div class="seal">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 13h3l2-4 2.6 8 2.2-6 1.3 2H20"/>
+      </svg>
+    </div>
+    <div>
+      <h1>تقرير الأطباء التفصيلي</h1>
+      <p>ملف MIS ← نفس قالب الـPDF، لأي مدة: يوم أو أسبوع أو شهر</p>
+    </div>
+  </div>
+  <button class="btn" id="bClear" disabled>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M9 7V5h6v2m-8 0 1 13h8l1-13"/></svg>
+    مسح والبدء من جديد
+  </button>
+  <button class="btn btn-main" id="bPdf" disabled>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V4h12v5M6 18v2h12v-2M4 9h16v9H4z"/></svg>
+    تحميل PDF
+  </button>
+</div>
+
+<div class="shell">
+
+  <section class="step" id="s1">
+    <header><span class="n">١</span><h2>ملف الإكسل</h2><span class="state" id="st1">لم يُرفع بعد</span></header>
+    <div class="body">
+      <div class="drop" id="dropX" tabindex="0" role="button">
+        <strong>اسحب ملف MIS هنا — أو انقر لاختياره</strong>
+        <span>xlsx · xlsm · csv</span>
+      </div>
+      <input type="file" id="fileX" accept=".xlsx,.xlsm,.csv" multiple hidden>
+      <div class="note">
+        <span class="m"></span>
+        <span>يحتاج التقرير ورقتين: <b>Service wise Count – Detailed Category Wise</b> للطلبات والدخل،
+        و<b>Appointment Statistics – Doctor Wise</b> لعمود <b>TOTAL SEEN</b>. الورقتان في مصنّف واحد كما في ملفك،
+        أو في ملفين تُرفعان معًا. المدة تُقرأ من الملف نفسه — يوم أو أسبوع أو شهر، لا فرق.</span>
+      </div>
+      <div id="fileInfo"></div>
+    </div>
+  </section>
+
+  <section class="step" id="s2">
+    <header><span class="n">٢</span><h2>إعدادات التقرير</h2></header>
+    <div class="body">
+      <div class="row">
+        <label class="fld"><span>اسم الفرع</span><input type="text" id="inBranch" placeholder="Al Suwaidi"></label>
+        <label class="fld"><span>من تاريخ</span><input type="date" id="inFrom"></label>
+        <label class="fld"><span>إلى تاريخ</span><input type="date" id="inTo"></label>
+        <label class="fld"><span>حسابات النظام تُعرَف بكلمة — مفصولة بفاصلة</span><input type="text" id="inSys" value="Registration"></label>
+        <label class="fld" style="flex:1 1 220px"><span>اسم ملف الـPDF</span><input type="text" id="inName" placeholder="Al_Suwaidi_Physician_Detail"></label>
+      </div>
+      <div class="note"><span class="m"></span><span id="assume">تُملأ هذه الخانات من الملف تلقائيًا، وما تكتبه هنا يبقى مقدَّمًا عليها.</span></div>
+    </div>
+  </section>
+
+  <section class="step" id="s3">
+    <header><span class="n">٣</span><h2>المعاينة</h2><span class="state" id="st3"></span></header>
+    <div class="body">
+      <div id="notices"></div>
+      <div id="tiles" class="tiles"></div>
+      <div id="stage" hidden><div id="stageBox"><div id="doc"></div></div></div>
+      <p class="empty" id="noPreview">ارفع ملف الإكسل لتظهر المعاينة.</p>
+    </div>
+  </section>
+</div>
+
+<div id="toasts" aria-live="polite"></div>
+
+<script>
+(() => {
+"use strict";
+
+/* ═════════════════ helpers ═════════════════ */
+const $ = (s, r = document) => r.querySelector(s);
+const el = (tag, cls, txt) => { const n = document.createElement(tag); if (cls) n.className = cls; if (txt != null) n.textContent = txt; return n; };
+function toast(msg, kind = "") {
+  const t = el("div", "toast " + kind, msg);
+  $("#toasts").append(t);
+  setTimeout(() => { t.style.opacity = 0; t.style.transition = "opacity .3s"; setTimeout(() => t.remove(), 320); }, 5200);
+}
+const pipe = (u8, tr) => new Response(new Blob([u8]).stream().pipeThrough(tr)).arrayBuffer().then(b => new Uint8Array(b));
+
+/* ═════════════════ workbook reader ═════════════════
+   Same in-browser zip reader the other pages use, widened to hand back every
+   sheet: this report needs two of them, and their names differ per export. */
+async function zipRead(ab) {
+  const u8 = new Uint8Array(ab), dv = new DataView(ab);
+  let e = -1;
+  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 66000); i--) if (dv.getUint32(i, true) === 0x06054b50) { e = i; break; }
+  if (e < 0) throw new Error("الملف ليس حزمة ZIP صالحة");
+  const count = dv.getUint16(e + 10, true);
+  let off = dv.getUint32(e + 16, true);
+  const dec = new TextDecoder(), map = new Map();
+  for (let n = 0; n < count; n++) {
+    if (dv.getUint32(off, true) !== 0x02014b50) break;
+    const method = dv.getUint16(off + 10, true), csize = dv.getUint32(off + 20, true);
+    const nl = dv.getUint16(off + 28, true), xl = dv.getUint16(off + 30, true), cl = dv.getUint16(off + 32, true);
+    const lho = dv.getUint32(off + 42, true);
+    const name = dec.decode(u8.subarray(off + 46, off + 46 + nl));
+    if (!name.endsWith("/")) map.set(name, { method, csize, lho });
+    off += 46 + nl + xl + cl;
+  }
+  const out = new Map();
+  for (const [name, it] of map) {
+    const nl = dv.getUint16(it.lho + 26, true), xl = dv.getUint16(it.lho + 28, true);
+    const raw = u8.subarray(it.lho + 30 + nl + xl, it.lho + 30 + nl + xl + it.csize);
+    if (it.method === 0) out.set(name, raw);
+    else if (it.method === 8) out.set(name, await pipe(raw, new DecompressionStream("deflate-raw")));
+    else throw new Error("ضغط غير مدعوم داخل الملف");
+  }
+  return out;
+}
+
+const colIdx = ref => { let n = 0; for (const ch of ref) { const c = ch.charCodeAt(0); if (c >= 65 && c <= 90) n = n * 26 + (c - 64); else break; } return n - 1; };
+const RT = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+
+function parseCsv(txt) {
+  if (txt.charCodeAt(0) === 0xFEFF) txt = txt.slice(1);
+  const grid = []; let row = [], cell = "", q = false;
+  for (let i = 0; i < txt.length; i++) {
+    const ch = txt[i];
+    if (q) { if (ch === '"') { if (txt[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === ",") { row.push(cell); cell = ""; }
+    else if (ch === "\n") { row.push(cell); grid.push(row); row = []; cell = ""; }
+    else if (ch !== "\r") cell += ch;
+  }
+  if (cell !== "" || row.length) { row.push(cell); grid.push(row); }
+  return grid.map(r => r.map(c => c.trim()));
+}
+
+async function readWorkbook(file) {
+  if (/\.csv$/i.test(file.name)) return [{ name: file.name.replace(/\.csv$/i, ""), grid: parseCsv(await file.text()) }];
+  const parts = await zipRead(await file.arrayBuffer());
+  const dec = new TextDecoder();
+  const doc = n => { const b = parts.get(n); return b ? new DOMParser().parseFromString(dec.decode(b), "application/xml") : null; };
+  const shared = [];
+  const ss = doc("xl/sharedStrings.xml");
+  if (ss) for (const si of ss.getElementsByTagName("si")) {
+    let s = "";
+    for (const t of si.getElementsByTagName("t")) if (t.parentNode.nodeName !== "rPh") s += t.textContent;
+    shared.push(s);
+  }
+  const wb = doc("xl/workbook.xml"), rels = doc("xl/_rels/workbook.xml.rels");
+  const target = new Map();
+  if (rels) for (const r of rels.getElementsByTagName("Relationship"))
+    target.set(r.getAttribute("Id"), "xl/" + r.getAttribute("Target").replace(/^\/?xl\//, "").replace(/^\//, ""));
+  const sheets = [];
+  if (wb) for (const sh of wb.getElementsByTagName("sheet")) {
+    const rid = sh.getAttribute("r:id") || sh.getAttributeNS(RT, "id");
+    const path = target.get(rid);
+    if (path && parts.has(path)) sheets.push({ name: sh.getAttribute("name") || "", path });
+  }
+  if (!sheets.length) for (const n of parts.keys())
+    if (/^xl\/worksheets\/[^/]+\.xml$/.test(n)) sheets.push({ name: n.split("/").pop().replace(/\.xml$/, ""), path: n });
+  if (!sheets.length) throw new Error("لا توجد ورقة عمل داخل الملف");
+
+  return sheets.map(s => {
+    const ws = doc(s.path), grid = [];
+    for (const row of ws.getElementsByTagName("row")) {
+      const cells = [];
+      for (const c of row.getElementsByTagName("c")) {
+        const r = c.getAttribute("r"), i = r ? colIdx(r) : cells.length, t = c.getAttribute("t");
+        let v = "";
+        if (t === "inlineStr") v = [...c.getElementsByTagName("t")].map(x => x.textContent).join("");
+        else { const vn = c.getElementsByTagName("v")[0], raw = vn ? vn.textContent : ""; v = t === "s" ? (shared[+raw] ?? "") : raw; }
+        cells[i] = String(v).trim();
+      }
+      for (let i = 0; i < cells.length; i++) if (cells[i] == null) cells[i] = "";
+      grid.push(cells);
+    }
+    return { name: s.name, grid };
+  });
+}
+
+/* ═════════════════ sheet shapes ═════════════════
+   Sheets are told apart by their header row, never by name: the MIS export
+   calls them MIS_Report and Sheet1, but a renamed copy has to work too. */
+const norm = s => String(s ?? "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+const num = v => { const n = parseFloat(String(v ?? "").replace(/[^\d.eE+-]/g, "")); return isFinite(n) ? n : 0; };
+const isNum = v => v !== "" && v != null && isFinite(parseFloat(String(v).replace(/[^\d.eE+-]/g, "")));
+
+function findHeader(grid, want) {
+  for (let i = 0; i < Math.min(grid.length, 40); i++) {
+    const cells = (grid[i] || []).map(norm);
+    if (want.every(w => cells.some(c => w.test(c)))) return i;
+  }
+  return -1;
+}
+const pick = (header, re) => header.findIndex(h => re.test(norm(h)));
+
+const MIS_WANT = [/^provider$/, /^department$/, /^count$/];
+const APPT_WANT = [/^resource name$|^doctor$|^provider$/, /^totalseen$|^total seen$|^seen$/];
+
+function shapeMis(sheet) {
+  const h = findHeader(sheet.grid, MIS_WANT);
+  if (h < 0) return null;
+  const head = sheet.grid[h];
+  return {
+    sheet, headerRow: h,
+    col: {
+      sub: pick(head, /^subcategory$/), name: pick(head, /^test procedurename$|^test procedure name$|^service$/),
+      code: pick(head, /^service code$/), provider: pick(head, /^provider$/), dept: pick(head, /^department$/),
+      count: pick(head, /^count$/), net: pick(head, /^net amount$/), gross: pick(head, /^gross amount$/),
+    },
+  };
+}
+function shapeAppt(sheet) {
+  const h = findHeader(sheet.grid, APPT_WANT);
+  if (h < 0) return null;
+  const head = sheet.grid[h];
+  return {
+    sheet, headerRow: h,
+    col: {
+      dept: pick(head, /^department name$|^department$/), name: pick(head, /^resource name$|^doctor$|^provider$/),
+      seen: pick(head, /^totalseen$|^total seen$|^seen$/),
+    },
+  };
+}
+
+/* ═════════════════ dates ═════════════════ */
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const MON3 = MONTHS.map(m => m.slice(0, 3));
+function parseDate(s) {
+  const t = String(s ?? "").trim();
+  let m = /^(\d{1,2})[-/\s]([A-Za-z]{3,})[-/\s](\d{4})/.exec(t);
+  if (m) { const mon = m[2].slice(0, 3).toLowerCase(); const mi = MON3.findIndex(x => x.toLowerCase() === mon); if (mi >= 0) return new Date(Date.UTC(+m[3], mi, +m[1])); }
+  m = /^(\d{4})-(\d{2})-(\d{2})/.exec(t);
+  if (m) return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+  m = /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/.exec(t);
+  if (m) return new Date(Date.UTC(+m[3], +m[2] - 1, +m[1]));
+  return null;
+}
+const iso = d => d ? d.toISOString().slice(0, 10) : "";
+const D = d => d.getUTCDate(), M = d => d.getUTCMonth(), Y = d => d.getUTCFullYear();
+
+/* "17 – 18 August 2026" in the band, "17–18 Aug 2026" in the footer — the two
+   forms the template uses, widened to spans that cross a month or a year. */
+function rangeLabel(a, b, short) {
+  if (!a && !b) return "";
+  if (!a) a = b; if (!b) b = a;
+  const mon = d => short ? MON3[M(d)] : MONTHS[M(d)];
+  if (+a === +b) return D(a) + " " + mon(a) + " " + Y(a);
+  if (Y(a) === Y(b) && M(a) === M(b)) return D(a) + (short ? "–" : " – ") + D(b) + " " + mon(b) + " " + Y(b);
+  if (Y(a) === Y(b)) return D(a) + " " + mon(a) + " – " + D(b) + " " + mon(b) + " " + Y(b);
+  return D(a) + " " + mon(a) + " " + Y(a) + " – " + D(b) + " " + mon(b) + " " + Y(b);
+}
+const spanDays = (a, b) => (a && b) ? Math.round((b - a) / 864e5) + 1 : 0;
+
+/* ═════════════════ the report's own arithmetic ═════════════════ */
+const CATS = [
+  { key: "lab",   label: "LAB",        test: /laborator|^lab\b/ },
+  { key: "rad",   label: "RADIOLOGY",  test: /radiolog|imaging/ },
+  { key: "proc",  label: "PROCEDURES", test: /procedure/ },
+  { key: "dent",  label: "DENTAL",     test: /dental|dentistry/ },
+  { key: "phys",  label: "PHYSIO",     test: /physio|rehab/ },
+  { key: "home",  label: "HOME CARE",  test: /home/ },
+  { key: "other", label: "OTHER",      test: /^other/ },
+];
+const FEE_CAT = /doctor fee|physician fee|consultation|^cons\b/;
+const catOf = name => { const n = norm(name); if (FEE_CAT.test(n)) return "fee"; const hit = CATS.find(c => c.test.test(n)); return hit ? hit.key : null; };
+
+const nameKey = s => norm(s);
+const bigrams = s => { const g = []; for (let i = 0; i < s.length - 1; i++) g.push(s.slice(i, i + 2)); return g; };
+function similarity(a, b) {
+  a = nameKey(a); b = nameKey(b);
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  const A = bigrams(a), B = bigrams(b);
+  if (!A.length || !B.length) return 0;
+  const pool = [...B]; let hit = 0;
+  for (const g of A) { const i = pool.indexOf(g); if (i >= 0) { pool.splice(i, 1); hit++; } }
+  return (2 * hit) / (A.length + B.length);
+}
+
+function aggregate(mis, appt, opts) {
+  const notices = [], unknownCats = new Set(), seenCats = new Set();
+  const g = mis.sheet.grid, c = mis.col;
+  const people = new Map();     // department + provider ⇢ figures
+  const dates = [];
+  let cat = null, skipped = 0, feeNet = 0;
+
+  for (let i = mis.headerRow + 1; i < g.length; i++) {
+    const row = g[i] || [], first = String(row[0] ?? "").trim();
+    if (/^bill\s*date\s*:/i.test(first)) { const d = parseDate(first.split(":").slice(1).join(":")); if (d) dates.push(+d); cat = null; continue; }
+    if (/^category\s*:/i.test(first)) { cat = first.split(":").slice(1).join(":").trim(); seenCats.add(cat); continue; }
+    const provider = String(row[c.provider] ?? "").trim(), dept = String(row[c.dept] ?? "").trim();
+    if (!isNum(row[c.count])) continue;                 // blank and timestamp lines
+    if (!provider || !dept) {
+      /* the export closes each block with a bare count: that is its own total,
+         not a row anybody lost */
+      if (String(row[c.name] ?? "").trim() || String(row[c.sub] ?? "").trim()) skipped++;
+      continue;
+    }
+
+    const bucket = cat == null ? null : catOf(cat);
+    if (cat != null && bucket == null) unknownCats.add(cat);
+    const key = dept + "   " + provider;
+    let p = people.get(key);
+    if (!p) { p = { dept, name: provider, cnt: {}, net: 0, fee: 0 }; people.set(key, p); }
+    const cnt = Math.round(num(row[c.count])), net = c.net >= 0 ? num(row[c.net]) : 0;
+    p.net += net;
+    if (bucket === "fee") { p.fee += net; feeNet += net; }
+    else { const k = bucket || "other"; p.cnt[k] = (p.cnt[k] || 0) + cnt; }
+  }
+  if (skipped) notices.push({ kind: "warn", text: skipped + " صفًا بلا اسم مقدّم خدمة أو بلا قسم — لم تدخل الجدول." });
+  if (unknownCats.size) notices.push({ kind: "warn", text: "فئة غير معروفة في الملف: " + [...unknownCats].join("، ") + " — أُدرجت في عمود OTHER." });
+  if (!seenCats.size) notices.push({ kind: "bad", text: "لم يجد الملف أسطر «Category:» — تأكد أنه تصدير «Service wise Count – Detailed Category Wise»." });
+
+  /* TOTAL SEEN rides in from the appointments export, matched on the name. */
+  const seenBy = new Map(), fuzzy = [], unmatched = [];
+  if (appt) {
+    const ag = appt.sheet.grid, ac = appt.col;
+    for (let i = appt.headerRow + 1; i < ag.length; i++) {
+      const row = ag[i] || [], nm = String(row[ac.name] ?? "").trim();
+      if (!nm || !isNum(row[ac.seen])) continue;
+      const k = nameKey(nm);
+      seenBy.set(k, { n: (seenBy.get(k)?.n || 0) + Math.round(num(row[ac.seen])), raw: nm, used: false });
+    }
+  }
+  for (const p of people.values()) {
+    const k = nameKey(p.name), direct = seenBy.get(k);
+    if (direct) { p.seen = direct.n; direct.used = true; continue; }
+    let best = null, score = 0;
+    for (const [ok, rec] of seenBy) { const s = similarity(k, ok); if (s > score) { score = s; best = rec; } }
+    if (best && score >= 0.82) { p.seen = best.n; best.used = true; fuzzy.push(p.name + " ← " + best.raw); }
+    else p.seen = null;
+  }
+  for (const rec of seenBy.values()) if (!rec.used) unmatched.push(rec.raw);
+  if (fuzzy.length) notices.push({ kind: "warn", text: "أسماء طوبقت بالتقريب لعمود TOTAL SEEN: " + fuzzy.join("، ") });
+  if (unmatched.length) notices.push({ kind: "warn", text: "في كشف المواعيد أسماء بلا طلبات في تصدير الخدمات: " + unmatched.join("، ") + " — لا صفّ لها في الجدول." });
+  if (!appt) notices.push({ kind: "warn", text: "لا يوجد كشف «Appointment Statistics – Doctor Wise» — عمود TOTAL SEEN سيخرج شرطات." });
+
+  /* departments ranked by income, providers ranked by income inside each */
+  const byDept = new Map();
+  for (const p of people.values()) {
+    if (!byDept.has(p.dept)) byDept.set(p.dept, []);
+    byDept.get(p.dept).push(p);
+  }
+  const sysWords = (opts.sysWords || "").split(/[,،]/).map(s => s.trim()).filter(Boolean);
+  const isSystem = n => sysWords.some(w => norm(n).includes(norm(w)));
+  const total = { cnt: {}, net: 0, seen: 0, orders: 0, providers: 0 };
+  const depts = [...byDept.entries()].map(([name, list]) => {
+    const sum = { cnt: {}, net: 0, seen: 0, orders: 0 };
+    list.forEach(p => {
+      p.orders = CATS.reduce((n, k) => n + (p.cnt[k.key] || 0), 0);
+      p.system = isSystem(p.name);
+      sum.net += p.net; sum.seen += p.seen || 0; sum.orders += p.orders;
+      CATS.forEach(k => sum.cnt[k.key] = (sum.cnt[k.key] || 0) + (p.cnt[k.key] || 0));
+    });
+    list.sort((a, b) => b.net - a.net || a.name.localeCompare(b.name));
+    return { name, list, sum };
+  }).sort((a, b) => b.sum.net - a.sum.net || a.name.localeCompare(b.name));
+
+  depts.forEach(d => {
+    total.net += d.sum.net; total.seen += d.sum.seen; total.orders += d.sum.orders; total.providers += d.list.length;
+    CATS.forEach(k => total.cnt[k.key] = (total.cnt[k.key] || 0) + (d.sum.cnt[k.key] || 0));
+    d.list.forEach(p => { p.pctDept = d.sum.net > 0 ? p.net / d.sum.net * 100 : 0; });
+  });
+  depts.forEach(d => {
+    d.sum.pctBranch = total.net > 0 ? d.sum.net / total.net * 100 : 0;
+    d.list.forEach(p => { p.pctBranch = total.net > 0 ? p.net / total.net * 100 : 0; });
+  });
+
+  dates.sort((a, b) => a - b);
+  return {
+    depts, total, notices, feeNet,
+    billFrom: dates.length ? new Date(dates[0]) : null,
+    billTo: dates.length ? new Date(dates[dates.length - 1]) : null,
+    billDays: new Set(dates).size,
+    hasPharmacy: [...seenCats].some(c => /pharmac/i.test(c)),
+  };
+}
+
+/* ═════════════════ header facts read off the workbook ═════════════════ */
+const BRANCHES = { alsuwaidi: "Al Suwaidi", alwurood: "Al Wurood", alqairawan: "Al Qairawan", hittin: "Hittin",
+                   almalqa: "Al Malqa", alrawdah: "Al Rawdah", abhur: "Abhur", alsulaimaniyah: "Al Sulaimaniyah" };
+function branchFrom(sheets) {
+  for (const s of sheets) {
+    for (const row of s.grid.slice(0, 6)) {
+      const t = String(row?.[0] ?? "").trim();
+      const m = /^meena\s+(?:center|centre|phc|primary health care)?\s*(.+)$/i.exec(t);
+      if (m && m[1]) {
+        const raw = m[1].trim(), k = norm(raw).replace(/\s+/g, "");
+        if (BRANCHES[k]) return BRANCHES[k];
+        if (/^al[a-z]/i.test(raw)) return "Al " + raw.slice(2).replace(/^./, c => c.toUpperCase());
+        return raw.replace(/\b\w/g, c => c.toUpperCase());
+      }
+    }
+  }
+  return "";
+}
+function periodFrom(sheets) {
+  for (const s of sheets) {
+    for (const row of s.grid.slice(0, 10)) {
+      const t = (row || []).join(" ");
+      const m = /from\s*:?\s*([0-9]{1,2}[-/][A-Za-z0-9]{2,}[-/][0-9]{4})[^,]*,?\s*to\s*:?\s*([0-9]{1,2}[-/][A-Za-z0-9]{2,}[-/][0-9]{4})/i.exec(t);
+      if (m) { const a = parseDate(m[1]), b = parseDate(m[2]); if (a && b) return { from: a, to: b }; }
+    }
+  }
+  return null;
+}
+
+/* ═════════════════ the template, as markup ═════════════════
+   Wording, order and wording-in-the-footnote all come from the supplied PDF;
+   only the figures, the branch and the period change from run to run. */
+const TPL = {
+  org: "MEENA PRIMARY HEALTH CARE",
+  kind: "Physician Detail — Single Table",
+  reportKind: "Service-wise Detailed Category Report",
+  sectionNo: "1",
+  sectionTitle: "PHYSICIAN ORDERS, INCOME & CONTRIBUTION",
+  sectionSub: "— order counts, net income, share of department and share of branch",
+  source: "Meena PHC — Cluster 2  ·  Source: MIS “Service wise Count – Detailed Category Wise”",
+};
+const COLS = [
+  { key: "prov",   head: "PROVIDER",         w: "17.19%", cls: "c-prov", left: true },
+  { key: "dept",   head: "DEPARTMENT",       w: "13.75%", cls: "c-dept", left: true },
+  { key: "seen",   head: "TOTAL SEEN",       w: "6.04%",  cls: "c-seen" },
+  { key: "lab",    head: "LAB",              w: "2.31%",  cls: "c-n" },
+  { key: "rad",    head: "RADIOLOGY",        w: "5.82%",  cls: "c-n" },
+  { key: "proc",   head: "PROCEDURES",       w: "6.62%",  cls: "c-n" },
+  { key: "dent",   head: "DENTAL",           w: "4.02%",  cls: "c-n" },
+  { key: "phys",   head: "PHYSIO",           w: "3.81%",  cls: "c-n" },
+  { key: "home",   head: "HOME CARE",        w: "5.82%",  cls: "c-n" },
+  { key: "other",  head: "OTHER",            w: "3.54%",  cls: "c-n" },
+  { key: "orders", head: "TOTAL ORDERS",     w: "7.40%",  cls: "c-orders" },
+  { key: "net",    head: "NET INCOME (SAR)", w: "8.78%",  cls: "c-net" },
+  { key: "pd",     head: "% OF DEPT",        w: "8.12%",  cls: "c-pd", left: true },
+  { key: "pb",     head: "% OF BRANCH",      w: "6.77%",  cls: "c-pb" },
+];
+const DASH = "–";
+const nf = n => Math.round(n).toLocaleString("en-US");
+const pct1 = v => (Math.round(v * 10) / 10).toFixed(1) + "%";
+
+const MARK = '<svg viewBox="0 0 24 24">'
+  + '<path fill="#fff" d="M12 21.2C6.4 17.4 3 14 3 10.1A4.8 4.8 0 0 1 7.9 5.3c1.7 0 3.2.8 4.1 2.1a5 5 0 0 1 4.1-2.1A4.8 4.8 0 0 1 21 10.1c0 3.9-3.4 7.3-9 11.1z"/>'
+  + '<path fill="none" stroke="#2d2460" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" d="M5.6 11.6h2.5l1.4-3.1 2.3 6.2 1.7-4 1 .9h3.9"/>'
+  + "</svg>";
+
+function cell(cls, node) {
+  const td = el("td", cls);
+  if (node instanceof Node) td.append(node); else if (node != null) td.textContent = node;
+  return td;
+}
+const numCell = (cls, v) => {
+  const td = el("td", cls);
+  if (!v) { td.append(el("span", "nil", DASH)); } else td.textContent = nf(v);
+  return td;
+};
+
+function providerRow(p) {
+  const tr = el("tr");
+  const prov = el("td", "c-prov");
+  prov.append(document.createTextNode(p.name));
+  if (p.system) prov.append(el("span", "tag", "system"));
+  tr.append(prov, cell("c-dept", p.dept), numCell("c-seen", p.seen));
+  CATS.forEach(c => tr.append(numCell("c-n", p.cnt[c.key] || 0)));
+  tr.append(cell("c-orders", nf(p.orders)), cell("c-net", nf(p.net)));
+  const pd = el("td", "c-pd"), wrap = el("div", "wrap");
+  const track = el("div", "meter"), fill = el("i");
+  fill.style.width = Math.max(0, Math.min(100, p.pctDept)).toFixed(2) + "%";
+  track.append(fill);
+  wrap.append(track, el("span", "pv", pct1(p.pctDept)));
+  pd.append(wrap);
+  tr.append(pd, cell("c-pb", pct1(p.pctBranch)));
+  return tr;
+}
+function subtotalRow(d) {
+  const tr = el("tr", "sub");
+  tr.append(cell("c-prov", d.name + " — subtotal"), cell("c-dept", d.list.length + " provider(s)"), numCell("c-seen", d.sum.seen));
+  CATS.forEach(c => tr.append(numCell("c-n", d.sum.cnt[c.key] || 0)));
+  tr.append(cell("c-orders", nf(d.sum.orders)), cell("c-net", nf(d.sum.net)),
+            cell("c-pd", "100.0%"), cell("c-pb", pct1(d.sum.pctBranch)));
+  return tr;
+}
+function grandRow(data) {
+  const tr = el("tr", "grand");
+  tr.append(cell("c-prov", "BRANCH TOTAL"),
+            cell("c-dept", data.total.providers + " providers · " + data.depts.length + " departments"),
+            numCell("c-seen", data.total.seen));
+  CATS.forEach(c => tr.append(numCell("c-n", data.total.cnt[c.key] || 0)));
+  tr.append(cell("c-orders", nf(data.total.orders)), cell("c-net", nf(data.total.net)),
+            cell("c-pd", "—"), cell("c-pb", "100.0%"));
+  return tr;
+}
+
+function modelRows(data) {
+  const rows = [];
+  data.depts.forEach(d => {
+    d.list.forEach(p => rows.push({ kind: "p", node: providerRow(p) }));
+    rows.push({ kind: "s", node: subtotalRow(d) });
+  });
+  rows.push({ kind: "g", node: grandRow(data) });
+  /* the template washes every other row; counted over the whole table so the
+     alternation survives a page break, and a subtotal paints over it anyway */
+  rows.forEach((r, i) => { if (i % 2 === 1) r.node.classList.add("alt"); });
+  return rows;
+}
+
+function footnoteText(data, meta) {
+  let t = "“Total Seen” comes from the MIS Appointment Statistics – Doctor Wise export for the same period; "
+        + "a “" + DASH + "” means no appointment records (walk-in activity booked under the ER registration account). "
+        + "“Total Orders” excludes consultation fees. “% of Dept” is the provider’s share of their own department’s net income, "
+        + "“% of Branch” their share of the " + nf(data.total.net) + " SAR branch total.";
+  if (!data.hasPharmacy) t += " No pharmacy category exists in this MIS export.";
+  if (meta.days > 1) t += " Figures are totals for the " + meta.days + " days of the period, not a daily average.";
+  return t;
+}
+
+function buildPage(opts) {
+  const { meta, data, rows, first, last, pageNo, pages } = opts;
+  const page = el("section", "page");
+
+  const band = el("div", "band");
+  const mark = el("div", "mark"); mark.innerHTML = MARK;
+  const who = el("div", "who");
+  who.append(el("h1", null, TPL.org), el("p", null, meta.branch + " Branch  |  " + TPL.kind));
+  const when = el("div", "when");
+  when.append(el("b", null, meta.longRange), el("span", null, TPL.reportKind));
+  band.append(mark, who, when);
+
+  const sect = el("div", "sect");
+  sect.append(el("span", "badge", TPL.sectionNo),
+              el("b", null, TPL.sectionTitle + (first ? "" : " (cont.)")),
+              el("i", null, TPL.sectionSub));
+
+  const lede = el("p", "lede");
+  lede.append(document.createTextNode("Grouped by department (departments ranked by income, providers ranked by income within each). All order figures are "),
+              el("b", null, "counts"),
+              document.createTextNode(", not amounts. Total Seen is sourced from the Appointment Statistics – Doctor Wise export."));
+
+  const table = el("table", "rep");
+  const cg = el("colgroup");
+  COLS.forEach(c => { const col = el("col"); col.style.width = c.w; cg.append(col); });
+  const thead = el("thead"), htr = el("tr");
+  COLS.forEach(c => { const th = el("th", c.left ? "l" : null, c.head); htr.append(th); });
+  thead.append(htr);
+  const tbody = el("tbody");
+  rows.forEach(r => tbody.append(r.node));
+  table.append(cg, thead, tbody);
+
+  page.append(band, sect, lede, table);
+  if (last) page.append(el("p", "fnote", footnoteText(data, meta)));
+
+  const foot = el("div", "pgfoot");
+  const right = meta.branch + " · " + meta.shortRange + (pages > 1 ? "  ·  Page " + pageNo + " of " + pages : "");
+  foot.append(el("span", null, TPL.source), el("span", null, right));
+  page.append(foot);
+  return page;
+}
+
+/* ═════════════════ pagination ═════════════════
+   Rows are measured once on a probe sheet, then dealt into pages: the last
+   page keeps room for the footnote, and a subtotal is never left stranded at
+   the head of a page without one of its own providers above it. */
+const PT = 96 / 72;
+function renderDoc(data, meta) {
+  const host = $("#doc");
+  host.textContent = "";
+  host.style.transform = "none";        // measure at 1:1, scale to the column after
+  const all = modelRows(data);
+
+  const probe = buildPage({ meta, data, rows: all, first: true, last: true, pageNo: 1, pages: 1 });
+  probe.style.visibility = "hidden";
+  probe.style.position = "absolute";
+  host.append(probe);
+
+  const box = probe.getBoundingClientRect();
+  const table = probe.querySelector("table.rep");
+  const headH = probe.querySelector("thead").getBoundingClientRect().height;
+  const top = table.getBoundingClientRect().top - box.top;
+  const footTop = probe.querySelector(".pgfoot").getBoundingClientRect().top - box.top;
+  const fnote = probe.querySelector(".fnote");
+  const fnoteH = fnote ? fnote.getBoundingClientRect().height + 2 * PT : 0;
+  const heights = [...probe.querySelectorAll("tbody tr")].map(tr => tr.getBoundingClientRect().height);
+  const capFull = footTop - 2 * PT - top - headH;
+  const capLast = capFull - fnoteH;
+  host.textContent = "";
+
+  const cuts = [];
+  let i = 0;
+  while (i < heights.length) {
+    let rest = 0;
+    for (let k = i; k < heights.length; k++) rest += heights[k];
+    if (rest <= capLast) { cuts.push([i, heights.length]); break; }
+    let used = 0, j = i;
+    while (j < heights.length && used + heights[j] <= capFull) { used += heights[j]; j++; }
+    if (j === heights.length) { used = 0; j = i; while (j < heights.length && used + heights[j] <= capLast) { used += heights[j]; j++; } }
+    if (j === i) j = i + 1;
+    cuts.push([i, j]);
+    i = j;
+  }
+  for (let k = 1; k < cuts.length; k++) {
+    const start = cuts[k][0];
+    if (all[start].kind === "p" || cuts[k - 1][1] - cuts[k - 1][0] < 2) continue;
+    let load = 0;
+    for (let r = cuts[k][0]; r < cuts[k][1]; r++) load += heights[r];
+    const cap = k === cuts.length - 1 ? capLast : capFull;
+    if (load + heights[start - 1] <= cap) { cuts[k][0]--; cuts[k - 1][1]--; }
+  }
+
+  const pages = cuts.length;
+  cuts.forEach((cut, k) => {
+    host.append(buildPage({
+      meta, data, rows: all.slice(cut[0], cut[1]),
+      first: k === 0, last: k === pages - 1, pageNo: k + 1, pages,
+    }));
+  });
+  fitStage();
+  return pages;
+}
+
+/* the sheet is 841.89pt wide; the preview column never is, so scale it down */
+function fitStage() {
+  const host = $("#doc"), stage = $("#stage"), box = $("#stageBox");
+  const page = host.firstElementChild;
+  if (!page) return;
+  host.style.transform = "none";
+  const w = page.getBoundingClientRect().width;
+  const avail = stage.clientWidth - 28;
+  const k = Math.min(1, avail / w);
+  host.style.transform = "scale(" + k + ")";
+  box.style.height = host.getBoundingClientRect().height + "px";
+}
+
+/* ═════════════════ state and wiring ═════════════════ */
+const state = { files: [], sheets: [], mis: null, appt: null, data: null, touched: {}, pages: 0 };
+
+const val = id => $(id).value.trim();
+function meta() {
+  const wbBranch = state.wbBranch || "";
+  const branch = state.touched.branch ? val("#inBranch") : wbBranch;
+  const from = state.touched.from ? parseDate(val("#inFrom")) : state.wbFrom;
+  const to = state.touched.to ? parseDate(val("#inTo")) : state.wbTo;
+  return {
+    branch: branch || "—", from, to,
+    longRange: rangeLabel(from, to, false),
+    shortRange: rangeLabel(from, to, true),
+    days: spanDays(from, to),
+  };
+}
+function fileName(m) {
+  if (state.touched.name && val("#inName")) return val("#inName");
+  const tag = m.shortRange.replace(/[^\w–-]+/g, "_").replace(/–/g, "to").replace(/_+/g, "_").replace(/^_|_$/g, "");
+  return (m.branch.replace(/\s+/g, "_") + "_Physician_Detail_" + tag).replace(/[\\/:*?"<>|]/g, "");
+}
+
+const arabicDays = n => n === 1 ? "يوم واحد" : n === 2 ? "يومان" : n <= 10 ? n + " أيام" : n + " يومًا";
+
+const LTR_RUN = /[A-Za-z0-9][A-Za-z0-9 ,.:;()[\]'’\-–—/&%+“”"«»]*[A-Za-z0-9%)\]”"»]|[A-Za-z0-9]/g;
+function bidiText(text) {
+  const frag = document.createDocumentFragment();
+  let at = 0;
+  for (const m of String(text).matchAll(LTR_RUN)) {
+    if (m.index > at) frag.append(document.createTextNode(text.slice(at, m.index)));
+    frag.append(el("bdi", null, m[0]));
+    at = m.index + m[0].length;
+  }
+  if (at < text.length) frag.append(document.createTextNode(text.slice(at)));
+  return frag;
+}
+function noticeBox(kind, text) {
+  const n = el("div", "note" + (kind === "bad" ? " bad" : kind === "warn" ? " warn" : ""));
+  const body = el("span");
+  body.append(bidiText(text));
+  n.append(el("span", "m"), body);
+  return n;
+}
+function tile(label, value) {
+  const t = el("div", "tile");
+  t.append(el("span", null, label), el("b", null, value));
+  return t;
+}
+
+function refresh() {
+  const host = $("#notices"), tiles = $("#tiles");
+  host.textContent = ""; tiles.textContent = "";
+  if (state.err) host.append(noticeBox("bad", state.err));
+  if (!state.mis) {
+    $("#stage").hidden = true; $("#noPreview").hidden = false;
+    $("#bPdf").disabled = true; $("#bClear").disabled = !state.files.length;
+    $("#st3").textContent = "";
+    return;
+  }
+  const m = meta();
+  state.data = aggregate(state.mis, state.appt, { sysWords: val("#inSys") });
+  const d = state.data;
+
+  if (!state.touched.branch) $("#inBranch").value = state.wbBranch || "";
+  if (!state.touched.from) $("#inFrom").value = iso(state.wbFrom);
+  if (!state.touched.to) $("#inTo").value = iso(state.wbTo);
+  if (!state.touched.name) $("#inName").value = fileName(m);
+
+  if (m.from && m.to)
+    host.append(noticeBox("", "المدة: " + m.longRange + " · " + arabicDays(m.days)
+      + (d.billDays && d.billDays !== m.days ? " · فيها فواتير في " + d.billDays + (d.billDays > 10 ? " يومًا" : " أيام") : "")));
+  else
+    host.append(noticeBox("warn", "لم يُعرف تاريخ المدة من الملف — اكتبه في خانتي «من» و«إلى»."));
+  d.notices.forEach(n => host.append(noticeBox(n.kind, n.text)));
+
+  $("#stage").hidden = false; $("#noPreview").hidden = true;
+  state.pages = renderDoc(d, m);
+  $("#bPdf").disabled = false; $("#bClear").disabled = false;
+  $("#st3").textContent = state.pages + (state.pages === 1 ? " صفحة" : " صفحات");
+
+  tiles.append(
+    tile("الأطباء ومقدّمو الخدمة", String(d.total.providers)),
+    tile("الأقسام", String(d.depts.length)),
+    tile("إجمالي الطلبات", nf(d.total.orders)),
+    tile("صافي الدخل — SAR", nf(d.total.net)),
+    tile("مجموع المشاهَدين", nf(d.total.seen)),
+    tile("صفحات الـPDF", String(state.pages)),
+  );
+}
+
+async function takeFiles(files) {
+  const sheets = [];
+  for (const f of files) {
+    try {
+      const got = await readWorkbook(f);
+      got.forEach(s => sheets.push(Object.assign(s, { file: f.name })));
+    } catch (e) { toast(f.name + " — " + e.message, "bad"); }
+  }
+  if (!sheets.length) return;
+  state.files = [...state.files, ...files];
+  state.sheets = [...state.sheets, ...sheets];
+
+  for (const s of state.sheets) {
+    if (!state.mis) { const shaped = shapeMis(s); if (shaped) { state.mis = shaped; continue; } }
+    if (!state.appt && (!state.mis || state.mis.sheet !== s)) { const shaped = shapeAppt(s); if (shaped) state.appt = shaped; }
+  }
+  if (!state.mis) {
+    state.err = "لم تُوجد ورقة «Service wise Count – Detailed Category Wise» بأعمدة Provider و Department و Count. "
+              + "الأوراق المقروءة: " + state.sheets.map(x => x.name || x.file).join("، ");
+    toast("الملف لا يحوي ورقة الخدمات — راجع التنبيه في المعاينة.", "bad");
+    refresh();
+    return;
+  }
+  state.err = null;
+  state.wbBranch = state.wbBranch || branchFrom(state.sheets);
+  const per = periodFrom(state.sheets);
+  if (per) { state.wbFrom = state.wbFrom || per.from; state.wbTo = state.wbTo || per.to; }
+
+  const chips = el("div", "chips");
+  state.sheets.forEach(s => {
+    const role = state.mis && state.mis.sheet === s ? "الخدمات والدخل"
+               : state.appt && state.appt.sheet === s ? "المواعيد — TOTAL SEEN" : "غير مستخدمة";
+    const c = el("span", "chip" + (role === "غير مستخدمة" ? "" : " ok"));
+    c.append(el("b", null, s.name || s.file), document.createTextNode(" · " + role));
+    chips.append(c);
+  });
+  $("#fileInfo").textContent = "";
+  $("#fileInfo").append(chips);
+  $("#st1").textContent = state.files.map(f => f.name).join(" · ");
+  $("#s1").classList.add("done");
+
+  /* the appointments header carries the requested period; when it is missing,
+     the Bill Date lines in the services export stand in for it */
+  if (!state.wbFrom) {
+    const probe = aggregate(state.mis, state.appt, { sysWords: val("#inSys") });
+    state.wbFrom = probe.billFrom; state.wbTo = probe.billTo;
+  }
+  refresh();
+  toast("قُرئ الملف: " + state.data.total.providers + " مقدّم خدمة في " + state.data.depts.length + " قسمًا.", "ok");
+}
+
+function hookDrop(zone, input, handler) {
+  zone.onclick = () => input.click();
+  zone.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); input.click(); } };
+  input.onchange = () => { if (input.files.length) handler([...input.files]); input.value = ""; };
+  for (const ev of ["dragenter", "dragover"]) zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.add("hot"); });
+  for (const ev of ["dragleave", "drop"]) zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.remove("hot"); });
+  zone.addEventListener("drop", e => { const f = [...(e.dataTransfer?.files || [])]; if (f.length) handler(f); });
+}
+hookDrop($("#dropX"), $("#fileX"), takeFiles);
+
+["#inBranch", "#inFrom", "#inTo", "#inSys", "#inName"].forEach(id => {
+  const key = { "#inBranch": "branch", "#inFrom": "from", "#inTo": "to", "#inSys": "sys", "#inName": "name" }[id];
+  $(id).addEventListener("input", () => { state.touched[key] = true; if (key !== "name") refresh(); });
+});
+
+$("#bClear").onclick = () => {
+  Object.assign(state, { files: [], sheets: [], mis: null, appt: null, data: null, touched: {}, pages: 0,
+                         wbBranch: null, wbFrom: null, wbTo: null, err: null });
+  ["#inBranch", "#inFrom", "#inTo", "#inName"].forEach(id => $(id).value = "");
+  $("#fileInfo").textContent = ""; $("#doc").textContent = "";
+  $("#st1").textContent = "لم يُرفع بعد"; $("#s1").classList.remove("done");
+  refresh();
+};
+
+/* Chrome names the saved file after the document title, so borrow it for the
+   length of the print dialog and hand it straight back. */
+$("#bPdf").onclick = () => {
+  if (!state.data) return;
+  const keep = document.title;
+  document.title = fileName(meta());
+  const back = () => { document.title = keep; removeEventListener("afterprint", back); };
+  addEventListener("afterprint", back);
+  setTimeout(() => { window.print(); setTimeout(back, 1500); }, 30);
+};
+
+addEventListener("resize", () => { if (state.data) fitStage(); });
+refresh();
+})();
+</script>
+</body>
+</html>
