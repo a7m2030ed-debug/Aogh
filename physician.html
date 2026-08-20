@@ -518,7 +518,9 @@ function rangeLabel(a, b, short) {
 const spanDays = (a, b) => (a && b) ? Math.round((b - a) / 864e5) + 1 : 0;
 
 /* ═════════════════ the report's own arithmetic ═════════════════ */
+const FEE_CAT = /doctor fee|physician fee|consultation|^cons\b/;
 const CATS = [
+  { key: "fee",   label: "DOCTOR FEES", test: FEE_CAT },
   { key: "lab",   label: "LAB",        test: /laborator|^lab\b/ },
   { key: "rad",   label: "RADIOLOGY",  test: /radiolog|imaging/ },
   { key: "proc",  label: "PROCEDURES", test: /procedure/ },
@@ -527,7 +529,6 @@ const CATS = [
   { key: "home",  label: "HOME CARE",  test: /home/ },
   { key: "other", label: "OTHER",      test: /^other/ },
 ];
-const FEE_CAT = /doctor fee|physician fee|consultation|^cons\b/;
 const PACK_CAT = /package|بكج/;
 const bucketOf = name => { const hit = CATS.find(c => c.test.test(norm(name))); return hit ? hit.key : null; };
 /* A category the map does not name is placed by the department that billed it —
@@ -589,9 +590,9 @@ function aggregate(mis, appt, opts) {
     if (!p) { p = { dept, name: provider, cnt: {}, net: 0, fee: 0 }; people.set(key, p); }
     const cnt = Math.round(num(row[c.count])), net = c.net >= 0 ? num(row[c.net]) : 0;
     p.net += net;
-    if (bucket === "fee") { p.fee += net; feeNet += net; }
-    else {
+    {
       const k = bucket || "other";
+      if (k === "fee") { p.fee += net; feeNet += net; }
       /* A physiotherapy package is billed once for the whole course, and its
          Count carries the sessions it pays for — six, in this branch's export.
          The patient attended once on that bill date, and the appointments
@@ -662,7 +663,7 @@ function aggregate(mis, appt, opts) {
   const depts = [...byDept.entries()].map(([name, list]) => {
     const sum = { cnt: {}, net: 0, seen: 0, orders: 0 };
     list.forEach(p => {
-      p.orders = CATS.reduce((n, k) => n + (p.cnt[k.key] || 0), 0);
+      p.orders = CATS.reduce((n, k) => n + (k.key === "fee" ? 0 : p.cnt[k.key] || 0), 0);
       p.system = isSystem(p.name);
       sum.net += p.net; sum.seen += p.seen || 0; sum.orders += p.orders;
       CATS.forEach(k => sum.cnt[k.key] = (sum.cnt[k.key] || 0) + (p.cnt[k.key] || 0));
@@ -733,19 +734,20 @@ const TPL = {
   source: "Meena PHC — Cluster 2  ·  Source: MIS “Service wise Count – Detailed Category Wise”",
 };
 const COLS = [
-  { key: "prov",   head: "PROVIDER",         w: "18.56%", cls: "c-prov", left: true },
-  { key: "dept",   head: "DEPARTMENT",       w: "14.85%", cls: "c-dept", left: true },
-  { key: "seen",   head: "TOTAL SEEN",       w: "6.52%",  cls: "c-seen" },
-  { key: "lab",    head: "LAB",              w: "2.49%",  cls: "c-n" },
-  { key: "rad",    head: "RADIOLOGY",        w: "6.28%",  cls: "c-n" },
-  { key: "proc",   head: "PROCEDURES",       w: "7.15%",  cls: "c-n" },
-  { key: "dent",   head: "DENTAL",           w: "4.34%",  cls: "c-n" },
-  { key: "phys",   head: "PHYSIO",           w: "4.11%",  cls: "c-n" },
-  { key: "home",   head: "HOME CARE",        w: "6.28%",  cls: "c-n" },
-  { key: "other",  head: "OTHER",            w: "3.82%",  cls: "c-n" },
-  { key: "net",    head: "NET INCOME (SAR)", w: "9.48%",  cls: "c-net" },
-  { key: "pd",     head: "% OF DEPT",        w: "8.77%",  cls: "c-pd", left: true },
-  { key: "pb",     head: "% OF BRANCH",      w: "7.31%",  cls: "c-pb" },
+  { key: "prov",   head: "PROVIDER",         w: "17.44%", cls: "c-prov", left: true },
+  { key: "dept",   head: "DEPARTMENT",       w: "13.95%", cls: "c-dept", left: true },
+  { key: "seen",   head: "TOTAL SEEN",       w: "6.13%",  cls: "c-seen" },
+  { key: "fee",    head: "DOCTOR FEES",      w: "6.07%",  cls: "c-n" },
+  { key: "lab",    head: "LAB",              w: "2.34%",  cls: "c-n" },
+  { key: "rad",    head: "RADIOLOGY",        w: "5.90%",  cls: "c-n" },
+  { key: "proc",   head: "PROCEDURES",       w: "6.72%",  cls: "c-n" },
+  { key: "dent",   head: "DENTAL",           w: "4.08%",  cls: "c-n" },
+  { key: "phys",   head: "PHYSIO",           w: "3.86%",  cls: "c-n" },
+  { key: "home",   head: "HOME CARE",        w: "5.90%",  cls: "c-n" },
+  { key: "other",  head: "OTHER",            w: "3.59%",  cls: "c-n" },
+  { key: "net",    head: "NET INCOME (SAR)", w: "8.91%",  cls: "c-net" },
+  { key: "pd",     head: "% OF DEPT",        w: "8.24%",  cls: "c-pd", left: true },
+  { key: "pb",     head: "% OF BRANCH",      w: "6.87%",  cls: "c-pb" },
 ];
 const DASH = "–";
 const nf = n => Math.round(n).toLocaleString("en-US");
@@ -827,7 +829,7 @@ function modelRows(data) {
 function footnoteText(data, meta) {
   let t = "“Total Seen” comes from the MIS Appointment Statistics – Doctor Wise export for the same period; "
         + "a “" + DASH + "” means no appointment records (walk-in activity booked under the ER registration account). "
-        + "Order counts exclude consultation fees. “% of Dept” is the provider’s share of their own department’s net income, "
+        + "“Doctor Fees” counts consultations; the other order columns exclude them. “% of Dept” is the provider’s share of their own department’s net income, "
         + "“% of Branch” their share of the " + nf(data.total.net) + " SAR branch total.";
   if (data.packRows) t += " A package counts as one session, not as the sessions it covers; its income is counted in full.";
   if (!data.hasPharmacy) t += " No pharmacy category exists in this MIS export.";
@@ -1321,6 +1323,7 @@ function refresh() {
   tiles.append(
     tile("الأطباء ومقدّمو الخدمة", String(d.total.providers)),
     tile("الأقسام", String(d.depts.length)),
+    tile("الكشوف", nf(d.total.cnt.fee || 0)),
     tile("إجمالي الطلبات", nf(d.total.orders)),
     tile("صافي الدخل — SAR", nf(d.total.net)),
     tile("مجموع المشاهَدين", nf(d.total.seen)),
