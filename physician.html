@@ -155,15 +155,16 @@ label.check{display:flex; align-items:center; gap:8px; font-size:13.5px; color:v
    because the page is a point-sized sheet (A4 landscape = 841.89 × 595.28 pt). */
 #doc{
   --nav:#2d2460;        /* header band, table head, branch-total row      */
-  --nav-2:#7061ab;      /* section badge, meter fill, subtotal hairlines  */
+  --nav-2:#7061ab;      /* meter fill, department-head hairlines           */
   --ink-doc:#1e1b33;    /* body ink                                       */
   --ink-mut:#6b6880;    /* notes, department cell, footer                 */
-  --ink-slab:#3d3a55;   /* lede line                                      */
+  --ink-slab:#3d3a55;   /* branch-strip labels                            */
   --dash:#c3bfd5;       /* the "–" that stands for a zero                 */
   --rule:#d9d5e8;       /* row hairline                                   */
-  --stripe:#eeebf7;     /* even-row wash — the eye follows it across       */
-  --key:#f5f3fc;        /* the TOTAL SEEN column                          */
-  --band:#ded9ef;       /* subtotal row, a step deeper than the wash       */
+  --stripe:#e7e3f4;     /* even-row wash — the eye follows it across       */
+  --key:#f3f0fb;        /* the TOTAL SEEN column, on a white row           */
+  --key-2:#e0dbf1;      /* the same column, on a washed row                */
+  --band:#ded9ef;       /* department head, a step deeper than the wash    */
   --track:#e4e0f0;      /* meter track                                    */
   --gold:#c07a2a;       /* the date, % of branch, the "system" tag        */
   --tint-1:#c9c3e8; --tint-2:#b6aedc;
@@ -187,48 +188,59 @@ label.check{display:flex; align-items:center; gap:8px; font-size:13.5px; color:v
 .band .when b{display:block; font:700 7.48pt/1.2 var(--fs); color:var(--gold)}
 .band .when span{display:block; margin-top:1.8pt; font:400 5.76pt/1.15 var(--fs); color:var(--tint-2)}
 
-.sect{display:flex; align-items:center; gap:0; margin-bottom:1.6pt}
-.sect .badge{width:11pt; height:10.9pt; flex:none; border-radius:3pt; background:var(--nav-2); color:#fff; font:700 6.33pt/10.9pt var(--fs); text-align:center}
-.sect b{font:700 8.06pt/1.2 var(--fs); color:var(--nav)}
-.sect i{font:400 6.91pt/1.2 var(--fs); color:var(--ink-mut); font-style:normal}
-.lede{margin:0 0 2.7pt; font:400 6.91pt/1.3 var(--fs); color:var(--ink-slab)}
-.lede b{font-weight:700}
+/* the branch at a glance — what the period is, and the three figures the
+   branch is judged on, sitting where the template ran a paragraph of prose */
+.stats{display:flex; align-items:stretch; margin-bottom:3.4pt; border:.5pt solid var(--rule);
+       border-radius:3pt; background:#fff; overflow:hidden}
+.stats .s{flex:1 1 0; min-width:0; padding:2.2pt 6.4pt; border-inline-start:.5pt solid var(--rule)}
+.stats .s:first-child{border-inline-start:0}
+.stats .s span{display:block; font:700 5.19pt/1 var(--fs); letter-spacing:.08em; color:var(--ink-mut); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.stats .s b{display:block; margin-top:1.4pt; font:700 8.21pt/1 var(--fr); color:var(--nav); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.stats .s b i{font:400 5.76pt/1 var(--fs); font-style:normal; color:var(--ink-slab); margin-inline-start:2.4pt}
+.stats .lead{flex:2.15 1 0; background:var(--key)}
+.stats .lead b{font-family:var(--fs); font-size:7.48pt}
+.stats .cash b{color:var(--gold)}
 
 .rep{width:100%; border-collapse:collapse; table-layout:fixed}
 .rep th{background:var(--nav); color:#fff; font:700 5.76pt/1 var(--fs); text-transform:uppercase; padding:3.7pt 2.3pt; text-align:center; white-space:nowrap; overflow:hidden}
 .rep th.l{text-align:left}
 .rep td{padding:1.35pt 2.3pt; border-bottom:.5pt solid var(--rule); text-align:center; font:400 7.48pt/1.05 var(--fr); vertical-align:middle}
 .rep .c-prov{text-align:left; font:400 6.91pt/1.1 var(--fs); color:var(--ink-doc); overflow-wrap:anywhere}
-.rep .c-dept{text-align:left; font:400 6.33pt/1.1 var(--fs); color:var(--ink-mut); overflow-wrap:anywhere}
 .rep .c-seen{background:var(--key); font-weight:700}
 .rep .c-net{font-weight:700; color:var(--nav)}
 .rep .c-pd{text-align:left; white-space:nowrap}
 .rep .c-pb{font:700 6.91pt/1.1 var(--fs); color:var(--gold)}
 .rep .nil{color:var(--dash)}
 .rep tbody tr.alt td{background:var(--stripe)}
+.rep tbody tr.alt .c-seen{background:var(--key-2)}
 .rep .c-pd .wrap{display:flex; align-items:center; gap:2.8pt; height:7.6pt}
 .rep .meter{width:26.5pt; height:4pt; flex:none; border-radius:2pt; background:var(--track); overflow:hidden}
 .rep .meter i{display:block; height:100%; background:var(--nav-2); border-radius:2pt}
 .rep .pv{font:700 6.91pt/1 var(--fs); color:var(--nav)}
 .rep .tag{display:inline-block; margin-inline-start:1.7pt; padding:1.1pt 1.7pt; border-radius:2pt; background:var(--gold); color:#fff; font:400 4.61pt/1 var(--fs); vertical-align:middle; letter-spacing:.02em}
 
-.rep tbody tr.sub td{background:var(--band); border-top:.6pt solid var(--nav-2); border-bottom:.6pt solid var(--nav-2);
+.rep tbody tr.dept td{background:var(--band); border-top:.6pt solid var(--nav-2); border-bottom:.6pt solid var(--nav-2);
                padding-block:.8pt; font:700 6.91pt/1.1 var(--fr); color:var(--nav)}
-.rep tbody tr.sub .c-prov{font-family:var(--fr); font-weight:700; color:var(--nav)}
-.rep tbody tr.sub .c-dept{font:700 6.91pt/1.15 var(--fs); color:var(--nav)}
-.rep tbody tr.sub .c-pd{font:700 6.91pt/1.15 var(--fr); color:var(--nav)}
-.rep tbody tr.sub .c-pb{font:700 6.91pt/1.15 var(--fs); color:var(--ink-doc)}
-.rep tbody tr.sub .nil{color:var(--nav)}
+.rep tbody tr.dept .c-prov{font:700 7.05pt/1.1 var(--fs); color:var(--nav); letter-spacing:.015em}
+.rep tbody tr.dept .c-seen{background:var(--band)}
+.rep tbody tr.dept .c-pd{font:700 6.91pt/1.15 var(--fr); color:var(--nav)}
+.rep tbody tr.dept .c-pb{font:700 6.91pt/1.15 var(--fs); color:var(--ink-doc)}
+.rep tbody tr.dept .nil{color:var(--nav)}
+.rep .count{margin-inline-start:4pt; font:400 5.76pt/1 var(--fs); color:var(--nav-2); letter-spacing:0}
+/* the providers of a block are stepped in, so the department reads as a head */
+.rep tbody tr.prov .c-prov{padding-inline-start:9.5pt}
 
 .rep tbody tr.grand td{background:var(--nav); border-top:.6pt solid var(--nav-2); border-bottom:.6pt solid var(--nav-2);
                  font:700 7.48pt/1.15 var(--fr); color:#fff}
-.rep tbody tr.grand .c-prov,.rep tbody tr.grand .c-dept{font-family:var(--fr); font-size:7.48pt; font-weight:700; color:#fff}
+.rep tbody tr.grand .c-prov{font:700 7.48pt/1.15 var(--fs); color:#fff; letter-spacing:.015em}
+.rep tbody tr.grand .c-seen{background:var(--nav)}
+.rep tbody tr.grand .count{color:var(--tint-1)}
 /* the template prints this one cell in body ink on the navy bar, which reads as
    a blank; white keeps the figure legible without touching anything else */
 .rep tbody tr.grand .c-pb{font:700 6.91pt/1.15 var(--fs); color:#fff}
 .rep tbody tr.grand .nil{color:#fff}
 
-.fnote{margin:3pt 0 0; font:italic 6.33pt/1.45 var(--fs); color:var(--ink-mut)}
+.fnote{margin:2.6pt 0 0; font:italic 6.33pt/1.34 var(--fs); color:var(--ink-mut)}
 .pgfoot{
   position:absolute; left:20.7pt; right:20.7pt; bottom:11.5pt; display:flex; justify-content:space-between; gap:12pt;
   border-top:.5pt solid var(--rule); padding-top:4pt; font:400 5.76pt/1.2 var(--fs); color:var(--ink-mut); white-space:pre-wrap;
@@ -749,15 +761,10 @@ const TPL = {
   org: "MEENA PRIMARY HEALTH CARE",
   kind: "Physician Detail — Single Table",
   reportKind: "Service-wise Detailed Category Report",
-  sectionNo: "1",
-  sectionTitle: "PHYSICIAN ORDERS, INCOME & CONTRIBUTION",
-  sectionSub: "— order counts, net income, share of department and share of branch",
-  sectionSubMrn: "— visits ordered for, net income, share of department and share of branch",
   source: "Meena PHC — Cluster 2  ·  Source: MIS “Service wise Count – Detailed Category Wise”",
 };
 const COLS = [
-  { key: "prov",   head: "PROVIDER",         w: "18.56%", cls: "c-prov", left: true },
-  { key: "dept",   head: "DEPARTMENT",       w: "14.85%", cls: "c-dept", left: true },
+  { key: "prov",   head: "PROVIDER",         w: "33.41%", cls: "c-prov", left: true },
   { key: "seen",   head: "TOTAL SEEN",       w: "6.52%",  cls: "c-seen" },
   { key: "lab",    head: "LAB",              w: "2.49%",  cls: "c-n" },
   { key: "rad",    head: "RADIOLOGY",        w: "6.28%",  cls: "c-n" },
@@ -801,11 +808,11 @@ const numCell = (cls, v) => {
 };
 
 function providerRow(p) {
-  const tr = el("tr");
+  const tr = el("tr", "prov");
   const prov = el("td", "c-prov");
   prov.append(document.createTextNode(p.name));
   if (p.system) prov.append(el("span", "tag", "system"));
-  tr.append(prov, cell("c-dept", p.dept), numCell("c-seen", p.seen));
+  tr.append(prov, numCell("c-seen", p.seen));
   CATS.forEach(c => tr.append(numCell("c-n", p.cnt[c.key] || 0)));
   tr.append(cell("c-net", nf(p.net)));
   const pd = el("td", "c-pd"), wrap = el("div", "wrap");
@@ -817,18 +824,25 @@ function providerRow(p) {
   tr.append(pd, cell("c-pb", pct1(p.pctBranch)));
   return tr;
 }
-function subtotalRow(d) {
-  const tr = el("tr", "sub");
-  tr.append(cell("c-prov", d.name + " — subtotal"), cell("c-dept", d.list.length + " provider(s)"), numCell("c-seen", d.sum.seen));
+/* the department heads its own block, carrying the block's figures with it;
+   when the block runs over a page break the head is repeated above the rest */
+function deptRow(d, cont) {
+  const tr = el("tr", "dept" + (cont ? " cont" : ""));
+  const head = el("td", "c-prov");
+  head.append(document.createTextNode(d.name));
+  head.append(el("span", "count", d.list.length + " provider" + (d.list.length === 1 ? "" : "s")
+                                 + (cont ? "  ·  continued" : "")));
+  tr.append(head, numCell("c-seen", d.sum.seen));
   CATS.forEach(c => tr.append(numCell("c-n", d.sum.cnt[c.key] || 0)));
   tr.append(cell("c-net", nf(d.sum.net)), cell("c-pd", "100.0%"), cell("c-pb", pct1(d.sum.pctBranch)));
   return tr;
 }
 function grandRow(data) {
   const tr = el("tr", "grand");
-  tr.append(cell("c-prov", "BRANCH TOTAL"),
-            cell("c-dept", data.total.providers + " providers · " + data.depts.length + " departments"),
-            numCell("c-seen", data.total.seen));
+  const head = el("td", "c-prov");
+  head.append(document.createTextNode("BRANCH TOTAL"));
+  head.append(el("span", "count", data.total.providers + " providers  ·  " + data.depts.length + " departments"));
+  tr.append(head, numCell("c-seen", data.total.seen));
   CATS.forEach(c => tr.append(numCell("c-n", data.total.cnt[c.key] || 0)));
   tr.append(cell("c-net", nf(data.total.net)), cell("c-pd", "—"), cell("c-pb", "100.0%"));
   return tr;
@@ -836,27 +850,56 @@ function grandRow(data) {
 
 function modelRows(data) {
   const rows = [];
+  /* the wash alternates over the provider rows alone: the department heads
+     carry their own band, and counting them in would put two washed rows
+     side by side across a block boundary */
+  let n = 0;
   data.depts.forEach(d => {
-    d.list.forEach(p => rows.push({ kind: "p", node: providerRow(p) }));
-    rows.push({ kind: "s", node: subtotalRow(d) });
+    rows.push({ kind: "s", dept: d, node: deptRow(d) });
+    d.list.forEach(p => {
+      const node = providerRow(p);
+      if (n++ % 2 === 1) node.classList.add("alt");
+      rows.push({ kind: "p", dept: d, node });
+    });
   });
   rows.push({ kind: "g", node: grandRow(data) });
-  /* the template washes every other row; counted over the whole table so the
-     alternation survives a page break, and a subtotal paints over it anyway */
-  rows.forEach((r, i) => { if (i % 2 === 1) r.node.classList.add("alt"); });
   return rows;
 }
 
 function footnoteText(data, meta) {
-  let t = "“Total Seen” comes from the MIS Appointment Statistics – Doctor Wise export for the same period; "
-        + "a “" + DASH + "” means no appointment records (walk-in activity booked under the ER registration account). "
-        + "Order counts exclude consultation fees. “% of Dept” is the provider’s share of their own department’s net income, "
-        + "“% of Branch” their share of the " + nf(data.total.net) + " SAR branch total.";
-  if (data.byMrn) t += " Each file number counts once per provider per day in each order column, across " + nf(data.tests) + " billed items; income is untouched.";
+  let t = "“Total Seen” comes from the MIS Appointment Statistics – Doctor Wise export; a “" + DASH + "” there means no "
+        + "appointment records (walk-in activity booked under the ER registration account). Order counts exclude consultation fees; "
+        + "“% of Dept” and “% of Branch” are shares of net income, within the department and across the branch.";
+  if (data.byMrn) t += " Each file number counts once per provider per day in every order column, drawn from " + nf(data.tests) + " billed items; income is untouched.";
   else if (data.packRows) t += " A package counts as one session, not as the sessions it covers; its income is counted in full.";
   if (!data.hasPharmacy) t += " No pharmacy category exists in this MIS export.";
-  if (meta.days > 1) t += " Figures are totals for the period, not daily averages.";
+  if (meta.days > 1) t += " Every figure is a total for the period, not a daily average.";
   return t;
+}
+
+/* the branch at a glance: where the period stands, and the three figures the
+   user asks for first — visits, income, orders — with the roster beside them */
+function statBox(cls, label, value, note) {
+  const box = el("div", "s" + (cls ? " " + cls : ""));
+  box.append(el("span", null, label));
+  const b = el("b", null, value);
+  if (note) b.append(el("i", null, note));
+  box.append(b);
+  return box;
+}
+function statsStrip(data, meta, first) {
+  const strip = el("div", "stats");
+  const days = meta.days ? meta.days + (meta.days === 1 ? " day" : " days") : "";
+  strip.append(
+    statBox("lead", "BRANCH  ·  REPORTING PERIOD", meta.branch,
+            meta.longRange + (days ? "  ·  " + days : "") + (first ? "" : "  ·  continued")),
+    statBox(null, "VISITS SEEN", nf(data.total.seen), "appointments"),
+    statBox("cash", "NET INCOME", nf(data.total.net), "SAR"),
+    statBox(null, "ORDERS", nf(data.total.orders), data.byMrn ? "visits ordered for" : "billed items"),
+    statBox(null, "PROVIDERS", String(data.total.providers),
+            data.depts.length + (data.depts.length === 1 ? " department" : " departments")),
+  );
+  return strip;
 }
 
 function buildPage(opts) {
@@ -872,18 +915,7 @@ function buildPage(opts) {
   when.append(el("b", null, meta.longRange), el("span", null, TPL.reportKind));
   band.append(mark, who, when);
 
-  const sect = el("div", "sect");
-  sect.append(el("span", "badge", TPL.sectionNo),
-              el("b", null, TPL.sectionTitle + (first ? "" : " (cont.)")),
-              el("i", null, data.byMrn ? TPL.sectionSubMrn : TPL.sectionSub));
-
-  const lede = el("p", "lede");
-  const patientsWord = data.byMrn ? "visits" : "billed items";
-  lede.append(document.createTextNode("Grouped by department (departments ranked by income, providers ranked by income within each). Order columns count "),
-              el("b", null, patientsWord),
-              document.createTextNode(data.byMrn
-                ? ", not tests. Total Seen is sourced from the Appointment Statistics – Doctor Wise export."
-                : ", not amounts. Total Seen is sourced from the Appointment Statistics – Doctor Wise export."));
+  const stats = statsStrip(data, meta, first);
 
   const table = el("table", "rep");
   const cg = el("colgroup");
@@ -892,10 +924,11 @@ function buildPage(opts) {
   COLS.forEach(c => { const th = el("th", c.left ? "l" : null, c.head); htr.append(th); });
   thead.append(htr);
   const tbody = el("tbody");
+  if (!first && rows[0] && rows[0].kind === "p") tbody.append(deptRow(rows[0].dept, true));
   rows.forEach(r => tbody.append(r.node));
   table.append(cg, thead, tbody);
 
-  page.append(band, sect, lede, table);
+  page.append(band, stats, table);
   if (last) page.append(el("p", "fnote", footnoteText(data, meta)));
 
   const foot = el("div", "pgfoot");
@@ -928,7 +961,10 @@ function renderDoc(data, meta) {
   const footTop = probe.querySelector(".pgfoot").getBoundingClientRect().top - box.top;
   const fnote = probe.querySelector(".fnote");
   const fnoteH = fnote ? fnote.getBoundingClientRect().height + 2 * PT : 0;
-  const heights = [...probe.querySelectorAll("tbody tr")].map(tr => tr.getBoundingClientRect().height);
+  const trs = [...probe.querySelectorAll("tbody tr")];
+  const heights = trs.map(tr => tr.getBoundingClientRect().height);
+  /* a page that opens mid-department repeats its head, so keep a row's worth back */
+  const contH = Math.max(...trs.filter(tr => tr.classList.contains("dept")).map(tr => tr.getBoundingClientRect().height), 0);
   const capFull = footTop - 2 * PT - top - headH;
   const capLast = capFull - fnoteH;
   host.textContent = "";
@@ -936,23 +972,26 @@ function renderDoc(data, meta) {
   const cuts = [];
   let i = 0;
   while (i < heights.length) {
+    const cont = i > 0 && all[i].kind === "p" ? contH : 0;
     let rest = 0;
     for (let k = i; k < heights.length; k++) rest += heights[k];
-    if (rest <= capLast) { cuts.push([i, heights.length]); break; }
+    if (rest <= capLast - cont) { cuts.push([i, heights.length]); break; }
     let used = 0, j = i;
-    while (j < heights.length && used + heights[j] <= capFull) { used += heights[j]; j++; }
+    while (j < heights.length && used + heights[j] <= capFull - cont) { used += heights[j]; j++; }
     if (j === heights.length) { used = 0; j = i; while (j < heights.length && used + heights[j] <= capLast) { used += heights[j]; j++; } }
     if (j === i) j = i + 1;
+    while (j > i + 1 && all[j - 1].kind === "s") j--;   // a head belongs above its block
     cuts.push([i, j]);
     i = j;
   }
+  /* and the branch total never opens a page on its own: it borrows the rows
+     above it, taking the whole department head with them when it has to */
   for (let k = 1; k < cuts.length; k++) {
-    const start = cuts[k][0];
-    if (all[start].kind === "p" || cuts[k - 1][1] - cuts[k - 1][0] < 2) continue;
-    let load = 0;
-    for (let r = cuts[k][0]; r < cuts[k][1]; r++) load += heights[r];
-    const cap = k === cuts.length - 1 ? capLast : capFull;
-    if (load + heights[start - 1] <= cap) { cuts[k][0]--; cuts[k - 1][1]--; }
+    if (cuts[k][1] - cuts[k][0] > 1 || all[cuts[k][0]].kind !== "g") continue;
+    let moved = 0;
+    while (cuts[k - 1][1] - cuts[k - 1][0] > 2 && (!moved || all[cuts[k][0]].kind === "s")) {
+      cuts[k][0]--; cuts[k - 1][1]--; moved++;
+    }
   }
 
   const pages = cuts.length;
@@ -1386,11 +1425,12 @@ function collectSlide(page) {
         const cr = td.getBoundingClientRect();
         const tag = td.querySelector(".tag");
         const meter = td.querySelector(".meter");
+        const count = td.querySelector(".count");
         const value = td.querySelector(".pv") || td;
         /* the cell's own words, without the meter or the "system" tag that
            float over the table as shapes of their own */
         const clone = value.cloneNode(true);
-        clone.querySelectorAll(".tag, .meter").forEach(n => n.remove());
+        clone.querySelectorAll(".tag, .meter, .count").forEach(n => n.remove());
         const text = clone.textContent.replace(/\s+/g, " ").trim();
         const inner = td.querySelector(".nil") || (value !== td ? value : null);
         const run = runOf(inner && inner.textContent.trim() ? inner : td, text);
@@ -1411,6 +1451,11 @@ function collectSlide(page) {
             if (fr.width > 0.4) shapes.push({ kind: "rect", x: X(fr), y: Y(fr), w: fr.width * 0.75, h: fr.height * 0.75,
                                               fill: hex(getComputedStyle(fillEl).backgroundColor), radius: fr.height * 0.375 });
           }
+        }
+        if (count && count.textContent.trim()) {
+          const nr = count.getBoundingClientRect();
+          shapes.push(Object.assign({ kind: "text", x: X(nr), y: Y(nr), w: nr.width * 0.75, h: nr.height * 0.75 },
+                                    runOf(count, count.textContent.replace(/\s+/g, " ").trim()), { align: "l" }));
         }
         if (tag) {
           const gr = tag.getBoundingClientRect(), gs = getComputedStyle(tag);
@@ -1466,7 +1511,7 @@ const PPT_LAYOUT = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 </p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sldLayout>`;
 
 function slideXml(slide, hasLogo) {
-  let id = 1, body = "";
+  let id = 1, body = "", tableBody = "";
   const frame = (x, y, w, h) => `<a:xfrm><a:off x="${emu(x)}" y="${emu(y)}"/><a:ext cx="${emu(Math.max(w, 0.5))}" cy="${emu(Math.max(h, 0.5))}"/></a:xfrm>`;
 
   for (const s of slide.shapes) {
@@ -1509,7 +1554,7 @@ function slideXml(slide, hasLogo) {
       trs += `<a:tr h="${emu(row.h)}">${tcs}</a:tr>`;
     }
     id++;
-    body += `<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="${id}" name="report"/>`
+    tableBody += `<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="${id}" name="report"/>`
       + `<p:cNvGraphicFramePr><a:graphicFrameLocks noGrp="1"/></p:cNvGraphicFramePr><p:nvPr/></p:nvGraphicFramePr>`
       + `<p:xfrm><a:off x="${emu(t.x)}" y="${emu(t.y)}"/><a:ext cx="${emu(t.w)}" cy="${emu(t.rows.reduce((n, r) => n + r.h, 0))}"/></p:xfrm>`
       + `<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table">`
@@ -1531,7 +1576,7 @@ function slideXml(slide, hasLogo) {
 <p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
 <p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>
 <p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>
-${body}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`;
+${tableBody}${body}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`;
 }
 
 async function makePptx(title) {
