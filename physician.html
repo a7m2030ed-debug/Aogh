@@ -318,7 +318,6 @@ label.check{display:flex; align-items:center; gap:8px; font-size:13.5px; color:v
         </div>
         <input type="file" id="fileLogo" accept="image/png,image/svg+xml,image/jpeg,image/webp" hidden>
       </div>
-      <label class="check"><input type="checkbox" id="cPack" checked> بكج العلاج الطبيعي يُحسب جلسة واحدة — لا بعدد الجلسات التي يغطيها</label>
       <div class="note"><span class="m"></span><span id="assume">تُملأ هذه الخانات من الملف تلقائيًا، وما تكتبه هنا يبقى مقدَّمًا عليها.</span></div>
     </div>
   </section>
@@ -470,6 +469,7 @@ function shapeMis(sheet) {
     sheet, headerRow: h,
     col: {
       sub: pick(head, /^subcategory$/), name: pick(head, /^test procedurename$|^test procedure name$|^service$/),
+      mrno: pick(head, /^mrno$|^mrn$|^mr no$|^patient no$|^patient id$|^file no$/),
       code: pick(head, /^service code$/), provider: pick(head, /^provider$/), dept: pick(head, /^department$/),
       count: pick(head, /^count$/), net: pick(head, /^net amount$/), gross: pick(head, /^gross amount$/),
     },
@@ -560,7 +560,7 @@ function aggregate(mis, appt, opts) {
   const g = mis.sheet.grid, c = mis.col;
   const people = new Map();     // department + provider ⇢ figures
   const dates = [];
-  let cat = null, skipped = 0, feeNet = 0, packRows = 0, packRaw = 0;
+  let cat = null, skipped = 0, feeNet = 0, packRows = 0, packRaw = 0, tests = 0, byMrn = false;
 
   for (let i = mis.headerRow + 1; i < g.length; i++) {
     const row = g[i] || [], first = String(row[0] ?? "").trim();
@@ -586,25 +586,37 @@ function aggregate(mis, appt, opts) {
     }
     const key = dept + "   " + provider;
     let p = people.get(key);
-    if (!p) { p = { dept, name: provider, cnt: {}, net: 0, fee: 0 }; people.set(key, p); }
+    if (!p) { p = { dept, name: provider, cnt: {}, mrn: {}, net: 0, fee: 0 }; people.set(key, p); }
     const cnt = Math.round(num(row[c.count])), net = c.net >= 0 ? num(row[c.net]) : 0;
     p.net += net;
     if (bucket === "fee") { p.fee += net; feeNet += net; }
     else {
       const k = bucket || "other";
-      /* A physiotherapy package is billed once for the whole course, and its
-         Count carries the sessions it pays for — six, in this branch's export.
-         The patient attended once on that bill date, and the appointments
-         export already counts that one visit, so the line counts as one
-         session here too. The money is untouched: the package is earned on the
-         day it was billed. */
-      /* either the category says package outright, or it is a physiotherapy
-         line billed for more than one session — the six-session course */
-      const pack = opts.packOne !== false && (placed.pack || (k === "phys" && cnt > 1));
-      if (pack) { packRows++; packRaw += cnt; }
-      p.cnt[k] = (p.cnt[k] || 0) + (pack ? 1 : cnt);
+      tests += cnt;
+      /* The order columns count PATIENTS, not test line items: a doctor who
+         orders a twelve-test panel and a chest film for one patient did the
+         work of one patient, not thirteen. Each file number lands once per
+         provider per column. It also settles the package on its own — a
+         six-session physiotherapy course is one line for one patient, so it
+         counts once without a rule of its own. */
+      const file = c.mrno >= 0 ? String(row[c.mrno] ?? "").trim() : "";
+      if (file) { byMrn = true; (p.mrn[k] || (p.mrn[k] = new Set())).add(file); }
+      else {
+        /* no file number on the line: fall back to counting what was billed,
+           and keep the package from counting its sessions one by one */
+        const pack = placed.pack || (k === "phys" && cnt > 1);
+        if (pack) { packRows++; packRaw += cnt; }
+        p.cnt[k] = (p.cnt[k] || 0) + (pack ? 1 : cnt);
+      }
     }
   }
+  /* the file numbers turn into the column figures once every line is read */
+  let patients = 0;
+  for (const p of people.values())
+    for (const k in p.mrn) { p.cnt[k] = (p.cnt[k] || 0) + p.mrn[k].size; patients += p.mrn[k].size; }
+  if (byMrn) notices.push({ kind: "", text: "أعمدة الطلبات تعدّ المراجعين لا الفحوصات: " + nf(patients)
+    + " مراجعًا من " + nf(tests) + " فحصًا — كل رقم ملف يُحسب مرة واحدة عند كل طبيب." });
+  else if (c.mrno < 0) notices.push({ kind: "warn", text: "لا يوجد عمود «MRNO» في التصدير، فالأعمدة تعدّ الفحوصات لا المراجعين." });
   if (packRows) notices.push({ kind: "", text: "البكجات: " + arabicCount(packRows, "بكج واحد", "بكجان", "بكجات", "بكجًا")
     + " حُسب كل واحد منها جلسة واحدة بدل " + arabicCount(packRaw, "جلسة واحدة", "جلستين", "جلسات", "جلسة") + " — الدخل كما هو." });
   if (skipped) notices.push({ kind: "warn", text: arabicCount(skipped, "صف واحد", "صفان", "صفوف", "صفًّا") + " بلا اسم مقدّم خدمة أو بلا قسم — لم تدخل الجدول." });
@@ -612,7 +624,8 @@ function aggregate(mis, appt, opts) {
     const cols = [...u.cols].map(k => (CATS.find(c => c.key === k) || {}).label || "OTHER").join(" · ");
     notices.push({ kind: u.pack ? "" : "warn",
       text: "فئة «" + name + "»: " + arabicCount(u.rows, "صف واحد", "صفان", "صفوف", "صفًّا") + " بـ " + nf(u.net) + " ريالًا، وُضعت بحسب قسم كل صف في "
-          + cols + (u.pack ? "، وحُسب كل صف جلسة واحدة." : " — القالب لا يعرف هذه الفئة بالاسم.") });
+          + cols + (u.pack ? (byMrn ? "، وكل مراجع فيها يُحسب مرة واحدة." : "، وحُسب كل صف جلسة واحدة.")
+                             : " — القالب لا يعرف هذه الفئة بالاسم.") });
   }
   if (!seenCats.size) notices.push({ kind: "bad", text: "لم يجد الملف أسطر «Category:» — تأكد أنه تصدير «Service wise Count – Detailed Category Wise»." });
 
@@ -683,7 +696,7 @@ function aggregate(mis, appt, opts) {
 
   dates.sort((a, b) => a - b);
   return {
-    depts, total, notices, feeNet, packRows, packRaw,
+    depts, total, notices, feeNet, packRows, packRaw, byMrn, tests,
     billFrom: dates.length ? new Date(dates[0]) : null,
     billTo: dates.length ? new Date(dates[dates.length - 1]) : null,
     billDays: new Set(dates).size,
@@ -730,6 +743,7 @@ const TPL = {
   sectionNo: "1",
   sectionTitle: "PHYSICIAN ORDERS, INCOME & CONTRIBUTION",
   sectionSub: "— order counts, net income, share of department and share of branch",
+  sectionSubMrn: "— patients ordered for, net income, share of department and share of branch",
   source: "Meena PHC — Cluster 2  ·  Source: MIS “Service wise Count – Detailed Category Wise”",
 };
 const COLS = [
@@ -829,7 +843,8 @@ function footnoteText(data, meta) {
         + "a “" + DASH + "” means no appointment records (walk-in activity booked under the ER registration account). "
         + "Order counts exclude consultation fees. “% of Dept” is the provider’s share of their own department’s net income, "
         + "“% of Branch” their share of the " + nf(data.total.net) + " SAR branch total.";
-  if (data.packRows) t += " A package counts as one session, not as the sessions it covers; its income is counted in full.";
+  if (data.byMrn) t += " Each file number counts once per provider in each order column, across " + nf(data.tests) + " billed items; income is untouched.";
+  else if (data.packRows) t += " A package counts as one session, not as the sessions it covers; its income is counted in full.";
   if (!data.hasPharmacy) t += " No pharmacy category exists in this MIS export.";
   if (meta.days > 1) t += " Figures are totals for the period, not daily averages.";
   return t;
@@ -851,12 +866,15 @@ function buildPage(opts) {
   const sect = el("div", "sect");
   sect.append(el("span", "badge", TPL.sectionNo),
               el("b", null, TPL.sectionTitle + (first ? "" : " (cont.)")),
-              el("i", null, TPL.sectionSub));
+              el("i", null, data.byMrn ? TPL.sectionSubMrn : TPL.sectionSub));
 
   const lede = el("p", "lede");
-  lede.append(document.createTextNode("Grouped by department (departments ranked by income, providers ranked by income within each). All order figures are "),
-              el("b", null, "counts"),
-              document.createTextNode(", not amounts. Total Seen is sourced from the Appointment Statistics – Doctor Wise export."));
+  const patientsWord = data.byMrn ? "patients" : "billed items";
+  lede.append(document.createTextNode("Grouped by department (departments ranked by income, providers ranked by income within each). Order columns count "),
+              el("b", null, patientsWord),
+              document.createTextNode(data.byMrn
+                ? ", not tests. Total Seen is sourced from the Appointment Statistics – Doctor Wise export."
+                : ", not amounts. Total Seen is sourced from the Appointment Statistics – Doctor Wise export."));
 
   const table = el("table", "rep");
   const cg = el("colgroup");
@@ -1298,7 +1316,7 @@ function refresh() {
     return;
   }
   const m = meta();
-  state.data = aggregate(state.mis, state.appt, { sysWords: val("#inSys"), packOne: $("#cPack").checked });
+  state.data = aggregate(state.mis, state.appt, { sysWords: val("#inSys") });
   const d = state.data;
 
   if (!state.touched.branch) $("#inBranch").value = state.wbBranch || "";
@@ -1321,7 +1339,8 @@ function refresh() {
   tiles.append(
     tile("الأطباء ومقدّمو الخدمة", String(d.total.providers)),
     tile("الأقسام", String(d.depts.length)),
-    tile("إجمالي الطلبات", nf(d.total.orders)),
+    tile(d.byMrn ? "مراجعو أعمدة الطلبات" : "إجمالي الطلبات", nf(d.total.orders)),
+    tile("الفحوصات المفوترة", nf(d.tests)),
     tile("صافي الدخل — SAR", nf(d.total.net)),
     tile("مجموع المشاهَدين", nf(d.total.seen)),
     tile("صفحات الـPDF", String(state.pages)),
@@ -1372,7 +1391,7 @@ async function takeFiles(files) {
   /* the appointments header carries the requested period; when it is missing,
      the Bill Date lines in the services export stand in for it */
   if (!state.wbFrom) {
-    const probe = aggregate(state.mis, state.appt, { sysWords: val("#inSys"), packOne: $("#cPack").checked });
+    const probe = aggregate(state.mis, state.appt, { sysWords: val("#inSys") });
     state.wbFrom = probe.billFrom; state.wbTo = probe.billTo;
   }
   refresh();
@@ -1481,7 +1500,6 @@ $("#bLogoClear").onclick = () => {
 };
 paintLogo();
 
-$("#cPack").onchange = () => { if (state.mis) refresh(); };
 addEventListener("resize", () => { if (state.data) fitStage(); });
 refresh();
 })();
