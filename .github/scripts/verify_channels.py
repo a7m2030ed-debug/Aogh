@@ -32,6 +32,16 @@ GEO_CODES = {401, 403, 451}
 GROUP_ORDER = {"رياضة": 0, "إخبارية": 1, "تجريبي": 2}
 
 
+def script_rank(name):
+    """التطبيق عربي، فالقنوات ذات الأسماء العربية تتصدّر القائمة.
+    وهذا يحدّد أيضاً القناة التي تبدأ تلقائياً عند فتح التبويب."""
+    for character in name:
+        if character.isspace():
+            continue
+        return 0 if "\u0600" <= character <= "\u06FF" else 1
+    return 1
+
+
 def fetch(url, headers=None):
     """يُرجع (status, body_text, error). status = None عند فشل الاتصال."""
     request = urllib.request.Request(url)
@@ -151,6 +161,7 @@ def main():
 
     kept = [entry for _, entry in best.values()]
     kept.sort(key=lambda entry: (GROUP_ORDER.get(entry.get("group"), 9),
+                                 script_rank(entry.get("name", "")),
                                  entry.get("name", "")))
 
     with open(args.output, "w", encoding="utf-8") as handle:
