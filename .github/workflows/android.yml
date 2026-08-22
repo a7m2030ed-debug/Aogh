@@ -54,6 +54,31 @@ jobs:
           ls -lh "$GITHUB_WORKSPACE/KoraTime.apk"
           echo "path=KoraTime.apk" >> "$GITHUB_OUTPUT"
 
+      # مهمة النسخ سبق أن خرجت NO-SOURCE بصمت فبُني ملف التثبيت على قنوات
+      # قديمة دون أي إنذار. لا نثق بأن النسخ جرى — نثبته من داخل الحزمة.
+      - name: التأكّد أن الحزمة تحمل القنوات الحالية
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, sys, zipfile
+
+          apk = zipfile.ZipFile("KoraTime.apk")
+          failed = False
+          for name in ("channels.json", "ar-names.json"):
+              packed = apk.read(f"assets/{name}")
+              source = open(f"KoraTime/KoraTime/Resources/{name}", "rb").read()
+              same = hashlib.sha256(packed).digest() == hashlib.sha256(source).digest()
+              print(f"{name}: {'مطابق' if same else 'مختلف'} ({len(packed)} بايت)")
+              if not same:
+                  failed = True
+
+          channels = json.loads(apk.read("assets/channels.json"))
+          print(f"القنوات داخل الحزمة: {len(channels)}")
+          if not channels:
+              print("الحزمة بلا قنوات")
+              failed = True
+          sys.exit(1 if failed else 0)
+          PY
+
       - name: رفع الملف
         uses: actions/upload-artifact@v4
         with:

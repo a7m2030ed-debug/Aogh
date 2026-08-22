@@ -64,13 +64,20 @@ dependencies {
 
 // مصدر واحد للبيانات: ملفا القنوات والتعريب يعيشان في مشروع الآيفون،
 // ويُنسخان هنا قبل كل بناء حتى لا تفترق النسختان.
-// rootProject.file يُطبّع المسار النسبي، بخلاف Directory.dir التي تركته حرفياً
 val sharedResources = rootProject.file("../KoraTime/KoraTime/Resources")
+val sharedNames = listOf("channels.json", "ar-names.json")
+val sharedFiles = sharedNames.map { File(sharedResources, it) }
+
+// المهمة كانت تُكتب بـ from(dir){include(...)} فتخرج NO-SOURCE بصمت، وكان
+// ملف التثبيت يُبنى على النسخة المحفوظة في git بدل المصدر — أي قنوات قديمة
+// بلا أي إنذار. التسمية الصريحة لا تحتمل هذا الالتباس، والتحقّق أدناه يوقف
+// البناء بدل أن يمرّره ناقصاً.
+sharedFiles.forEach { source ->
+    require(source.isFile) { "المورد المشترك مفقود: ${source.absolutePath}" }
+}
 
 val copySharedResources by tasks.registering(Copy::class) {
-    from(sharedResources) {
-        include("channels.json", "ar-names.json")
-    }
+    sharedFiles.forEach { from(it) }
     into(layout.projectDirectory.dir("src/main/assets"))
 }
 
