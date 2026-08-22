@@ -115,7 +115,7 @@ jobs:
       # حزمة المحاكي تُنشر برابط عام، تُرفع على appetize.io لتجربة التطبيق
       # داخل المتصفّح على أي جهاز بلا ماك.
       - name: نشر نسخة المحاكي للتجربة في المتصفّح
-        if: github.event_name == 'push'
+        if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -137,7 +137,7 @@ jobs:
       # نحفظ نسخة مصغّرة داخل المستودع أيضاً حتى تُعرض في صفحة الطلب مباشرة
       # بلا تحميل. المسار docs/ خارج مرشّح paths أعلاه فلا يعيد تشغيل البناء.
       - name: حفظ اللقطات في المستودع
-        if: github.event_name == 'push'
+        if: github.event_name != 'pull_request'
         run: |
           set -euo pipefail
           BRANCH="${{ github.ref_name }}"
