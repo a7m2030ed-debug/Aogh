@@ -1,14 +1,123 @@
 [
   {
-    "name": "الشارقة الرياضية",
+    "name": "ACI Sport TV",
     "group": "رياضة",
-    "url": "https://svs.itworkscdn.net/smc4sportslive/smc4.sdp/playlist.m3u8",
-    "note": "قد تعمل داخل المنطقة فقط — تعذّر التحقّق من خارجها."
+    "url": "https://webstream.multistream.it/memfs/e2cb3629-c1a2-495b-b43a-9eb386f04ed8.m3u8",
+    "note": "قناة مفتوحة — دولية"
   },
   {
-    "name": "Red Bull TV",
+    "name": "AS3 Sport TV",
     "group": "رياضة",
-    "url": "https://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master.m3u8"
+    "url": "https://streamtv.as3sport.online:3394/hybrid/play.m3u8",
+    "note": "قناة مفتوحة — دولية"
+  },
+  {
+    "name": "Prime",
+    "group": "رياضة",
+    "url": "https://mn-nl.mncdn.com/primetv/live/index.m3u8",
+    "note": "قناة مفتوحة — سوريا"
+  },
+  {
+    "name": "الأردن الرياضية",
+    "group": "رياضة",
+    "url": "https://jrtv-live.ercdn.net/jordansporthd/jordansporthd.m3u8",
+    "note": "قناة مفتوحة — الأردن"
+  },
+  {
+    "name": "البحرين الرياضية ١",
+    "group": "رياضة",
+    "url": "https://5c7b683162943.streamlock.net/live/ngrp:sportsone_all/playlist.m3u8",
+    "note": "قناة مفتوحة — البحرين"
+  },
+  {
+    "name": "البحرين الرياضية ٢",
+    "group": "رياضة",
+    "url": "https://5c7b683162943.streamlock.net/live/ngrp:bahrainsportstwo_all/playlist.m3u8",
+    "note": "قناة مفتوحة — البحرين"
+  },
+  {
+    "name": "الرياضية المغربية",
+    "group": "رياضة",
+    "url": "http://149.100.11.252:8000/play/a065/index.m3u8",
+    "note": "قناة مفتوحة — المغرب"
+  },
+  {
+    "name": "الشارقة الرياضية",
+    "group": "رياضة",
+    "url": "https://svs.itworkscdn.net/smc4sportslive/smc4tv.smil/playlist.m3u8",
+    "note": "قناة مفتوحة — الإمارات قد تعمل داخل المنطقة فقط — تعذّر التحقّق من خارجها."
+  },
+  {
+    "name": "العراقية الرياضية",
+    "group": "رياضة",
+    "url": "https://imn-live.esite-lab.com/hls/iraqia-sports-1.m3u8",
+    "note": "قناة مفتوحة — العراق"
+  },
+  {
+    "name": "القناة الأولمبية",
+    "group": "رياضة",
+    "url": "https://ocshls-2-olympicchannel.akamaized.net/ocshls/OCTV_32.m3u8",
+    "note": "قناة مفتوحة — دولية قد تعمل داخل المنطقة فقط — تعذّر التحقّق من خارجها."
+  },
+  {
+    "name": "الكأس شوف",
+    "group": "رياضة",
+    "url": "https://liveeu-gcp.alkassdigital.net/shooflive/main.m3u8",
+    "note": "قناة مفتوحة — قطر"
+  },
+  {
+    "name": "الكأس شوف ٢",
+    "group": "رياضة",
+    "url": "https://liveeu-gcp.alkassdigital.net/shooflive2/main.m3u8",
+    "note": "قناة مفتوحة — قطر"
+  },
+  {
+    "name": "الكأس ١",
+    "group": "رياضة",
+    "url": "https://liveeu-gcp.alkassdigital.net/alkass1-p/main.m3u8",
+    "note": "قناة مفتوحة — قطر"
+  },
+  {
+    "name": "الكأس ٢",
+    "group": "رياضة",
+    "url": "https://liveeu-gcp.alkassdigital.net/alkass2-p/main.m3u8",
+    "note": "قناة مفتوحة — قطر"
+  },
+  {
+    "name": "الكأس ٣",
+    "group": "رياضة",
+    "url": "https://liveeu-gcp.alkassdigital.net/alkass3-p/main.m3u8",
+    "note": "قناة مفتوحة — قطر"
+  },
+  {
+    "name": "الكأس ٤",
+    "group": "رياضة",
+    "url": "https://liveeu-gcp.alkassdigital.net/alkass4-p/main.m3u8",
+    "note": "قناة مفتوحة — قطر"
+  },
+  {
+    "name": "الكأس ٦",
+    "group": "رياضة",
+    "url": "https://liveeu-gcp.alkassdigital.net/alkass6-p/main.m3u8",
+    "note": "قناة مفتوحة — قطر"
+  },
+  {
+    "name": "الكويت الرياضية",
+    "group": "رياضة",
+    "url": "https://kwtspta.cdn.mangomolo.com/sp/smil:sp.stream.smil/chunklist.m3u8",
+    "note": "قناة مفتوحة — الكويت"
+  },
+  {
+    "name": "الهدّاف",
+    "group": "رياضة",
+    "url": "https://live.elheddaftv.com:8081/elheddaftv/index.m3u8",
+    "note": "قناة مفتوحة — الجزائر"
+  },
+  {
+    "name": "ريد بُل",
+    "group": "رياضة",
+    "url": "https://db34cc6127ac459db55cab5f97cd66b9.mediatailor.us-west-2.amazonaws.com/v1/master/ba62fe743df0fe93366eba3a257d792884136c7f/LINEAR-680-WORBAUENFAST-WHALETVPLUS/680/whaletvplus/hls/master/playlist.m3u8",
+    "note": "قناة مفتوحة — دولية"
   },
   {
     "name": "الجزيرة",
@@ -47,161 +156,5 @@
     "url": "https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8",
     "note": "بث اختباري عام من Bitmovin. قد تعمل داخل المنطقة فقط — تعذّر التحقّق من خارجها.",
     "isDemo": true
-  },
-  {
-    "name": "ACI Sport TV",
-    "group": "رياضة",
-    "url": "https://webstream.multistream.it/memfs/e2cb3629-c1a2-495b-b43a-9eb386f04ed8.m3u8",
-    "note": "قناة مفتوحة — دولية"
-  },
-  {
-    "name": "ACI Sport TV",
-    "group": "رياضة",
-    "url": "http://145.239.5.177/564a/index.m3u8",
-    "note": "قناة مفتوحة — دولية"
-  },
-  {
-    "name": "AS3 Sport TV",
-    "group": "رياضة",
-    "url": "https://streamtv.as3sport.online:3394/hybrid/play.m3u8",
-    "note": "قناة مفتوحة — دولية"
-  },
-  {
-    "name": "Al Iraqia Sport",
-    "group": "رياضة",
-    "url": "https://imn-live.esite-lab.com/hls/iraqia-sports-1.m3u8",
-    "note": "قناة مفتوحة — العراق"
-  },
-  {
-    "name": "Alkass Four",
-    "group": "رياضة",
-    "url": "https://liveeu-gcp.alkassdigital.net/alkass4-p/main.m3u8",
-    "note": "قناة مفتوحة — قطر"
-  },
-  {
-    "name": "Alkass One",
-    "group": "رياضة",
-    "url": "https://liveeu-gcp.alkassdigital.net/alkass1-p/main.m3u8",
-    "note": "قناة مفتوحة — قطر"
-  },
-  {
-    "name": "Alkass SHOOF",
-    "group": "رياضة",
-    "url": "https://liveeu-gcp.alkassdigital.net/shooflive/main.m3u8",
-    "note": "قناة مفتوحة — قطر"
-  },
-  {
-    "name": "Alkass SHOOF 2",
-    "group": "رياضة",
-    "url": "https://liveeu-gcp.alkassdigital.net/shooflive2/main.m3u8",
-    "note": "قناة مفتوحة — قطر"
-  },
-  {
-    "name": "Alkass Six",
-    "group": "رياضة",
-    "url": "https://liveeu-gcp.alkassdigital.net/alkass6-p/main.m3u8",
-    "note": "قناة مفتوحة — قطر"
-  },
-  {
-    "name": "Alkass Three",
-    "group": "رياضة",
-    "url": "https://liveeu-gcp.alkassdigital.net/alkass3-p/main.m3u8",
-    "note": "قناة مفتوحة — قطر"
-  },
-  {
-    "name": "Alkass Two",
-    "group": "رياضة",
-    "url": "https://liveeu-gcp.alkassdigital.net/alkass2-p/main.m3u8",
-    "note": "قناة مفتوحة — قطر"
-  },
-  {
-    "name": "Arryadia",
-    "group": "رياضة",
-    "url": "http://149.100.11.252:8000/play/a065/index.m3u8",
-    "note": "قناة مفتوحة — المغرب"
-  },
-  {
-    "name": "Bahrain Sports 1",
-    "group": "رياضة",
-    "url": "https://5c7b683162943.streamlock.net/live/ngrp:sportsone_all/playlist.m3u8",
-    "note": "قناة مفتوحة — البحرين"
-  },
-  {
-    "name": "Bahrain Sports 2",
-    "group": "رياضة",
-    "url": "https://5c7b683162943.streamlock.net/live/ngrp:bahrainsportstwo_all/playlist.m3u8",
-    "note": "قناة مفتوحة — البحرين"
-  },
-  {
-    "name": "El-Heddaf TV",
-    "group": "رياضة",
-    "url": "https://live.elheddaftv.com:8081/elheddaftv/index.m3u8",
-    "note": "قناة مفتوحة — الجزائر"
-  },
-  {
-    "name": "Jordan Sport",
-    "group": "رياضة",
-    "url": "https://jrtv-live.ercdn.net/jordansporthd/jordansporthd.m3u8",
-    "note": "قناة مفتوحة — الأردن"
-  },
-  {
-    "name": "Jordan Sport",
-    "group": "رياضة",
-    "url": "http://93.184.10.248/JordanSport/index.m3u8",
-    "note": "قناة مفتوحة — الأردن"
-  },
-  {
-    "name": "KTV Sport",
-    "group": "رياضة",
-    "url": "https://kwtspta.cdn.mangomolo.com/sp/smil:sp.stream.smil/chunklist.m3u8",
-    "note": "قناة مفتوحة — الكويت"
-  },
-  {
-    "name": "KTV Sport Plus",
-    "group": "رياضة",
-    "url": "https://kwtsplta.cdn.mangomolo.com/spl/smil:spl.stream.smil/chunklist.m3u8",
-    "note": "قناة مفتوحة — الكويت"
-  },
-  {
-    "name": "Olympic Channel",
-    "group": "رياضة",
-    "url": "https://ocshls-2-olympicchannel.akamaized.net/ocshls/OCTV_32.m3u8",
-    "note": "قناة مفتوحة — دولية قد تعمل داخل المنطقة فقط — تعذّر التحقّق من خارجها."
-  },
-  {
-    "name": "Olympic Channel",
-    "group": "رياضة",
-    "url": "https://ocshls-2-olympicchannel.akamaized.net/ocshls/OCTV_1.m3u8",
-    "note": "قناة مفتوحة — دولية قد تعمل داخل المنطقة فقط — تعذّر التحقّق من خارجها."
-  },
-  {
-    "name": "Oman Sports TV",
-    "group": "رياضة",
-    "url": "https://partneta.cdn.mgmlcdn.com/omsport/smil:omsport.stream.smil/chunklist.m3u8",
-    "note": "قناة مفتوحة — عُمان"
-  },
-  {
-    "name": "Prime",
-    "group": "رياضة",
-    "url": "https://mn-nl.mncdn.com/primetv/live/index.m3u8",
-    "note": "قناة مفتوحة — سوريا"
-  },
-  {
-    "name": "Red Bull TV",
-    "group": "رياضة",
-    "url": "https://db34cc6127ac459db55cab5f97cd66b9.mediatailor.us-west-2.amazonaws.com/v1/master/ba62fe743df0fe93366eba3a257d792884136c7f/LINEAR-680-WORBAUENFAST-WHALETVPLUS/680/whaletvplus/hls/master/playlist.m3u8",
-    "note": "قناة مفتوحة — دولية"
-  },
-  {
-    "name": "Red Bull TV",
-    "group": "رياضة",
-    "url": "https://d03ae6b5c6724c24867e97a3dc04934a.mediatailor.us-west-2.amazonaws.com/v1/master/ba62fe743df0fe93366eba3a257d792884136c7f/LINEAR-1026-WORBBRPTFAST-WHALETVPLUS/1026/hls/master/playlist.m3u8",
-    "note": "قناة مفتوحة — دولية"
-  },
-  {
-    "name": "Sharjah Sports",
-    "group": "رياضة",
-    "url": "https://svs.itworkscdn.net/smc4sportslive/smc4tv.smil/playlist.m3u8",
-    "note": "قناة مفتوحة — الإمارات قد تعمل داخل المنطقة فقط — تعذّر التحقّق من خارجها."
   }
 ]
