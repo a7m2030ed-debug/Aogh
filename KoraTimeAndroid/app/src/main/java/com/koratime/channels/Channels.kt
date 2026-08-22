@@ -1,14 +1,25 @@
 package com.koratime.channels
 
 import android.content.Context
+import androidx.annotation.OptIn
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.DefaultLoadControl
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.koratime.core.Http
 import com.koratime.core.Settings
 import com.koratime.core.ktJson
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonPrimitive
@@ -122,6 +133,10 @@ object M3UParser {
 private fun JsonPrimitive.textOrNull(): String? =
     content.takeIf { it.isNotBlank() && !it.equals("null", ignoreCase = true) }
 
+private const val DEFAULT_USER_AGENT = "KoraTime/1.0 (Android)"
+private const val MAX_RETRIES = 3
+
+@OptIn(UnstableApi::class)
 class ChannelsViewModel(
     private val settings: Settings,
     private val context: Context
@@ -136,8 +151,102 @@ class ChannelsViewModel(
     var selectedGroup by mutableStateOf<String?>(null)
     var currentId by mutableStateOf<String?>(null)
         private set
+    var isBuffering by mutableStateOf(false)
+        private set
+    var errorText by mutableStateOf<String?>(null)
+        private set
 
     private var loaded = false
+
+    // ————— المشغّل —————
+    // يعيش في النموذج لا في الشاشة: التنقّل بين التبويبات يهدم شجرة الواجهة،
+    // وكان ذلك يحرّر المشغّل ويعيد جلب البثّ من الصفر عند كل عودة.
+
+    private val httpFactory = DefaultHttpDataSource.Factory()
+        .setUserAgent(DEFAULT_USER_AGENT)
+        .setAllowCrossProtocolRedirects(true)
+        .setConnectTimeoutMs(8_000)
+        .setReadTimeoutMs(8_000)
+
+    // الإعداد الافتراضي ينتظر ٢٫٥ ثانية قبل البدء و٥ ثوانٍ بعد كل تعثّر،
+    // وهو ما يجعل البثّ الحيّ يبدو معلّقاً. نقصّرهما.
+    private val loadControl = DefaultLoadControl.Builder()
+        .setBufferDurationsMs(15_000, 50_000, 1_000, 2_000)
+        .build()
+
+    private val playerListener = object : Player.Listener {
+        override fun onPlaybackStateChanged(state: Int) {
+            isBuffering = state == Player.STATE_BUFFERING
+            if (state == Player.STATE_READY) {
+                retries = 0
+                errorText = null
+            }
+        }
+
+        override fun onPlayerError(error: PlaybackException) = recover(error)
+    }
+
+    private val lazyPlayer = lazy {
+        ExoPlayer.Builder(context)
+            .setMediaSourceFactory(DefaultMediaSourceFactory(httpFactory))
+            .setLoadControl(loadControl)
+            .build()
+            .apply {
+                playWhenReady = true
+                addListener(playerListener)
+            }
+    }
+
+    val player: ExoPlayer by lazyPlayer
+
+    private var retryJob: Job? = null
+    private var retries = 0
+
+    /** البثّ الحيّ يتعثّر كثيراً، فنحاول بصمت قبل إزعاج المستخدم برسالة. */
+    private fun recover(error: PlaybackException) {
+        if (error.errorCode == PlaybackException.ERROR_CODE_BEHIND_LIVE_WINDOW) {
+            player.seekToDefaultPosition()
+            player.prepare()
+            return
+        }
+        if (retries >= MAX_RETRIES) {
+            isBuffering = false
+            errorText = "تعذّر تشغيل هذه القناة. قد تكون محجوبة أو متوقّفة."
+            return
+        }
+        retries += 1
+        isBuffering = true
+        retryJob?.cancel()
+        retryJob = viewModelScope.launch {
+            delay(700L * retries)
+            player.prepare()
+            player.play()
+        }
+    }
+
+    private fun play(channel: Channel) {
+        retryJob?.cancel()
+        retries = 0
+        errorText = null
+        isBuffering = true
+        httpFactory.setUserAgent(channel.userAgent ?: DEFAULT_USER_AGENT)
+        httpFactory.setDefaultRequestProperties(channel.headers)
+        player.setMediaItem(MediaItem.fromUri(channel.url))
+        player.prepare()
+        player.play()
+    }
+
+    fun retryCurrent() {
+        current?.let { play(it) }
+    }
+
+    override fun onCleared() {
+        retryJob?.cancel()
+        if (lazyPlayer.isInitialized()) {
+            player.removeListener(playerListener)
+            player.release()
+        }
+    }
 
     val groups: List<String> get() = channels.map { it.group }.distinct()
 
@@ -149,8 +258,10 @@ class ChannelsViewModel(
     val hasUserChannels: Boolean get() = channels.any { !it.isDemo }
 
     fun select(channel: Channel) {
+        if (currentId == channel.id && errorText == null) return
         currentId = channel.id
         settings.lastChannelId = channel.id
+        play(channel)
     }
 
     /** القناة التي تبدأ تلقائياً: مؤكّدة وغير تجريبية إن أمكن. */

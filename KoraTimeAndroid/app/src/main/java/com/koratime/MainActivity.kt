@@ -20,6 +20,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -99,6 +100,7 @@ private fun RootScreen(settings: Settings) {
     val news: NewsViewModel = viewModel(factory = factory)
 
     var tab by remember { mutableStateOf(Tab.MATCHES) }
+    val stateHolder = rememberSaveableStateHolder()
 
     Scaffold(
         containerColor = KT.bg,
@@ -125,35 +127,38 @@ private fun RootScreen(settings: Settings) {
     ) { padding ->
         KTBackground(modifier = Modifier.fillMaxSize()) {
             Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-                when (tab) {
-                    Tab.MATCHES -> MatchesScreen(
-                        model = matches,
-                        arabicNames = settings.arabicNames,
-                        onOpenMatch = { }
-                    )
+                // كل تبويب يحتفظ بموضع تمريره عند العودة إليه بدل أن يبدأ من أوّله
+                stateHolder.SaveableStateProvider(tab.name) {
+                    when (tab) {
+                        Tab.MATCHES -> MatchesScreen(
+                            model = matches,
+                            arabicNames = settings.arabicNames,
+                            onOpenMatch = { }
+                        )
 
-                    Tab.CHANNELS -> ChannelsScreen(
-                        model = channels,
-                        matches = matches,
-                        autoPlay = settings.autoPlayOnOpen,
-                        arabicNames = settings.arabicNames,
-                        onOpenSettings = { tab = Tab.SETTINGS }
-                    )
+                        Tab.CHANNELS -> ChannelsScreen(
+                            model = channels,
+                            matches = matches,
+                            autoPlay = settings.autoPlayOnOpen,
+                            arabicNames = settings.arabicNames,
+                            onOpenSettings = { tab = Tab.SETTINGS }
+                        )
 
-                    Tab.NEWS -> NewsScreen(model = news)
+                        Tab.NEWS -> NewsScreen(model = news)
 
-                    Tab.SETTINGS -> SettingsScreen(
-                        settings = settings,
-                        onChannelsChanged = {
-                            channels.invalidate()
-                            channels.reload()
-                        },
-                        onNewsChanged = {
-                            news.invalidate()
-                            news.reload()
-                        },
-                        onMatchesChanged = { matches.invalidate() }
-                    )
+                        Tab.SETTINGS -> SettingsScreen(
+                            settings = settings,
+                            onChannelsChanged = {
+                                channels.invalidate()
+                                channels.reload()
+                            },
+                            onNewsChanged = {
+                                news.invalidate()
+                                news.reload()
+                            },
+                            onMatchesChanged = { matches.invalidate() }
+                        )
+                    }
                 }
             }
         }

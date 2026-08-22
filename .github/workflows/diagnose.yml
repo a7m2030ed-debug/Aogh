@@ -1,0 +1,43 @@
+name: قياس جودة البثّ
+
+on:
+  push:
+    branches: [claude/kora-time-ios-app-q9dalt]
+    paths:
+      - ".github/scripts/measure_channels.py"
+      - ".github/workflows/diagnose.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: diagnose-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  measure:
+    name: قياس كل قناة
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: القياس
+        run: python3 .github/scripts/measure_channels.py
+
+      - name: حفظ التقرير
+        run: |
+          set -euo pipefail
+          cat docs/stream-report.md >> "$GITHUB_STEP_SUMMARY"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/stream-report.md
+          # --cached يلتقط الملف الجديد أيضاً، بخلاف git diff وحدها
+          if git diff --cached --quiet; then
+            echo "لا جديد في التقرير"
+            exit 0
+          fi
+          git commit -m "تقرير جودة البثّ [skip ci]"
+          git push

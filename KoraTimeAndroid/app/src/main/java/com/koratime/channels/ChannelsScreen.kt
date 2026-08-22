@@ -26,7 +26,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,13 +42,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.media3.common.MediaItem
-import androidx.media3.common.PlaybackException
-import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.datasource.DefaultHttpDataSource
-import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
 import coil.compose.AsyncImage
 import com.koratime.Broadcasters
@@ -58,11 +51,12 @@ import com.koratime.matches.MatchesViewModel
 import com.koratime.ui.KT
 import com.koratime.ui.KTCard
 
-private const val DEFAULT_USER_AGENT = "KoraTime/1.0 (Android)"
-
 /**
  * تبويب القنوات: المشغّل يبدأ فوراً، وقائمة القنوات على اليمين — كطريقة
  * تطبيقات البثّ. الضغط على قناة يبدّل البثّ في مكانه.
+ *
+ * المشغّل نفسه يملكه ChannelsViewModel لا هذه الشاشة، فيبقى البثّ حيّاً
+ * عند التنقّل بين التبويبات بدل أن يُحرَّر ويُعاد بناؤه.
  */
 @OptIn(UnstableApi::class)
 @Composable
@@ -74,42 +68,8 @@ fun ChannelsScreen(
     onOpenSettings: () -> Unit
 ) {
     val context = LocalContext.current
-    var errorText by remember { mutableStateOf<String?>(null) }
-    var isBuffering by remember { mutableStateOf(false) }
-
-    // مصنع الشبكة يُبنى مرة واحدة؛ ترويسات كل قناة تُضبط عليه قبل التشغيل
-    val httpFactory = remember {
-        DefaultHttpDataSource.Factory()
-            .setUserAgent(DEFAULT_USER_AGENT)
-            .setAllowCrossProtocolRedirects(true)
-            .setConnectTimeoutMs(15_000)
-            .setReadTimeoutMs(20_000)
-    }
-
-    val player = remember {
-        ExoPlayer.Builder(context)
-            .setMediaSourceFactory(DefaultMediaSourceFactory(httpFactory))
-            .build()
-            .apply { playWhenReady = true }
-    }
-
-    DisposableEffect(Unit) {
-        val listener = object : Player.Listener {
-            override fun onPlaybackStateChanged(state: Int) {
-                isBuffering = state == Player.STATE_BUFFERING
-            }
-
-            override fun onPlayerError(error: PlaybackException) {
-                isBuffering = false
-                errorText = "تعذّر تشغيل هذه القناة. قد تكون محجوبة أو متوقّفة."
-            }
-        }
-        player.addListener(listener)
-        onDispose {
-            player.removeListener(listener)
-            player.release()
-        }
-    }
+    val errorText = model.errorText
+    val isBuffering = model.isBuffering
 
     LaunchedEffect(Unit) {
         model.loadIfNeeded()
@@ -124,18 +84,6 @@ fun ChannelsScreen(
     }
 
     val current = model.current
-    LaunchedEffect(current?.id) {
-        val channel = current ?: return@LaunchedEffect
-        errorText = null
-        isBuffering = true
-
-        httpFactory.setUserAgent(channel.userAgent ?: DEFAULT_USER_AGENT)
-        httpFactory.setDefaultRequestProperties(channel.headers)
-
-        player.setMediaItem(MediaItem.fromUri(channel.url))
-        player.prepare()
-        player.play()
-    }
 
     Row(modifier = Modifier.fillMaxSize()) {
         ChannelRail(
@@ -156,9 +104,11 @@ fun ChannelsScreen(
                         PlayerView(viewContext).apply {
                             useController = true
                             setShowBuffering(PlayerView.SHOW_BUFFERING_NEVER)
-                            this.player = player
+                            this.player = model.player
                         }
                     },
+                    // فكّ الارتباط عند هدم الشاشة حتى لا يتمسّك المشغّل بسطح ميّت
+                    onRelease = { it.player = null },
                     modifier = Modifier.fillMaxSize()
                 )
 
@@ -171,7 +121,7 @@ fun ChannelsScreen(
                         modifier = Modifier.background(Color.Black.copy(alpha = 0.6f)).padding(14.dp)
                     ) {
                         Text(
-                            errorText!!,
+                            errorText,
                             fontSize = 12.sp,
                             color = Color.White,
                             textAlign = TextAlign.Center
@@ -181,11 +131,7 @@ fun ChannelsScreen(
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = KT.accent,
-                            modifier = Modifier.clickable {
-                                errorText = null
-                                player.prepare()
-                                player.play()
-                            }
+                            modifier = Modifier.clickable { model.retryCurrent() }
                         )
                     }
                 } else if (isBuffering) {
