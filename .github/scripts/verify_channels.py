@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""يفحص روابط البثّ في channels-candidates.json ويبني channels.json من الشغّال منها.
+"""يفحص روابط البثّ المرشّحة ويبني channels.json من الشغّال منها.
 
 لماذا: لا يمكن التحقّق من الروابط في بيئة التطوير (الشبكة محجوبة)، فيتولّى
 هذا الفاحص المهمّة على خادم GitHub الذي يملك إنترنتاً مفتوحاً.
@@ -12,12 +12,13 @@
 
 التشغيل:
     python3 .github/scripts/verify_channels.py \
-        --candidates KoraTime/Resources/channels-candidates.json \
-        --output KoraTime/Resources/channels.json \
-        --report report.md
+        --candidates merged-candidates.json \
+        --output KoraTime/KoraTime/Resources/channels.json \
+        --report channel-report.md
 """
 
 import argparse
+import concurrent.futures
 import json
 import sys
 import urllib.error
@@ -117,8 +118,11 @@ def main():
     kept, rows = [], []
     counts = {"ok": 0, "geo": 0, "dead": 0}
 
-    for channel in candidates:
-        status, detail = check(channel)
+    # الفحص متوازٍ: مئة رابط بمهلة ١٥ ثانية لا تُفحص بالتتابع في وقت معقول
+    with concurrent.futures.ThreadPoolExecutor(max_workers=12) as pool:
+        results = list(pool.map(check, candidates))
+
+    for channel, (status, detail) in zip(candidates, results):
         counts[status] += 1
         rows.append((status, channel.get("name", "?"), channel.get("group", ""), detail))
         print(f"[{status:4}] {channel.get('name')} — {detail}", flush=True)
