@@ -21,6 +21,13 @@
     "logo": "https://prime1tv.com/wp-content/uploads/2025/12/7-1.png"
   },
   {
+    "name": "We Sport TV",
+    "group": "رياضة",
+    "url": "http://forever.megogo.xyz/iptv/QGB4M3H62GC7E3/2471/index.m3u8",
+    "note": "قناة مفتوحة — دولية",
+    "logo": "https://i.imgur.com/vJZgpOb.png"
+  },
+  {
     "name": "الأردن الرياضية",
     "group": "رياضة",
     "url": "https://jrtv-live.ercdn.net/jordansporthd/jordansporthd.m3u8",
@@ -53,21 +60,16 @@
     "group": "رياضة",
     "url": "https://svs.itworkscdn.net/smc4sportslive/smc4tv.smil/playlist.m3u8",
     "note": "قناة مفتوحة — الإمارات قد تعمل داخل المنطقة فقط — تعذّر التحقّق من خارجها.",
-    "logo": "https://i.imgur.com/CsEElsJ.png"
-  },
-  {
-    "name": "العراقية الرياضية",
-    "group": "رياضة",
-    "url": "https://imn-live.esite-lab.com/hls/iraqia-sports-1.m3u8",
-    "note": "قناة مفتوحة — العراق",
-    "logo": "https://i.imgur.com/DrrlxTO.png"
+    "logo": "https://i.imgur.com/CsEElsJ.png",
+    "geoRestricted": true
   },
   {
     "name": "القناة الأولمبية",
     "group": "رياضة",
     "url": "https://ocshls-2-olympicchannel.akamaized.net/ocshls/OCTV_32.m3u8",
     "note": "قناة مفتوحة — دولية قد تعمل داخل المنطقة فقط — تعذّر التحقّق من خارجها.",
-    "logo": "https://i.imgur.com/wPQVVtj.png"
+    "logo": "https://i.imgur.com/wPQVVtj.png",
+    "geoRestricted": true
   },
   {
     "name": "الكأس شوف",
@@ -189,6 +191,7 @@
     "group": "تجريبي",
     "url": "https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8",
     "note": "بث اختباري عام من Bitmovin. قد تعمل داخل المنطقة فقط — تعذّر التحقّق من خارجها.",
-    "isDemo": true
+    "isDemo": true,
+    "geoRestricted": true
   }
 ]
