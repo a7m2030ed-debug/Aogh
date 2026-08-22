@@ -107,20 +107,6 @@
     "logo": "https://i.imgur.com/R1hGX1d.png"
   },
   {
-    "name": "الكويت الرياضية بلس",
-    "group": "رياضة",
-    "url": "https://kwtsplta.cdn.mangomolo.com/spl/smil:spl.stream.smil/chunklist.m3u8",
-    "note": "قناة مفتوحة — الكويت",
-    "logo": "https://i.imgur.com/l4oX0gf.png"
-  },
-  {
-    "name": "الهدّاف",
-    "group": "رياضة",
-    "url": "https://live.elheddaftv.com:8081/elheddaftv/index.m3u8",
-    "note": "قناة مفتوحة — الجزائر",
-    "logo": "https://i.imgur.com/cDkIDIA.png"
-  },
-  {
     "name": "ريد بُل",
     "group": "رياضة",
     "url": "https://db34cc6127ac459db55cab5f97cd66b9.mediatailor.us-west-2.amazonaws.com/v1/master/ba62fe743df0fe93366eba3a257d792884136c7f/LINEAR-680-WORBAUENFAST-WHALETVPLUS/680/whaletvplus/hls/master/playlist.m3u8",
@@ -154,6 +140,13 @@
     "url": "https://mn-nl.mncdn.com/primetv/live/index.m3u8",
     "note": "قناة مفتوحة — سوريا",
     "logo": "https://prime1tv.com/wp-content/uploads/2025/12/7-1.png"
+  },
+  {
+    "name": "We Sport TV",
+    "group": "رياضة",
+    "url": "http://forever.megogo.xyz/iptv/QGB4M3H62GC7E3/2471/index.m3u8",
+    "note": "قناة مفتوحة — دولية",
+    "logo": "https://i.imgur.com/vJZgpOb.png"
   },
   {
     "name": "الجزيرة",
