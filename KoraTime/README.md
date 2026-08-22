@@ -5,6 +5,25 @@
 
 ---
 
+## من داخل التطبيق
+
+لقطات حقيقية من محاكي آيفون، تُلتقط آلياً مع كل بناء عبر
+[التشغيل الآلي](../.github/workflows/ios.yml) — لا تصاميم تخيّلية.
+
+| المباريات | القنوات |
+|---|---|
+| ![المباريات](../docs/screenshots/matches.png) | ![القنوات](../docs/screenshots/channels.png) |
+
+| الأخبار | الإعدادات |
+|---|---|
+| ![الأخبار](../docs/screenshots/news.png) | ![الإعدادات](../docs/screenshots/settings.png) |
+
+**تجربة التطبيق بلا ماك:** حمّل
+[نسخة المحاكي](https://github.com/a7m2030ed-debug/Aogh/releases/download/sim-build/KoraTime-simulator.zip)
+وارفعها على [appetize.io](https://appetize.io) لتشغيل التطبيق داخل المتصفّح على أي جهاز.
+
+---
+
 ## التشغيل
 
 يلزم جهاز **Mac** عليه **Xcode 15 أو أحدث** (الهدف iOS 17+):

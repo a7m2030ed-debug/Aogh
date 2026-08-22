@@ -112,6 +112,28 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
+      # حزمة المحاكي تُنشر برابط عام، تُرفع على appetize.io لتجربة التطبيق
+      # داخل المتصفّح على أي جهاز بلا ماك.
+      - name: نشر نسخة المحاكي للتجربة في المتصفّح
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          APP=$(find KoraTime/build/Build/Products/Debug-iphonesimulator -maxdepth 1 -name "*.app" | head -1)
+          if [ -z "$APP" ]; then echo "لا توجد حزمة تطبيق"; exit 1; fi
+          ( cd "$(dirname "$APP")" && zip -qry "$GITHUB_WORKSPACE/KoraTime-simulator.zip" "$(basename "$APP")" )
+          ls -lh KoraTime-simulator.zip
+          TAG="sim-build"
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" \
+              --prerelease \
+              --title "نسخة المحاكي — كورة تايم" \
+              --notes "حزمة .app لمحاكي آيفون، تُحدَّث مع كل بناء. ارفعها على appetize.io لتجربة التطبيق داخل المتصفّح بلا ماك."
+          fi
+          gh release upload "$TAG" KoraTime-simulator.zip --clobber
+          echo "الرابط العام: https://github.com/${{ github.repository }}/releases/download/$TAG/KoraTime-simulator.zip"
+
       # نحفظ نسخة مصغّرة داخل المستودع أيضاً حتى تُعرض في صفحة الطلب مباشرة
       # بلا تحميل. المسار docs/ خارج مرشّح paths أعلاه فلا يعيد تشغيل البناء.
       - name: حفظ اللقطات في المستودع
