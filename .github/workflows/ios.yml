@@ -1,0 +1,110 @@
+name: بناء كورة تايم ولقطات الشاشة
+
+on:
+  push:
+    branches: [claude/kora-time-ios-app-q9dalt]
+    paths:
+      - "KoraTime/**"
+      - ".github/workflows/ios.yml"
+      - ".github/scripts/pick_simulator.py"
+  pull_request:
+    paths:
+      - "KoraTime/**"
+      - ".github/workflows/ios.yml"
+      - ".github/scripts/pick_simulator.py"
+  workflow_dispatch:
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: بناء وتشغيل على محاكي آيفون
+    runs-on: macos-latest
+    timeout-minutes: 40
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: أدوات البناء المتاحة
+        run: |
+          xcodebuild -version
+          xcrun simctl list runtimes | grep -i ios || true
+
+      - name: اختيار محاكي آيفون
+        id: sim
+        run: |
+          set -euo pipefail
+          xcrun simctl list devices available -j \
+            | python3 .github/scripts/pick_simulator.py \
+            | tee -a "$GITHUB_OUTPUT"
+
+      - name: بناء التطبيق
+        working-directory: KoraTime
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project KoraTime.xcodeproj \
+            -scheme KoraTime \
+            -configuration Debug \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            COMPILER_INDEX_STORE_ENABLE=NO
+
+      - name: تشغيل المحاكي وتثبيت التطبيق
+        working-directory: KoraTime
+        run: |
+          set -euo pipefail
+          UDID="${{ steps.sim.outputs.udid }}"
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+          # شريط حالة ثابت حتى تخرج اللقطات نظيفة
+          xcrun simctl status_bar "$UDID" override \
+            --time "9:41" --batteryState charged --batteryLevel 100 \
+            --cellularMode active --cellularBars 4 --wifiMode active --wifiBars 3 || true
+          APP=$(find build/Build/Products/Debug-iphonesimulator -maxdepth 1 -name "*.app" | head -1)
+          if [ -z "$APP" ]; then echo "لم يُعثر على حزمة التطبيق بعد البناء"; exit 1; fi
+          echo "التطبيق: $APP"
+          xcrun simctl install "$UDID" "$APP"
+
+      - name: التقاط لقطات لكل تبويب
+        working-directory: KoraTime
+        run: |
+          set -euo pipefail
+          UDID="${{ steps.sim.outputs.udid }}"
+          mkdir -p screenshots
+          for TAB in matches channels news settings; do
+            xcrun simctl terminate "$UDID" com.koratime.app >/dev/null 2>&1 || true
+            sleep 1
+            xcrun simctl launch "$UDID" com.koratime.app -KTStartTab "$TAB"
+            # مهلة كافية لجلب البيانات من الشبكة وبدء البث
+            sleep 14
+            xcrun simctl io "$UDID" screenshot "screenshots/$TAB.png"
+            echo "التُقطت: $TAB"
+          done
+          xcrun simctl terminate "$UDID" com.koratime.app >/dev/null 2>&1 || true
+
+      - name: البحث عن أي انهيار
+        if: always()
+        run: |
+          REPORTS="$HOME/Library/Logs/DiagnosticReports"
+          if ls "$REPORTS"/KoraTime* >/dev/null 2>&1; then
+            echo "::warning::عُثر على تقرير انهيار"
+            for f in "$REPORTS"/KoraTime*; do
+              echo "===== $f"
+              head -60 "$f"
+            done
+          else
+            echo "لا توجد تقارير انهيار."
+          fi
+
+      - name: رفع اللقطات
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: koratime-screenshots
+          path: KoraTime/screenshots/*.png
+          if-no-files-found: warn
+          retention-days: 30

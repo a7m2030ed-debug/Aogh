@@ -33,6 +33,16 @@ final class AppRouter {
 
     var tab: Tab = .matches
 
+    init() {
+        // يسمح بفتح التطبيق على تبويب محدّد عبر وسيط تشغيل:
+        //   xcrun simctl launch <device> com.koratime.app -KTStartTab channels
+        // يُستخدم في التقاط صور الشاشة آلياً، ولا أثر له في الاستخدام العادي.
+        if let raw = UserDefaults.standard.string(forKey: "KTStartTab"),
+           let requested = Tab(rawValue: raw) {
+            tab = requested
+        }
+    }
+
     /// بحث أخبار مطلوب من شاشة أخرى (اسم فريق مثلاً).
     var pendingNewsQuery: String?
     /// طلب فتح قناة بعينها عند الانتقال لتبويب القنوات.
