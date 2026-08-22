@@ -58,6 +58,10 @@ dependencies {
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.exoplayer.hls)
     implementation(libs.media3.ui)
+    implementation(libs.media3.cast)
+    implementation(libs.play.cast.framework)
+    implementation(libs.androidx.mediarouter)
+    implementation(libs.androidx.appcompat)
     implementation(libs.coil.compose)
     implementation(libs.kotlinx.serialization.json)
 }

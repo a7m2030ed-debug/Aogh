@@ -45,6 +45,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
+import androidx.mediarouter.app.MediaRouteButton
+import com.google.android.gms.cast.framework.CastButtonFactory
 import coil.compose.AsyncImage
 import com.koratime.Broadcasters
 import com.koratime.core.ArabicNames
@@ -74,6 +76,7 @@ fun ChannelsScreen(
 
     LaunchedEffect(Unit) {
         model.loadIfNeeded()
+        model.initCast()
     }
 
     // أول قناة تُشغَّل تلقائياً بعد وصول القائمة
@@ -233,7 +236,19 @@ private fun PlayerSurface(
             modifier = Modifier.fillMaxSize()
         )
 
-        if (current == null) {
+        if (model.isCasting) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text("يُعرض على الشاشة", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = KT.accent)
+                Text(
+                    model.castDeviceName ?: "جهاز متصل",
+                    fontSize = 12.sp,
+                    color = Color.White.copy(alpha = 0.8f)
+                )
+            }
+        } else if (current == null) {
             Text("اختر قناة من القائمة", fontSize = 13.sp, color = Color.White.copy(alpha = 0.7f))
         } else if (errorText != null) {
             Column(
@@ -261,6 +276,17 @@ private fun PlayerSurface(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp)
         ) {
+            if (model.canCast) {
+                // زرّ النظام القياسي: يفتح قائمة الأجهزة التي يعرفها أندرويد
+                AndroidView(
+                    factory = { viewContext ->
+                        MediaRouteButton(viewContext).also { button ->
+                            CastButtonFactory.setUpMediaRouteButton(viewContext, button)
+                        }
+                    },
+                    modifier = Modifier.size(38.dp)
+                )
+            }
             PlayerCornerButton(
                 icon = if (isFullscreen) KTIcons.CollapseScreen else KTIcons.ExpandScreen,
                 label = if (isFullscreen) "تصغير" else "ملء الشاشة",

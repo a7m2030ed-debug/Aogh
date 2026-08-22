@@ -3,7 +3,7 @@ package com.koratime
 import android.app.Activity
 import android.content.pm.ActivityInfo
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -53,7 +53,9 @@ import com.koratime.ui.KTBackground
 import com.koratime.ui.KTIcons
 import com.koratime.ui.KoraTimeTheme
 
-class MainActivity : ComponentActivity() {
+// AppCompatActivity لا ComponentActivity: زرّ البثّ إلى الشاشات يعرض
+// قائمة الأجهزة عبر FragmentManager، وسمة AppCompat شرط لتنسيقه.
+class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

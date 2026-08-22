@@ -13,6 +13,11 @@
         android:usesCleartextTraffic="true"
         android:theme="@style/Theme.KoraTime">
 
+        <!-- إطار البثّ إلى الشاشات الذكية يقرأ إعداداته من هذا الصنف -->
+        <meta-data
+            android:name="com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME"
+            android:value="com.koratime.cast.KTCastOptionsProvider" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

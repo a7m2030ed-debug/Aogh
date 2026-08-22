@@ -7,7 +7,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.media3.cast.CastPlayer
+import androidx.media3.cast.SessionAvailabilityListener
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
+import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -15,6 +19,9 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import com.google.android.gms.cast.framework.CastContext
+import com.google.android.gms.common.ConnectionResult
+import com.google.android.gms.common.GoogleApiAvailability
 import com.koratime.core.Http
 import com.koratime.core.Settings
 import com.koratime.core.ktJson
@@ -206,6 +213,71 @@ class ChannelsViewModel(
     private var retryJob: Job? = null
     private var retries = 0
 
+    // ————— البثّ إلى الشاشات الذكية —————
+    // إطار غوغل يحتاج خدمات Play؛ على جهاز بلا خدمات نتجاهله بهدوء بدل
+    // أن ينهار التطبيق عند فتح تبويب القنوات.
+    private var castContext: CastContext? = null
+    private var castPlayer: CastPlayer? = null
+
+    var isCasting by mutableStateOf(false)
+        private set
+    var castDeviceName by mutableStateOf<String?>(null)
+        private set
+    var canCast by mutableStateOf(false)
+        private set
+
+    fun initCast() {
+        if (castContext != null) return
+        val available = GoogleApiAvailability.getInstance()
+            .isGooglePlayServicesAvailable(context) == ConnectionResult.SUCCESS
+        if (!available) return
+
+        val shared = runCatching { CastContext.getSharedInstance(context) }.getOrNull() ?: return
+        castContext = shared
+        canCast = true
+
+        // caster لا player: الأخير اسم مشغّل الجوال في هذا الصنف، وخلطهما
+        // هنا يعني إسكات الشاشة بدل الجوال عند بدء البثّ.
+        val caster = CastPlayer(shared)
+        caster.setSessionAvailabilityListener(object : SessionAvailabilityListener {
+            override fun onCastSessionAvailable() {
+                isCasting = true
+                castDeviceName = shared.sessionManager.currentCastSession?.castDevice?.friendlyName
+                errorText = null
+                isBuffering = false
+                current?.let { channel ->
+                    caster.setMediaItem(castMediaItem(channel))
+                    caster.playWhenReady = true
+                }
+                // يصمت الجوال ما دامت الشاشة تعرض
+                if (lazyPlayer.isInitialized()) player.pause()
+            }
+
+            override fun onCastSessionUnavailable() {
+                isCasting = false
+                castDeviceName = null
+                current?.let { play(it) }   // العودة إلى الجوال
+            }
+        })
+        castPlayer = caster
+    }
+
+    /**
+     * الشاشة تحتاج نوع المحتوى صراحةً: المستقبل الافتراضي لا يخمّن HLS
+     * من الامتداد وحده، وبلا ذلك يرفض الرابط.
+     */
+    private fun castMediaItem(channel: Channel): MediaItem =
+        MediaItem.Builder()
+            .setUri(channel.url)
+            .setMimeType(MimeTypes.APPLICATION_M3U8)
+            .setMediaMetadata(
+                MediaMetadata.Builder()
+                    .setTitle(channel.name)
+                    .setStation(channel.group)
+                    .build()
+            )
+            .build()
+
     /** البثّ الحيّ يتعثّر كثيراً، فنحاول بصمت قبل إزعاج المستخدم برسالة. */
     private fun recover(error: PlaybackException) {
         if (error.errorCode == PlaybackException.ERROR_CODE_BEHIND_LIVE_WINDOW) {
@@ -232,6 +304,16 @@ class ChannelsViewModel(
         retryJob?.cancel()
         retries = 0
         errorText = null
+
+        // متصل بشاشة؟ الشاشة هي التي تعرض، والجوال يصمت
+        castPlayer?.takeIf { isCasting }?.let { caster ->
+            caster.setMediaItem(castMediaItem(channel))
+            caster.playWhenReady = true
+            isBuffering = false
+            if (lazyPlayer.isInitialized()) player.pause()
+            return
+        }
+
         isBuffering = true
         httpFactory.setUserAgent(channel.userAgent ?: DEFAULT_USER_AGENT)
         httpFactory.setDefaultRequestProperties(channel.headers)
@@ -246,6 +328,8 @@ class ChannelsViewModel(
 
     override fun onCleared() {
         retryJob?.cancel()
+        castPlayer?.setSessionAvailabilityListener(null)
+        castPlayer?.release()
         if (lazyPlayer.isInitialized()) {
             player.removeListener(playerListener)
             player.release()
