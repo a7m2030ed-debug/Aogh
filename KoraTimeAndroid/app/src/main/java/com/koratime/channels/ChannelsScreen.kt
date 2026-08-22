@@ -227,13 +227,25 @@ private fun PlayerSurface(
     onToggleFullscreen: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    // أزرارنا تتبع ظهور أزرار المشغّل نفسه: لمسة تُظهر الكل ولمسة تُخفيه،
+    // بدل أن تبقى أزرارنا معلّقة فوق الصورة دائماً.
+    var controlsVisible by remember { mutableStateOf(true) }
+
     Box(modifier = modifier.background(Color.Black), contentAlignment = Alignment.Center) {
         AndroidView(
             factory = { viewContext ->
                 PlayerView(viewContext).apply {
                     useController = true
                     setShowBuffering(PlayerView.SHOW_BUFFERING_NEVER)
-                    this.player = model.player
+                    controllerShowTimeoutMs = 2_500
+                    setControllerVisibilityListener(
+                        PlayerView.ControllerVisibilityListener { visibility ->
+                            controlsVisible = visibility == android.view.View.VISIBLE
+                        }
+                    )
+                    // viewPlayer لا player: نسخة بلا أمر تغيير السرعة
+                    this.player = model.viewPlayer
                 }
             },
             // فكّ الارتباط عند هدم الشاشة حتى لا يتمسّك المشغّل بسطح ميّت
@@ -276,11 +288,21 @@ private fun PlayerSurface(
 
         // زرّا ملء الشاشة والعكس على الشاشات الذكية، في الزاوية كما في
         // تطبيقات الفيديو. BottomEnd في RTL هو الركن الأيسر السفلي.
-        Row(
+        if (controlsVisible) Row(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp)
         ) {
+            // مخرج لتلفزيونات لا تتحدّث Cast: نسلّم الرابط لتطبيق يعرفها
+            PlayerCornerButton(
+                icon = KTIcons.SendToScreen,
+                label = stringResource(R.string.send_to_app),
+                onClick = {
+                    model.shareIntent()?.let { intent ->
+                        runCatching { context.startActivity(intent) }
+                    }
+                }
+            )
             if (model.canCast) {
                 // زرّ النظام القياسي: يفتح قائمة الأجهزة التي يعرفها أندرويد
                 AndroidView(

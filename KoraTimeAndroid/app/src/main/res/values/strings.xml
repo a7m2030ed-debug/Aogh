@@ -74,6 +74,7 @@
     <string name="cast_device">Connected device</string>
     <string name="pick_channel">Pick a channel from the list</string>
     <string name="minimize">Exit full screen</string>
+    <string name="send_to_app">Send to another app</string>
     <string name="fullscreen">Full screen</string>
     <string name="all_groups">All categories</string>
     <string name="no_channels">No channels</string>

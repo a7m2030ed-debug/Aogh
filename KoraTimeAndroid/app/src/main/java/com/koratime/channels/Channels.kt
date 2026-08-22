@@ -1,6 +1,8 @@
 package com.koratime.channels
 
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.annotation.OptIn
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -13,6 +15,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
+import androidx.media3.common.ForwardingPlayer
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultHttpDataSource
@@ -391,6 +394,43 @@ class ChannelsViewModel(
     /** تُستدعى عند مغادرة التبويب إن أراد المستخدم إيقاف الصوت. */
     fun pausePlayback() {
         if (lazyPlayer.isInitialized()) player.playWhenReady = false
+    }
+
+    /**
+     * المشغّل كما تراه الواجهة: بلا أمر تغيير السرعة.
+     *
+     * قائمة إعدادات المشغّل تبني صفوفها من الأوامر المتاحة، فحجب الأمر
+     * يُخفي صفّ «سرعة التشغيل» — ولا معنى لتسريع بثّ حيّ أصلاً.
+     */
+    val viewPlayer: Player by lazy {
+        object : ForwardingPlayer(player) {
+            override fun getAvailableCommands(): Player.Commands =
+                super.getAvailableCommands().buildUpon()
+                    .remove(Player.COMMAND_SET_SPEED_AND_PITCH)
+                    .build()
+
+            override fun isCommandAvailable(command: Int): Boolean =
+                command != Player.COMMAND_SET_SPEED_AND_PITCH &&
+                    super.isCommandAvailable(command)
+        }
+    }
+
+    /**
+     * تسليم البثّ لتطبيق آخر يعرف كيف يصله بالتلفاز.
+     *
+     * إطار غوغل يكتشف أجهزة Cast وحدها؛ تلفزيونات سامسونج وإل جي تتحدّث
+     * DLNA أو AirPlay فلا تظهر في قائمته مهما كانت الشبكة واحدة. تمرير
+     * الرابط لتطبيق يتقن تلك البروتوكولات هو المخرج الوحيد بلا مكتبات
+     * ضخمة، ويترك للمستخدم اختيار التطبيق الذي يثق به.
+     */
+    fun shareIntent(): Intent? {
+        val channel = current ?: return null
+        return Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(Uri.parse(channel.url), MimeTypes.APPLICATION_M3U8)
+            putExtra(Intent.EXTRA_TITLE, channel.name)
+            putExtra("title", channel.name)   // ما يقرأه VLC وغيره
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
     }
 
     override fun onCleared() {

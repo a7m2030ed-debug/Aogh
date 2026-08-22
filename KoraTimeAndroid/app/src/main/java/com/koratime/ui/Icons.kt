@@ -93,6 +93,56 @@ object KTIcons {
         }.build()
     }
 
+    /** شاشة وسهم خارج منها — إرسال البثّ إلى تطبيق آخر. */
+    val SendToScreen: ImageVector by lazy {
+        ImageVector.Builder(
+            name = "KTSendToScreen",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f
+        ).apply {
+            // إطار الشاشة، مفتوح من أعلى اليمين ليمرّ السهم
+            path(
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 1.9f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round
+            ) {
+                moveTo(13.0f, 4.0f)
+                lineTo(4.5f, 4.0f)
+                arcTo(1.5f, 1.5f, 0.0f, false, false, 3.0f, 5.5f)
+                lineTo(3.0f, 16.5f)
+                arcTo(1.5f, 1.5f, 0.0f, false, false, 4.5f, 18.0f)
+                lineTo(19.5f, 18.0f)
+                arcTo(1.5f, 1.5f, 0.0f, false, false, 21.0f, 16.5f)
+                lineTo(21.0f, 11.0f)
+            }
+            // قاعدة الشاشة
+            path(
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 1.9f,
+                strokeLineCap = StrokeCap.Round
+            ) {
+                moveTo(8.5f, 21.0f)
+                lineTo(15.5f, 21.0f)
+            }
+            // السهم الخارج نحو أعلى اليمين
+            path(
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 1.9f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round
+            ) {
+                moveTo(15.0f, 3.0f)
+                lineTo(21.0f, 3.0f)
+                lineTo(21.0f, 9.0f)
+                moveTo(21.0f, 3.0f)
+                lineTo(14.0f, 10.0f)
+            }
+        }.build()
+    }
+
     /** أربعة أسهم للخارج — ملء الشاشة. */
     val ExpandScreen: ImageVector by lazy { cornerArrows(outward = true) }
 
