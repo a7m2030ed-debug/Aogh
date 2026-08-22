@@ -13,6 +13,15 @@ struct NewsItem: Identifiable, Hashable {
         guard let date = date else { return "" }
         return KTDate.ago(date)
     }
+
+    /// كثير من الخلاصات تعيد العنوان نفسه في الوصف — لا فائدة من عرضه مرتين.
+    var meaningfulSummary: String? {
+        let trimmed = summary.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.count > 30 else { return nil }
+        let head = title.prefix(40).lowercased()
+        guard !head.isEmpty, !trimmed.lowercased().hasPrefix(String(head)) else { return nil }
+        return trimmed
+    }
 }
 
 /// قارئ خلاصات RSS 2.0 و Atom بمحلّل XML المدمج — بلا مكتبات خارجية.

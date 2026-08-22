@@ -23,17 +23,21 @@ struct SettingsView: View {
             ZStack {
                 KTBackground()
 
-                Form {
-                    matchesSection(settings: settings)
-                    channelsSection(settings: settings)
-                    feedsSection(settings: settings)
-                    appearanceSection(settings: settings)
-                    aboutSection
+                VStack(spacing: 0) {
+                    KTScreenTitle(title: "الإعدادات",
+                                  subtitle: "مصادر البيانات، قنواتك، وخلاصات الأخبار")
+
+                    Form {
+                        matchesSection(settings: settings)
+                        channelsSection(settings: settings)
+                        feedsSection(settings: settings)
+                        appearanceSection(settings: settings)
+                        aboutSection
+                    }
+                    .scrollContentBackground(.hidden)
                 }
-                .scrollContentBackground(.hidden)
             }
-            .navigationTitle("الإعدادات")
-            .navigationBarTitleDisplayMode(.large)
+            .toolbar(.hidden, for: .navigationBar)
         }
         .tint(KT.accent)
         .task { applyFocus() }

@@ -213,7 +213,9 @@ struct DateStrip: View {
                 }
                 .padding(.horizontal, 16)
             }
-            .onAppear {
+            // بعد اكتمال التخطيط، لا قبله — وإلا بقي الشريط عند طرفه الأول.
+            .task {
+                try? await Task.sleep(for: .milliseconds(300))
                 proxy.scrollTo(KTDate.startOfDay(Date()).timeIntervalSince1970, anchor: .center)
             }
         }

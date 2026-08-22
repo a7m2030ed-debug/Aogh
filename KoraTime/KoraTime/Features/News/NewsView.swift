@@ -198,8 +198,8 @@ struct NewsHeroCard: View {
                     .multilineTextAlignment(.leading)
                     .lineLimit(3)
 
-                if !item.summary.isEmpty {
-                    Text(item.summary)
+                if let summary = item.meaningfulSummary {
+                    Text(summary)
                         .font(.system(size: 12))
                         .foregroundStyle(KT.textSecondary)
                         .multilineTextAlignment(.leading)
