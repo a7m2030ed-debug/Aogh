@@ -8,10 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Newspaper
-import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -44,6 +41,7 @@ import com.koratime.news.NewsViewModel
 import com.koratime.settings.SettingsScreen
 import com.koratime.ui.KT
 import com.koratime.ui.KTBackground
+import com.koratime.ui.KTIcons
 import com.koratime.ui.KoraTimeTheme
 
 class MainActivity : ComponentActivity() {
@@ -67,9 +65,9 @@ class MainActivity : ComponentActivity() {
 }
 
 private enum class Tab(val title: String, val icon: ImageVector) {
-    MATCHES("المباريات", Icons.Filled.SportsSoccer),
-    CHANNELS("القنوات", Icons.Filled.PlayCircle),
-    NEWS("الأخبار", Icons.Filled.Newspaper),
+    MATCHES("المباريات", KTIcons.Ball),
+    CHANNELS("القنوات", KTIcons.PlayCircle),
+    NEWS("الأخبار", KTIcons.Newspaper),
     SETTINGS("الإعدادات", Icons.Filled.Settings)
 }
 

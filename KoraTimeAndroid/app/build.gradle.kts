@@ -53,7 +53,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation(libs.androidx.material.icons)
+    implementation(libs.androidx.material.icons.core)
     implementation(libs.androidx.browser)
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.exoplayer.hls)

@@ -13,6 +13,7 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
 /** خطأ بصياغة عربية تُعرض للمستخدم مباشرة. */
@@ -28,7 +29,10 @@ val ktJson = Json {
 object Http {
 
     private const val USER_AGENT = "KoraTime/1.0 (Android)"
-    private val cache = HashMap<String, Pair<Long, String>>()
+
+    // الأخبار تجلب عدّة خلاصات في وقت واحد، فالذاكرة المؤقّتة تُكتب من أكثر
+    // من خيط — HashMap عادية قد تفسد أو تعلّق تحت هذا الضغط.
+    private val cache = ConcurrentHashMap<String, Pair<Long, String>>()
 
     suspend fun text(
         url: String,
