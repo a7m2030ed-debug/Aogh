@@ -1,0 +1,79 @@
+name: بناء كورة تايم لأندرويد
+
+on:
+  push:
+    branches: [claude/kora-time-ios-app-q9dalt]
+    paths:
+      - "KoraTimeAndroid/**"
+      - "KoraTime/KoraTime/Resources/**"
+      - ".github/workflows/android.yml"
+  pull_request:
+    paths:
+      - "KoraTimeAndroid/**"
+      - "KoraTime/KoraTime/Resources/**"
+      - ".github/workflows/android.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: بناء ملف التثبيت
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.10.2"
+
+      - name: بناء APK
+        working-directory: KoraTimeAndroid
+        run: gradle assembleDebug --no-daemon --stacktrace
+
+      - name: تسمية الملف
+        id: apk
+        working-directory: KoraTimeAndroid
+        run: |
+          set -euo pipefail
+          SOURCE=$(find app/build/outputs/apk/debug -name "*.apk" | head -1)
+          if [ -z "$SOURCE" ]; then echo "لم يُنتج أي ملف APK"; exit 1; fi
+          cp "$SOURCE" "$GITHUB_WORKSPACE/KoraTime.apk"
+          ls -lh "$GITHUB_WORKSPACE/KoraTime.apk"
+          echo "path=KoraTime.apk" >> "$GITHUB_OUTPUT"
+
+      - name: رفع الملف
+        uses: actions/upload-artifact@v4
+        with:
+          name: koratime-apk
+          path: KoraTime.apk
+          retention-days: 30
+
+      # رابط عام يثبّته المستخدم على أي جوال أندرويد بلا حساب ولا دفع
+      - name: نشر الملف برابط مباشر
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="android-build"
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" \
+              --prerelease \
+              --title "كورة تايم لأندرويد" \
+              --notes "ملف تثبيت مباشر، يُحدَّث مع كل تعديل. فعّل «تثبيت من مصادر غير معروفة» ثم افتح الملف."
+          fi
+          gh release upload "$TAG" KoraTime.apk --clobber
+          echo "الرابط: https://github.com/${{ github.repository }}/releases/download/$TAG/KoraTime.apk"
