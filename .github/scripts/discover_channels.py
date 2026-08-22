@@ -23,6 +23,7 @@ import urllib.request
 
 API_CHANNELS = "https://iptv-org.github.io/api/channels.json"
 API_STREAMS = "https://iptv-org.github.io/api/streams.json"
+API_LOGOS = "https://iptv-org.github.io/api/logos.json"
 TIMEOUT = 30
 
 # الدول التي نأخذ قنواتها الرياضية
@@ -78,6 +79,28 @@ def arabic_name(name):
     return ARABIC_NAMES.get(name.strip().lower(), name)
 
 
+def build_logo_index(logos):
+    """channel_id -> أفضل شعار متاح. الفهرس نقل الشعارات إلى ملف مستقل،
+    فنقرأه دفاعياً: أي تغيّر في شكله يعني شعارات أقل، لا انهياراً."""
+    preferred = {"PNG": 0, "SVG": 1, "WEBP": 2, "JPEG": 3}
+    best = {}
+    if not isinstance(logos, list):
+        return best
+    for logo in logos:
+        if not isinstance(logo, dict):
+            continue
+        channel_id = logo.get("channel")
+        url = logo.get("url")
+        if not channel_id or not isinstance(url, str) or not url.startswith("http"):
+            continue
+        rank = (preferred.get((logo.get("format") or "").upper(), 9),
+                -(logo.get("width") or 0))
+        current = best.get(channel_id)
+        if current is None or rank < current[0]:
+            best[channel_id] = (rank, url)
+    return {key: value[1] for key, value in best.items()}
+
+
 def fetch_json(url):
     request = urllib.request.Request(url, headers={"User-Agent": "KoraTime/1.0"})
     with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
@@ -118,6 +141,13 @@ def main():
     by_id = {channel["id"]: channel for channel in channels if wanted(channel)}
     print(f"قنوات رياضية مطابقة في الفهرس: {len(by_id)}")
 
+    try:
+        logo_by_id = build_logo_index(fetch_json(API_LOGOS))
+        print(f"شعارات متاحة: {len(logo_by_id)}")
+    except Exception as error:
+        print(f"تعذّر جلب الشعارات ({type(error).__name__}) — تُعرض الأحرف الأولى بدلاً منها.")
+        logo_by_id = {}
+
     seen_urls = {entry.get("url") for entry in manual}
     discovered = []
 
@@ -140,8 +170,9 @@ def main():
             "url": url,
             "note": f"قناة مفتوحة — {country}",
         }
-        if channel.get("logo"):
-            entry["logo"] = channel["logo"]
+        logo = channel.get("logo") or logo_by_id.get(channel_id)
+        if logo:
+            entry["logo"] = logo
         if stream.get("user_agent"):
             entry["userAgent"] = stream["user_agent"]
         if stream.get("referrer"):
