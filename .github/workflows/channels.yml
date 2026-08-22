@@ -25,6 +25,7 @@ jobs:
 
     permissions:
       contents: write
+      actions: write
 
     steps:
       - uses: actions/checkout@v4
@@ -67,6 +68,7 @@ jobs:
           retention-days: 30
 
       - name: حفظ القائمة المحدّثة
+        id: save
         if: steps.guard.outputs.ready == 'true'
         run: |
           set -euo pipefail
@@ -76,9 +78,19 @@ jobs:
           git add KoraTime/KoraTime/Resources/channels.json
           if git diff --cached --quiet; then
             echo "القائمة لم تتغيّر."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           git commit -m "تحديث قائمة القنوات بعد فحص الروابط"
           git fetch origin "$BRANCH"
           git rebase "origin/$BRANCH"
           git push origin "HEAD:$BRANCH"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      # الدفعات الصادرة من التشغيل الآلي لا تُطلق أحداث push، فالبناء لا يرى
+      # القائمة الجديدة. الإطلاق اليدوي عبر gh يعمل بالتوكن نفسه ويغلق الحلقة.
+      - name: إطلاق بناء التطبيق على القائمة الجديدة
+        if: steps.save.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run ios.yml --ref "${{ github.ref_name }}"
