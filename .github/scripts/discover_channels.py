@@ -39,6 +39,44 @@ EXTRA_KEYWORDS = ("red bull tv", "sport tv", "eurosport news", "olympic")
 
 MAX_CHANNELS = 150
 
+# الفهرس بالإنجليزية والتطبيق عربي — نعرّب ما نعرفه ونترك الباقي كما هو
+ARABIC_NAMES = {
+    "alkass one": "الكأس ١",
+    "alkass two": "الكأس ٢",
+    "alkass three": "الكأس ٣",
+    "alkass four": "الكأس ٤",
+    "alkass five": "الكأس ٥",
+    "alkass six": "الكأس ٦",
+    "alkass seven": "الكأس ٧",
+    "alkass shoof": "الكأس شوف",
+    "alkass shoof 2": "الكأس شوف ٢",
+    "arryadia": "الرياضية المغربية",
+    "ktv sport": "الكويت الرياضية",
+    "ktv sport plus": "الكويت الرياضية بلس",
+    "bahrain sports 1": "البحرين الرياضية ١",
+    "bahrain sports 2": "البحرين الرياضية ٢",
+    "jordan sport": "الأردن الرياضية",
+    "oman sports tv": "عُمان الرياضية",
+    "al iraqia sport": "العراقية الرياضية",
+    "el-heddaf tv": "الهدّاف",
+    "sharjah sports": "الشارقة الرياضية",
+    "dubai sports": "دبي الرياضية",
+    "dubai racing": "دبي ريسينج",
+    "abu dhabi sports 1": "أبوظبي الرياضية ١",
+    "abu dhabi sports 2": "أبوظبي الرياضية ٢",
+    "ad sports 1": "أبوظبي الرياضية ١",
+    "ad sports 2": "أبوظبي الرياضية ٢",
+    "saudi sports": "السعودية الرياضية",
+    "libya sport": "ليبيا الرياضية",
+    "tunisia national 2": "الوطنية التونسية ٢",
+    "olympic channel": "القناة الأولمبية",
+    "red bull tv": "ريد بُل",
+}
+
+
+def arabic_name(name):
+    return ARABIC_NAMES.get(name.strip().lower(), name)
+
 
 def fetch_json(url):
     request = urllib.request.Request(url, headers={"User-Agent": "KoraTime/1.0"})
@@ -97,7 +135,7 @@ def main():
         seen_urls.add(url)
         country = COUNTRIES.get(channel.get("country"), "دولية")
         entry = {
-            "name": channel.get("name") or channel_id,
+            "name": arabic_name(channel.get("name") or channel_id),
             "group": "رياضة",
             "url": url,
             "note": f"قناة مفتوحة — {country}",
@@ -110,12 +148,13 @@ def main():
             entry["referer"] = stream["referrer"]
         discovered.append(entry)
 
-    # قناة واحدة قد يكون لها عدة روابط؛ نكتفي بأول رابطين لكل اسم
+    # قناة واحدة قد يكون لها عدة روابط؛ نُبقي ثلاثة كحد أقصى ليختار الفاحص
+    # منها الشغّال، ثم يزيل التكرار بعد الفحص.
     per_name = {}
     trimmed = []
     for entry in discovered:
         count = per_name.get(entry["name"], 0)
-        if count >= 2:
+        if count >= 3:
             continue
         per_name[entry["name"]] = count + 1
         trimmed.append(entry)

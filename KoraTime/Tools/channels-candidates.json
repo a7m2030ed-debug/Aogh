@@ -1,75 +1,5 @@
 [
   {
-    "name": "أبوظبي الرياضية 1",
-    "group": "رياضة",
-    "url": "https://admdn1.cdn.mangomolo.com/adsports1/smil:adsports1.stream.smil/chunklist.m3u8"
-  },
-  {
-    "name": "أبوظبي الرياضية 2",
-    "group": "رياضة",
-    "url": "https://admdn2.cdn.mangomolo.com/adsports2/smil:adsports2.stream.smil/chunklist.m3u8"
-  },
-  {
-    "name": "أبوظبي الرياضية 3",
-    "group": "رياضة",
-    "url": "https://admdn3.cdn.mangomolo.com/adsports3/smil:adsports3.stream.smil/chunklist.m3u8"
-  },
-  {
-    "name": "أبوظبي الرياضية 4",
-    "group": "رياضة",
-    "url": "https://admdn4.cdn.mangomolo.com/adsports4/smil:adsports4.stream.smil/chunklist.m3u8"
-  },
-  {
-    "name": "دبي الرياضية",
-    "group": "رياضة",
-    "url": "https://dmisxthvll.cdn.mgmlcdn.com/dubaisports/smil:dubaisports.stream.smil/chunklist.m3u8"
-  },
-  {
-    "name": "دبي الرياضية 3",
-    "group": "رياضة",
-    "url": "https://dmithrvll.cdn.mgmlcdn.com/dubaisports3/smil:dubaisports3.stream.smil/chunklist.m3u8"
-  },
-  {
-    "name": "دبي ريسينج",
-    "group": "رياضة",
-    "url": "https://dmithrvll.cdn.mgmlcdn.com/dubairacing/smil:dubairacing.stream.smil/chunklist.m3u8"
-  },
-  {
-    "name": "الشارقة الرياضية",
-    "group": "رياضة",
-    "url": "https://svs.itworkscdn.net/smc4sportslive/smc4.sdp/playlist.m3u8"
-  },
-  {
-    "name": "الكويت الرياضية",
-    "group": "رياضة",
-    "url": "https://kwtsplus-lh.akamaihd.net/i/kwtsp_1@519281/master.m3u8"
-  },
-  {
-    "name": "البحرين الرياضية",
-    "group": "رياضة",
-    "url": "https://5c7b683162943.streamlock.net/live/ngrp:Sport_all/playlist.m3u8"
-  },
-  {
-    "name": "عُمان الرياضية",
-    "group": "رياضة",
-    "url": "https://partneropr-lh.akamaihd.net/i/omansport_1@505942/master.m3u8"
-  },
-  {
-    "name": "العراقية الرياضية",
-    "group": "رياضة",
-    "url": "https://media.livaat.com/iraqiasport/index.m3u8"
-  },
-  {
-    "name": "الرياضية التونسية",
-    "group": "رياضة",
-    "url": "https://streaming.tunisianet.tn/watania2/index.m3u8"
-  },
-  {
-    "name": "Red Bull TV",
-    "group": "رياضة",
-    "url": "https://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master.m3u8"
-  },
-  {
     "name": "الجزيرة",
     "group": "إخبارية",
     "url": "https://live-hls-web-aja.getaj.net/AJA/index.m3u8"
@@ -78,16 +8,6 @@
     "name": "الجزيرة مباشر",
     "group": "إخبارية",
     "url": "https://live-hls-web-ajm.getaj.net/AJM/index.m3u8"
-  },
-  {
-    "name": "العربي",
-    "group": "إخبارية",
-    "url": "https://alaraby.cdn.octivid.com/alaraby/smil:alaraby.stream.smil/chunklist.m3u8"
-  },
-  {
-    "name": "العربي 2",
-    "group": "إخبارية",
-    "url": "https://alaraby2-live.cdn.octivid.com/alaraby2/smil:alaraby2.stream.smil/chunklist.m3u8"
   },
   {
     "name": "تجربة البث HD",

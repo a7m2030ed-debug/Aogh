@@ -29,6 +29,7 @@ TIMEOUT = 15
 USER_AGENT = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 "
               "(KHTML, like Gecko) Version/17.0 Safari/605.1.15")
 GEO_CODES = {401, 403, 451}
+GROUP_ORDER = {"رياضة": 0, "إخبارية": 1, "تجريبي": 2}
 
 
 def fetch(url, headers=None):
@@ -122,6 +123,7 @@ def main():
     with concurrent.futures.ThreadPoolExecutor(max_workers=12) as pool:
         results = list(pool.map(check, candidates))
 
+    survivors = []
     for channel, (status, detail) in zip(candidates, results):
         counts[status] += 1
         rows.append((status, channel.get("name", "?"), channel.get("group", ""), detail))
@@ -135,7 +137,20 @@ def main():
             note = entry.get("note", "")
             warning = "قد تعمل داخل المنطقة فقط — تعذّر التحقّق من خارجها."
             entry["note"] = f"{note} {warning}".strip()
-        kept.append(entry)
+        survivors.append((status, entry))
+
+    # القناة الواحدة قد تصل بعدة روابط؛ نُبقي واحداً لكل اسم ونفضّل المؤكّد
+    # على المحجوب جغرافياً.
+    best = {}
+    for status, entry in survivors:
+        key = " ".join(entry.get("name", "").split()).casefold()
+        current = best.get(key)
+        if current is None or (current[0] == "geo" and status == "ok"):
+            best[key] = (status, entry)
+
+    kept = [entry for _, entry in best.values()]
+    kept.sort(key=lambda entry: (GROUP_ORDER.get(entry.get("group"), 9),
+                                 entry.get("name", "")))
 
     with open(args.output, "w", encoding="utf-8") as handle:
         json.dump(kept, handle, ensure_ascii=False, indent=2)
