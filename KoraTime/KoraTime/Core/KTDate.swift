@@ -1,0 +1,177 @@
+import Foundation
+
+/// كل التواريخ في التطبيق تمرّ من هنا: تقويم ميلادي، لغة عربية، أرقام لاتينية،
+/// وتوقيت جهاز المستخدم.
+enum KTDate {
+
+    static let locale = Locale(identifier: "ar_SA@calendar=gregorian;numbers=latn")
+
+    static var calendar: Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.locale = locale
+        calendar.timeZone = .current
+        return calendar
+    }
+
+    // MARK: - محوّلات ثابتة (إنشاء DateFormatter مكلف، فنُنشئه مرة واحدة)
+
+    private static func make(_ format: String, utc: Bool = false) -> DateFormatter {
+        let formatter = DateFormatter()
+        formatter.locale = locale
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.timeZone = utc ? TimeZone(identifier: "UTC") : .current
+        formatter.dateFormat = format
+        return formatter
+    }
+
+    /// صيغة المفاتيح المرسلة لواجهات البيانات (يوم واحد).
+    static let apiDay: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.timeZone = .current
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
+
+    static let clock = make("HH:mm")
+    static let weekday = make("EEEE")
+    static let shortWeekday = make("EEE")
+    static let dayNumber = make("d")
+    static let shortMonth = make("MMM")
+    static let fullDay = make("EEEE d MMMM yyyy")
+    static let dayAndMonth = make("d MMMM")
+
+    private static let relative: RelativeDateTimeFormatter = {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.locale = locale
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.unitsStyle = .full
+        return formatter
+    }()
+
+    // MARK: - عرض
+
+    /// "اليوم" / "أمس" / "غداً" وإلا اسم اليوم مع تاريخه.
+    static func dayLabel(_ date: Date) -> String {
+        let cal = calendar
+        if cal.isDateInToday(date) { return "اليوم" }
+        if cal.isDateInYesterday(date) { return "أمس" }
+        if cal.isDateInTomorrow(date) { return "غداً" }
+        return "\(weekday.string(from: date)) \(dayAndMonth.string(from: date))"
+    }
+
+    static func shortDayLabel(_ date: Date) -> String {
+        let cal = calendar
+        if cal.isDateInToday(date) { return "اليوم" }
+        if cal.isDateInYesterday(date) { return "أمس" }
+        if cal.isDateInTomorrow(date) { return "غداً" }
+        return shortWeekday.string(from: date)
+    }
+
+    static func time(_ date: Date) -> String {
+        clock.string(from: date)
+    }
+
+    /// "قبل ٣ ساعات" للأخبار.
+    static func ago(_ date: Date) -> String {
+        let seconds = Date().timeIntervalSince(date)
+        if seconds < 60 { return "الآن" }
+        return relative.localizedString(for: date, relativeTo: Date())
+    }
+
+    /// عدّاد تنازلي مختصر لمباراة لم تبدأ: "بعد ٢ س ١٥ د".
+    static func countdown(to date: Date) -> String? {
+        let seconds = Int(date.timeIntervalSinceNow)
+        guard seconds > 0 else { return nil }
+        let days = seconds / 86_400
+        let hours = (seconds % 86_400) / 3_600
+        let minutes = (seconds % 3_600) / 60
+        if days > 0 { return "بعد \(days) ي \(hours) س" }
+        if hours > 0 { return "بعد \(hours) س \(minutes) د" }
+        return "بعد \(minutes) د"
+    }
+
+    // MARK: - تحليل
+
+    private static let parsers: [DateFormatter] = {
+        let patterns = [
+            "yyyy-MM-dd'T'HH:mm:ssZ",
+            "yyyy-MM-dd'T'HH:mm:ss.SSSZ",
+            "yyyy-MM-dd'T'HH:mm:ss",
+            "yyyy-MM-dd HH:mm:ss",
+            "yyyy-MM-dd HH:mm",
+            "yyyy-MM-dd"
+        ]
+        return patterns.map { pattern in
+            let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.calendar = Calendar(identifier: .gregorian)
+            formatter.timeZone = TimeZone(identifier: "UTC")
+            formatter.dateFormat = pattern
+            return formatter
+        }
+    }()
+
+    private static let rfc822Parsers: [DateFormatter] = {
+        let patterns = [
+            "EEE, dd MMM yyyy HH:mm:ss Z",
+            "EEE, dd MMM yyyy HH:mm:ss zzz",
+            "EEE, dd MMM yyyy HH:mm Z",
+            "dd MMM yyyy HH:mm:ss Z",
+            "EEE, dd MMM yyyy"
+        ]
+        return patterns.map { pattern in
+            let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.calendar = Calendar(identifier: .gregorian)
+            formatter.timeZone = TimeZone(identifier: "GMT")
+            formatter.dateFormat = pattern
+            return formatter
+        }
+    }()
+
+    /// تواريخ واجهات البيانات: ISO أو "yyyy-MM-dd HH:mm:ss" بتوقيت UTC.
+    static func parseUTC(_ text: String?) -> Date? {
+        guard let text = text, !text.isEmpty else { return nil }
+        let cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        for parser in parsers {
+            if let date = parser.date(from: cleaned) { return date }
+        }
+        return nil
+    }
+
+    /// تواريخ خلاصات RSS (RFC 822) مع سقوط إلى ISO.
+    static func parseFeedDate(_ text: String?) -> Date? {
+        guard let text = text, !text.isEmpty else { return nil }
+        let cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        for parser in rfc822Parsers {
+            if let date = parser.date(from: cleaned) { return date }
+        }
+        return parseUTC(cleaned)
+    }
+
+    /// يدمج "2026-08-22" مع "19:00:00" أو "19:00:00+00:00" في تاريخ UTC.
+    static func combine(day: String?, time: String?) -> Date? {
+        guard let day = day, !day.isEmpty else { return nil }
+        guard let time = time, !time.isEmpty else { return parseUTC(day) }
+        var clock = time
+        if let plus = clock.firstIndex(where: { $0 == "+" }) {
+            clock = String(clock[clock.startIndex..<plus])
+        }
+        if clock.count == 5 { clock += ":00" }
+        return parseUTC("\(day) \(clock)")
+    }
+
+    static func startOfDay(_ date: Date) -> Date {
+        calendar.startOfDay(for: date)
+    }
+
+    static func adding(days: Int, to date: Date) -> Date {
+        calendar.date(byAdding: .day, value: days, to: date) ?? date
+    }
+
+    static func isSameDay(_ lhs: Date, _ rhs: Date) -> Bool {
+        calendar.isDate(lhs, inSameDayAs: rhs)
+    }
+}
