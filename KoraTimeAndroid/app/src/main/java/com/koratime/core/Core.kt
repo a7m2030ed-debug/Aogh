@@ -362,12 +362,25 @@ class Settings(context: Context) {
     }
 
     companion object {
-        val defaultFeeds: List<String> = listOf(
-            googleNews(AppText.get(R.string.topic_football)),
-            googleNews("دوري روشن السعودي"),
-            googleNews("دوري أبطال أوروبا"),
-            "https://feeds.bbci.co.uk/arabic/sports/rss.xml"
-        )
+        /**
+         * تُحسب عند كل طلب لا مرة واحدة: كانت val في companion، فتُقيَّم عند
+         * أول وصول وربما قبل تهيئة AppText — فيُخزَّن استعلام فارغ للأبد.
+         * وهي تتبع اللغة أيضاً، فأسماء الدوريات تُطلب بلغة المستخدم.
+         */
+        val defaultFeeds: List<String>
+            get() {
+                val lang = Lang.of(
+                    AppCompatDelegate.getApplicationLocales()[0]?.language
+                )
+                val roshn = Catalog.league("roshn")?.name(lang).orEmpty()
+                val ucl = Catalog.league("ucl")?.name(lang).orEmpty()
+                return listOfNotNull(
+                    googleNews(AppText.get(R.string.topic_football)),
+                    roshn.takeIf { it.isNotBlank() }?.let { googleNews(it) },
+                    ucl.takeIf { it.isNotBlank() }?.let { googleNews(it) },
+                    "https://feeds.bbci.co.uk/arabic/sports/rss.xml"
+                )
+            }
 
         fun googleNews(query: String): String {
             val encoded = java.net.URLEncoder.encode(query, "UTF-8")

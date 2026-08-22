@@ -39,9 +39,26 @@ jobs:
         with:
           gradle-version: "8.10.2"
 
+      # أخطاء كوتلن تُطبع قبل أثر الاستدعاء الطويل، فتضيع في آخر السجلّ.
+      # نحفظ المخرجات ونعيد طباعة أسطر الأخطاء وحدها في النهاية.
       - name: بناء APK
         working-directory: KoraTimeAndroid
-        run: gradle assembleDebug --no-daemon --stacktrace
+        run: |
+          set -o pipefail
+          gradle assembleDebug --no-daemon 2>&1 | tee "$RUNNER_TEMP/build.log"
+
+      - name: أخطاء الترجمة
+        if: failure()
+        run: |
+          echo "::group::أسطر الأخطاء"
+          grep -E "^e: |^w: .*error|FAILED$" "$RUNNER_TEMP/build.log" | head -60 || echo "لا أسطر أخطاء صريحة"
+          echo "::endgroup::"
+          {
+            echo "### أخطاء الترجمة"
+            echo '```'
+            grep -E "^e: " "$RUNNER_TEMP/build.log" | head -40 || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: تسمية الملف
         id: apk
