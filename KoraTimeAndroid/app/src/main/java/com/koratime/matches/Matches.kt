@@ -6,6 +6,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.koratime.core.ArabicNames
+import com.koratime.core.Catalog
 import com.koratime.core.Http
 import com.koratime.core.KTDate
 import com.koratime.core.Settings
@@ -227,6 +228,27 @@ class MatchesViewModel(private val settings: Settings) : ViewModel() {
 
     val liveCount: Int get() = dayMatches.count { it.isLive }
 
+    /**
+     * رتبة الدوري ضمن ما اختاره المستخدم — الأصغر أولاً، ومن لم يُختر
+     * يأخذ رتبة بعد الجميع. المطابقة بالاحتواء لأن المصدر يكتب الاسم
+     * بصيغ متقاربة ("Saudi Pro League" و"Saudi Professional League").
+     */
+    private fun favoriteRank(title: String): Int {
+        val chosen = settings.favoriteLeagues
+        if (chosen.isEmpty()) return 0
+        val needle = title.lowercase(Locale.US)
+        chosen.forEachIndexed { position, id ->
+            val league = Catalog.league(id) ?: return@forEachIndexed
+            if (needle.contains(league.ar.lowercase(Locale.US)) ||
+                needle.contains(league.en.lowercase(Locale.US)) ||
+                league.ar == title
+            ) {
+                return position
+            }
+        }
+        return chosen.size + 1
+    }
+
     val sections: List<MatchSection>
         get() {
             val arabic = settings.arabicNames
@@ -246,9 +268,13 @@ class MatchesViewModel(private val settings: Settings) : ViewModel() {
                         )
                     )
                 }
+                // الأهمية قبل «فيها مباراة مباشرة»: كان دوري صغير فيه مباراة
+                // جارية يقفز فوق روشن والدوريات الكبرى، وهذا عكس المطلوب.
+                // ودوريات المستخدم المختارة تسبق الجميع.
                 .sortedWith(
-                    compareByDescending<MatchSection> { it.liveCount > 0 }
+                    compareBy<MatchSection> { favoriteRank(it.title) }
                         .thenBy { CompetitionPriority.rank(it.title) }
+                        .thenByDescending { it.liveCount > 0 }
                         .thenBy { it.title }
                 )
         }

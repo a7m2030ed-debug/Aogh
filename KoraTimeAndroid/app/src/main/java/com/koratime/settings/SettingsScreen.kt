@@ -33,6 +33,7 @@ import com.koratime.ui.SectionTitle
 @Composable
 fun SettingsScreen(
     settings: Settings,
+    onEditFavorites: () -> Unit,
     onChannelsChanged: () -> Unit,
     onNewsChanged: () -> Unit,
     onMatchesChanged: () -> Unit
@@ -52,6 +53,23 @@ fun SettingsScreen(
     ) {
         item {
             SectionTitle(title = "الإعدادات", subtitle = "مصادر البيانات، قنواتك، وخلاصات الأخبار")
+        }
+
+        item {
+            Group("تفضيلاتي") {
+                Text(
+                    "الدوريات والفرق التي اخترتها ترتّب جدول المباريات وتبني خلاصات الأخبار.",
+                    fontSize = 11.sp,
+                    color = KT.textFaint
+                )
+                Text(
+                    "تعديل الدوريات والفرق",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = KT.accent,
+                    modifier = Modifier.clickable { onEditFavorites() }
+                )
+            }
         }
 
         item {

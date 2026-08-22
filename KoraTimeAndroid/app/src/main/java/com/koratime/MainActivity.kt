@@ -23,6 +23,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
@@ -45,6 +46,7 @@ import com.koratime.matches.MatchesScreen
 import com.koratime.matches.MatchesViewModel
 import com.koratime.news.NewsScreen
 import com.koratime.news.NewsViewModel
+import com.koratime.onboarding.OnboardingScreen
 import com.koratime.settings.SettingsScreen
 import com.koratime.ui.KT
 import com.koratime.ui.KTBackground
@@ -64,7 +66,23 @@ class MainActivity : ComponentActivity() {
             KoraTimeTheme {
                 // التطبيق عربي بالكامل، فنثبّت الاتجاه من اليمين لليسار
                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-                    RootScreen(settings)
+                    // أول تشغيل: تفضيلات الدوريات والفرق قبل دخول التطبيق
+                    var onboarded by remember { mutableStateOf(settings.onboarded) }
+                    // النماذج تعيش مع النشاط لا مع الشجرة، فتغيير التفضيلات
+                    // لا يُلاحظ إلا إذا أبلغناها. العدّاد هو الإشارة.
+                    var favoritesVersion by remember { mutableStateOf(0) }
+                    if (onboarded) {
+                        RootScreen(
+                            settings = settings,
+                            favoritesVersion = favoritesVersion,
+                            onEditFavorites = { onboarded = false }
+                        )
+                    } else {
+                        OnboardingScreen(settings) {
+                            favoritesVersion += 1
+                            onboarded = true
+                        }
+                    }
                 }
             }
         }
@@ -97,13 +115,26 @@ private class KTViewModelFactory(
 }
 
 @Composable
-private fun RootScreen(settings: Settings) {
+private fun RootScreen(
+    settings: Settings,
+    favoritesVersion: Int,
+    onEditFavorites: () -> Unit
+) {
     val context = LocalContext.current.applicationContext
     val factory = remember { KTViewModelFactory(settings, context) }
 
     val matches: MatchesViewModel = viewModel(factory = factory)
     val channels: ChannelsViewModel = viewModel(factory = factory)
     val news: NewsViewModel = viewModel(factory = factory)
+
+    // تفضيلات جديدة تعني ترتيب مباريات مختلفاً وخلاصات أخبار مختلفة
+    LaunchedEffect(favoritesVersion) {
+        if (favoritesVersion > 0) {
+            matches.invalidate()
+            news.invalidate()
+            news.reload()
+        }
+    }
 
     var tab by remember { mutableStateOf(Tab.MATCHES) }
     var fullscreen by remember { mutableStateOf(false) }
@@ -178,6 +209,7 @@ private fun RootScreen(settings: Settings) {
 
                         Tab.SETTINGS -> SettingsScreen(
                             settings = settings,
+                            onEditFavorites = onEditFavorites,
                             onChannelsChanged = {
                                 channels.invalidate()
                                 channels.reload()

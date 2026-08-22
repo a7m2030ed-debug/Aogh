@@ -298,14 +298,51 @@ class Settings(context: Context) {
         get() = prefs.getString("lastChannel", null)
         set(value) = prefs.edit().putString("lastChannel", value).apply()
 
+    /** هل عرضنا شاشة التفضيلات؟ تظهر مرة واحدة عند أول تشغيل. */
+    var onboarded: Boolean
+        get() = prefs.getBoolean("onboarded", false)
+        set(value) = prefs.edit().putBoolean("onboarded", value).apply()
+
+    /**
+     * الترتيب مقصود: أول دوري اختاره المستخدم يتصدّر قائمته، فنحفظ
+     * النصّ مفصولاً بفواصل بدل StringSet الذي لا يحفظ ترتيباً.
+     */
+    var favoriteLeagues: List<String>
+        get() = prefs.getString("favLeagues", null)
+            ?.split(",")?.filter { it.isNotBlank() }.orEmpty()
+        set(value) = prefs.edit().putString("favLeagues", value.joinToString(",")).apply()
+
+    var favoriteTeams: List<String>
+        get() = prefs.getString("favTeams", null)
+            ?.split("|")?.filter { it.isNotBlank() }.orEmpty()
+        set(value) = prefs.edit().putString("favTeams", value.joinToString("|")).apply()
+
     /** روابط قوائم M3U/JSON التي يضيفها المستخدم. */
     var playlists: List<String>
         get() = prefs.getStringSet("playlists", emptySet())?.sorted().orEmpty()
         set(value) = prefs.edit().putStringSet("playlists", value.toSet()).apply()
 
+    /**
+     * خلاصات المستخدم إن أضاف، وإلا خلاصات مبنية على فرقه ودورياته.
+     * من لم يختر شيئاً يحصل على الخلاصات العامة كما كان.
+     */
     var feeds: List<String>
-        get() = prefs.getStringSet("feeds", null)?.sorted() ?: defaultFeeds
+        get() = prefs.getStringSet("feeds", null)?.sorted() ?: personalFeeds()
         set(value) = prefs.edit().putStringSet("feeds", value.toSet()).apply()
+
+    private fun personalFeeds(): List<String> {
+        val teams = favoriteTeams
+        val leagues = favoriteLeagues.mapNotNull { Catalog.league(it)?.ar }
+        if (teams.isEmpty() && leagues.isEmpty()) return defaultFeeds
+
+        // الفرق أخصّ من الدوريات فتتقدّم، والعدد محدود لأن كل خلاصة طلب
+        // شبكة مستقلّ ويُجلبن بالتوازي.
+        return buildList {
+            teams.take(4).forEach { add(googleNews(it)) }
+            leagues.take(3).forEach { add(googleNews(it)) }
+            add("https://feeds.bbci.co.uk/arabic/sports/rss.xml")
+        }
+    }
 
     companion object {
         val defaultFeeds: List<String> = listOf(
