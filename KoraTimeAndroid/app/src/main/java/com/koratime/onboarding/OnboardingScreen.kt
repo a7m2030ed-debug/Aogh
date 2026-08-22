@@ -30,8 +30,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import com.koratime.core.Catalog
+import com.koratime.core.LangManager
 import com.koratime.core.Settings
+import com.koratime.R
 import com.koratime.ui.KT
 
 /**
@@ -41,6 +44,7 @@ import com.koratime.ui.KT
  */
 @Composable
 fun OnboardingScreen(settings: Settings, onDone: () -> Unit) {
+    val lang = LangManager.current(settings)
     var step by remember { mutableStateOf(0) }
     val leagues = remember { settings.favoriteLeagues.toMutableStateList() }
     val teams = remember { settings.favoriteTeams.toMutableStateList() }
@@ -55,14 +59,13 @@ fun OnboardingScreen(settings: Settings, onDone: () -> Unit) {
     Column(modifier = Modifier.fillMaxSize().background(KT.bg).padding(horizontal = 18.dp)) {
         Column(modifier = Modifier.padding(top = 34.dp, bottom = 14.dp)) {
             Text(
-                if (step == 0) "أي الدوريات تتابع؟" else "أي الفرق تشجّع؟",
+                stringResource(if (step == 0) R.string.onb_leagues_title else R.string.onb_teams_title),
                 fontSize = 22.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = KT.text
             )
             Text(
-                if (step == 0) "نرتّب لك جدول المباريات ونجمع أخبارها."
-                else "تظهر أخبار فرقك أولاً، ومبارياتها في صدر الجدول.",
+                stringResource(if (step == 0) R.string.onb_leagues_sub else R.string.onb_teams_sub),
                 fontSize = 13.sp,
                 color = KT.textSecondary,
                 modifier = Modifier.padding(top = 6.dp)
@@ -72,7 +75,7 @@ fun OnboardingScreen(settings: Settings, onDone: () -> Unit) {
         Box(modifier = Modifier.weight(1f)) {
             if (step == 0) {
                 ChipGrid(
-                    labels = Catalog.leagues.map { it.id to it.ar },
+                    labels = Catalog.leagues.map { it.id to it.name(lang) },
                     selected = leagues,
                     onToggle = { id ->
                         if (leagues.contains(id)) {
@@ -88,14 +91,14 @@ fun OnboardingScreen(settings: Settings, onDone: () -> Unit) {
                 val available = Catalog.teamsFor(leagues)
                 if (available.isEmpty()) {
                     Text(
-                        "الدوريات التي اخترتها بلا قائمة فرق هنا. تقدر تكمل.",
+                        stringResource(R.string.onb_no_teams),
                         fontSize = 13.sp,
                         color = KT.textFaint,
                         modifier = Modifier.padding(top = 20.dp)
                     )
                 } else {
                     ChipGrid(
-                        labels = available.map { (_, team) -> team.ar to team.ar },
+                        labels = available.map { (_, team) -> team.ar to team.name(lang) },
                         selected = teams,
                         onToggle = { name ->
                             if (teams.contains(name)) teams.remove(name) else teams.add(name)
@@ -110,14 +113,14 @@ fun OnboardingScreen(settings: Settings, onDone: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                "تخطّي",
+                stringResource(R.string.skip),
                 fontSize = 14.sp,
                 color = KT.textFaint,
                 modifier = Modifier.clickable { finish() }.padding(10.dp)
             )
             Box(modifier = Modifier.weight(1f))
             Text(
-                if (step == 0) "التالي" else "ابدأ",
+                stringResource(if (step == 0) R.string.next else R.string.start),
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
                 color = KT.bg,

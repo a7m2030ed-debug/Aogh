@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- العربية هي لغة التطبيق الافتراضية، وتُفرض عند أول تشغيل من Lang.kt -->
+<resources>
+    <string name="app_name">كورة تايم</string>
+
+    <!-- التبويبات -->
+    <string name="tab_matches">المباريات</string>
+    <string name="tab_channels">القنوات</string>
+    <string name="tab_news">الأخبار</string>
+    <string name="tab_settings">الإعدادات</string>
+
+    <!-- مشترك -->
+    <string name="retry">إعادة المحاولة</string>
+    <string name="refresh">تحديث</string>
+    <string name="filter_all">الكل</string>
+    <string name="action_delete">حذف</string>
+    <string name="action_add">إضافة</string>
+    <string name="skip">تخطّي</string>
+    <string name="next">التالي</string>
+    <string name="start">ابدأ</string>
+    <string name="unknown_model">نموذج غير معروف: %1$s</string>
+
+    <!-- المباريات -->
+    <string name="matches_title">المباريات</string>
+    <string name="matches_live_now">%1$d مباراة جارية الآن</string>
+    <string name="last_updated">آخر تحديث %1$s</string>
+    <string name="matches_error">تعذّر جلب المباريات</string>
+    <string name="matches_fetch_failed">تعذّر جلب المباريات.</string>
+    <string name="no_live_matches">لا توجد مباريات جارية</string>
+    <string name="no_matches_day">لا مباريات في هذا اليوم</string>
+    <string name="try_all_hint">جرّب «الكل» لعرض مباريات اليوم كاملة.</string>
+    <string name="pick_another_day">اختر يوماً آخر من الشريط أعلاه.</string>
+    <string name="section_live_count">%1$d مباشر</string>
+    <string name="filter_live">المباشرة</string>
+    <string name="score_separator">—</string>
+    <string name="status_scheduled">لم تبدأ</string>
+    <string name="status_live">مباشر</string>
+    <string name="status_finished">انتهت</string>
+    <string name="status_postponed">مؤجلة</string>
+    <string name="status_canceled">ملغاة</string>
+    <string name="half_first">الشوط الأول</string>
+    <string name="half_second">الشوط الثاني</string>
+    <string name="half_time">الاستراحة</string>
+    <string name="extra_time">وقت إضافي</string>
+    <string name="penalties">ركلات الترجيح</string>
+    <string name="other_competitions">بطولات أخرى</string>
+    <string name="attribution_sportsdb">البيانات من TheSportsDB</string>
+
+    <!-- الأخبار -->
+    <string name="news_title">الأخبار</string>
+    <string name="news_search_results">نتائج البحث عن «%1$s»</string>
+    <string name="news_from_feeds">من الخلاصات التي تتابعها</string>
+    <string name="news_my_feeds">متابعاتي</string>
+    <string name="news_none">لا توجد أخبار</string>
+    <string name="news_try_other">جرّب موضوعاً آخر.</string>
+    <string name="news_no_feeds">لم تُفعّل أي خلاصة أخبار.</string>
+    <string name="news_feed_error">«%1$s»: %2$s</string>
+    <string name="topic_football">كرة القدم</string>
+    <string name="topic_transfers">انتقالات</string>
+    <string name="topic_ksa_team">المنتخب السعودي</string>
+
+    <!-- القنوات -->
+    <string name="channels_title">القنوات</string>
+    <string name="exclusive_competitions">البطولات الحصرية</string>
+    <string name="open_broadcaster">فتح %1$s</string>
+    <string name="your_channels">قنواتك الخاصة</string>
+    <string name="your_channels_hint">أضف رابط قائمتك (M3U أو JSON) من الإعدادات وستظهر هنا.</string>
+    <string name="add_playlist">إضافة قائمة قنوات</string>
+    <string name="casting_to">يُعرض على الشاشة</string>
+    <string name="cast_device">جهاز متصل</string>
+    <string name="pick_channel">اختر قناة من القائمة</string>
+    <string name="minimize">تصغير</string>
+    <string name="fullscreen">ملء الشاشة</string>
+    <string name="all_groups">كل الفئات</string>
+    <string name="no_channels">لا قنوات</string>
+    <string name="add_list">أضف قائمة</string>
+    <string name="may_be_blocked">قد تُحجب</string>
+    <string name="channel_error">تعذّر تشغيل هذه القناة. قد تكون محجوبة أو متوقّفة.</string>
+    <string name="channels_read_failed">تعذّرت قراءة القنوات المرفقة: %1$s</string>
+    <string name="playlist_no_channels">«%1$s»: لم يُعثر على قنوات.</string>
+    <string name="playlist_error">«%1$s»: %2$s</string>
+    <string name="default_channel_name">قناة</string>
+    <string name="default_group">قنوات</string>
+    <string name="numbered_channel">قناة %1$d</string>
+    <string name="my_channels">قنواتي</string>
+    <string name="my_list">قائمتي</string>
+
+    <!-- الإعدادات -->
+    <string name="settings_title">الإعدادات</string>
+    <string name="settings_subtitle">مصادر البيانات، قنواتك، وخلاصات الأخبار</string>
+    <string name="my_prefs">تفضيلاتي</string>
+    <string name="my_prefs_hint">الدوريات والفرق التي اخترتها ترتّب جدول المباريات وتبني خلاصات الأخبار.</string>
+    <string name="edit_prefs">تعديل الدوريات والفرق</string>
+    <string name="group_language">اللغة</string>
+    <string name="language_hint">التطبيق يفتح بالعربية. تغيير اللغة يعيد بناء الشاشة.</string>
+    <string name="sportsdb_key">مفتاح TheSportsDB</string>
+    <string name="sportsdb_hint">المفتاح التجريبي المشترك «123» يعمل بلا تسجيل لكنه محدود الطلبات. سجّل مفتاحاً باسمك من thesportsdb.com لتحديث أسرع.</string>
+    <string name="arabic_names">تعريب أسماء الفرق والبطولات</string>
+    <string name="autoplay">تشغيل آخر قناة عند الفتح</string>
+    <string name="show_demo">إظهار القنوات التجريبية</string>
+    <string name="channels_hint">التطبيق لا يوفّر قنوات مشفّرة. أضف رابط قائمتك (M3U أو JSON) وستظهر في تبويب القنوات مباشرة. القوائم تبقى على جهازك.</string>
+    <string name="playlist_url">رابط قائمة قنوات</string>
+    <string name="feed_url">رابط خلاصة RSS</string>
+    <string name="restore_feeds">استعادة الخلاصات الافتراضية</string>
+    <string name="about">عن التطبيق</string>
+    <string name="about_version">كورة تايم — الإصدار 1.0</string>
+    <string name="about_desc">مواعيد المباريات ونتائجها، وقنواتك المفتوحة، وأخبار الكرة العربية في مكان واحد.</string>
+
+    <!-- التواريخ -->
+    <string name="today">اليوم</string>
+    <string name="yesterday">أمس</string>
+    <string name="tomorrow">غداً</string>
+    <string name="just_now">الآن</string>
+    <string name="minutes_ago">قبل %1$d دقيقة</string>
+    <string name="hours_ago">قبل %1$d ساعة</string>
+    <string name="days_ago">قبل %1$d يوم</string>
+    <string name="in_days_hours">بعد %1$d ي %2$d س</string>
+    <string name="in_hours_minutes">بعد %1$d س %2$d د</string>
+    <string name="in_minutes">بعد %1$d د</string>
+    <string name="monogram_unknown">؟</string>
+
+    <!-- الشبكة -->
+    <string name="http_no_connection">تعذّر الاتصال بالمصدر.</string>
+    <string name="http_rejected">المصدر رفض الطلب (%1$d). تأكّد من المفتاح في الإعدادات.</string>
+    <string name="http_rate_limited">تجاوزت حدّ الطلبات المسموح به. انتظر قليلاً.</string>
+    <string name="http_server_down">خادم المصدر لا يستجيب حالياً (%1$d).</string>
+    <string name="http_failed">تعذّر جلب البيانات (رمز %1$d).</string>
+
+    <!-- أول تشغيل -->
+    <string name="onb_leagues_title">أي الدوريات تتابع؟</string>
+    <string name="onb_teams_title">أي الفرق تشجّع؟</string>
+    <string name="onb_leagues_sub">نرتّب لك جدول المباريات ونجمع أخبارها.</string>
+    <string name="onb_teams_sub">تظهر أخبار فرقك أولاً، ومبارياتها في صدر الجدول.</string>
+    <string name="onb_no_teams">الدوريات التي اخترتها بلا قائمة فرق هنا. تقدر تكمل.</string>
+</resources>

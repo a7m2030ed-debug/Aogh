@@ -1,4 +1,139 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  English is the default resource set so that any key missing here is a
+  compile error, not a silent fallback at runtime. Arabic lives in
+  values-ar/ and is what the app opens with — see Lang.kt.
+-->
 <resources>
-    <string name="app_name">كورة تايم</string>
+    <string name="app_name">Kora Time</string>
+
+    <!-- Tabs -->
+    <string name="tab_matches">Matches</string>
+    <string name="tab_channels">Channels</string>
+    <string name="tab_news">News</string>
+    <string name="tab_settings">Settings</string>
+
+    <!-- Common -->
+    <string name="retry">Try again</string>
+    <string name="refresh">Refresh</string>
+    <string name="filter_all">All</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_add">Add</string>
+    <string name="skip">Skip</string>
+    <string name="next">Next</string>
+    <string name="start">Start</string>
+    <string name="unknown_model">Unknown view model: %1$s</string>
+
+    <!-- Matches -->
+    <string name="matches_title">Matches</string>
+    <string name="matches_live_now">%1$d match(es) live now</string>
+    <string name="last_updated">Updated %1$s</string>
+    <string name="matches_error">Could not load matches</string>
+    <string name="matches_fetch_failed">Could not load matches.</string>
+    <string name="no_live_matches">No live matches</string>
+    <string name="no_matches_day">No matches on this day</string>
+    <string name="try_all_hint">Tap “All” to see the full day.</string>
+    <string name="pick_another_day">Pick another day from the strip above.</string>
+    <string name="section_live_count">%1$d live</string>
+    <string name="filter_live">Live</string>
+    <string name="score_separator">—</string>
+    <string name="status_scheduled">Not started</string>
+    <string name="status_live">Live</string>
+    <string name="status_finished">Ended</string>
+    <string name="status_postponed">Postponed</string>
+    <string name="status_canceled">Cancelled</string>
+    <string name="half_first">1st half</string>
+    <string name="half_second">2nd half</string>
+    <string name="half_time">Half time</string>
+    <string name="extra_time">Extra time</string>
+    <string name="penalties">Penalties</string>
+    <string name="other_competitions">Other competitions</string>
+    <string name="attribution_sportsdb">Data from TheSportsDB</string>
+
+    <!-- News -->
+    <string name="news_title">News</string>
+    <string name="news_search_results">Results for “%1$s”</string>
+    <string name="news_from_feeds">From the feeds you follow</string>
+    <string name="news_my_feeds">My feeds</string>
+    <string name="news_none">No news</string>
+    <string name="news_try_other">Try another topic.</string>
+    <string name="news_no_feeds">No news feed is enabled.</string>
+    <string name="news_feed_error">“%1$s”: %2$s</string>
+    <string name="topic_football">Football</string>
+    <string name="topic_transfers">Transfers</string>
+    <string name="topic_ksa_team">Saudi national team</string>
+
+    <!-- Channels -->
+    <string name="channels_title">Channels</string>
+    <string name="exclusive_competitions">Exclusive competitions</string>
+    <string name="open_broadcaster">Open %1$s</string>
+    <string name="your_channels">Your own channels</string>
+    <string name="your_channels_hint">Add your playlist URL (M3U or JSON) in Settings and it will show up here.</string>
+    <string name="add_playlist">Add a channel list</string>
+    <string name="casting_to">Playing on your screen</string>
+    <string name="cast_device">Connected device</string>
+    <string name="pick_channel">Pick a channel from the list</string>
+    <string name="minimize">Exit full screen</string>
+    <string name="fullscreen">Full screen</string>
+    <string name="all_groups">All categories</string>
+    <string name="no_channels">No channels</string>
+    <string name="add_list">Add a list</string>
+    <string name="may_be_blocked">May be blocked</string>
+    <string name="channel_error">This channel would not play. It may be blocked or off air.</string>
+    <string name="channels_read_failed">Could not read the bundled channels: %1$s</string>
+    <string name="playlist_no_channels">“%1$s”: no channels found.</string>
+    <string name="playlist_error">“%1$s”: %2$s</string>
+    <string name="default_channel_name">Channel</string>
+    <string name="default_group">Channels</string>
+    <string name="numbered_channel">Channel %1$d</string>
+    <string name="my_channels">My channels</string>
+    <string name="my_list">My list</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_subtitle">Data sources, your channels, and news feeds</string>
+    <string name="my_prefs">My preferences</string>
+    <string name="my_prefs_hint">The leagues and teams you pick order the fixtures and build your news feeds.</string>
+    <string name="edit_prefs">Edit leagues and teams</string>
+    <string name="group_language">Language</string>
+    <string name="language_hint">The app opens in Arabic. Changing the language restarts the screen.</string>
+    <string name="sportsdb_key">TheSportsDB key</string>
+    <string name="sportsdb_hint">The shared trial key “123” works without signing up but is rate limited. Register your own at thesportsdb.com for faster updates.</string>
+    <string name="arabic_names">Arabic team and league names</string>
+    <string name="autoplay">Resume the last channel on open</string>
+    <string name="show_demo">Show demo channels</string>
+    <string name="channels_hint">The app carries no encrypted channels. Add your own list (M3U or JSON) and it appears in the Channels tab. Lists stay on your device.</string>
+    <string name="playlist_url">Channel list URL</string>
+    <string name="feed_url">RSS feed URL</string>
+    <string name="restore_feeds">Restore the default feeds</string>
+    <string name="about">About</string>
+    <string name="about_version">Kora Time — version 1.0</string>
+    <string name="about_desc">Fixtures and results, your open channels, and Arab football news in one place.</string>
+
+    <!-- Dates -->
+    <string name="today">Today</string>
+    <string name="yesterday">Yesterday</string>
+    <string name="tomorrow">Tomorrow</string>
+    <string name="just_now">Now</string>
+    <string name="minutes_ago">%1$d min ago</string>
+    <string name="hours_ago">%1$d h ago</string>
+    <string name="days_ago">%1$d d ago</string>
+    <string name="in_days_hours">in %1$dd %2$dh</string>
+    <string name="in_hours_minutes">in %1$dh %2$dm</string>
+    <string name="in_minutes">in %1$dm</string>
+    <string name="monogram_unknown">?</string>
+
+    <!-- Network -->
+    <string name="http_no_connection">Could not reach the source.</string>
+    <string name="http_rejected">The source refused the request (%1$d). Check the key in Settings.</string>
+    <string name="http_rate_limited">You have hit the request limit. Wait a moment.</string>
+    <string name="http_server_down">The source server is not responding (%1$d).</string>
+    <string name="http_failed">Could not fetch data (code %1$d).</string>
+
+    <!-- Onboarding -->
+    <string name="onb_leagues_title">Which leagues do you follow?</string>
+    <string name="onb_teams_title">Which teams do you support?</string>
+    <string name="onb_leagues_sub">We will order your fixtures and gather their news.</string>
+    <string name="onb_teams_sub">Your teams\' news comes first, and their matches head the table.</string>
+    <string name="onb_no_teams">The leagues you picked have no team list here. You can continue.</string>
 </resources>

@@ -2,6 +2,8 @@ package com.koratime.core
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.appcompat.app.AppCompatDelegate
+import com.koratime.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -60,7 +62,7 @@ object Http {
                 if (attempt < 2) Thread.sleep(600L * (attempt + 1))
             }
         }
-        throw lastError ?: KTError("تعذّر الاتصال بالمصدر.")
+        throw lastError ?: KTError(AppText.get(R.string.http_no_connection))
     }
 
     private fun fetch(url: String, headers: Map<String, String>): String {
@@ -77,10 +79,10 @@ object Http {
             if (code !in 200..299) {
                 throw KTError(
                     when (code) {
-                        401, 403 -> "المصدر رفض الطلب ($code). تأكّد من المفتاح في الإعدادات."
-                        429 -> "تجاوزت حدّ الطلبات المسموح به. انتظر قليلاً."
-                        in 500..599 -> "خادم المصدر لا يستجيب حالياً ($code)."
-                        else -> "تعذّر جلب البيانات (رمز $code)."
+                        401, 403 -> AppText.get(R.string.http_rejected, code)
+                        429 -> AppText.get(R.string.http_rate_limited)
+                        in 500..599 -> AppText.get(R.string.http_server_down, code)
+                        else -> AppText.get(R.string.http_failed, code)
                     }
                 )
             }
@@ -97,10 +99,19 @@ object Http {
  */
 object KTDate {
 
-    private val arabic: Locale = Locale.forLanguageTag("ar-SA-u-ca-gregory-nu-latn")
+    /**
+     * أسماء الأيام والشهور تتبع لغة التطبيق، مع تثبيت التقويم الميلادي
+     * والأرقام اللاتينية في الحالتين — وهي الشائعة في تطبيقات الخليج،
+     * وتُبقي الأرقام مقروءة لمن بدّل إلى الإنجليزية.
+     */
+    private fun locale(): Locale {
+        val code = AppCompatDelegate.getApplicationLocales()[0]?.language ?: Lang.AR.code
+        val region = if (code == Lang.AR.code) "ar-SA" else "en-US"
+        return Locale.forLanguageTag("$region-u-ca-gregory-nu-latn")
+    }
 
     private fun formatter(pattern: String, utc: Boolean = false) =
-        SimpleDateFormat(pattern, arabic).apply {
+        SimpleDateFormat(pattern, locale()).apply {
             if (utc) timeZone = TimeZone.getTimeZone("UTC")
         }
 
@@ -136,9 +147,9 @@ object KTDate {
     fun dayLabel(date: Date): String {
         val today = startOfDay(Date())
         return when {
-            isSameDay(date, today) -> "اليوم"
-            isSameDay(date, adding(-1, today)) -> "أمس"
-            isSameDay(date, adding(1, today)) -> "غداً"
+            isSameDay(date, today) -> AppText.get(R.string.today)
+            isSameDay(date, adding(-1, today)) -> AppText.get(R.string.yesterday)
+            isSameDay(date, adding(1, today)) -> AppText.get(R.string.tomorrow)
             else -> weekday(date)
         }
     }
@@ -146,10 +157,10 @@ object KTDate {
     fun ago(date: Date): String {
         val seconds = (System.currentTimeMillis() - date.time) / 1000
         return when {
-            seconds < 60 -> "الآن"
-            seconds < 3600 -> "قبل ${seconds / 60} دقيقة"
-            seconds < 86_400 -> "قبل ${seconds / 3600} ساعة"
-            seconds < 604_800 -> "قبل ${seconds / 86_400} يوم"
+            seconds < 60 -> AppText.get(R.string.just_now)
+            seconds < 3600 -> AppText.get(R.string.minutes_ago, seconds / 60)
+            seconds < 86_400 -> AppText.get(R.string.hours_ago, seconds / 3600)
+            seconds < 604_800 -> AppText.get(R.string.days_ago, seconds / 86_400)
             else -> fullDay(date)
         }
     }
@@ -161,9 +172,9 @@ object KTDate {
         val hours = (seconds % 86_400) / 3600
         val minutes = (seconds % 3600) / 60
         return when {
-            days > 0 -> "بعد $days ي $hours س"
-            hours > 0 -> "بعد $hours س $minutes د"
-            else -> "بعد $minutes د"
+            days > 0 -> AppText.get(R.string.in_days_hours, days, hours)
+            hours > 0 -> AppText.get(R.string.in_hours_minutes, hours, minutes)
+            else -> AppText.get(R.string.in_minutes, minutes)
         }
     }
 
@@ -266,7 +277,7 @@ object ArabicNames {
 
     fun monogram(name: String): String {
         val parts = name.split(" ").filter { it.isNotBlank() }
-        if (parts.isEmpty()) return "؟"
+        if (parts.isEmpty()) return AppText.get(R.string.monogram_unknown)
         if (parts.size >= 2) return "${parts[0].first()}${parts[1].first()}"
         return parts[0].take(2)
     }
@@ -282,8 +293,9 @@ class Settings(context: Context) {
         get() = prefs.getString("sportsdb.key", "123") ?: "123"
         set(value) = prefs.edit().putString("sportsdb.key", value).apply()
 
+    /** يتبع اللغة افتراضياً: أسماء عربية مع العربية، وإنجليزية مع الإنجليزية. */
     var arabicNames: Boolean
-        get() = prefs.getBoolean("arabicNames", true)
+        get() = prefs.getBoolean("arabicNames", language == Lang.AR.code)
         set(value) = prefs.edit().putBoolean("arabicNames", value).apply()
 
     var autoPlayOnOpen: Boolean
@@ -299,6 +311,11 @@ class Settings(context: Context) {
         set(value) = prefs.edit().putString("lastChannel", value).apply()
 
     /** هل عرضنا شاشة التفضيلات؟ تظهر مرة واحدة عند أول تشغيل. */
+    /** رمز اللغة المختارة؛ فارغ يعني العربية. */
+    var language: String
+        get() = prefs.getString("language", Lang.AR.code) ?: Lang.AR.code
+        set(value) = prefs.edit().putString("language", value).apply()
+
     var onboarded: Boolean
         get() = prefs.getBoolean("onboarded", false)
         set(value) = prefs.edit().putBoolean("onboarded", value).apply()
@@ -346,7 +363,7 @@ class Settings(context: Context) {
 
     companion object {
         val defaultFeeds: List<String> = listOf(
-            googleNews("كرة القدم"),
+            googleNews(AppText.get(R.string.topic_football)),
             googleNews("دوري روشن السعودي"),
             googleNews("دوري أبطال أوروبا"),
             "https://feeds.bbci.co.uk/arabic/sports/rss.xml"

@@ -15,7 +15,8 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
-        resourceConfigurations += listOf("ar")
+        // العربية والإنجليزية؛ الافتراضية تُفرض من Lang.kt لا من إعداد الجهاز
+        resourceConfigurations += listOf("ar", "en")
     }
 
     buildTypes {

@@ -25,7 +25,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.koratime.core.Lang
+import com.koratime.core.LangManager
 import com.koratime.core.Settings
+import com.koratime.R
 import com.koratime.ui.KT
 import com.koratime.ui.KTCard
 import com.koratime.ui.SectionTitle
@@ -38,6 +42,7 @@ fun SettingsScreen(
     onNewsChanged: () -> Unit,
     onMatchesChanged: () -> Unit
 ) {
+    val lang = LangManager.current(settings)
     var sportsKey by remember { mutableStateOf(settings.sportsDbKey) }
     var arabicNames by remember { mutableStateOf(settings.arabicNames) }
     var autoPlay by remember { mutableStateOf(settings.autoPlayOnOpen) }
@@ -52,18 +57,43 @@ fun SettingsScreen(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         item {
-            SectionTitle(title = "الإعدادات", subtitle = "مصادر البيانات، قنواتك، وخلاصات الأخبار")
+            SectionTitle(title = stringResource(R.string.settings_title),
+                subtitle = stringResource(R.string.settings_subtitle))
         }
 
         item {
-            Group("تفضيلاتي") {
+            Group(stringResource(R.string.group_language)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Lang.entries.forEach { option ->
+                        val on = option == lang
+                        Text(
+                            option.label,
+                            fontSize = 13.sp,
+                            fontWeight = if (on) FontWeight.Bold else FontWeight.Medium,
+                            color = if (on) KT.accent else KT.textSecondary,
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .background(
+                                    if (on) KT.accent.copy(alpha = 0.16f) else KT.cardHigh
+                                )
+                                .clickable { LangManager.set(settings, option) }
+                                .padding(horizontal = 20.dp, vertical = 8.dp)
+                        )
+                    }
+                }
+                Text(stringResource(R.string.language_hint), fontSize = 11.sp, color = KT.textFaint)
+            }
+        }
+
+        item {
+            Group(stringResource(R.string.my_prefs)) {
                 Text(
-                    "الدوريات والفرق التي اخترتها ترتّب جدول المباريات وتبني خلاصات الأخبار.",
+                    stringResource(R.string.my_prefs_hint),
                     fontSize = 11.sp,
                     color = KT.textFaint
                 )
                 Text(
-                    "تعديل الدوريات والفرق",
+                    stringResource(R.string.edit_prefs),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = KT.accent,
@@ -73,7 +103,7 @@ fun SettingsScreen(
         }
 
         item {
-            Group("المباريات") {
+            Group(stringResource(R.string.matches_title)) {
                 OutlinedTextField(
                     value = sportsKey,
                     onValueChange = {
@@ -81,17 +111,16 @@ fun SettingsScreen(
                         settings.sportsDbKey = it
                         onMatchesChanged()
                     },
-                    label = { Text("مفتاح TheSportsDB") },
+                    label = { Text(stringResource(R.string.sportsdb_key)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
                 Text(
-                    "المفتاح التجريبي المشترك «123» يعمل بلا تسجيل لكنه محدود الطلبات. " +
-                        "سجّل مفتاحاً باسمك من thesportsdb.com لتحديث أسرع.",
+                    stringResource(R.string.sportsdb_hint),
                     fontSize = 11.sp,
                     color = KT.textFaint
                 )
-                SwitchRow("تعريب أسماء الفرق والبطولات", arabicNames) {
+                SwitchRow(stringResource(R.string.arabic_names), arabicNames) {
                     arabicNames = it
                     settings.arabicNames = it
                     onMatchesChanged()
@@ -100,25 +129,24 @@ fun SettingsScreen(
         }
 
         item {
-            Group("القنوات") {
-                SwitchRow("تشغيل آخر قناة عند الفتح", autoPlay) {
+            Group(stringResource(R.string.channels_title)) {
+                SwitchRow(stringResource(R.string.autoplay), autoPlay) {
                     autoPlay = it
                     settings.autoPlayOnOpen = it
                 }
-                SwitchRow("إظهار القنوات التجريبية", showDemo) {
+                SwitchRow(stringResource(R.string.show_demo), showDemo) {
                     showDemo = it
                     settings.showDemoChannels = it
                     onChannelsChanged()
                 }
                 Text(
-                    "التطبيق لا يوفّر قنوات مشفّرة. أضف رابط قائمتك (M3U أو JSON) " +
-                        "وستظهر في تبويب القنوات مباشرة. القوائم تبقى على جهازك.",
+                    stringResource(R.string.channels_hint),
                     fontSize = 11.sp,
                     color = KT.textFaint
                 )
                 AddRow(
                     value = newPlaylist,
-                    label = "رابط قائمة قنوات",
+                    label = stringResource(R.string.playlist_url),
                     onValueChange = { newPlaylist = it },
                     onAdd = {
                         val url = newPlaylist.trim()
@@ -141,10 +169,10 @@ fun SettingsScreen(
         }
 
         item {
-            Group("الأخبار") {
+            Group(stringResource(R.string.news_title)) {
                 AddRow(
                     value = newFeed,
-                    label = "رابط خلاصة RSS",
+                    label = stringResource(R.string.feed_url),
                     onValueChange = { newFeed = it },
                     onAdd = {
                         val url = newFeed.trim()
@@ -164,7 +192,7 @@ fun SettingsScreen(
                     }
                 }
                 Text(
-                    "استعادة الخلاصات الافتراضية",
+                    stringResource(R.string.restore_feeds),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = KT.gold,
@@ -178,10 +206,10 @@ fun SettingsScreen(
         }
 
         item {
-            Group("عن التطبيق") {
-                Text("كورة تايم — الإصدار 1.0", fontSize = 13.sp, color = KT.text)
+            Group(stringResource(R.string.about)) {
+                Text(stringResource(R.string.about_version), fontSize = 13.sp, color = KT.text)
                 Text(
-                    "مواعيد المباريات ونتائجها، وقنواتك المفتوحة، وأخبار الكرة العربية في مكان واحد.",
+                    stringResource(R.string.about_desc),
                     fontSize = 11.sp,
                     color = KT.textFaint
                 )
@@ -233,7 +261,7 @@ private fun AddRow(
             modifier = Modifier.fillMaxWidth()
         )
         Text(
-            "إضافة",
+            stringResource(R.string.action_add),
             fontSize = 13.sp,
             fontWeight = FontWeight.Bold,
             color = KT.accent,
@@ -258,7 +286,7 @@ private fun RemovableRow(url: String, onRemove: () -> Unit) {
             modifier = Modifier.weight(1f)
         )
         Text(
-            "حذف",
+            stringResource(R.string.action_delete),
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
             color = KT.live,

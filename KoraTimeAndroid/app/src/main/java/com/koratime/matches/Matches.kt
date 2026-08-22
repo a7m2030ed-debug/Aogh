@@ -6,6 +6,8 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.koratime.core.ArabicNames
+import com.koratime.R
+import com.koratime.core.AppText
 import com.koratime.core.Catalog
 import com.koratime.core.Http
 import com.koratime.core.KTDate
@@ -25,11 +27,11 @@ enum class MatchStatus { SCHEDULED, LIVE, FINISHED, POSTPONED, CANCELED;
 
     val label: String
         get() = when (this) {
-            SCHEDULED -> "لم تبدأ"
-            LIVE -> "مباشر"
-            FINISHED -> "انتهت"
-            POSTPONED -> "مؤجلة"
-            CANCELED -> "ملغاة"
+            SCHEDULED -> AppText.get(R.string.status_scheduled)
+            LIVE -> AppText.get(R.string.status_live)
+            FINISHED -> AppText.get(R.string.status_finished)
+            POSTPONED -> AppText.get(R.string.status_postponed)
+            CANCELED -> AppText.get(R.string.status_canceled)
         }
 }
 
@@ -58,8 +60,10 @@ data class Match(
 
     val centerCaption: String
         get() = when (status) {
-            MatchStatus.LIVE -> progress?.takeIf { it.isNotBlank() } ?: "مباشر"
-            MatchStatus.SCHEDULED -> kickoff?.let { KTDate.dayLabel(it) } ?: "لم تبدأ"
+            MatchStatus.LIVE -> progress?.takeIf { it.isNotBlank() }
+                ?: AppText.get(R.string.status_live)
+            MatchStatus.SCHEDULED -> kickoff?.let { KTDate.dayLabel(it) }
+                ?: AppText.get(R.string.status_scheduled)
             else -> status.label
         }
 
@@ -83,21 +87,44 @@ data class MatchSection(
     val liveCount: Int get() = matches.count { it.isLive }
 }
 
-/** ترتيب البطولات: العربية والكبرى أولاً. */
+/**
+ * ترتيب البطولات: العربية والكبرى أولاً.
+ *
+ * كل بطولة باسمين لأن عنوان الدوري يصل عربياً أو إنجليزياً بحسب لغة
+ * التطبيق وإعداد التعريب — ومطابقة العربية وحدها كانت تُسقط الترتيب
+ * كلّه عند التبديل إلى الإنجليزية.
+ */
 object CompetitionPriority {
     private val ranked = listOf(
-        "دوري روشن السعودي", "دوري أبطال آسيا للنخبة", "دوري أبطال آسيا",
-        "كأس خادم الحرمين", "دوري يلو السعودي", "دوري أبطال أوروبا",
-        "الدوري الإنجليزي الممتاز", "الدوري الإسباني", "الدوري الإيطالي",
-        "الدوري الألماني", "الدوري الفرنسي", "الدوري الأوروبي",
-        "الدوري المصري الممتاز", "دوري نجوم قطر", "دوري أدنوك للمحترفين",
-        "دوري أبطال أفريقيا", "كأس العالم", "كأس آسيا", "كأس أمم أفريقيا"
+        "دوري روشن السعودي" to "Saudi Pro League",
+        "دوري أبطال آسيا للنخبة" to "AFC Champions League Elite",
+        "دوري أبطال آسيا" to "AFC Champions League",
+        "كأس خادم الحرمين" to "King Cup",
+        "دوري يلو السعودي" to "Saudi First Division",
+        "دوري أبطال أوروبا" to "UEFA Champions League",
+        "الدوري الإنجليزي الممتاز" to "English Premier League",
+        "الدوري الإسباني" to "Spanish La Liga",
+        "الدوري الإيطالي" to "Italian Serie A",
+        "الدوري الألماني" to "German Bundesliga",
+        "الدوري الفرنسي" to "French Ligue 1",
+        "الدوري الأوروبي" to "UEFA Europa League",
+        "الدوري المصري الممتاز" to "Egyptian Premier League",
+        "دوري نجوم قطر" to "Qatar Stars League",
+        "دوري أدنوك للمحترفين" to "UAE Pro League",
+        "دوري أبطال أفريقيا" to "CAF Champions League",
+        "كأس العالم" to "World Cup",
+        "كأس آسيا" to "AFC Asian Cup",
+        "كأس أمم أفريقيا" to "Africa Cup of Nations"
     )
 
     fun rank(title: String): Int {
-        val index = ranked.indexOf(title)
-        if (index >= 0) return index
-        ranked.forEachIndexed { position, name -> if (title.contains(name)) return position }
+        val needle = title.lowercase(Locale.US)
+        ranked.forEachIndexed { position, (ar, en) ->
+            if (title == ar || needle == en.lowercase(Locale.US)) return position
+        }
+        ranked.forEachIndexed { position, (ar, en) ->
+            if (title.contains(ar) || needle.contains(en.lowercase(Locale.US))) return position
+        }
         return ranked.size + 10
     }
 }
@@ -108,7 +135,7 @@ object CompetitionPriority {
  */
 class SportsDbProvider(private val apiKey: String) {
 
-    val attribution = "البيانات من TheSportsDB"
+    val attribution: String get() = AppText.get(R.string.attribution_sportsdb)
 
     suspend fun matches(day: Date): List<Match> {
         val key = apiKey.trim().ifEmpty { "123" }
@@ -152,7 +179,7 @@ class SportsDbProvider(private val apiKey: String) {
             awayScore = event.str("intAwayScore")?.toIntOrNull(),
             status = status,
             progress = progressText(raw, status),
-            competition = event.str("strLeague") ?: "بطولات أخرى",
+            competition = event.str("strLeague") ?: AppText.get(R.string.other_competitions),
             competitionBadge = event.str("strLeagueBadge"),
             venue = event.str("strVenue"),
             round = event.str("intRound")
@@ -187,11 +214,11 @@ class SportsDbProvider(private val apiKey: String) {
     private fun progressText(raw: String?, status: MatchStatus): String? {
         if (status != MatchStatus.LIVE) return null
         return when (val code = raw.orEmpty().trim().uppercase(Locale.US)) {
-            "1H" -> "الشوط الأول"
-            "2H" -> "الشوط الثاني"
-            "HT" -> "الاستراحة"
-            "ET" -> "وقت إضافي"
-            "PEN", "P" -> "ركلات الترجيح"
+            "1H" -> AppText.get(R.string.half_first)
+            "2H" -> AppText.get(R.string.half_second)
+            "HT" -> AppText.get(R.string.half_time)
+            "ET" -> AppText.get(R.string.extra_time)
+            "PEN", "P" -> AppText.get(R.string.penalties)
             "" -> null
             else -> if (code.takeWhile { it.isDigit() }.toIntOrNull() != null) "$code′" else null
         }
@@ -307,7 +334,7 @@ class MatchesViewModel(private val settings: Settings) : ViewModel() {
                 errorMessage = null
             } catch (error: Exception) {
                 if (!cache.containsKey(key)) {
-                    errorMessage = error.message ?: "تعذّر جلب المباريات."
+                    errorMessage = error.message ?: AppText.get(R.string.matches_fetch_failed)
                 }
             } finally {
                 isLoading = false

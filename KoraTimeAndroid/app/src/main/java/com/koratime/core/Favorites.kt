@@ -13,9 +13,13 @@ data class League(
     val ar: String,
     val en: String,
     val teams: List<Team>
-)
+) {
+    fun name(lang: Lang): String = if (lang == Lang.AR) ar else en
+}
 
-data class Team(val ar: String, val en: String)
+data class Team(val ar: String, val en: String) {
+    fun name(lang: Lang): String = if (lang == Lang.AR) ar else en
+}
 
 object Catalog {
 

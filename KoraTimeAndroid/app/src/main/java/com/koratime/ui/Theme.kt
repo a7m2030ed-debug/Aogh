@@ -1,5 +1,7 @@
 package com.koratime.ui
 
+import com.koratime.R
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,6 +27,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 
 /** لوحة ألوان كورة تايم — مطابقة لنسخة الآيفون حرفياً. */
 object KT {
@@ -108,7 +111,7 @@ fun KTCard(
 
 /** شارة «مباشر» الحمراء. */
 @Composable
-fun LiveBadge(text: String = "مباشر", compact: Boolean = false) {
+fun LiveBadge(text: String = stringResource(R.string.status_live), compact: Boolean = false) {
     Row(
         modifier = Modifier
             .clip(CircleShape)

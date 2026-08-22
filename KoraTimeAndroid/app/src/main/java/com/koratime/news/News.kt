@@ -7,6 +7,8 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.koratime.core.Http
+import com.koratime.R
+import com.koratime.core.AppText
 import com.koratime.core.KTDate
 import com.koratime.core.Settings
 import kotlinx.coroutines.Dispatchers
@@ -231,7 +233,7 @@ class NewsViewModel(private val settings: Settings) : ViewModel() {
 
             if (sources.isEmpty()) {
                 items = emptyList()
-                errors = listOf("لم تُفعّل أي خلاصة أخبار.")
+                errors = listOf(AppText.get(R.string.news_no_feeds))
                 isLoading = false
                 return@launch
             }
@@ -244,7 +246,7 @@ class NewsViewModel(private val settings: Settings) : ViewModel() {
                         try {
                             FeedParser.parse(Http.text(source, maxAgeSeconds = 300), label) to null
                         } catch (error: Exception) {
-                            emptyList<NewsItem>() to "«$label»: ${error.message}"
+                            emptyList<NewsItem>() to AppText.get(R.string.news_feed_error, label, error.message.orEmpty())
                         }
                     }
                 }.awaitAll()

@@ -35,36 +35,57 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import coil.compose.AsyncImage
+import com.koratime.core.Catalog
 import com.koratime.core.KTDate
+import com.koratime.core.LangManager
+import com.koratime.core.Settings
+import com.koratime.R
 import com.koratime.matches.Chip
 import com.koratime.ui.KT
 import com.koratime.ui.KTCard
 import com.koratime.ui.KTMessage
 import com.koratime.ui.SectionTitle
 
-private val topics = listOf(
-    "كرة القدم", "دوري روشن السعودي", "دوري أبطال أوروبا",
-    "الهلال", "النصر", "الاتحاد", "الأهلي", "المنتخب السعودي", "انتقالات"
-)
+/**
+ * مواضيع البحث السريع: فرق المستخدم ودورياته أولاً، فما اختاره في أول
+ * تشغيل هو ما يجده هنا. ومن لم يختر يحصل على المواضيع العامة.
+ */
+@Composable
+private fun rememberTopics(settings: Settings): List<String> {
+    val lang = LangManager.current(settings)
+    val teams = settings.favoriteTeams
+    val leagues = settings.favoriteLeagues.mapNotNull { Catalog.league(it)?.name(lang) }
+    val general = listOf(
+        stringResource(R.string.topic_football),
+        stringResource(R.string.topic_ksa_team),
+        stringResource(R.string.topic_transfers)
+    )
+    return remember(teams, leagues, lang) {
+        if (teams.isEmpty() && leagues.isEmpty()) general
+        else (teams.take(6) + leagues.take(4) + general).distinct()
+    }
+}
 
 @Composable
-fun NewsScreen(model: NewsViewModel) {
+fun NewsScreen(model: NewsViewModel, settings: Settings) {
     val context = LocalContext.current
+    val topics = rememberTopics(settings)
 
     LaunchedEffect(Unit) { model.loadIfNeeded() }
 
     Column(modifier = Modifier.fillMaxWidth()) {
         SectionTitle(
-            title = "الأخبار",
+            title = stringResource(R.string.news_title),
             subtitle = when {
-                model.isSearching -> "نتائج البحث عن «${model.searchQuery}»"
-                model.lastUpdated != null -> "آخر تحديث ${KTDate.time(model.lastUpdated!!)}"
-                else -> "من الخلاصات التي تتابعها"
+                model.isSearching -> stringResource(R.string.news_search_results, model.searchQuery)
+                model.lastUpdated != null -> stringResource(R.string.last_updated, KTDate.time(model.lastUpdated!!))
+                else -> stringResource(R.string.news_from_feeds)
             },
             trailing = {
                 IconButton(onClick = { model.reload() }) {
-                    Icon(Icons.Filled.Refresh, contentDescription = "تحديث", tint = KT.textSecondary)
+                    Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.refresh), tint = KT.textSecondary)
                 }
             }
         )
@@ -75,7 +96,7 @@ fun NewsScreen(model: NewsViewModel) {
             modifier = Modifier.height(44.dp)
         ) {
             item {
-                Chip("متابعاتي", !model.isSearching) { model.clearSearch() }
+                Chip(stringResource(R.string.news_my_feeds), !model.isSearching) { model.clearSearch() }
             }
             items(topics) { topic ->
                 Chip(topic, model.searchQuery == topic) { model.search(topic) }
@@ -91,9 +112,9 @@ fun NewsScreen(model: NewsViewModel) {
             }
 
             model.items.isEmpty() -> KTMessage(
-                title = "لا توجد أخبار",
-                message = model.errors.firstOrNull() ?: "جرّب موضوعاً آخر.",
-                actionLabel = "إعادة المحاولة",
+                title = stringResource(R.string.news_none),
+                message = model.errors.firstOrNull() ?: stringResource(R.string.news_try_other),
+                actionLabel = stringResource(R.string.retry),
                 onAction = { model.reload() }
             )
 

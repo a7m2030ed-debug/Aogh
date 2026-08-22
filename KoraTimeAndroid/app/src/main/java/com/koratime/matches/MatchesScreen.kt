@@ -35,9 +35,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import coil.compose.AsyncImage
 import com.koratime.core.ArabicNames
 import com.koratime.core.KTDate
+import com.koratime.R
 import com.koratime.ui.KT
 import com.koratime.ui.KTMessage
 import com.koratime.ui.LiveBadge
@@ -57,15 +59,15 @@ fun MatchesScreen(
 
     Column(modifier = Modifier.fillMaxWidth()) {
         SectionTitle(
-            title = "المباريات",
+            title = stringResource(R.string.matches_title),
             subtitle = when {
-                model.liveCount > 0 -> "${model.liveCount} مباراة جارية الآن"
-                model.lastUpdated != null -> "آخر تحديث ${KTDate.time(model.lastUpdated!!)}"
+                model.liveCount > 0 -> stringResource(R.string.matches_live_now, model.liveCount)
+                model.lastUpdated != null -> stringResource(R.string.last_updated, KTDate.time(model.lastUpdated!!))
                 else -> KTDate.dayLabel(model.selectedDay)
             },
             trailing = {
                 IconButton(onClick = { model.refresh() }) {
-                    Icon(Icons.Filled.Refresh, contentDescription = "تحديث", tint = KT.textSecondary)
+                    Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.refresh), tint = KT.textSecondary)
                 }
             }
         )
@@ -92,16 +94,16 @@ fun MatchesScreen(
             }
 
             model.errorMessage != null && sections.isEmpty() -> KTMessage(
-                title = "تعذّر جلب المباريات",
+                title = stringResource(R.string.matches_error),
                 message = model.errorMessage,
-                actionLabel = "إعادة المحاولة",
+                actionLabel = stringResource(R.string.retry),
                 onAction = { model.refresh() }
             )
 
             sections.isEmpty() -> KTMessage(
-                title = if (model.liveOnly) "لا توجد مباريات جارية" else "لا مباريات في هذا اليوم",
-                message = if (model.liveOnly) "جرّب «الكل» لعرض مباريات اليوم كاملة."
-                else "اختر يوماً آخر من الشريط أعلاه."
+                title = if (model.liveOnly) stringResource(R.string.no_live_matches) else stringResource(R.string.no_matches_day),
+                message = if (model.liveOnly) stringResource(R.string.try_all_hint)
+                else stringResource(R.string.pick_another_day)
             )
 
             else -> LazyColumn(
@@ -158,7 +160,7 @@ private fun CompetitionHeader(section: MatchSection) {
             modifier = Modifier.weight(1f)
         )
         if (section.liveCount > 0) {
-            Text("${section.liveCount} مباشر", fontSize = 11.sp, color = KT.live)
+            Text(stringResource(R.string.section_live_count, section.liveCount), fontSize = 11.sp, color = KT.live)
         }
     }
 }
@@ -225,8 +227,8 @@ private fun FilterRow(liveOnly: Boolean, dayLabel: String, onSelect: (Boolean) -
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Chip("الكل", !liveOnly) { onSelect(false) }
-        Chip("المباشرة", liveOnly) { onSelect(true) }
+        Chip(stringResource(R.string.filter_all), !liveOnly) { onSelect(false) }
+        Chip(stringResource(R.string.filter_live), liveOnly) { onSelect(true) }
         Box(modifier = Modifier.weight(1f))
         Text(dayLabel, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = KT.textFaint)
     }
@@ -288,7 +290,7 @@ fun MatchRow(match: Match, arabicNames: Boolean, onClick: () -> Unit) {
                 )
             } else {
                 Text(
-                    match.kickoff?.let { KTDate.time(it) } ?: "—",
+                    match.kickoff?.let { KTDate.time(it) } ?: stringResource(R.string.score_separator),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = KT.text
@@ -296,7 +298,7 @@ fun MatchRow(match: Match, arabicNames: Boolean, onClick: () -> Unit) {
             }
 
             if (match.isLive) {
-                LiveBadge(text = match.progress ?: "مباشر", compact = true)
+                LiveBadge(text = match.progress ?: stringResource(R.string.status_live), compact = true)
             } else {
                 Text(
                     match.centerCaption,

@@ -30,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -42,6 +43,9 @@ import com.koratime.channels.ChannelsScreen
 import com.koratime.channels.ChannelsViewModel
 import com.koratime.core.ArabicNames
 import com.koratime.core.Settings
+import com.koratime.core.AppText
+import com.koratime.core.Lang
+import com.koratime.core.LangManager
 import com.koratime.matches.MatchesScreen
 import com.koratime.matches.MatchesViewModel
 import com.koratime.news.NewsScreen
@@ -62,12 +66,18 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
 
         val settings = Settings(applicationContext)
+        AppText.init(applicationContext)
+        LangManager.apply(settings)
         ArabicNames.load(applicationContext)
 
         setContent {
             KoraTimeTheme {
-                // التطبيق عربي بالكامل، فنثبّت الاتجاه من اليمين لليسار
-                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                // الاتجاه يتبع اللغة: يمين‑يسار للعربية ويسار‑يمين للإنجليزية،
+                // بدل فرض RTL على الاثنتين.
+                val direction =
+                    if (LangManager.current(settings) == Lang.AR) LayoutDirection.Rtl
+                    else LayoutDirection.Ltr
+                CompositionLocalProvider(LocalLayoutDirection provides direction) {
                     // أول تشغيل: تفضيلات الدوريات والفرق قبل دخول التطبيق
                     var onboarded by remember { mutableStateOf(settings.onboarded) }
                     // النماذج تعيش مع النشاط لا مع الشجرة، فتغيير التفضيلات
@@ -91,11 +101,11 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
-private enum class Tab(val title: String, val icon: ImageVector) {
-    MATCHES("المباريات", KTIcons.Ball),
-    CHANNELS("القنوات", KTIcons.PlayCircle),
-    NEWS("الأخبار", KTIcons.Newspaper),
-    SETTINGS("الإعدادات", Icons.Filled.Settings)
+private enum class Tab(val title: Int, val icon: ImageVector) {
+    MATCHES(R.string.tab_matches, KTIcons.Ball),
+    CHANNELS(R.string.tab_channels, KTIcons.PlayCircle),
+    NEWS(R.string.tab_news, KTIcons.Newspaper),
+    SETTINGS(R.string.tab_settings, Icons.Filled.Settings)
 }
 
 /** مصنع بسيط يمرّر الإعدادات والسياق إلى النماذج. */
@@ -112,7 +122,7 @@ private class KTViewModelFactory(
             ChannelsViewModel(settings, context) as T
         modelClass.isAssignableFrom(NewsViewModel::class.java) ->
             NewsViewModel(settings) as T
-        else -> throw IllegalArgumentException("نموذج غير معروف: ${modelClass.name}")
+        else -> throw IllegalArgumentException(AppText.get(R.string.unknown_model, modelClass.name))
     }
 }
 
@@ -174,8 +184,10 @@ private fun RootScreen(
                     NavigationBarItem(
                         selected = tab == entry,
                         onClick = { tab = entry },
-                        icon = { Icon(entry.icon, contentDescription = entry.title) },
-                        label = { Text(entry.title, fontSize = 11.sp) },
+                        icon = {
+                            Icon(entry.icon, contentDescription = stringResource(entry.title))
+                        },
+                        label = { Text(stringResource(entry.title), fontSize = 11.sp) },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = KT.accent,
                             selectedTextColor = KT.accent,
@@ -207,7 +219,7 @@ private fun RootScreen(
                             onOpenSettings = { tab = Tab.SETTINGS }
                         )
 
-                        Tab.NEWS -> NewsScreen(model = news)
+                        Tab.NEWS -> NewsScreen(model = news, settings = settings)
 
                         Tab.SETTINGS -> SettingsScreen(
                             settings = settings,

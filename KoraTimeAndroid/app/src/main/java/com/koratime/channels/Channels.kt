@@ -23,6 +23,8 @@ import com.google.android.gms.cast.framework.CastContext
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.koratime.core.Http
+import com.koratime.R
+import com.koratime.core.AppText
 import com.koratime.core.Settings
 import com.koratime.core.ktJson
 import kotlinx.coroutines.Job
@@ -122,7 +124,7 @@ object M3UParser {
                         continue
                     }
                     channels += Channel(
-                        name = name ?: "قناة ${channels.size + 1}",
+                        name = name ?: AppText.get(R.string.numbered_channel, channels.size + 1),
                         group = group?.takeIf { it.isNotBlank() } ?: defaultGroup,
                         url = address,
                         logo = logo,
@@ -287,7 +289,7 @@ class ChannelsViewModel(
         }
         if (retries >= MAX_RETRIES) {
             isBuffering = false
-            errorText = "تعذّر تشغيل هذه القناة. قد تكون محجوبة أو متوقّفة."
+            errorText = AppText.get(R.string.channel_error)
             return
         }
         retries += 1
@@ -379,7 +381,7 @@ class ChannelsViewModel(
                 val bundled = ktJson.decodeFromString<List<Channel>>(raw)
                 collected += if (settings.showDemoChannels) bundled else bundled.filter { !it.isDemo }
             } catch (error: Exception) {
-                errors += "تعذّرت قراءة القنوات المرفقة: ${error.message}"
+                errors += AppText.get(R.string.channels_read_failed, error.message.orEmpty())
             }
 
             for (source in settings.playlists) {
@@ -387,12 +389,12 @@ class ChannelsViewModel(
                     val body = Http.text(source, maxAgeSeconds = 1800)
                     val parsed = parsePlaylist(body, source)
                     if (parsed.isEmpty()) {
-                        errors += "«$source»: لم يُعثر على قنوات."
+                        errors += AppText.get(R.string.playlist_no_channels, source)
                     } else {
                         collected += parsed
                     }
                 } catch (error: Exception) {
-                    errors += "«$source»: ${error.message}"
+                    errors += AppText.get(R.string.playlist_error, source, error.message.orEmpty())
                 }
             }
 
@@ -412,8 +414,8 @@ class ChannelsViewModel(
                     val item = element.jsonObject
                     fun field(key: String) = item[key]?.jsonPrimitive?.textOrNull()
                     Channel(
-                        name = field("name") ?: "قناة",
-                        group = field("group") ?: "قنواتي",
+                        name = field("name") ?: AppText.get(R.string.default_channel_name),
+                        group = field("group") ?: AppText.get(R.string.my_channels),
                         url = field("url").orEmpty(),
                         logo = field("logo"),
                         note = field("note"),
@@ -425,7 +427,7 @@ class ChannelsViewModel(
                 emptyList()
             }
         }
-        val label = source.substringAfterLast('/').substringBefore('?').ifBlank { "قائمتي" }
+        val label = source.substringAfterLast('/').substringBefore('?').ifBlank { AppText.get(R.string.my_list) }
         return M3UParser.parse(body, label).filter { it.isPlayable }
     }
 

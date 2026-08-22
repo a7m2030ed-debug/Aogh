@@ -42,6 +42,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
@@ -49,6 +50,7 @@ import androidx.mediarouter.app.MediaRouteButton
 import com.google.android.gms.cast.framework.CastButtonFactory
 import coil.compose.AsyncImage
 import com.koratime.Broadcasters
+import com.koratime.R
 import com.koratime.core.ArabicNames
 import com.koratime.ui.KT
 import com.koratime.ui.KTIcons
@@ -158,11 +160,11 @@ fun ChannelsScreen(
                 item {
                     KTCard(modifier = Modifier.fillMaxWidth()) {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("البطولات الحصرية", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = KT.text)
+                            Text(stringResource(R.string.exclusive_competitions), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = KT.text)
                             Broadcasters.all.forEach { broadcaster ->
                                 Text(broadcaster.note, fontSize = 12.sp, color = KT.textSecondary)
                                 Text(
-                                    "فتح ${broadcaster.name}",
+                                    stringResource(R.string.open_broadcaster, broadcaster.name),
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = KT.accent,
@@ -181,14 +183,14 @@ fun ChannelsScreen(
                     item {
                         KTCard(modifier = Modifier.fillMaxWidth()) {
                             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Text("قنواتك الخاصة", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = KT.text)
+                                Text(stringResource(R.string.your_channels), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = KT.text)
                                 Text(
-                                    "أضف رابط قائمتك (M3U أو JSON) من الإعدادات وستظهر هنا.",
+                                    stringResource(R.string.your_channels_hint),
                                     fontSize = 12.sp,
                                     color = KT.textSecondary
                                 )
                                 Text(
-                                    "إضافة قائمة قنوات",
+                                    stringResource(R.string.add_playlist),
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = KT.accent,
@@ -241,15 +243,15 @@ private fun PlayerSurface(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Text("يُعرض على الشاشة", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = KT.accent)
+                Text(stringResource(R.string.casting_to), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = KT.accent)
                 Text(
-                    model.castDeviceName ?: "جهاز متصل",
+                    model.castDeviceName ?: stringResource(R.string.cast_device),
                     fontSize = 12.sp,
                     color = Color.White.copy(alpha = 0.8f)
                 )
             }
         } else if (current == null) {
-            Text("اختر قناة من القائمة", fontSize = 13.sp, color = Color.White.copy(alpha = 0.7f))
+            Text(stringResource(R.string.pick_channel), fontSize = 13.sp, color = Color.White.copy(alpha = 0.7f))
         } else if (errorText != null) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -258,7 +260,7 @@ private fun PlayerSurface(
             ) {
                 Text(errorText, fontSize = 12.sp, color = Color.White, textAlign = TextAlign.Center)
                 Text(
-                    "إعادة المحاولة",
+                    stringResource(R.string.retry),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = KT.accent,
@@ -289,7 +291,7 @@ private fun PlayerSurface(
             }
             PlayerCornerButton(
                 icon = if (isFullscreen) KTIcons.CollapseScreen else KTIcons.ExpandScreen,
-                label = if (isFullscreen) "تصغير" else "ملء الشاشة",
+                label = stringResource(if (isFullscreen) R.string.minimize else R.string.fullscreen),
                 onClick = onToggleFullscreen
             )
         }
@@ -325,14 +327,14 @@ private fun ChannelRail(
     Column(modifier = modifier.background(KT.bgSoft)) {
         Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("القنوات", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = KT.text)
+                Text(stringResource(R.string.channels_title), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = KT.text)
                 Box(modifier = Modifier.weight(1f))
                 Text("${model.visibleChannels.size}", fontSize = 10.sp, color = KT.textFaint)
             }
 
             Box {
                 Text(
-                    model.selectedGroup ?: "كل الفئات",
+                    model.selectedGroup ?: stringResource(R.string.all_groups),
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = KT.accent,
@@ -349,7 +351,7 @@ private fun ChannelRail(
                 )
                 DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                     DropdownMenuItem(
-                        text = { Text("الكل") },
+                        text = { Text(stringResource(R.string.filter_all)) },
                         onClick = { model.selectedGroup = null; menuOpen = false }
                     )
                     model.groups.forEach { group ->
@@ -372,9 +374,9 @@ private fun ChannelRail(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Text("لا قنوات", fontSize = 11.sp, color = KT.textSecondary)
+                Text(stringResource(R.string.no_channels), fontSize = 11.sp, color = KT.textSecondary)
                 Text(
-                    "أضف قائمة",
+                    stringResource(R.string.add_list),
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = KT.accent,
@@ -414,7 +416,7 @@ private fun ChannelRail(
                             overflow = TextOverflow.Ellipsis
                         )
                         if (channel.geoRestricted) {
-                            Text("قد تُحجب", fontSize = 8.sp, color = KT.gold, maxLines = 1)
+                            Text(stringResource(R.string.may_be_blocked), fontSize = 8.sp, color = KT.gold, maxLines = 1)
                         }
                     }
                 }
