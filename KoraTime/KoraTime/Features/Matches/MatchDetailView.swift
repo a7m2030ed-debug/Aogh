@@ -7,6 +7,7 @@ struct MatchDetailView: View {
 
     @Environment(AppSettings.self) private var settings
     @Environment(AppRouter.self) private var router
+    @Environment(\.openURL) private var openURL
 
     @State private var tick = Date()
 
@@ -118,13 +119,38 @@ struct MatchDetailView: View {
 
     // MARK: - الأزرار
 
+    /// الناقل الرسمي لهذه البطولة، إن عُرف.
+    private var broadcaster: Broadcaster? {
+        Broadcasters.broadcaster(
+            forCompetition: match.competition,
+            match.competitionTitle(arabic: true)
+        )
+    }
+
     private var actions: some View {
-        HStack(spacing: 10) {
-            actionButton(title: "شاهد على القنوات", icon: "play.tv.fill", prominent: true) {
-                router.openChannels()
+        VStack(spacing: 10) {
+            if let broadcaster = broadcaster, let url = broadcaster.openURL {
+                actionButton(title: "شاهد على \(broadcaster.name)",
+                             icon: "play.rectangle.fill",
+                             prominent: true) {
+                    openURL(url)
+                }
+                Text(broadcaster.note)
+                    .font(.system(size: 11))
+                    .foregroundStyle(KT.textFaint)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
             }
-            actionButton(title: "أخبار المباراة", icon: "newspaper.fill", prominent: false) {
-                router.openNews(query: "\(match.homeName) \(match.awayName)")
+
+            HStack(spacing: 10) {
+                actionButton(title: "القنوات المفتوحة",
+                             icon: "play.tv.fill",
+                             prominent: broadcaster == nil) {
+                    router.openChannels()
+                }
+                actionButton(title: "أخبار المباراة", icon: "newspaper.fill", prominent: false) {
+                    router.openNews(query: "\(match.homeName) \(match.awayName)")
+                }
             }
         }
     }
@@ -173,6 +199,11 @@ struct MatchDetailView: View {
             detailRow(icon: "flag.2.crossed", title: "البطولة",
                       value: match.competitionTitle(arabic: settings.arabicNames))
             divider
+            if let broadcaster = broadcaster {
+                detailRow(icon: "dot.radiowaves.left.and.right", title: "الناقل",
+                          value: broadcaster.name)
+                divider
+            }
             detailRow(icon: "clock.arrow.circlepath", title: "الحالة", value: match.status.label)
         }
         .ktCard(padding: 4, radius: 18)

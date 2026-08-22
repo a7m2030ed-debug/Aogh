@@ -36,7 +36,8 @@ COUNTRIES = {
 }
 
 # قنوات رياضية عالمية مفتوحة نضيفها ولو كانت خارج الدول أعلاه
-EXTRA_KEYWORDS = ("red bull tv", "sport tv", "eurosport news", "olympic")
+EXTRA_KEYWORDS = ("red bull tv", "sport tv", "eurosport news", "olympic",
+                  "thmanyah", "ثمانية")
 
 MAX_CHANNELS = 150
 

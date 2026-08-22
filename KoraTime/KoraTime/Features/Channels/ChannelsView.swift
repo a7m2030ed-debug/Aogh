@@ -9,6 +9,7 @@ struct ChannelsView: View {
     @Environment(PlayerController.self) private var player
     @Environment(MatchesStore.self) private var matches
     @Environment(AppRouter.self) private var router
+    @Environment(\.openURL) private var openURL
 
     @State private var showRail = true
     @State private var isFullscreen = false
@@ -229,6 +230,7 @@ struct ChannelsView: View {
                 if !todayMatches.isEmpty {
                     matchesStrip
                 }
+                officialBroadcastersCard
                 if !store.hasUserChannels {
                     addChannelsHint
                 }
@@ -277,6 +279,34 @@ struct ChannelsView: View {
                 }
             }
         }
+    }
+
+    /// البطولات التي لا يمكن بثّها هنا، مع زر يفتح تطبيق صاحب الحق.
+    private var officialBroadcastersCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("البطولات الحصرية")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(KT.text)
+            ForEach(Broadcasters.all) { broadcaster in
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(broadcaster.note)
+                        .font(.system(size: 12))
+                        .foregroundStyle(KT.textSecondary)
+                    if let url = broadcaster.openURL {
+                        Button {
+                            openURL(url)
+                        } label: {
+                            Label("فتح \(broadcaster.name)", systemImage: "arrow.up.forward.app.fill")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundStyle(KT.accent)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .ktCard(padding: 14, radius: 16)
     }
 
     private var addChannelsHint: some View {

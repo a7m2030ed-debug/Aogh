@@ -17,6 +17,7 @@
 		56BD43A517DC55A33C380195 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC7D459968F57A9DF340DDE5 /* Components.swift */; };
 		6E9633FB135EC21E30B5AAF3 /* RemoteImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB17ACBC9E32ED69D1946D7F /* RemoteImage.swift */; };
 		159945DF3FD0CA5DB1ECA6B4 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = D11A17785FA071C134883B46 /* Theme.swift */; };
+		C41F26656863D3A3272BA9C0 /* Broadcasters.swift in Sources */ = {isa = PBXBuildFile; fileRef = E92E1E29BB60BC0949486073 /* Broadcasters.swift */; };
 		79792C15C0CBF092AF1368C6 /* Channel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957B28B110AF0461D2F921B9 /* Channel.swift */; };
 		CC7B5CB4856069FB627D5649 /* ChannelsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CB320B9797D66E1AC6AA7B7 /* ChannelsStore.swift */; };
 		1EC5D8B64BA8172275C7B349 /* ChannelsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7939996D918B740052F73D78 /* ChannelsView.swift */; };
@@ -50,6 +51,7 @@
 		FC7D459968F57A9DF340DDE5 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Components.swift"; sourceTree = "<group>"; };
 		EB17ACBC9E32ED69D1946D7F /* RemoteImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RemoteImage.swift"; sourceTree = "<group>"; };
 		D11A17785FA071C134883B46 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Theme.swift"; sourceTree = "<group>"; };
+		E92E1E29BB60BC0949486073 /* Broadcasters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Broadcasters.swift"; sourceTree = "<group>"; };
 		957B28B110AF0461D2F921B9 /* Channel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Channel.swift"; sourceTree = "<group>"; };
 		3CB320B9797D66E1AC6AA7B7 /* ChannelsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ChannelsStore.swift"; sourceTree = "<group>"; };
 		7939996D918B740052F73D78 /* ChannelsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ChannelsView.swift"; sourceTree = "<group>"; };
@@ -131,6 +133,7 @@
 		72650A9D3CA4BBF66F606991 /* Channels */ = {
 			isa = PBXGroup;
 			children = (
+				E92E1E29BB60BC0949486073 /* Broadcasters.swift */,
 				957B28B110AF0461D2F921B9 /* Channel.swift */,
 				3CB320B9797D66E1AC6AA7B7 /* ChannelsStore.swift */,
 				7939996D918B740052F73D78 /* ChannelsView.swift */,
@@ -286,6 +289,7 @@
 				56BD43A517DC55A33C380195 /* Components.swift in Sources */,
 				6E9633FB135EC21E30B5AAF3 /* RemoteImage.swift in Sources */,
 				159945DF3FD0CA5DB1ECA6B4 /* Theme.swift in Sources */,
+				C41F26656863D3A3272BA9C0 /* Broadcasters.swift in Sources */,
 				79792C15C0CBF092AF1368C6 /* Channel.swift in Sources */,
 				CC7B5CB4856069FB627D5649 /* ChannelsStore.swift in Sources */,
 				1EC5D8B64BA8172275C7B349 /* ChannelsView.swift in Sources */,
