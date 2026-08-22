@@ -21,6 +21,7 @@ import argparse
 import concurrent.futures
 import json
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -29,6 +30,8 @@ TIMEOUT = 15
 USER_AGENT = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 "
               "(KHTML, like Gecko) Version/17.0 Safari/605.1.15")
 GEO_CODES = {401, 403, 451}
+SEGMENT_SAMPLE_BYTES = 900_000
+MIN_HEADROOM = 1.15  # أقل من ذلك يعني تقطّعاً عند أي تذبذب في شبكة الجوال
 GROUP_ORDER = {"رياضة": 0, "إخبارية": 1, "تجريبي": 2}
 
 
@@ -74,6 +77,64 @@ def first_variant(playlist_text, base_url):
     return None
 
 
+def last_segment(playlist_text, base_url):
+    """آخر مقطع في القائمة مع مدّته — أقرب ما يكون لحافة البثّ الحيّ."""
+    duration = 0.0
+    found = None
+    for raw in playlist_text.splitlines():
+        line = raw.strip()
+        if line.startswith("#EXTINF"):
+            try:
+                duration = float(line.split(":", 1)[1].split(",")[0])
+            except (IndexError, ValueError):
+                duration = 0.0
+        elif line and not line.startswith("#"):
+            found = (duration, urllib.parse.urljoin(base_url, line))
+    return found
+
+
+def probe_segment(playlist_text, base_url, headers):
+    """ينزّل مقطعاً حقيقياً ويقيس هل تكفي سرعته للتشغيل بلا تقطيع.
+
+    فحص القائمة وحده لا يكفي: قنوات كثيرة تردّ بقائمة سليمة ثم تتعثّر
+    مقاطعها، أو تنزل أبطأ من استهلاك المشغّل فتتقطّع عند كل مشاهد.
+    """
+    segment = last_segment(playlist_text, base_url)
+    if not segment:
+        return "dead", "لا مقاطع"
+    duration, url = segment
+
+    request = urllib.request.Request(url)
+    request.add_header("User-Agent", USER_AGENT)
+    for key, value in (headers or {}).items():
+        request.add_header(key, value)
+
+    started = time.monotonic()
+    try:
+        with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
+            if response.status in GEO_CODES:
+                return "geo", f"المقطع HTTP {response.status}"
+            blob = response.read(SEGMENT_SAMPLE_BYTES)
+    except urllib.error.HTTPError as error:
+        if error.code in GEO_CODES:
+            return "geo", f"المقطع HTTP {error.code}"
+        return "dead", f"المقطع HTTP {error.code}"
+    except Exception as error:
+        return "dead", f"المقطع: {type(error).__name__}"
+
+    elapsed = time.monotonic() - started
+    if not blob or elapsed <= 0:
+        return "dead", "مقطع فارغ"
+
+    throughput = len(blob) * 8 / elapsed          # بت/ثانية
+    # عيّنة جزئية لا تعطي معدّل البثّ، فنقيس فقط حين ننزّل المقطع كاملاً
+    if len(blob) < SEGMENT_SAMPLE_BYTES and duration > 0:
+        needed = len(blob) * 8 / duration
+        if needed > 0 and throughput / needed < MIN_HEADROOM:
+            return "slow", f"هامش {throughput / needed:.2f}×"
+    return "ok", ""
+
+
 def check(channel):
     """يفحص قناة واحدة ويُرجع (status, detail)."""
     url = channel.get("url", "")
@@ -109,11 +170,13 @@ def check(channel):
             return "dead", error2 or "الجودة لا تعمل"
         if "#EXTINF" not in body2:
             return "dead", "لا مقاطع في الجودة"
-        return "ok", "قائمة جودات"
+        status, detail = probe_segment(body2, variant, headers)
+        return status, detail or "قائمة جودات"
 
     if "#EXTINF" not in body:
         return "dead", "قائمة بلا مقاطع"
-    return "ok", "بث مباشر"
+    status, detail = probe_segment(body, url, headers)
+    return status, detail or "بث مباشر"
 
 
 def main():
@@ -127,7 +190,7 @@ def main():
         candidates = json.load(handle)
 
     kept, rows = [], []
-    counts = {"ok": 0, "geo": 0, "dead": 0}
+    counts = {"ok": 0, "geo": 0, "slow": 0, "dead": 0}
 
     # الفحص متوازٍ: مئة رابط بمهلة ١٥ ثانية لا تُفحص بالتتابع في وقت معقول
     with concurrent.futures.ThreadPoolExecutor(max_workers=12) as pool:
@@ -139,7 +202,8 @@ def main():
         rows.append((status, channel.get("name", "?"), channel.get("group", ""), detail))
         print(f"[{status:4}] {channel.get('name')} — {detail}", flush=True)
 
-        if status == "dead":
+        # البطيء يُستبعد كالميّت: قائمته سليمة لكنه يتقطّع عند كل مشاهد
+        if status in ("dead", "slow"):
             continue
 
         entry = {key: value for key, value in channel.items() if value is not None}
@@ -169,17 +233,18 @@ def main():
         handle.write("\n")
 
     if args.report:
-        icons = {"ok": "✅", "geo": "🌍", "dead": "❌"}
+        icons = {"ok": "✅", "geo": "🌍", "slow": "🐌", "dead": "❌"}
         lines = [
             "## فحص قنوات كورة تايم",
             "",
             f"تعمل: **{counts['ok']}** · محجوبة جغرافياً: **{counts['geo']}** · "
-            f"معطّلة: **{counts['dead']}** · المحفوظة في التطبيق: **{len(kept)}**",
+            f"بطيئة: **{counts['slow']}** · معطّلة: **{counts['dead']}** · "
+            f"المحفوظة في التطبيق: **{len(kept)}**",
             "",
             "| | القناة | الفئة | النتيجة |",
             "|---|---|---|---|",
         ]
-        order = {"ok": 0, "geo": 1, "dead": 2}
+        order = {"ok": 0, "geo": 1, "slow": 2, "dead": 3}
         for status, name, group, detail in sorted(rows, key=lambda r: (order[r[0]], r[1])):
             lines.append(f"| {icons[status]} | {name} | {group} | {detail} |")
         with open(args.report, "w", encoding="utf-8") as handle:
