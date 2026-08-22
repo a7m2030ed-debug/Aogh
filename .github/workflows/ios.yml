@@ -24,6 +24,9 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 40
 
+    permissions:
+      contents: write
+
     steps:
       - uses: actions/checkout@v4
 
@@ -100,7 +103,7 @@ jobs:
             echo "لا توجد تقارير انهيار."
           fi
 
-      - name: رفع اللقطات
+      - name: رفع اللقطات كملف قابل للتحميل
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -108,3 +111,26 @@ jobs:
           path: KoraTime/screenshots/*.png
           if-no-files-found: warn
           retention-days: 30
+
+      # نحفظ نسخة مصغّرة داخل المستودع أيضاً حتى تُعرض في صفحة الطلب مباشرة
+      # بلا تحميل. المسار docs/ خارج مرشّح paths أعلاه فلا يعيد تشغيل البناء.
+      - name: حفظ اللقطات في المستودع
+        if: github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          BRANCH="${{ github.ref_name }}"
+          mkdir -p docs/screenshots
+          for file in KoraTime/screenshots/*.png; do
+            sips -Z 1000 "$file" --out "docs/screenshots/$(basename "$file")" >/dev/null
+          done
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/screenshots
+          if git diff --cached --quiet; then
+            echo "لا جديد في اللقطات."
+            exit 0
+          fi
+          git commit -m "لقطات كورة تايم من المحاكي [skip ci]"
+          git fetch origin "$BRANCH"
+          git rebase "origin/$BRANCH"
+          git push origin "HEAD:$BRANCH"
