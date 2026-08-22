@@ -27,6 +27,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -76,16 +77,18 @@ fun ChannelsScreen(
     val errorText = model.errorText
     val isBuffering = model.isBuffering
 
-    LaunchedEffect(Unit) {
-        model.loadIfNeeded()
+    // القائمة تُحمَّل عند بدء التطبيق لا هنا، والنموذج يهيّئ قناة البداية
+    // بلا صوت. هنا نكتفي ببدء الصوت لأن الشاشة صارت ظاهرة.
+    DisposableEffect(Unit) {
         model.initCast()
+        model.loadIfNeeded()
+        if (autoPlay) model.resumePlayback()
+        onDispose { }
     }
 
-    // أول قناة تُشغَّل تلقائياً بعد وصول القائمة
-    LaunchedEffect(model.channels.size) {
-        if (autoPlay && model.currentId == null) {
-            model.startupChannel()?.let { model.select(it) }
-        }
+    // إن وصلت القائمة بعد فتح التبويب، نبدأ الصوت حين تجهز
+    LaunchedEffect(model.currentId) {
+        if (autoPlay && model.currentId != null) model.resumePlayback()
     }
 
     val current = model.current

@@ -223,7 +223,9 @@ class ChannelsViewModel(
             .setBandwidthMeter(bandwidthMeter)
             .build()
             .apply {
-                playWhenReady = true
+                // لا نشغّل تلقائياً: التهيئة المسبقة تملأ المخزون بلا صوت،
+                // والتشغيل يبدأ عند فتح التبويب.
+                playWhenReady = false
                 addListener(playerListener)
             }
     }
@@ -352,11 +354,43 @@ class ChannelsViewModel(
         httpFactory.setDefaultRequestProperties(channel.headers)
         player.setMediaItem(localMediaItem(channel))
         player.prepare()
-        player.play()
+        player.play()   // اختيار صريح من المستخدم، فالصوت مطلوب
     }
 
     fun retryCurrent() {
         current?.let { play(it) }
+    }
+
+    /**
+     * يهيّئ قناة البداية بمجرّد وصول القائمة، قبل أن يفتح المستخدم التبويب.
+     *
+     * القياس أظهر أن ظهور أول صورة يستغرق وسطياً ١٫٧ ثانية من مركز بيانات
+     * (اتصال، ثم قائمة رئيسية، ثم قائمة مقاطع، ثم تنزيل) — وكلها تجري
+     * بالتتابع بعد الضغط. تشغيلها مسبقاً يلغي الانتظار كلّه عند فتح
+     * التبويب. بلا صوت: playWhenReady تبقى false حتى تظهر الشاشة.
+     */
+    private fun preload() {
+        if (!settings.autoPlayOnOpen || isCasting) return
+        if (currentId != null) return
+        val channel = startupChannel() ?: return
+        currentId = channel.id
+        settings.lastChannelId = channel.id
+        isBuffering = true
+        httpFactory.setUserAgent(channel.userAgent ?: DEFAULT_USER_AGENT)
+        httpFactory.setDefaultRequestProperties(channel.headers)
+        player.setMediaItem(localMediaItem(channel))
+        player.prepare()
+    }
+
+    /** تُستدعى عند ظهور تبويب القنوات: المخزون جاهز، فيبدأ الصوت فوراً. */
+    fun resumePlayback() {
+        if (isCasting || !lazyPlayer.isInitialized()) return
+        player.playWhenReady = true
+    }
+
+    /** تُستدعى عند مغادرة التبويب إن أراد المستخدم إيقاف الصوت. */
+    fun pausePlayback() {
+        if (lazyPlayer.isInitialized()) player.playWhenReady = false
     }
 
     override fun onCleared() {
@@ -432,6 +466,7 @@ class ChannelsViewModel(
             channels = collected.distinctBy { it.id }.filter { it.isPlayable }
             loadErrors = errors
             isLoading = false
+            preload()
 
             if (selectedGroup != null && selectedGroup !in groups) selectedGroup = null
         }

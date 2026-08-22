@@ -139,6 +139,11 @@ private fun RootScreen(
     val channels: ChannelsViewModel = viewModel(factory = factory)
     val news: NewsViewModel = viewModel(factory = factory)
 
+    // قائمة القنوات تُحمَّل مع بدء التطبيق لا عند فتح تبويبها: النموذج
+    // يهيّئ قناة البداية بلا صوت، فيصير فتح التبويب فورياً بدل انتظار
+    // سلسلة الطلبات كاملة عند الضغط.
+    LaunchedEffect(Unit) { channels.loadIfNeeded() }
+
     // تفضيلات جديدة تعني ترتيب مباريات مختلفاً وخلاصات أخبار مختلفة
     LaunchedEffect(favoritesVersion) {
         if (favoritesVersion > 0) {
