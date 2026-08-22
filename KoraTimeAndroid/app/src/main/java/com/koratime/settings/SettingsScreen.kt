@@ -43,6 +43,7 @@ fun SettingsScreen(
     onMatchesChanged: () -> Unit
 ) {
     val lang = LangManager.current(settings)
+    var apiKey by remember { mutableStateOf(settings.apiFootballKey) }
     var sportsKey by remember { mutableStateOf(settings.sportsDbKey) }
     var arabicNames by remember { mutableStateOf(settings.arabicNames) }
     var autoPlay by remember { mutableStateOf(settings.autoPlayOnOpen) }
@@ -104,6 +105,19 @@ fun SettingsScreen(
 
         item {
             Group(stringResource(R.string.matches_title)) {
+                OutlinedTextField(
+                    value = apiKey,
+                    onValueChange = {
+                        apiKey = it
+                        settings.apiFootballKey = it
+                        onMatchesChanged()
+                    },
+                    label = { Text(stringResource(R.string.apifootball_key)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Text(stringResource(R.string.apifootball_hint), fontSize = 11.sp, color = KT.textFaint)
+
                 OutlinedTextField(
                     value = sportsKey,
                     onValueChange = {

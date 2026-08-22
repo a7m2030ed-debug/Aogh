@@ -311,6 +311,14 @@ class Settings(context: Context) {
         set(value) = prefs.edit().putString("lastChannel", value).apply()
 
     /** هل عرضنا شاشة التفضيلات؟ تظهر مرة واحدة عند أول تشغيل. */
+    /**
+     * مفتاح API-Football. هو المصدر الوحيد المجاني الذي يغطّي دوري روشن
+     * والدوريات الكبرى معاً؛ فارغ يعني البقاء على المصدر القديم المحدود.
+     */
+    var apiFootballKey: String
+        get() = prefs.getString("apiFootball.key", "") ?: ""
+        set(value) = prefs.edit().putString("apiFootball.key", value.trim()).apply()
+
     /** رمز اللغة المختارة؛ فارغ يعني العربية. */
     var language: String
         get() = prefs.getString("language", Lang.AR.code) ?: Lang.AR.code

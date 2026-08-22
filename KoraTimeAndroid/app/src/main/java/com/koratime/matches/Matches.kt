@@ -248,7 +248,12 @@ class MatchesViewModel(private val settings: Settings) : ViewModel() {
             return (-4..10).map { KTDate.adding(it, today) }
         }
 
-    val attribution: String get() = SportsDbProvider(settings.sportsDbKey).attribution
+    val attribution: String
+        get() = if (settings.apiFootballKey.isNotBlank()) {
+            ApiFootballProvider(settings.apiFootballKey).attribution
+        } else {
+            SportsDbProvider(settings.sportsDbKey).attribution
+        }
 
     private val dayMatches: List<Match>
         get() = cache[KTDate.apiDay.format(selectedDay)].orEmpty()
@@ -328,7 +333,15 @@ class MatchesViewModel(private val settings: Settings) : ViewModel() {
 
         loadJob = viewModelScope.launch {
             try {
-                val result = SportsDbProvider(settings.sportsDbKey).matches(day)
+                // مفتاح API-Football يعني تغطية روشن والدوريات الكبرى؛
+                // بلا مفتاح نبقى على المصدر القديم بحدوده المعروفة.
+                val apiKey = settings.apiFootballKey
+                val result = if (apiKey.isNotBlank()) {
+                    ApiFootballProvider(apiKey).matches(day)
+                        .ifEmpty { SportsDbProvider(settings.sportsDbKey).matches(day) }
+                } else {
+                    SportsDbProvider(settings.sportsDbKey).matches(day)
+                }
                 cache[key] = result
                 lastUpdated = Date()
                 errorMessage = null

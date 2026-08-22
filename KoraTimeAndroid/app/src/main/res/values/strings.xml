@@ -98,6 +98,9 @@
     <string name="edit_prefs">Edit leagues and teams</string>
     <string name="group_language">Language</string>
     <string name="language_hint">The app opens in Arabic. Changing the language restarts the screen.</string>
+    <string name="attribution_apifootball">Data from API-Football</string>
+    <string name="apifootball_key">API-Football key (Roshn + major leagues)</string>
+    <string name="apifootball_hint">The bundled free source returns only 3 matches a day from minor leagues — no Roshn and no major leagues. A free key from dashboard.api-football.com brings them all. Leave it empty to stay on the old source.</string>
     <string name="sportsdb_key">TheSportsDB key</string>
     <string name="sportsdb_hint">The shared trial key “123” works without signing up but is rate limited. Register your own at thesportsdb.com for faster updates.</string>
     <string name="arabic_names">Arabic team and league names</string>

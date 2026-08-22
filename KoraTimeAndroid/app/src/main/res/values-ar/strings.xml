@@ -94,6 +94,9 @@
     <string name="edit_prefs">تعديل الدوريات والفرق</string>
     <string name="group_language">اللغة</string>
     <string name="language_hint">التطبيق يفتح بالعربية. تغيير اللغة يعيد بناء الشاشة.</string>
+    <string name="attribution_apifootball">البيانات من API-Football</string>
+    <string name="apifootball_key">مفتاح API-Football (روشن والدوريات الكبرى)</string>
+    <string name="apifootball_hint">المصدر المجاني المرافق يُرجع ثلاث مباريات يومياً من دوريات هامشية — بلا روشن وبلا الدوريات الكبرى. مفتاح مجاني من dashboard.api-football.com يجلبها كلها. اتركه فارغاً للبقاء على المصدر القديم.</string>
     <string name="sportsdb_key">مفتاح TheSportsDB</string>
     <string name="sportsdb_hint">المفتاح التجريبي المشترك «123» يعمل بلا تسجيل لكنه محدود الطلبات. سجّل مفتاحاً باسمك من thesportsdb.com لتحديث أسرع.</string>
     <string name="arabic_names">تعريب أسماء الفرق والبطولات</string>
