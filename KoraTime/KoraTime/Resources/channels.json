@@ -21,13 +21,6 @@
     "logo": "https://i.imgur.com/ZkuZmIo.png"
   },
   {
-    "name": "الرياضية المغربية",
-    "group": "رياضة",
-    "url": "http://149.100.11.252:8000/play/a065/index.m3u8",
-    "note": "قناة مفتوحة — المغرب",
-    "logo": "https://i.imgur.com/XjzK3gZ.png"
-  },
-  {
     "name": "الشارقة الرياضية",
     "group": "رياضة",
     "url": "https://svs.itworkscdn.net/smc4sportslive/smc4tv.smil/playlist.m3u8",
@@ -107,6 +100,13 @@
     "logo": "https://i.imgur.com/R1hGX1d.png"
   },
   {
+    "name": "الكويت الرياضية بلس",
+    "group": "رياضة",
+    "url": "https://kwtsplta.cdn.mangomolo.com/spl/smil:spl.stream.smil/chunklist.m3u8",
+    "note": "قناة مفتوحة — الكويت",
+    "logo": "https://i.imgur.com/l4oX0gf.png"
+  },
+  {
     "name": "ريد بُل",
     "group": "رياضة",
     "url": "https://db34cc6127ac459db55cab5f97cd66b9.mediatailor.us-west-2.amazonaws.com/v1/master/ba62fe743df0fe93366eba3a257d792884136c7f/LINEAR-680-WORBAUENFAST-WHALETVPLUS/680/whaletvplus/hls/master/playlist.m3u8",
@@ -123,9 +123,10 @@
   {
     "name": "ACI Sport TV",
     "group": "رياضة",
-    "url": "https://webstream.multistream.it/memfs/e2cb3629-c1a2-495b-b43a-9eb386f04ed8.m3u8",
-    "note": "قناة مفتوحة — دولية",
-    "logo": "https://i.imgur.com/U8cHMOt.png"
+    "url": "http://145.239.5.177/564a/index.m3u8",
+    "note": "قناة مفتوحة — دولية قد تعمل داخل المنطقة فقط — تعذّر التحقّق من خارجها.",
+    "logo": "https://i.imgur.com/U8cHMOt.png",
+    "geoRestricted": true
   },
   {
     "name": "AS3 Sport TV",
@@ -140,13 +141,6 @@
     "url": "https://mn-nl.mncdn.com/primetv/live/index.m3u8",
     "note": "قناة مفتوحة — سوريا",
     "logo": "https://prime1tv.com/wp-content/uploads/2025/12/7-1.png"
-  },
-  {
-    "name": "We Sport TV",
-    "group": "رياضة",
-    "url": "http://forever.megogo.xyz/iptv/QGB4M3H62GC7E3/2471/index.m3u8",
-    "note": "قناة مفتوحة — دولية",
-    "logo": "https://i.imgur.com/vJZgpOb.png"
   },
   {
     "name": "الجزيرة",
