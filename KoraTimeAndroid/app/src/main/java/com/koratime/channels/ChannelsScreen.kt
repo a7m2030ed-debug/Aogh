@@ -58,6 +58,8 @@ import com.koratime.matches.MatchesViewModel
 import com.koratime.ui.KT
 import com.koratime.ui.KTCard
 
+private const val DEFAULT_USER_AGENT = "KoraTime/1.0 (Android)"
+
 /**
  * تبويب القنوات: المشغّل يبدأ فوراً، وقائمة القنوات على اليمين — كطريقة
  * تطبيقات البثّ. الضغط على قناة يبدّل البثّ في مكانه.
@@ -75,10 +77,20 @@ fun ChannelsScreen(
     var errorText by remember { mutableStateOf<String?>(null) }
     var isBuffering by remember { mutableStateOf(false) }
 
+    // مصنع الشبكة يُبنى مرة واحدة؛ ترويسات كل قناة تُضبط عليه قبل التشغيل
+    val httpFactory = remember {
+        DefaultHttpDataSource.Factory()
+            .setUserAgent(DEFAULT_USER_AGENT)
+            .setAllowCrossProtocolRedirects(true)
+            .setConnectTimeoutMs(15_000)
+            .setReadTimeoutMs(20_000)
+    }
+
     val player = remember {
-        ExoPlayer.Builder(context).build().apply {
-            playWhenReady = true
-        }
+        ExoPlayer.Builder(context)
+            .setMediaSourceFactory(DefaultMediaSourceFactory(httpFactory))
+            .build()
+            .apply { playWhenReady = true }
     }
 
     DisposableEffect(Unit) {
@@ -117,16 +129,9 @@ fun ChannelsScreen(
         errorText = null
         isBuffering = true
 
-        val factory = DefaultHttpDataSource.Factory()
-            .setUserAgent(channel.userAgent ?: "KoraTime/1.0 (Android)")
-            .setAllowCrossProtocolRedirects(true)
-            .setConnectTimeoutMs(15_000)
-            .setReadTimeoutMs(20_000)
-        if (channel.headers.isNotEmpty()) {
-            factory.setDefaultRequestProperties(channel.headers)
-        }
+        httpFactory.setUserAgent(channel.userAgent ?: DEFAULT_USER_AGENT)
+        httpFactory.setDefaultRequestProperties(channel.headers)
 
-        player.setMediaSourceFactory(DefaultMediaSourceFactory(factory))
         player.setMediaItem(MediaItem.fromUri(channel.url))
         player.prepare()
         player.play()

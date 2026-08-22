@@ -64,8 +64,8 @@ dependencies {
 
 // مصدر واحد للبيانات: ملفا القنوات والتعريب يعيشان في مشروع الآيفون،
 // ويُنسخان هنا قبل كل بناء حتى لا تفترق النسختان.
-val sharedResources = rootProject.layout.projectDirectory
-    .dir("../KoraTime/KoraTime/Resources")
+// rootProject.file يُطبّع المسار النسبي، بخلاف Directory.dir التي تركته حرفياً
+val sharedResources = rootProject.file("../KoraTime/KoraTime/Resources")
 
 val copySharedResources by tasks.registering(Copy::class) {
     from(sharedResources) {

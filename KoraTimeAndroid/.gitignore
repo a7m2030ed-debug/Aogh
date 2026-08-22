@@ -3,6 +3,5 @@ build/
 local.properties
 *.iml
 .idea/
-# تُنسخ آلياً من مشروع الآيفون قبل كل بناء
-app/src/main/assets/channels.json
-app/src/main/assets/ar-names.json
+# ملفا الأصول محفوظان في git كنسخة احتياطية، وتحدّثهما مهمة Gradle
+# من مشروع الآيفون قبل كل بناء.
