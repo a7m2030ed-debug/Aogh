@@ -3,121 +3,155 @@
     "name": "ACI Sport TV",
     "group": "رياضة",
     "url": "https://webstream.multistream.it/memfs/e2cb3629-c1a2-495b-b43a-9eb386f04ed8.m3u8",
-    "note": "قناة مفتوحة — دولية"
+    "note": "قناة مفتوحة — دولية",
+    "logo": "https://i.imgur.com/U8cHMOt.png"
   },
   {
     "name": "AS3 Sport TV",
     "group": "رياضة",
     "url": "https://streamtv.as3sport.online:3394/hybrid/play.m3u8",
-    "note": "قناة مفتوحة — دولية"
+    "note": "قناة مفتوحة — دولية",
+    "logo": "https://i.ibb.co/bRmGbsyV/A3-SPORTTV.jpg"
   },
   {
     "name": "Prime",
     "group": "رياضة",
     "url": "https://mn-nl.mncdn.com/primetv/live/index.m3u8",
-    "note": "قناة مفتوحة — سوريا"
+    "note": "قناة مفتوحة — سوريا",
+    "logo": "https://prime1tv.com/wp-content/uploads/2025/12/7-1.png"
   },
   {
     "name": "الأردن الرياضية",
     "group": "رياضة",
     "url": "https://jrtv-live.ercdn.net/jordansporthd/jordansporthd.m3u8",
-    "note": "قناة مفتوحة — الأردن"
+    "note": "قناة مفتوحة — الأردن",
+    "logo": "https://i.imgur.com/2EmrZPQ.png"
   },
   {
     "name": "البحرين الرياضية ١",
     "group": "رياضة",
     "url": "https://5c7b683162943.streamlock.net/live/ngrp:sportsone_all/playlist.m3u8",
-    "note": "قناة مفتوحة — البحرين"
+    "note": "قناة مفتوحة — البحرين",
+    "logo": "https://i.imgur.com/fBpLsbC.png"
   },
   {
     "name": "البحرين الرياضية ٢",
     "group": "رياضة",
     "url": "https://5c7b683162943.streamlock.net/live/ngrp:bahrainsportstwo_all/playlist.m3u8",
-    "note": "قناة مفتوحة — البحرين"
+    "note": "قناة مفتوحة — البحرين",
+    "logo": "https://i.imgur.com/ZkuZmIo.png"
   },
   {
     "name": "الرياضية المغربية",
     "group": "رياضة",
     "url": "http://149.100.11.252:8000/play/a065/index.m3u8",
-    "note": "قناة مفتوحة — المغرب"
+    "note": "قناة مفتوحة — المغرب",
+    "logo": "https://i.imgur.com/XjzK3gZ.png"
   },
   {
     "name": "الشارقة الرياضية",
     "group": "رياضة",
     "url": "https://svs.itworkscdn.net/smc4sportslive/smc4tv.smil/playlist.m3u8",
-    "note": "قناة مفتوحة — الإمارات قد تعمل داخل المنطقة فقط — تعذّر التحقّق من خارجها."
+    "note": "قناة مفتوحة — الإمارات قد تعمل داخل المنطقة فقط — تعذّر التحقّق من خارجها.",
+    "logo": "https://i.imgur.com/CsEElsJ.png"
   },
   {
     "name": "العراقية الرياضية",
     "group": "رياضة",
     "url": "https://imn-live.esite-lab.com/hls/iraqia-sports-1.m3u8",
-    "note": "قناة مفتوحة — العراق"
+    "note": "قناة مفتوحة — العراق",
+    "logo": "https://i.imgur.com/DrrlxTO.png"
   },
   {
     "name": "القناة الأولمبية",
     "group": "رياضة",
     "url": "https://ocshls-2-olympicchannel.akamaized.net/ocshls/OCTV_32.m3u8",
-    "note": "قناة مفتوحة — دولية قد تعمل داخل المنطقة فقط — تعذّر التحقّق من خارجها."
+    "note": "قناة مفتوحة — دولية قد تعمل داخل المنطقة فقط — تعذّر التحقّق من خارجها.",
+    "logo": "https://i.imgur.com/wPQVVtj.png"
   },
   {
     "name": "الكأس شوف",
     "group": "رياضة",
     "url": "https://liveeu-gcp.alkassdigital.net/shooflive/main.m3u8",
-    "note": "قناة مفتوحة — قطر"
+    "note": "قناة مفتوحة — قطر",
+    "logo": "https://shoof.alkass.net/assets/images/shoof.png"
   },
   {
     "name": "الكأس شوف ٢",
     "group": "رياضة",
     "url": "https://liveeu-gcp.alkassdigital.net/shooflive2/main.m3u8",
-    "note": "قناة مفتوحة — قطر"
+    "note": "قناة مفتوحة — قطر",
+    "logo": "https://shoof.alkass.net/assets/images/shoof2.png"
   },
   {
     "name": "الكأس ١",
     "group": "رياضة",
     "url": "https://liveeu-gcp.alkassdigital.net/alkass1-p/main.m3u8",
-    "note": "قناة مفتوحة — قطر"
+    "note": "قناة مفتوحة — قطر",
+    "logo": "https://i.imgur.com/10mmlha.png"
   },
   {
     "name": "الكأس ٢",
     "group": "رياضة",
     "url": "https://liveeu-gcp.alkassdigital.net/alkass2-p/main.m3u8",
-    "note": "قناة مفتوحة — قطر"
+    "note": "قناة مفتوحة — قطر",
+    "logo": "https://i.imgur.com/8w61kFX.png"
   },
   {
     "name": "الكأس ٣",
     "group": "رياضة",
     "url": "https://liveeu-gcp.alkassdigital.net/alkass3-p/main.m3u8",
-    "note": "قناة مفتوحة — قطر"
+    "note": "قناة مفتوحة — قطر",
+    "logo": "https://i.imgur.com/d57BdFh.png"
   },
   {
     "name": "الكأس ٤",
     "group": "رياضة",
     "url": "https://liveeu-gcp.alkassdigital.net/alkass4-p/main.m3u8",
-    "note": "قناة مفتوحة — قطر"
+    "note": "قناة مفتوحة — قطر",
+    "logo": "https://i.imgur.com/iDL65Wu.png"
   },
   {
     "name": "الكأس ٦",
     "group": "رياضة",
     "url": "https://liveeu-gcp.alkassdigital.net/alkass6-p/main.m3u8",
-    "note": "قناة مفتوحة — قطر"
+    "note": "قناة مفتوحة — قطر",
+    "logo": "https://i.imgur.com/CrPSPSC.png"
   },
   {
     "name": "الكويت الرياضية",
     "group": "رياضة",
     "url": "https://kwtspta.cdn.mangomolo.com/sp/smil:sp.stream.smil/chunklist.m3u8",
-    "note": "قناة مفتوحة — الكويت"
+    "note": "قناة مفتوحة — الكويت",
+    "logo": "https://i.imgur.com/R1hGX1d.png"
+  },
+  {
+    "name": "الكويت الرياضية بلس",
+    "group": "رياضة",
+    "url": "https://kwtsplta.cdn.mangomolo.com/spl/smil:spl.stream.smil/chunklist.m3u8",
+    "note": "قناة مفتوحة — الكويت",
+    "logo": "https://i.imgur.com/l4oX0gf.png"
   },
   {
     "name": "الهدّاف",
     "group": "رياضة",
     "url": "https://live.elheddaftv.com:8081/elheddaftv/index.m3u8",
-    "note": "قناة مفتوحة — الجزائر"
+    "note": "قناة مفتوحة — الجزائر",
+    "logo": "https://i.imgur.com/cDkIDIA.png"
   },
   {
     "name": "ريد بُل",
     "group": "رياضة",
     "url": "https://db34cc6127ac459db55cab5f97cd66b9.mediatailor.us-west-2.amazonaws.com/v1/master/ba62fe743df0fe93366eba3a257d792884136c7f/LINEAR-680-WORBAUENFAST-WHALETVPLUS/680/whaletvplus/hls/master/playlist.m3u8",
-    "note": "قناة مفتوحة — دولية"
+    "note": "قناة مفتوحة — دولية",
+    "logo": "https://images.pluto.tv/channels/5e7cb84a172a0f0007da69e4/colorLogoPNG.png"
+  },
+  {
+    "name": "عُمان الرياضية",
+    "group": "رياضة",
+    "url": "https://partneta.cdn.mgmlcdn.com/omsport/smil:omsport.stream.smil/chunklist.m3u8",
+    "note": "قناة مفتوحة — عُمان",
+    "logo": "https://i.imgur.com/1omi7p8.png"
   },
   {
     "name": "الجزيرة",
