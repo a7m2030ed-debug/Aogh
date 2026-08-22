@@ -1,0 +1,66 @@
+name: فحص قنوات كورة تايم
+
+on:
+  workflow_dispatch:
+  schedule:
+    # كل اثنين فجراً: القوائم المفتوحة تتغيّر، فنعيد الفحص ونحذف الميت
+    - cron: "0 3 * * 1"
+  push:
+    branches: [claude/kora-time-ios-app-q9dalt]
+    paths:
+      - "KoraTime/Tools/channels-candidates.json"
+      - ".github/scripts/verify_channels.py"
+      - ".github/workflows/channels.yml"
+
+concurrency:
+  group: channels-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: فحص روابط البثّ
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: فحص الروابط وبناء القائمة
+        id: verify
+        run: |
+          set -euo pipefail
+          CANDIDATES="KoraTime/Tools/channels-candidates.json"
+          if [ ! -f "$CANDIDATES" ]; then
+            echo "لا يوجد ملف مرشّحين على هذا الفرع — تخطّي."
+            echo "skipped=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          python3 .github/scripts/verify_channels.py \
+            --candidates "$CANDIDATES" \
+            --output KoraTime/KoraTime/Resources/channels.json \
+            --report channel-report.md
+          echo "skipped=false" >> "$GITHUB_OUTPUT"
+
+      - name: عرض التقرير
+        if: steps.verify.outputs.skipped == 'false'
+        run: cat channel-report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: حفظ القائمة المحدّثة
+        if: steps.verify.outputs.skipped == 'false'
+        run: |
+          set -euo pipefail
+          BRANCH="${{ github.ref_name }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add KoraTime/KoraTime/Resources/channels.json
+          if git diff --cached --quiet; then
+            echo "القائمة لم تتغيّر."
+            exit 0
+          fi
+          git commit -m "تحديث قائمة القنوات بعد فحص الروابط"
+          git fetch origin "$BRANCH"
+          git rebase "origin/$BRANCH"
+          git push origin "HEAD:$BRANCH"
