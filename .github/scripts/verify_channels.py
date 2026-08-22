@@ -20,6 +20,7 @@
 import argparse
 import concurrent.futures
 import json
+import re
 import sys
 import time
 import urllib.error
@@ -67,14 +68,26 @@ def looks_like_hls(text):
 
 
 def first_variant(playlist_text, base_url):
-    """يستخرج أول رابط جودة من قائمة master."""
+    """أدنى جودة في قائمة master مع معدّل بتّها المعلن.
+
+    أدنى جودة تحديداً لأنها ما يبدأ به المشغّل قبل أن يترقّى، فهي المقياس
+    الصادق لهل ستعمل القناة أصلاً. يُرجع (url, bandwidth) أو (None, None).
+    """
     lines = [line.strip() for line in playlist_text.splitlines()]
+    found = []
     for index, line in enumerate(lines):
         if line.startswith("#EXT-X-STREAM-INF") and index + 1 < len(lines):
+            match = re.search(r"BANDWIDTH=(\d+)", line)
+            bandwidth = int(match.group(1)) if match else None
             for candidate in lines[index + 1:]:
                 if candidate and not candidate.startswith("#"):
-                    return urllib.parse.urljoin(base_url, candidate)
-    return None
+                    found.append((bandwidth, urllib.parse.urljoin(base_url, candidate)))
+                    break
+    if not found:
+        return None, None
+    known = [item for item in found if item[0]]
+    bandwidth, url = min(known) if known else found[0]
+    return url, bandwidth
 
 
 def last_segment(playlist_text, base_url):
@@ -93,11 +106,15 @@ def last_segment(playlist_text, base_url):
     return found
 
 
-def probe_segment(playlist_text, base_url, headers):
+def probe_segment(playlist_text, base_url, headers, declared_bps=None):
     """ينزّل مقطعاً حقيقياً ويقيس هل تكفي سرعته للتشغيل بلا تقطيع.
 
     فحص القائمة وحده لا يكفي: قنوات كثيرة تردّ بقائمة سليمة ثم تتعثّر
     مقاطعها، أو تنزل أبطأ من استهلاك المشغّل فتتقطّع عند كل مشاهد.
+
+    معدّل البثّ يؤخذ من BANDWIDTH المعلن، وإلا من Content-Length مع مدّة
+    المقطع. الاعتماد على تنزيل المقطع كاملاً لا يصلح: مقاطع القنوات عالية
+    الجودة تتجاوز سقف العيّنة، وهي أولى القنوات بالفحص لا آخرها.
     """
     segment = last_segment(playlist_text, base_url)
     if not segment:
@@ -114,6 +131,7 @@ def probe_segment(playlist_text, base_url, headers):
         with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
             if response.status in GEO_CODES:
                 return "geo", f"المقطع HTTP {response.status}"
+            length = response.headers.get("Content-Length")
             blob = response.read(SEGMENT_SAMPLE_BYTES)
     except urllib.error.HTTPError as error:
         if error.code in GEO_CODES:
@@ -126,12 +144,18 @@ def probe_segment(playlist_text, base_url, headers):
     if not blob or elapsed <= 0:
         return "dead", "مقطع فارغ"
 
-    throughput = len(blob) * 8 / elapsed          # بت/ثانية
-    # عيّنة جزئية لا تعطي معدّل البثّ، فنقيس فقط حين ننزّل المقطع كاملاً
-    if len(blob) < SEGMENT_SAMPLE_BYTES and duration > 0:
-        needed = len(blob) * 8 / duration
-        if needed > 0 and throughput / needed < MIN_HEADROOM:
-            return "slow", f"هامش {throughput / needed:.2f}×"
+    throughput = len(blob) * 8 / elapsed          # بت/ثانية فعلية
+
+    needed = declared_bps
+    if not needed and duration > 0:
+        try:
+            total = int(length) if length else len(blob)
+        except ValueError:
+            total = len(blob)
+        needed = total * 8 / duration
+
+    if needed and throughput / needed < MIN_HEADROOM:
+        return "slow", f"هامش {throughput / needed:.2f}×"
     return "ok", ""
 
 
@@ -160,7 +184,7 @@ def check(channel):
 
     # قائمة جودات: نتأكّد أن إحدى الجودات تعمل وفيها مقاطع فعلية
     if "#EXT-X-STREAM-INF" in body:
-        variant = first_variant(body, url)
+        variant, bandwidth = first_variant(body, url)
         if not variant:
             return "dead", "قائمة جودات بلا روابط"
         code2, body2, error2 = fetch(variant, headers)
@@ -170,7 +194,7 @@ def check(channel):
             return "dead", error2 or "الجودة لا تعمل"
         if "#EXTINF" not in body2:
             return "dead", "لا مقاطع في الجودة"
-        status, detail = probe_segment(body2, variant, headers)
+        status, detail = probe_segment(body2, variant, headers, bandwidth)
         return status, detail or "قائمة جودات"
 
     if "#EXTINF" not in body:

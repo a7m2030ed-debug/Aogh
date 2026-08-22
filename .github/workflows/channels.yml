@@ -89,8 +89,12 @@ jobs:
 
       # الدفعات الصادرة من التشغيل الآلي لا تُطلق أحداث push، فالبناء لا يرى
       # القائمة الجديدة. الإطلاق اليدوي عبر gh يعمل بالتوكن نفسه ويغلق الحلقة.
-      - name: إطلاق بناء التطبيق على القائمة الجديدة
+      # دفعات التشغيل الآلي لا تُطلق أحداث push، فنطلق البناءين يدوياً.
+      # المنصّتان تقرآن القائمة نفسها، فلا معنى لتحديث واحدة دون الأخرى.
+      - name: إطلاق بناء التطبيقين على القائمة الجديدة
         if: steps.save.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh workflow run ios.yml --ref "${{ github.ref_name }}"
+        run: |
+          gh workflow run ios.yml --ref "${{ github.ref_name }}"
+          gh workflow run android.yml --ref "${{ github.ref_name }}"
