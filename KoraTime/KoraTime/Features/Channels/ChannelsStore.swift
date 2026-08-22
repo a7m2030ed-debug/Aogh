@@ -53,7 +53,10 @@ final class ChannelsStore {
         if let last = settings.lastChannelID, let channel = channel(withID: last) {
             return channel
         }
-        return channels.first { !$0.isDemo } ?? channels.first
+        // نتجنّب البدء بقناة محجوبة حتى لا يكون أول ما يراه المستخدم رسالة خطأ
+        return channels.first { !$0.isDemo && !$0.geoRestricted }
+            ?? channels.first { !$0.isDemo }
+            ?? channels.first
     }
 
     func loadIfNeeded() async {

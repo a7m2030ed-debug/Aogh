@@ -495,6 +495,7 @@ struct ChannelRailRow: View {
             if compact {
                 VStack(spacing: 5) {
                     ChannelLogo(name: channel.name, url: channel.logoURL, size: 40)
+                        .overlay(alignment: .topTrailing) { geoMark }
                     Text(channel.name)
                         .font(.system(size: 10, weight: isPlaying ? .bold : .medium))
                         .foregroundStyle(isPlaying ? KT.accent : KT.textSecondary)
@@ -519,6 +520,7 @@ struct ChannelRailRow: View {
                             .lineLimit(1)
                     }
                     Spacer(minLength: 4)
+                    geoMark
                     if isPlaying {
                         Image(systemName: "waveform")
                             .font(.system(size: 12, weight: .semibold))
@@ -538,5 +540,17 @@ struct ChannelRailRow: View {
                 .stroke(isPlaying ? KT.accent.opacity(0.55) : KT.hairline, lineWidth: 1)
         )
         .contentShape(Rectangle())
+    }
+
+    /// تنبيه صامت: هذه القناة قد لا تعمل خارج منطقتها.
+    @ViewBuilder
+    private var geoMark: some View {
+        if channel.geoRestricted {
+            Image(systemName: "globe.badge.chevron.backward")
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundStyle(KT.gold)
+                .padding(2)
+                .background(Circle().fill(KT.bg.opacity(0.85)))
+        }
     }
 }

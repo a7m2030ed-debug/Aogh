@@ -137,6 +137,7 @@ def main():
             note = entry.get("note", "")
             warning = "قد تعمل داخل المنطقة فقط — تعذّر التحقّق من خارجها."
             entry["note"] = f"{note} {warning}".strip()
+            entry["geoRestricted"] = True
         survivors.append((status, entry))
 
     # القناة الواحدة قد تصل بعدة روابط؛ نُبقي واحداً لكل اسم ونفضّل المؤكّد

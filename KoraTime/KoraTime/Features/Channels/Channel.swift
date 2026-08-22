@@ -10,6 +10,8 @@ struct Channel: Identifiable, Hashable {
     var referer: String?
     var note: String?
     var isDemo: Bool
+    /// محجوبة عن خارج المنطقة — قد تعمل عند المستخدم ولا تعمل في الفحص الآلي.
+    var geoRestricted: Bool
 
     init(id: String? = nil,
          name: String,
@@ -19,7 +21,8 @@ struct Channel: Identifiable, Hashable {
          userAgent: String? = nil,
          referer: String? = nil,
          note: String? = nil,
-         isDemo: Bool = false) {
+         isDemo: Bool = false,
+         geoRestricted: Bool = false) {
         self.name = name
         self.group = group
         self.logo = logo
@@ -28,6 +31,7 @@ struct Channel: Identifiable, Hashable {
         self.referer = referer
         self.note = note
         self.isDemo = isDemo
+        self.geoRestricted = geoRestricted
         self.id = id ?? Channel.makeID(name: name, url: url)
     }
 
@@ -61,7 +65,7 @@ struct Channel: Identifiable, Hashable {
 extension Channel: Codable {
 
     enum CodingKeys: String, CodingKey {
-        case id, name, group, logo, url, userAgent, referer, note, isDemo
+        case id, name, group, logo, url, userAgent, referer, note, isDemo, geoRestricted
     }
 
     init(from decoder: Decoder) throws {
@@ -77,7 +81,8 @@ extension Channel: Codable {
             userAgent: try container.decodeIfPresent(String.self, forKey: .userAgent),
             referer: try container.decodeIfPresent(String.self, forKey: .referer),
             note: try container.decodeIfPresent(String.self, forKey: .note),
-            isDemo: try container.decodeIfPresent(Bool.self, forKey: .isDemo) ?? false
+            isDemo: try container.decodeIfPresent(Bool.self, forKey: .isDemo) ?? false,
+            geoRestricted: try container.decodeIfPresent(Bool.self, forKey: .geoRestricted) ?? false
         )
     }
 }
