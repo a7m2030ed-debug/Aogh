@@ -165,13 +165,17 @@ class ChannelsViewModel(
     private val httpFactory = DefaultHttpDataSource.Factory()
         .setUserAgent(DEFAULT_USER_AGENT)
         .setAllowCrossProtocolRedirects(true)
-        .setConnectTimeoutMs(8_000)
+        .setConnectTimeoutMs(6_000)
         .setReadTimeoutMs(8_000)
 
-    // الإعداد الافتراضي ينتظر ٢٫٥ ثانية قبل البدء و٥ ثوانٍ بعد كل تعثّر،
-    // وهو ما يجعل البثّ الحيّ يبدو معلّقاً. نقصّرهما.
+    // البثّ الحيّ لا يحتمل مخزوناً كبيراً قبل البدء: نصف ثانية تكفي لتظهر
+    // الصورة، و prioritizeTimeOverSizeThresholds يجعل المشغّل يقرّر بالزمن
+    // المتوفّر لا بحجم البايتات — وهو الفارق المحسوس في لحظة فتح القناة.
+    // لا نلمس هدف التأخّر عن حافة البثّ: تقريبه يسرّع البدء لكنه يزيد
+    // التقطّع، وهما شكوى واحدة لا يصلح أن نداوي إحداهما بالأخرى.
     private val loadControl = DefaultLoadControl.Builder()
-        .setBufferDurationsMs(15_000, 50_000, 1_000, 2_000)
+        .setBufferDurationsMs(10_000, 30_000, 500, 1_500)
+        .setPrioritizeTimeOverSizeThresholds(true)
         .build()
 
     private val playerListener = object : Player.Listener {

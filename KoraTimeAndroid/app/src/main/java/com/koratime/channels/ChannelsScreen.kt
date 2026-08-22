@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,8 +48,8 @@ import androidx.media3.ui.PlayerView
 import coil.compose.AsyncImage
 import com.koratime.Broadcasters
 import com.koratime.core.ArabicNames
-import com.koratime.matches.MatchesViewModel
 import com.koratime.ui.KT
+import com.koratime.ui.KTIcons
 import com.koratime.ui.KTCard
 
 /**
@@ -62,9 +63,9 @@ import com.koratime.ui.KTCard
 @Composable
 fun ChannelsScreen(
     model: ChannelsViewModel,
-    matches: MatchesViewModel,
     autoPlay: Boolean,
-    arabicNames: Boolean,
+    isFullscreen: Boolean,
+    onToggleFullscreen: () -> Unit,
     onOpenSettings: () -> Unit
 ) {
     val context = LocalContext.current
@@ -73,7 +74,6 @@ fun ChannelsScreen(
 
     LaunchedEffect(Unit) {
         model.loadIfNeeded()
-        matches.loadIfNeeded()
     }
 
     // أول قناة تُشغَّل تلقائياً بعد وصول القائمة
@@ -85,6 +85,22 @@ fun ChannelsScreen(
 
     val current = model.current
 
+    // ملء الشاشة: المشغّل وحده يملأ الجهاز، بلا قائمة ولا تبويبات
+    if (isFullscreen) {
+        Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+            PlayerSurface(
+                model = model,
+                current = current,
+                errorText = errorText,
+                isBuffering = isBuffering,
+                isFullscreen = true,
+                onToggleFullscreen = onToggleFullscreen,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+        return
+    }
+
     Row(modifier = Modifier.fillMaxSize()) {
         ChannelRail(
             model = model,
@@ -95,49 +111,15 @@ fun ChannelsScreen(
         Box(modifier = Modifier.width(1.dp).fillMaxHeight().background(KT.hairline))
 
         Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
-            Box(
-                modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f).background(Color.Black),
-                contentAlignment = Alignment.Center
-            ) {
-                AndroidView(
-                    factory = { viewContext ->
-                        PlayerView(viewContext).apply {
-                            useController = true
-                            setShowBuffering(PlayerView.SHOW_BUFFERING_NEVER)
-                            this.player = model.player
-                        }
-                    },
-                    // فكّ الارتباط عند هدم الشاشة حتى لا يتمسّك المشغّل بسطح ميّت
-                    onRelease = { it.player = null },
-                    modifier = Modifier.fillMaxSize()
-                )
-
-                if (current == null) {
-                    Text("اختر قناة من القائمة", fontSize = 13.sp, color = Color.White.copy(alpha = 0.7f))
-                } else if (errorText != null) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.background(Color.Black.copy(alpha = 0.6f)).padding(14.dp)
-                    ) {
-                        Text(
-                            errorText,
-                            fontSize = 12.sp,
-                            color = Color.White,
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            "إعادة المحاولة",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = KT.accent,
-                            modifier = Modifier.clickable { model.retryCurrent() }
-                        )
-                    }
-                } else if (isBuffering) {
-                    CircularProgressIndicator(color = KT.accent)
-                }
-            }
+            PlayerSurface(
+                model = model,
+                current = current,
+                errorText = errorText,
+                isBuffering = isBuffering,
+                isFullscreen = false,
+                onToggleFullscreen = onToggleFullscreen,
+                modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f)
+            )
 
             LazyColumn(
                 contentPadding = PaddingValues(12.dp),
@@ -166,26 +148,6 @@ fun ChannelsScreen(
                                     )
                                 }
                             }
-                        }
-                    }
-                }
-
-                val today = matches.sections.flatMap { it.matches }
-                    .filter { it.isLive || it.status.name == "SCHEDULED" }
-                    .take(12)
-                if (today.isNotEmpty()) {
-                    item {
-                        Text("مباريات اليوم", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = KT.text)
-                    }
-                    items(today, key = { it.id }) { match ->
-                        KTCard(modifier = Modifier.fillMaxWidth(), padding = PaddingValues(10.dp)) {
-                            Text(
-                                "${match.homeTitle(arabicNames)}  ×  ${match.awayTitle(arabicNames)}",
-                                fontSize = 12.sp,
-                                color = KT.textSecondary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
                         }
                     }
                 }
@@ -239,6 +201,90 @@ fun ChannelsScreen(
                 }
             }
         }
+    }
+}
+
+/**
+ * سطح المشغّل — واحد للحالتين. الشاشة تُعاد تركيبها عند التبديل بين
+ * الوضعين، لكن المشغّل نفسه يعيش في النموذج فلا ينقطع البثّ.
+ */
+@OptIn(UnstableApi::class)
+@Composable
+private fun PlayerSurface(
+    model: ChannelsViewModel,
+    current: Channel?,
+    errorText: String?,
+    isBuffering: Boolean,
+    isFullscreen: Boolean,
+    onToggleFullscreen: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(modifier = modifier.background(Color.Black), contentAlignment = Alignment.Center) {
+        AndroidView(
+            factory = { viewContext ->
+                PlayerView(viewContext).apply {
+                    useController = true
+                    setShowBuffering(PlayerView.SHOW_BUFFERING_NEVER)
+                    this.player = model.player
+                }
+            },
+            // فكّ الارتباط عند هدم الشاشة حتى لا يتمسّك المشغّل بسطح ميّت
+            onRelease = { it.player = null },
+            modifier = Modifier.fillMaxSize()
+        )
+
+        if (current == null) {
+            Text("اختر قناة من القائمة", fontSize = 13.sp, color = Color.White.copy(alpha = 0.7f))
+        } else if (errorText != null) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.background(Color.Black.copy(alpha = 0.6f)).padding(14.dp)
+            ) {
+                Text(errorText, fontSize = 12.sp, color = Color.White, textAlign = TextAlign.Center)
+                Text(
+                    "إعادة المحاولة",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = KT.accent,
+                    modifier = Modifier.clickable { model.retryCurrent() }
+                )
+            }
+        } else if (isBuffering) {
+            CircularProgressIndicator(color = KT.accent)
+        }
+
+        // زرّا ملء الشاشة والعكس على الشاشات الذكية، في الزاوية كما في
+        // تطبيقات الفيديو. BottomEnd في RTL هو الركن الأيسر السفلي.
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp)
+        ) {
+            PlayerCornerButton(
+                icon = if (isFullscreen) KTIcons.CollapseScreen else KTIcons.ExpandScreen,
+                label = if (isFullscreen) "تصغير" else "ملء الشاشة",
+                onClick = onToggleFullscreen
+            )
+        }
+    }
+}
+
+@Composable
+private fun PlayerCornerButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(Color.Black.copy(alpha = 0.55f))
+            .clickable { onClick() }
+            .padding(7.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(icon, contentDescription = label, tint = Color.White, modifier = Modifier.size(20.dp))
     }
 }
 

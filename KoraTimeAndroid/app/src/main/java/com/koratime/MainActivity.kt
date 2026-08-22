@@ -1,7 +1,10 @@
 package com.koratime
 
+import android.app.Activity
+import android.content.pm.ActivityInfo
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
@@ -19,12 +22,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.sp
@@ -100,12 +106,36 @@ private fun RootScreen(settings: Settings) {
     val news: NewsViewModel = viewModel(factory = factory)
 
     var tab by remember { mutableStateOf(Tab.MATCHES) }
+    var fullscreen by remember { mutableStateOf(false) }
     val stateHolder = rememberSaveableStateHolder()
+
+    // ملء الشاشة يقلب الجهاز عرضياً ويخفي أشرطة النظام، ويرجع كل شيء
+    // كما كان عند الخروج — حتى لو خرج المستخدم من التبويب وهو ممتلئ.
+    val activity = LocalContext.current as? Activity
+    DisposableEffect(fullscreen) {
+        val window = activity?.window
+        if (window != null) {
+            val bars = WindowInsetsControllerCompat(window, window.decorView)
+            if (fullscreen) {
+                activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                bars.hide(WindowInsetsCompat.Type.systemBars())
+                bars.systemBarsBehavior =
+                    WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            } else {
+                activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                bars.show(WindowInsetsCompat.Type.systemBars())
+            }
+        }
+        onDispose { }
+    }
+
+    BackHandler(enabled = fullscreen) { fullscreen = false }
 
     Scaffold(
         containerColor = KT.bg,
         bottomBar = {
-            NavigationBar(containerColor = KT.bgSoft) {
+            // في ملء الشاشة لا شريط تبويبات أصلاً
+            if (!fullscreen) NavigationBar(containerColor = KT.bgSoft) {
                 // في الاتجاه من اليمين لليسار يظهر أول عنصر في أقصى اليمين
                 Tab.entries.forEach { entry ->
                     NavigationBarItem(
@@ -138,9 +168,9 @@ private fun RootScreen(settings: Settings) {
 
                         Tab.CHANNELS -> ChannelsScreen(
                             model = channels,
-                            matches = matches,
                             autoPlay = settings.autoPlayOnOpen,
-                            arabicNames = settings.arabicNames,
+                            isFullscreen = fullscreen,
+                            onToggleFullscreen = { fullscreen = !fullscreen },
                             onOpenSettings = { tab = Tab.SETTINGS }
                         )
 

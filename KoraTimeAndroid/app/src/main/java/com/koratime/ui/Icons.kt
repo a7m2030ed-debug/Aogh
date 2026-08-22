@@ -93,6 +93,56 @@ object KTIcons {
         }.build()
     }
 
+    /** أربعة أسهم للخارج — ملء الشاشة. */
+    val ExpandScreen: ImageVector by lazy { cornerArrows(outward = true) }
+
+    /** أربعة أسهم للداخل — الخروج من ملء الشاشة. */
+    val CollapseScreen: ImageVector by lazy { cornerArrows(outward = false) }
+
+    /**
+     * زوايا مرسومة من ضلعين وقطر. `outward` يقلب اتجاه الزوايا فتصير
+     * الأسهم داخلة بدل خارجة، وهو الفرق بين التكبير والتصغير.
+     */
+    private fun cornerArrows(outward: Boolean): ImageVector =
+        ImageVector.Builder(
+            name = if (outward) "KTExpand" else "KTCollapse",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f
+        ).apply {
+            // الزوايا الأربع: (إشارة أفقية، إشارة رأسية) لكل ركن
+            val corners = listOf(
+                Triple(1f, 1f, 0), Triple(-1f, 1f, 1), Triple(1f, -1f, 2), Triple(-1f, -1f, 3)
+            )
+            corners.forEach { (sx, sy, _) ->
+                // الركن الخارجي عند 3.5 والداخلي عند 10.5 من كل حافة
+                val outerX = if (sx > 0) 3.5f else 20.5f
+                val outerY = if (sy > 0) 3.5f else 20.5f
+                val armX = if (sx > 0) 9.0f else 15.0f
+                val armY = if (sy > 0) 9.0f else 15.0f
+                val tipX = if (outward) outerX else armX
+                val tipY = if (outward) outerY else armY
+                val endX = if (outward) armX else outerX
+                val endY = if (outward) armY else outerY
+
+                path(
+                    stroke = SolidColor(Color.Black),
+                    strokeLineWidth = 2.0f,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round
+                ) {
+                    // الضلعان الملتقيان عند الركن
+                    moveTo(tipX + (endX - tipX) * 0.85f, tipY)
+                    lineTo(tipX, tipY)
+                    lineTo(tipX, tipY + (endY - tipY) * 0.85f)
+                    // القطر الخارج من الركن
+                    moveTo(tipX, tipY)
+                    lineTo(endX, endY)
+                }
+            }
+        }.build()
+
     /** صحيفة: إطار وصورة وأربعة أسطر. */
     val Newspaper: ImageVector by lazy {
         ImageVector.Builder(
