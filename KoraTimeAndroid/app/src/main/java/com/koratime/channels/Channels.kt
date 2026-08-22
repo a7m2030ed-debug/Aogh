@@ -18,6 +18,8 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.upstream.DefaultBandwidthMeter
+import androidx.media3.exoplayer.upstream.DefaultLoadErrorHandlingPolicy
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.google.android.gms.cast.framework.CastContext
 import com.google.android.gms.common.ConnectionResult
@@ -177,15 +179,27 @@ class ChannelsViewModel(
         .setConnectTimeoutMs(6_000)
         .setReadTimeoutMs(8_000)
 
-    // البثّ الحيّ لا يحتمل مخزوناً كبيراً قبل البدء: نصف ثانية تكفي لتظهر
-    // الصورة، و prioritizeTimeOverSizeThresholds يجعل المشغّل يقرّر بالزمن
-    // المتوفّر لا بحجم البايتات — وهو الفارق المحسوس في لحظة فتح القناة.
-    // لا نلمس هدف التأخّر عن حافة البثّ: تقريبه يسرّع البدء لكنه يزيد
-    // التقطّع، وهما شكوى واحدة لا يصلح أن نداوي إحداهما بالأخرى.
+    // ربع ثانية تكفي لعرض أول صورة؛ الانتظار بعدها ترفٌ لا يحتاجه بثّ حيّ.
     private val loadControl = DefaultLoadControl.Builder()
-        .setBufferDurationsMs(10_000, 30_000, 500, 1_500)
+        .setBufferDurationsMs(10_000, 30_000, 250, 1_000)
         .setPrioritizeTimeOverSizeThresholds(true)
         .build()
+
+    /**
+     * أهمّ عامل في زمن أول صورة: بأي جودة يبدأ المشغّل.
+     *
+     * مقياس عرض النطاق الافتراضي يبدأ بتقدير مبني على الدولة، وإن بالغ فيه
+     * اختار المشغّل جودة عالية فصار أول مقطع بعدّة ميغابايت قبل أن تظهر أي
+     * صورة. نبدأ بتقدير متحفّظ فيختار أدنى درجة ثم يترقّى خلال ثوانٍ —
+     * صورة سريعة أولاً، وجودة كاملة بعدها.
+     */
+    private val bandwidthMeter = DefaultBandwidthMeter.Builder(context)
+        .setInitialBitrateEstimate(700_000L)
+        .build()
+
+    // ثلاث محاولات داخلية بتباعد متصاعد قبل أن يصل الخطأ إلينا تعني ثوانيَ
+    // صامتة تبدو تعليقاً. محاولتان تكفيان، وإعادة المحاولة عندنا تكمل.
+    private val loadErrorPolicy = DefaultLoadErrorHandlingPolicy(2)
 
     private val playerListener = object : Player.Listener {
         override fun onPlaybackStateChanged(state: Int) {
@@ -201,8 +215,12 @@ class ChannelsViewModel(
 
     private val lazyPlayer = lazy {
         ExoPlayer.Builder(context)
-            .setMediaSourceFactory(DefaultMediaSourceFactory(httpFactory))
+            .setMediaSourceFactory(
+                DefaultMediaSourceFactory(httpFactory)
+                    .setLoadErrorHandlingPolicy(loadErrorPolicy)
+            )
             .setLoadControl(loadControl)
+            .setBandwidthMeter(bandwidthMeter)
             .build()
             .apply {
                 playWhenReady = true
@@ -268,6 +286,19 @@ class ChannelsViewModel(
      * الشاشة تحتاج نوع المحتوى صراحةً: المستقبل الافتراضي لا يخمّن HLS
      * من الامتداد وحده، وبلا ذلك يرفض الرابط.
      */
+    /**
+     * نصرّح بنوع المحتوى بدل ترك المشغّل يستنتجه من امتداد الرابط: قوائم
+     * المستخدم قد تأتي بروابط بلا امتداد، فيجرّب مساراً خاطئاً ويفشل قبل
+     * أن يصل إلى القارئ الصحيح.
+     */
+    private fun localMediaItem(channel: Channel): MediaItem {
+        val builder = MediaItem.Builder().setUri(channel.url)
+        if (channel.url.substringBefore('?').endsWith(".m3u8", ignoreCase = true)) {
+            builder.setMimeType(MimeTypes.APPLICATION_M3U8)
+        }
+        return builder.build()
+    }
+
     private fun castMediaItem(channel: Channel): MediaItem =
         MediaItem.Builder()
             .setUri(channel.url)
@@ -319,7 +350,7 @@ class ChannelsViewModel(
         isBuffering = true
         httpFactory.setUserAgent(channel.userAgent ?: DEFAULT_USER_AGENT)
         httpFactory.setDefaultRequestProperties(channel.headers)
-        player.setMediaItem(MediaItem.fromUri(channel.url))
+        player.setMediaItem(localMediaItem(channel))
         player.prepare()
         player.play()
     }

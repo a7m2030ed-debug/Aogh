@@ -5,6 +5,7 @@ on:
     branches: [claude/kora-time-ios-app-q9dalt]
     paths:
       - ".github/scripts/measure_channels.py"
+      - ".github/scripts/measure_startup.py"
       - ".github/workflows/diagnose.yml"
   workflow_dispatch:
 
@@ -24,16 +25,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: القياس
+      - name: قياس جودة البثّ
         run: python3 .github/scripts/measure_channels.py
+
+      - name: قياس زمن أول صورة
+        run: python3 .github/scripts/measure_startup.py
 
       - name: حفظ التقرير
         run: |
           set -euo pipefail
-          cat docs/stream-report.md >> "$GITHUB_STEP_SUMMARY"
+          cat docs/stream-report.md docs/startup-report.md >> "$GITHUB_STEP_SUMMARY"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/stream-report.md
+          git add docs/stream-report.md docs/startup-report.md
           # --cached يلتقط الملف الجديد أيضاً، بخلاف git diff وحدها
           if git diff --cached --quiet; then
             echo "لا جديد في التقرير"
