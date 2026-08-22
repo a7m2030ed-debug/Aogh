@@ -1,6 +1,26 @@
 [
   {
-    "id": "demo-apple-advanced",
+    "name": "الشارقة الرياضية",
+    "group": "رياضة",
+    "url": "https://svs.itworkscdn.net/smc4sportslive/smc4.sdp/playlist.m3u8",
+    "note": "قد تعمل داخل المنطقة فقط — تعذّر التحقّق من خارجها."
+  },
+  {
+    "name": "Red Bull TV",
+    "group": "رياضة",
+    "url": "https://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master.m3u8"
+  },
+  {
+    "name": "الجزيرة",
+    "group": "إخبارية",
+    "url": "https://live-hls-web-aja.getaj.net/AJA/index.m3u8"
+  },
+  {
+    "name": "الجزيرة مباشر",
+    "group": "إخبارية",
+    "url": "https://live-hls-web-ajm.getaj.net/AJM/index.m3u8"
+  },
+  {
     "name": "تجربة البث HD",
     "group": "تجريبي",
     "url": "https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_ts/master.m3u8",
@@ -8,7 +28,6 @@
     "isDemo": true
   },
   {
-    "id": "demo-apple-bipbop",
     "name": "تجربة البث SD",
     "group": "تجريبي",
     "url": "https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_16x9/bipbop_16x9_variant.m3u8",
@@ -16,7 +35,6 @@
     "isDemo": true
   },
   {
-    "id": "demo-mux-test",
     "name": "تجربة تعدّد الجودات",
     "group": "تجريبي",
     "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
@@ -24,11 +42,10 @@
     "isDemo": true
   },
   {
-    "id": "demo-sintel",
     "name": "تجربة فيلم Sintel",
     "group": "تجريبي",
     "url": "https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8",
-    "note": "بث اختباري عام من Bitmovin.",
+    "note": "بث اختباري عام من Bitmovin. قد تعمل داخل المنطقة فقط — تعذّر التحقّق من خارجها.",
     "isDemo": true
   }
 ]
