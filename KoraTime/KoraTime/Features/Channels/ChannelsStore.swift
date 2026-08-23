@@ -87,9 +87,10 @@ final class ChannelsStore {
         loadErrors = []
 
         var collected: [Channel] = []
-        if settings.showDemoChannels {
-            collected.append(contentsOf: ChannelsStore.bundledChannels())
-        }
+        let catalog = await ChannelsStore.catalogChannels()
+        collected.append(contentsOf: settings.showDemoChannels
+                         ? catalog
+                         : catalog.filter { !$0.isDemo })
 
         let sources = settings.playlists.filter { $0.isEnabled && $0.url != nil }
         for source in sources {
@@ -122,6 +123,29 @@ final class ChannelsStore {
     }
 
     // MARK: - القراءة
+
+    /// القائمة المنشورة أولاً ثم المرفقة.
+    ///
+    /// روابط البثّ تموت وتُستبدل كل أسبوع، وانتظار مراجعة آبل لكل تغيير يعني
+    /// قنوات ميتة في يد المستخدم أسبوعين. فتُقرأ القائمة المنشورة إن أمكن،
+    /// وتبقى المرفقة شبكة الأمان: بلا شبكة أو بمصدر معطوب يرى المستخدم ما
+    /// بُني مع التطبيق لا شاشة فارغة.
+    private static func catalogChannels() async -> [Channel] {
+        let bundled = bundledChannels()
+        guard let url = LiveData.channels else { return bundled }
+
+        do {
+            let remote = try await HTTPClient.shared.decode(
+                [Channel].self, from: url, maxAge: LiveData.maxAge
+            )
+            // قائمة منشورة فارغة أو شبه فارغة تعني عطباً في المصدر لا حذفاً
+            // مقصوداً، فلا نُفرّغ شاشة المستخدم بناءً عليها.
+            guard remote.count >= max(3, bundled.count / 3) else { return bundled }
+            return remote
+        } catch {
+            return bundled
+        }
+    }
 
     private static func bundledChannels() -> [Channel] {
         guard let url = Bundle.main.url(forResource: "channels", withExtension: "json"),

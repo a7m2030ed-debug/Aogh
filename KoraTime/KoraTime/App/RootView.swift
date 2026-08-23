@@ -5,27 +5,45 @@ import SwiftUI
 struct RootView: View {
 
     @Environment(AppRouter.self) private var router
+    @Environment(UpdateChecker.self) private var updates
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
         @Bindable var router = router
 
-        TabView(selection: $router.tab) {
-            MatchesView()
-                .tabItem { Label(AppRouter.Tab.matches.title, systemImage: AppRouter.Tab.matches.icon) }
-                .tag(AppRouter.Tab.matches)
+        VStack(spacing: 0) {
+            // شريط يُعلم ولا يحجب، ويُطوى بضغطة «لاحقاً» فلا يعود لهذا الإصدار.
+            if updates.showsBanner, let info = updates.info {
+                UpdateBanner(
+                    info: info,
+                    onUpdate: {
+                        if let url = updates.storeURL { openURL(url) }
+                    },
+                    onLater: {
+                        withAnimation(.snappy) { updates.dismiss() }
+                    }
+                )
+            }
 
-            ChannelsView()
-                .tabItem { Label(AppRouter.Tab.channels.title, systemImage: AppRouter.Tab.channels.icon) }
-                .tag(AppRouter.Tab.channels)
+            TabView(selection: $router.tab) {
+                MatchesView()
+                    .tabItem { Label(AppRouter.Tab.matches.title, systemImage: AppRouter.Tab.matches.icon) }
+                    .tag(AppRouter.Tab.matches)
 
-            NewsView()
-                .tabItem { Label(AppRouter.Tab.news.title, systemImage: AppRouter.Tab.news.icon) }
-                .tag(AppRouter.Tab.news)
+                ChannelsView()
+                    .tabItem { Label(AppRouter.Tab.channels.title, systemImage: AppRouter.Tab.channels.icon) }
+                    .tag(AppRouter.Tab.channels)
 
-            SettingsView()
-                .tabItem { Label(AppRouter.Tab.settings.title, systemImage: AppRouter.Tab.settings.icon) }
-                .tag(AppRouter.Tab.settings)
+                NewsView()
+                    .tabItem { Label(AppRouter.Tab.news.title, systemImage: AppRouter.Tab.news.icon) }
+                    .tag(AppRouter.Tab.news)
+
+                SettingsView()
+                    .tabItem { Label(AppRouter.Tab.settings.title, systemImage: AppRouter.Tab.settings.icon) }
+                    .tag(AppRouter.Tab.settings)
+            }
         }
+        .animation(.snappy(duration: 0.25), value: updates.showsBanner)
         .tint(KT.accent)
         .background(KT.bg)
     }

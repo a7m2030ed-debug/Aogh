@@ -163,6 +163,12 @@
     <string name="settings_version">الإصدار</string>
     <string name="about_version">كورة تايم — الإصدار 1.0</string>
     <string name="about_desc">مواعيد المباريات ونتائجها، وقنواتك المفتوحة، وأخبار الكرة العربية في مكان واحد.</string>
+    <string name="update_version">الإصدار %1$s</string>
+    <string name="update_required_body">صدر تحديث ضروري لكورة تايم. حدّث لتواصل الاستخدام.</string>
+    <string name="update_required_title">هذا الإصدار لم يعد يعمل</string>
+    <string name="update_later">لاحقاً</string>
+    <string name="update_now">تحديث</string>
+    <string name="update_available">يتوفّر تحديث لكورة تايم</string>
 
     <!-- التواريخ -->
     <string name="today">اليوم</string>

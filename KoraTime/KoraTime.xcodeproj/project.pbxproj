@@ -15,6 +15,7 @@
 		B5D41A96EB346AE43DBFB77E /* Catalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A9DB2B86C9CFEEF7E28DA7B /* Catalog.swift */; };
 		6535AC10855F96CBB2B0E65D /* HTTPClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB63D193666445ABC79BF49 /* HTTPClient.swift */; };
 		A3F9626F9C394D8BDA6C8D49 /* KTDate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88039E3104EC2E96D168B55B /* KTDate.swift */; };
+		A22618FF703A676B571553AB /* LiveData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FA2EAEE99141237C160FF3A /* LiveData.swift */; };
 		51D716634B8916230784ED0D /* Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCF1392DBACA61A591A3112B /* Localization.swift */; };
 		56BD43A517DC55A33C380195 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC7D459968F57A9DF340DDE5 /* Components.swift */; };
 		6E9633FB135EC21E30B5AAF3 /* RemoteImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB17ACBC9E32ED69D1946D7F /* RemoteImage.swift */; };
@@ -38,6 +39,7 @@
 		D9DFDEC0967D163E6A1C34FD /* NewsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A6A241E3A630B3E24E5B8D5 /* NewsView.swift */; };
 		FCA452D77917C1B88D7F2A8C /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B68A7FE91934A546401E882F /* OnboardingView.swift */; };
 		FA3AFBF372606BF3652E7D25 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FA6D28BB411E6D56C0FB808 /* SettingsView.swift */; };
+		6E1ABFAFF0C284919F33CE5B /* UpdateChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F398CC93255B3FE0CB62110 /* UpdateChecker.swift */; };
 		DC5F9C25298464AAA4254664 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 81366E528FFA180FA0D44044 /* Assets.xcassets */; };
 		D060BD9EBF4CF3D3B897707A /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = BD35199A2C5E65212432F125 /* PrivacyInfo.xcprivacy */; };
 		46D5BA66FE8BEDA053AABC08 /* ar-names.json in Resources */ = {isa = PBXBuildFile; fileRef = BBC53BC6689ED739F9330A38 /* ar-names.json */; };
@@ -55,6 +57,7 @@
 		8A9DB2B86C9CFEEF7E28DA7B /* Catalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Catalog.swift"; sourceTree = "<group>"; };
 		5CB63D193666445ABC79BF49 /* HTTPClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HTTPClient.swift"; sourceTree = "<group>"; };
 		88039E3104EC2E96D168B55B /* KTDate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "KTDate.swift"; sourceTree = "<group>"; };
+		0FA2EAEE99141237C160FF3A /* LiveData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LiveData.swift"; sourceTree = "<group>"; };
 		BCF1392DBACA61A591A3112B /* Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Localization.swift"; sourceTree = "<group>"; };
 		FC7D459968F57A9DF340DDE5 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Components.swift"; sourceTree = "<group>"; };
 		EB17ACBC9E32ED69D1946D7F /* RemoteImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RemoteImage.swift"; sourceTree = "<group>"; };
@@ -78,6 +81,7 @@
 		6A6A241E3A630B3E24E5B8D5 /* NewsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NewsView.swift"; sourceTree = "<group>"; };
 		B68A7FE91934A546401E882F /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "OnboardingView.swift"; sourceTree = "<group>"; };
 		8FA6D28BB411E6D56C0FB808 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SettingsView.swift"; sourceTree = "<group>"; };
+		3F398CC93255B3FE0CB62110 /* UpdateChecker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UpdateChecker.swift"; sourceTree = "<group>"; };
 		81366E528FFA180FA0D44044 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Assets.xcassets"; sourceTree = "<group>"; };
 		BD35199A2C5E65212432F125 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text; path = "PrivacyInfo.xcprivacy"; sourceTree = "<group>"; };
 		BBC53BC6689ED739F9330A38 /* ar-names.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "ar-names.json"; sourceTree = "<group>"; };
@@ -129,6 +133,7 @@
 				8A9DB2B86C9CFEEF7E28DA7B /* Catalog.swift */,
 				5CB63D193666445ABC79BF49 /* HTTPClient.swift */,
 				88039E3104EC2E96D168B55B /* KTDate.swift */,
+				0FA2EAEE99141237C160FF3A /* LiveData.swift */,
 				BCF1392DBACA61A591A3112B /* Localization.swift */,
 			);
 			path = Core;
@@ -198,6 +203,14 @@
 			path = Settings;
 			sourceTree = "<group>";
 		};
+		650E448A65DCF68C5C6F0DFC /* Update */ = {
+			isa = PBXGroup;
+			children = (
+				3F398CC93255B3FE0CB62110 /* UpdateChecker.swift */,
+			);
+			path = Update;
+			sourceTree = "<group>";
+		};
 		A440A23C9CBE9B4DF1D094EA /* Features */ = {
 			isa = PBXGroup;
 			children = (
@@ -206,6 +219,7 @@
 				38B233CBE4435DF46C14DBBD /* News */,
 				5342F16EC4FF1A32C962B76E /* Onboarding */,
 				367C650065FADB2C574C4493 /* Settings */,
+				650E448A65DCF68C5C6F0DFC /* Update */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -314,6 +328,7 @@
 				B5D41A96EB346AE43DBFB77E /* Catalog.swift in Sources */,
 				6535AC10855F96CBB2B0E65D /* HTTPClient.swift in Sources */,
 				A3F9626F9C394D8BDA6C8D49 /* KTDate.swift in Sources */,
+				A22618FF703A676B571553AB /* LiveData.swift in Sources */,
 				51D716634B8916230784ED0D /* Localization.swift in Sources */,
 				56BD43A517DC55A33C380195 /* Components.swift in Sources */,
 				6E9633FB135EC21E30B5AAF3 /* RemoteImage.swift in Sources */,
@@ -337,6 +352,7 @@
 				D9DFDEC0967D163E6A1C34FD /* NewsView.swift in Sources */,
 				FCA452D77917C1B88D7F2A8C /* OnboardingView.swift in Sources */,
 				FA3AFBF372606BF3652E7D25 /* SettingsView.swift in Sources */,
+				6E1ABFAFF0C284919F33CE5B /* UpdateChecker.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

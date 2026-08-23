@@ -3,11 +3,12 @@ package com.koratime
 import android.app.Activity
 import android.content.pm.ActivityInfo
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -20,32 +21,33 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.sp
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.koratime.channels.ChannelsScreen
 import com.koratime.channels.ChannelsViewModel
-import com.koratime.core.ArabicNames
-import com.koratime.core.Settings
 import com.koratime.core.AppText
+import com.koratime.core.ArabicNames
 import com.koratime.core.Lang
 import com.koratime.core.LangManager
+import com.koratime.core.Settings
+import com.koratime.core.UpdateViewModel
 import com.koratime.matches.MatchesScreen
 import com.koratime.matches.MatchesViewModel
 import com.koratime.news.NewsScreen
@@ -56,6 +58,9 @@ import com.koratime.ui.KT
 import com.koratime.ui.KTBackground
 import com.koratime.ui.KTIcons
 import com.koratime.ui.KoraTimeTheme
+import com.koratime.ui.UpdateBanner
+import com.koratime.ui.UpdateRequiredScreen
+import com.koratime.ui.openUrl
 
 // AppCompatActivity لا ComponentActivity: زرّ البثّ إلى الشاشات يعرض
 // قائمة الأجهزة عبر FragmentManager، وسمة AppCompat شرط لتنسيقه.
@@ -122,6 +127,8 @@ private class KTViewModelFactory(
             ChannelsViewModel(settings, context) as T
         modelClass.isAssignableFrom(NewsViewModel::class.java) ->
             NewsViewModel(settings) as T
+        modelClass.isAssignableFrom(UpdateViewModel::class.java) ->
+            UpdateViewModel(context) as T
         else -> throw IllegalArgumentException(AppText.get(R.string.unknown_model, modelClass.name))
     }
 }
@@ -138,6 +145,11 @@ private fun RootScreen(
     val matches: MatchesViewModel = viewModel(factory = factory)
     val channels: ChannelsViewModel = viewModel(factory = factory)
     val news: NewsViewModel = viewModel(factory = factory)
+    val updates: UpdateViewModel = viewModel(factory = factory)
+
+    // بوّابة التحديث: نسخة أندرويد تُوزَّع ملفاً مباشراً فلا تحديث تلقائي،
+    // ومن ثبّتها لن يعرف بجديد إلا إن أخبره التطبيق.
+    LaunchedEffect(Unit) { updates.checkIfNeeded() }
 
     // قائمة القنوات تُحمَّل مع بدء التطبيق لا عند فتح تبويبها: النموذج
     // يهيّئ قناة البداية بلا صوت، فيصير فتح التبويب فورياً بدل انتظار
@@ -179,6 +191,17 @@ private fun RootScreen(
 
     BackHandler(enabled = fullscreen) { fullscreen = false }
 
+    // الحجب لا يقع إلا إن رُفع أدنى إصدار مقبول عمداً لعطل حقيقي.
+    val blocking = updates.info
+    if (updates.isBlocking && blocking != null) {
+        UpdateRequiredScreen(
+            info = blocking,
+            arabic = LangManager.current(settings) == Lang.AR,
+            onUpdate = { openUrl(context, updates.downloadUrl) }
+        )
+        return
+    }
+
     Scaffold(
         containerColor = KT.bg,
         bottomBar = {
@@ -206,39 +229,52 @@ private fun RootScreen(
         }
     ) { padding ->
         KTBackground(modifier = Modifier.fillMaxSize()) {
-            Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+            Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+                // شريط يُعلم ولا يحجب، ويُطوى بضغطة «لاحقاً» فلا يعود لهذا الإصدار
+                val pending = updates.info
+                if (updates.showsBanner && pending != null && !fullscreen) {
+                    UpdateBanner(
+                        info = pending,
+                        arabic = LangManager.current(settings) == Lang.AR,
+                        onUpdate = { openUrl(context, updates.downloadUrl) },
+                        onLater = { updates.dismiss() }
+                    )
+                }
+
                 // كل تبويب يحتفظ بموضع تمريره عند العودة إليه بدل أن يبدأ من أوّله
-                stateHolder.SaveableStateProvider(tab.name) {
-                    when (tab) {
-                        Tab.MATCHES -> MatchesScreen(
-                            model = matches,
-                            arabicNames = settings.arabicNames,
-                            onOpenMatch = { }
-                        )
+                Box(modifier = Modifier.weight(1f)) {
+                    stateHolder.SaveableStateProvider(tab.name) {
+                        when (tab) {
+                            Tab.MATCHES -> MatchesScreen(
+                                model = matches,
+                                arabicNames = settings.arabicNames,
+                                onOpenMatch = { }
+                            )
 
-                        Tab.CHANNELS -> ChannelsScreen(
-                            model = channels,
-                            autoPlay = settings.autoPlayOnOpen,
-                            isFullscreen = fullscreen,
-                            onToggleFullscreen = { fullscreen = !fullscreen },
-                            onOpenSettings = { tab = Tab.SETTINGS }
-                        )
+                            Tab.CHANNELS -> ChannelsScreen(
+                                model = channels,
+                                autoPlay = settings.autoPlayOnOpen,
+                                isFullscreen = fullscreen,
+                                onToggleFullscreen = { fullscreen = !fullscreen },
+                                onOpenSettings = { tab = Tab.SETTINGS }
+                            )
 
-                        Tab.NEWS -> NewsScreen(model = news, settings = settings)
+                            Tab.NEWS -> NewsScreen(model = news, settings = settings)
 
-                        Tab.SETTINGS -> SettingsScreen(
-                            settings = settings,
-                            onEditFavorites = onEditFavorites,
-                            onChannelsChanged = {
-                                channels.invalidate()
-                                channels.reload()
-                            },
-                            onNewsChanged = {
-                                news.invalidate()
-                                news.reload()
-                            },
-                            onMatchesChanged = { matches.invalidate() }
-                        )
+                            Tab.SETTINGS -> SettingsScreen(
+                                settings = settings,
+                                onEditFavorites = onEditFavorites,
+                                onChannelsChanged = {
+                                    channels.invalidate()
+                                    channels.reload()
+                                },
+                                onNewsChanged = {
+                                    news.invalidate()
+                                    news.reload()
+                                },
+                                onMatchesChanged = { matches.invalidate() }
+                            )
+                        }
                     }
                 }
             }

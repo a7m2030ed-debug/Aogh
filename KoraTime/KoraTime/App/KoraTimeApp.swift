@@ -10,6 +10,7 @@ struct KoraTimeApp: App {
     @State private var channelsStore: ChannelsStore
     @State private var newsStore: NewsStore
     @State private var player: PlayerController
+    @State private var updates: UpdateChecker
 
     init() {
         let settings = AppSettings()
@@ -19,6 +20,7 @@ struct KoraTimeApp: App {
         _channelsStore = State(initialValue: ChannelsStore(settings: settings))
         _newsStore = State(initialValue: NewsStore(settings: settings))
         _player = State(initialValue: PlayerController())
+        _updates = State(initialValue: UpdateChecker())
         KoraTimeApp.applyBarAppearance()
     }
 
@@ -31,6 +33,7 @@ struct KoraTimeApp: App {
                 .environment(channelsStore)
                 .environment(newsStore)
                 .environment(player)
+                .environment(updates)
                 // الاتجاه يتبع اللغة: يمين‑يسار للعربية ويسار‑يمين للإنجليزية
                 .environment(\.layoutDirection, settings.language.isRTL ? .rightToLeft : .leftToRight)
                 .environment(\.locale, KTDate.locale)
@@ -74,12 +77,17 @@ private struct AppGate: View {
     @Environment(NewsStore.self) private var news
     @Environment(ChannelsStore.self) private var channels
     @Environment(PlayerController.self) private var player
+    @Environment(UpdateChecker.self) private var updates
+    @Environment(\.openURL) private var openURL
     @State private var onboarded: Bool?
 
     var body: some View {
         @Bindable var settings = settings
         Group {
-            if onboarded ?? settings.onboarded {
+            // الحجب لا يقع إلا إن رُفع أدنى إصدار مقبول عمداً لعطل حقيقي.
+            if updates.isBlocking, let info = updates.info {
+                UpdateRequiredView(info: info) { openStore() }
+            } else if onboarded ?? settings.onboarded {
                 RootView()
             } else {
                 OnboardingView(settings: settings) {
@@ -94,11 +102,19 @@ private struct AppGate: View {
         // تحضير قناة البداية مع إقلاع التطبيق: البيان وأول مقطع يصلان
         // بينما المستخدم في تبويب المباريات، فيفتح البثّ عنده بلا انتظار.
         .task {
+            // بوّابة التحديث أولاً وبلا انتظار: طلب صغير لا يؤخّر شيئاً،
+            // وفشله صامت فلا يُقلق المستخدم بخطأ شبكة.
+            Task { await updates.check() }
+
             guard settings.autoPlayOnOpen else { return }
             await channels.loadIfNeeded()
             if let channel = channels.startupChannel {
                 player.preload(channel)
             }
         }
+    }
+
+    private func openStore() {
+        if let url = updates.storeURL { openURL(url) }
     }
 }

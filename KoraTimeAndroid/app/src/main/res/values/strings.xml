@@ -167,6 +167,12 @@
     <string name="settings_version">Version</string>
     <string name="about_version">Kora Time — version 1.0</string>
     <string name="about_desc">Fixtures and results, your open channels, and Arab football news in one place.</string>
+    <string name="update_version">Version %1$s</string>
+    <string name="update_required_body">A required Kora Time update is out. Update to keep going.</string>
+    <string name="update_required_title">This version no longer works</string>
+    <string name="update_later">Later</string>
+    <string name="update_now">Update</string>
+    <string name="update_available">A Kora Time update is available</string>
 
     <!-- Dates -->
     <string name="today">Today</string>

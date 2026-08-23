@@ -474,6 +474,29 @@ class ChannelsViewModel(
         reload()
     }
 
+    /**
+     * القائمة المنشورة أولاً ثم المرفقة.
+     *
+     * روابط البثّ تموت وتُستبدل كل أسبوع، وانتظار إصدار جديد لكل تغيير يعني
+     * قنوات ميتة في يد المستخدم. تُقرأ القائمة المنشورة إن أمكن، وتبقى
+     * المرفقة شبكة الأمان: بلا شبكة أو بمصدر معطوب يرى ما بُني مع التطبيق
+     * لا شاشة فارغة.
+     */
+    private suspend fun catalogChannels(): List<Channel> {
+        val bundled = ktJson.decodeFromString<List<Channel>>(
+            context.assets.open("channels.json").bufferedReader().use { it.readText() }
+        )
+        return try {
+            val body = Http.text(LiveData.CHANNELS, maxAgeSeconds = LiveData.MAX_AGE_SECONDS)
+            val remote = ktJson.decodeFromString<List<Channel>>(body)
+            // قائمة منشورة فارغة أو شبه فارغة تعني عطباً في المصدر لا حذفاً
+            // مقصوداً، فلا نُفرّغ شاشة المستخدم بناءً عليها.
+            if (remote.size >= maxOf(3, bundled.size / 3)) remote else bundled
+        } catch (error: Exception) {
+            bundled
+        }
+    }
+
     fun reload() {
         loaded = true
         isLoading = true
@@ -482,9 +505,8 @@ class ChannelsViewModel(
             val errors = mutableListOf<String>()
 
             try {
-                val raw = context.assets.open("channels.json").bufferedReader().use { it.readText() }
-                val bundled = ktJson.decodeFromString<List<Channel>>(raw)
-                collected += if (settings.showDemoChannels) bundled else bundled.filter { !it.isDemo }
+                val catalog = catalogChannels()
+                collected += if (settings.showDemoChannels) catalog else catalog.filter { !it.isDemo }
             } catch (error: Exception) {
                 errors += AppText.get(R.string.channels_read_failed, error.message.orEmpty())
             }

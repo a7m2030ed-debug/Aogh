@@ -98,3 +98,5 @@ jobs:
         run: |
           gh workflow run ios.yml --ref "${{ github.ref_name }}"
           gh workflow run android.yml --ref "${{ github.ref_name }}"
+          # والأهمّ: نشر القائمة الجديدة للمستخدمين الحاليين بلا انتظار إصدار
+          gh workflow run data.yml --ref "${{ github.ref_name }}"

@@ -1,0 +1,95 @@
+name: نشر بيانات كورة تايم الحيّة
+
+# قائمة القنوات وبوّابة التحديث تُنشران كأصول إصدار ثابت، فتصلان المستخدمين
+# خلال دقائق بلا إصدار جديد ولا مراجعة من آبل. الرابط لا يتأثّر بأسماء
+# الفروع لأنه معلّق بوسم ثابت، والتطبيقان يسقطان إلى نسختهما المرفقة إن
+# تعذّرت الشبكة — فلا يتعطّل شيء إن غاب هذا الإجراء.
+
+on:
+  push:
+    branches: [claude/kora-time-ios-app-q9dalt]
+    paths:
+      - "KoraTime/KoraTime/Resources/channels.json"
+      - "KoraTime/KoraTime/Resources/ar-names.json"
+      - "KoraTime/Tools/app-version.json"
+      - ".github/workflows/data.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: data
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: رفع القائمة وبيان الإصدار
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ملف تالف يعني تطبيقاً بلا قنوات عند كل مستخدم، فنتحقّق قبل النشر.
+      - name: التحقّق من سلامة الملفات
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, sys
+
+          channels = json.load(open("KoraTime/KoraTime/Resources/channels.json"))
+          names = json.load(open("KoraTime/KoraTime/Resources/ar-names.json"))
+          version = json.load(open("KoraTime/Tools/app-version.json"))
+
+          if not isinstance(channels, list) or len(channels) < 5:
+              sys.exit(f"قائمة القنوات غير صالحة: {type(channels).__name__} بطول {len(channels)}")
+          missing = [c.get("name") for c in channels if not c.get("url")]
+          if missing:
+              sys.exit(f"قنوات بلا رابط: {missing}")
+          if "leagues" not in names or "teams" not in names:
+              sys.exit("ملف التعريب ناقص")
+          for key in ("latest", "minimum", "ios", "android"):
+              if key not in version:
+                  sys.exit(f"بيان الإصدار ينقصه {key}")
+
+          print(f"قنوات: {len(channels)} | دوريات: {len(names['leagues'])} | "
+                f"أحدث إصدار: {version['latest']} | أدنى مقبول: {version['minimum']}")
+          PY
+
+      - name: رفع الأصول على وسم data
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="data"
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" \
+              --title "بيانات كورة تايم الحيّة" \
+              --notes "قائمة القنوات وبيان الإصدار. يقرؤها التطبيقان عند التشغيل، ويسقطان إلى نسختهما المرفقة إن تعذّرت الشبكة. لا تُحذف هذه الإصدارة."
+          fi
+          gh release upload "$TAG" \
+            KoraTime/KoraTime/Resources/channels.json \
+            KoraTime/KoraTime/Resources/ar-names.json \
+            KoraTime/Tools/app-version.json \
+            --clobber
+
+          BASE="https://github.com/${{ github.repository }}/releases/download/$TAG"
+          echo "القنوات: $BASE/channels.json" >> "$GITHUB_STEP_SUMMARY"
+          echo "التعريب: $BASE/ar-names.json" >> "$GITHUB_STEP_SUMMARY"
+          echo "بيان الإصدار: $BASE/app-version.json" >> "$GITHUB_STEP_SUMMARY"
+
+      # الرابط المنشور يجب أن يعمل فعلاً، لا أن نفترض ذلك.
+      - name: التحقّق من أن الرابط يعمل
+        run: |
+          set -euo pipefail
+          BASE="https://github.com/${{ github.repository }}/releases/download/data"
+          for FILE in channels.json ar-names.json app-version.json; do
+            CODE=$(curl -sSL -o /tmp/$FILE -w '%{http_code}' "$BASE/$FILE")
+            if [ "$CODE" != "200" ]; then
+              echo "::error::$FILE ردّ بـ HTTP $CODE"
+              exit 1
+            fi
+            python3 -c "import json,sys; json.load(open('/tmp/$FILE'))"
+            echo "$FILE ✓"
+          done
