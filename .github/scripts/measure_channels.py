@@ -31,6 +31,11 @@ CTX.check_hostname = False
 CTX.verify_mode = ssl.CERT_NONE
 
 
+# نفس تصنيف verify_channels.py: ٤٠١ و٤٠٣ و٤٥١ من خادم خارج المنطقة
+# لا تعني قناة ميتة، بل قناة لا تُفتح من هنا. الخلط بينهما أعطى تقريراً
+# قال «ميت» عن ثلاث قنوات سليمة داخل منطقتها.
+GEO_CODES = {401, 403, 451}
+
 def fetch(url, headers=None, limit=None):
     """يرجع (البايتات، ثانية حتى أول بايت، ثانية كلية)."""
     request = urllib.request.Request(url, headers={"User-Agent": UA, **(headers or {})})
@@ -101,7 +106,7 @@ def measure(channel):
     try:
         body, ttfb, _ = fetch(url, headers, limit=400_000)
     except urllib.error.HTTPError as error:
-        result["status"] = "ميت"
+        result["status"] = "خارج المنطقة" if error.code in GEO_CODES else "ميت"
         result["note"] = f"HTTP {error.code}"
         return result
     except Exception as error:
@@ -201,7 +206,7 @@ def main():
     with ThreadPoolExecutor(max_workers=10) as pool:
         logos = list(pool.map(check_logo, playable))
 
-    order = {"سيتقطّع": 0, "على الحافة": 1, "ميت": 2, "مقاطع مفقودة": 2,
+    order = {"سيتقطّع": 0, "على الحافة": 1, "ميت": 2, "خارج المنطقة": 2, "مقاطع مفقودة": 2,
              "بلا مقاطع": 2, "ليس HLS": 2, "بلا بيانات": 2, "جيد": 3, "ممتاز": 4}
     results.sort(key=lambda r: (order.get(r["status"], 5), -(r["headroom"] or 0)))
 
