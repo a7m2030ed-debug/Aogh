@@ -22,7 +22,7 @@ object LiveData {
     const val APP_VERSION = "$BASE/app-version.json"
 
     /** ست ساعات: أطول من جلسة استخدام، وأقصر من أن تبقى قناة ميتة يوماً. */
-    const val MAX_AGE_SECONDS = 6 * 60 * 60
+    const val MAX_AGE_SECONDS = 6L * 60 * 60
 }
 
 /** بيان الإصدار المنشور مع البيانات الحيّة. */
