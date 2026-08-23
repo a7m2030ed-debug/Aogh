@@ -86,7 +86,8 @@ private struct AppGate: View {
                     onboarded = true
                     // التفضيلات الجديدة تعني ترتيباً وأخباراً مختلفة
                     matches.invalidate()
-                    news.reload()
+                    news.invalidate()
+                    Task { await news.reload() }
                 }
             }
         }

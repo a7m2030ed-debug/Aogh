@@ -83,8 +83,22 @@ final class AppSettings {
         didSet { store.set(autoRefreshLive, forKey: Keys.autoRefreshLive) }
     }
     /// إظهار الأسماء العربية للفرق والبطولات بدل الإنجليزية.
+    ///
+    /// يتبع اللغة ما لم يختر المستخدم غير ذلك: أسماء عربية مع العربية
+    /// وإنجليزية مع الإنجليزية. `nil` تعني «اتبع اللغة» لا «مطفأ».
+    private var arabicNamesOverride: Bool? {
+        didSet {
+            if let value = arabicNamesOverride {
+                store.set(value, forKey: Keys.arabicNames)
+            } else {
+                store.removeObject(forKey: Keys.arabicNames)
+            }
+        }
+    }
+
     var arabicNames: Bool {
-        didSet { store.set(arabicNames, forKey: Keys.arabicNames) }
+        get { arabicNamesOverride ?? (language == .ar) }
+        set { arabicNamesOverride = newValue }
     }
 
     // MARK: القنوات
@@ -161,7 +175,7 @@ final class AppSettings {
         sportsDBKey = store.string(forKey: Keys.sportsDBKey) ?? AppSettings.defaultSportsDBKey
         footballDataToken = store.string(forKey: Keys.footballDataToken) ?? ""
         autoRefreshLive = store.object(forKey: Keys.autoRefreshLive) as? Bool ?? true
-        arabicNames = store.object(forKey: Keys.arabicNames) as? Bool ?? true
+        arabicNamesOverride = store.object(forKey: Keys.arabicNames) as? Bool
 
         playlists = AppSettings.load([PlaylistSource].self, forKey: Keys.playlists, from: store) ?? []
         autoPlayOnOpen = store.object(forKey: Keys.autoPlayOnOpen) as? Bool ?? true
