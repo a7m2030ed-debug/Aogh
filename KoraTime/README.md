@@ -21,6 +21,10 @@
 |---|---|
 | ![الأخبار](../docs/screenshots/news.png) | ![الإعدادات](../docs/screenshots/settings.png) |
 
+| أول تشغيل |
+|---|
+| ![أول تشغيل](../docs/screenshots/onboarding.png) |
+
 **تجربة التطبيق بلا ماك:** حمّل
 [نسخة المحاكي](https://github.com/a7m2030ed-debug/Aogh/releases/download/sim-build/KoraTime-simulator.zip)
 وارفعها على [appetize.io](https://appetize.io) لتشغيل التطبيق داخل المتصفّح على أي جهاز.

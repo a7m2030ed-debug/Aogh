@@ -102,16 +102,38 @@ jobs:
           set -euo pipefail
           UDID="${{ steps.sim.outputs.udid }}"
           mkdir -p screenshots
+
+          # شاشة أول تشغيل تسبق التبويبات، فبدونها كانت اللقطات الأربع كلها
+          # لها هي. نتخطّاها بضبط المفتاح في نطاق الوسائط لا في التخزين،
+          # فلا يبقى أثر بين اللقطات.
           for TAB in matches channels news settings; do
             xcrun simctl terminate "$UDID" com.koratime.app >/dev/null 2>&1 || true
             sleep 1
-            xcrun simctl launch "$UDID" com.koratime.app -KTStartTab "$TAB"
+            xcrun simctl launch "$UDID" com.koratime.app -KTStartTab "$TAB" -general.onboarded YES
             # مهلة كافية لجلب البيانات من الشبكة وبدء البث
             sleep 14
             xcrun simctl io "$UDID" screenshot "screenshots/$TAB.png"
             echo "التُقطت: $TAB"
           done
+
+          # ولقطة لشاشة أول تشغيل كما يراها المستخدم الجديد
           xcrun simctl terminate "$UDID" com.koratime.app >/dev/null 2>&1 || true
+          sleep 1
+          xcrun simctl launch "$UDID" com.koratime.app -general.onboarded NO
+          sleep 5
+          xcrun simctl io "$UDID" screenshot "screenshots/onboarding.png"
+          echo "التُقطت: onboarding"
+          xcrun simctl terminate "$UDID" com.koratime.app >/dev/null 2>&1 || true
+
+          # لقطات متطابقة تعني أن الأربع كلها لشاشة واحدة — وهو ما حدث فعلاً
+          # قبل تخطّي شاشة أول تشغيل. نكشفه هنا بدل أن يمرّ إلى الدليل.
+          UNIQUE=$(shasum -a 256 screenshots/matches.png screenshots/channels.png \
+                   screenshots/news.png screenshots/settings.png | awk '{print $1}' | sort -u | wc -l)
+          if [ "$UNIQUE" -lt 3 ]; then
+            echo "::error::لقطات التبويبات متطابقة ($UNIQUE مختلفة من ٤) — التبويبات لم تُلتقط"
+            exit 1
+          fi
+          echo "لقطات مختلفة: $UNIQUE من ٤"
 
       - name: البحث عن أي انهيار
         if: always()
