@@ -16,6 +16,9 @@ final class ChannelsStore {
     var query: String = ""
 
     private var hasLoaded = false
+    /// طلب التحميل الجاري. صار للقائمة نداءان عند الإقلاع — تحضير قناة
+    /// البداية وفتح التبويب — فبلا هذا يُجلب كل شيء مرتين.
+    private var loadTask: Task<Void, Never>?
 
     init(settings: AppSettings) {
         self.settings = settings
@@ -59,12 +62,27 @@ final class ChannelsStore {
             ?? channels.first
     }
 
+    /// النداء الثاني ينتظر الأول بدل أن يبدأ جلباً موازياً.
     func loadIfNeeded() async {
+        if let existing = loadTask {
+            await existing.value
+            return
+        }
         guard !hasLoaded else { return }
         await reload()
     }
 
+    /// نداء صريح بعد تغيير الإعدادات: ينتظر الجاري ثم يجلب من جديد، وإلا
+    /// لم تظهر القائمة التي أضافها المستخدم للتوّ.
     func reload() async {
+        if let existing = loadTask { await existing.value }
+        let task = Task { await self.performReload() }
+        loadTask = task
+        await task.value
+        loadTask = nil
+    }
+
+    private func performReload() async {
         isLoading = true
         loadErrors = []
 

@@ -45,6 +45,7 @@ struct ApiFootballProvider: MatchesProviding {
     private struct LeagueInfo: Decodable {
         let name: String?
         let id: Int?
+        let country: String?
         let logo: String?
         let round: String?
     }
@@ -114,12 +115,38 @@ struct ApiFootballProvider: MatchesProviding {
             awayScore: item.goals?.away,
             status: status,
             progress: progressText(short: short, elapsed: elapsed, status: status),
-            competition: item.league?.name ?? L.s("other_competitions"),
+            competition: competitionName(item.league),
             competitionID: item.league?.id.map(String.init),
             competitionBadge: item.league?.logo.flatMap(URL.init(string:)),
             venue: item.fixture?.venue?.name,
             round: item.league?.round
         )
+    }
+
+    /// أسماء البطولات في هذا المصدر تأتي بلا بلدها أحياناً: دوري روشن اسمه
+    /// «Pro League» وكأس الملك «King Cup»، والاسمان مشتركان بين دول عدّة —
+    /// وبلجيكا نفسها لها «Pro League». فما لم يكن الاسم معروفاً بذاته
+    /// نُلحق به اسم البلد المختصر، فيصير مفتاحاً صالحاً للتعريب وللترتيب
+    /// معاً بدل أن يظهر روشن باسم عامّ في ذيل القائمة.
+    private static let countryPrefix: [String: String] = [
+        "saudi-arabia": "Saudi", "saudi arabia": "Saudi",
+        "united-arab-emirates": "UAE", "united arab emirates": "UAE",
+        "qatar": "Qatar", "egypt": "Egyptian", "kuwait": "Kuwait",
+        "bahrain": "Bahrain", "oman": "Oman", "jordan": "Jordan",
+        "morocco": "Moroccan", "algeria": "Algerian", "tunisia": "Tunisian",
+    ]
+
+    private func competitionName(_ league: LeagueInfo?) -> String {
+        let raw = (league?.name ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !raw.isEmpty else { return L.s("other_competitions") }
+
+        // الاسم معروف كما هو («Premier League» مثلاً) فلا يُمَسّ.
+        if ArabicNames.league(raw, enabled: true) != raw { return raw }
+
+        let country = (league?.country ?? "").lowercased()
+        guard let prefix = ApiFootballProvider.countryPrefix[country],
+              !raw.localizedCaseInsensitiveContains(prefix) else { return raw }
+        return "\(prefix) \(raw)"
     }
 
     private func progressText(short: String, elapsed: Int?, status: Match.Status) -> String? {

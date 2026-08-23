@@ -71,6 +71,17 @@ def main() -> int:
             print("زائد في العربية:", ", ".join(extra), file=sys.stderr)
         return 1
 
+    # اختلاف الوسائط بين اللغتين ليس خطأ ترجمة بل انهياراً وقت التشغيل:
+    # ‏String(format:) يقرأ وسيطاً غير موجود أو بنوع خاطئ.
+    slot = re.compile(r"%(\d+)\$(@|ld)")
+    clashing = sorted(
+        key for key in english
+        if sorted(slot.findall(english[key])) != sorted(slot.findall(arabic[key]))
+    )
+    if clashing:
+        print("وسائط مختلفة بين اللغتين:", ", ".join(clashing), file=sys.stderr)
+        return 1
+
     body = f'''import Foundation
 
 // مولَّد آلياً — لا يُحرَّر بيد.

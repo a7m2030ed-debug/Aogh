@@ -2,6 +2,7 @@ package com.koratime.matches
 
 import com.koratime.R
 import com.koratime.core.AppText
+import com.koratime.core.ArabicNames
 import com.koratime.core.Http
 import com.koratime.core.KTDate
 import com.koratime.core.ktJson
@@ -24,6 +25,16 @@ import java.util.Locale
  * طلب واحد لكل يوم معروض، والنتيجة تُخزَّن، فحصّة الخطة المجانية تكفي.
  */
 class ApiFootballProvider(private val apiKey: String) {
+
+    private companion object {
+        val COUNTRY_PREFIX = mapOf(
+            "saudi-arabia" to "Saudi", "saudi arabia" to "Saudi",
+            "united-arab-emirates" to "UAE", "united arab emirates" to "UAE",
+            "qatar" to "Qatar", "egypt" to "Egyptian", "kuwait" to "Kuwait",
+            "bahrain" to "Bahrain", "oman" to "Oman", "jordan" to "Jordan",
+            "morocco" to "Moroccan", "algeria" to "Algerian", "tunisia" to "Tunisian"
+        )
+    }
 
     val attribution: String get() = AppText.get(R.string.attribution_apifootball)
 
@@ -91,11 +102,31 @@ class ApiFootballProvider(private val apiKey: String) {
             awayScore = goals?.int("away"),
             status = status,
             progress = progressText(short, elapsed, status),
-            competition = league?.str("name") ?: AppText.get(R.string.other_competitions),
+            competition = competitionName(league),
             competitionBadge = league?.str("logo"),
             venue = fixture.obj("venue")?.str("name"),
             round = league?.str("round")
         )
+    }
+
+    /**
+     * أسماء البطولات في هذا المصدر تأتي بلا بلدها أحياناً: دوري روشن اسمه
+     * «Pro League» وكأس الملك «King Cup»، والاسمان مشتركان بين دول عدّة —
+     * وبلجيكا نفسها لها «Pro League». فما لم يكن الاسم معروفاً بذاته نُلحق
+     * به اسم البلد المختصر، فيصير مفتاحاً صالحاً للتعريب وللترتيب معاً بدل
+     * أن يظهر روشن باسم عامّ في ذيل القائمة.
+     */
+    private fun competitionName(league: JsonObject?): String {
+        val raw = league?.str("name").orEmpty()
+        if (raw.isEmpty()) return AppText.get(R.string.other_competitions)
+
+        // الاسم معروف كما هو («Premier League» مثلاً) فلا يُمَسّ.
+        if (ArabicNames.league(raw) != raw) return raw
+
+        val country = league?.str("country").orEmpty().lowercase(Locale.US)
+        val prefix = COUNTRY_PREFIX[country] ?: return raw
+        if (raw.contains(prefix, ignoreCase = true)) return raw
+        return "$prefix $raw"
     }
 
     private fun progressText(short: String, elapsed: Int?, status: MatchStatus): String? {
