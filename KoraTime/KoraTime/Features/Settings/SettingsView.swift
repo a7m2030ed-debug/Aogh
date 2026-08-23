@@ -136,16 +136,23 @@ struct SettingsView: View {
         @Bindable var settings = settings
 
         return Section {
-            LabeledContent(L.s("apifootball_key")) {
-                TextField("", text: $settings.apiFootballKey)
+            // العنوان في سطره والحقل بعرض الصفّ: صفّ LabeledContent يبتر
+            // العنوان الطويل، وهذا أهمّ حقل هنا فلا يصحّ أن يظهر ناقصاً.
+            VStack(alignment: .leading, spacing: 7) {
+                Text(L.s("apifootball_key"))
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(KT.text)
+                TextField(L.s("apifootball_placeholder"), text: $settings.apiFootballKey)
                     .multilineTextAlignment(.leading)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
+                    .font(.system(size: 14, design: .monospaced))
                     .onSubmit { matchesStore.invalidate() }
+                Text(L.s("apifootball_hint"))
+                    .font(.system(size: 11))
+                    .foregroundStyle(KT.textFaint)
             }
-            Text(L.s("apifootball_hint"))
-                .font(.system(size: 11))
-                .foregroundStyle(KT.textFaint)
+            .padding(.vertical, 2)
 
             Picker(L.s("matches_source"), selection: $settings.matchesSource) {
                 ForEach(MatchesSource.allCases) { source in

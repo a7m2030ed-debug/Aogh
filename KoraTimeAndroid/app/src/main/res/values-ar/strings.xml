@@ -133,6 +133,7 @@
     <string name="attribution_apifootball">البيانات من API-Football</string>
     <string name="apifootball_key">مفتاح API-Football (روشن والدوريات الكبرى)</string>
     <string name="apifootball_hint">المصدر المجاني المرافق يُرجع ثلاث مباريات يومياً من دوريات هامشية — بلا روشن وبلا الدوريات الكبرى. مفتاح مجاني من dashboard.api-football.com يجلبها كلها. اتركه فارغاً للبقاء على المصدر القديم.</string>
+    <string name="apifootball_placeholder">الصق المفتاح هنا</string>
     <string name="sportsdb_key">مفتاح TheSportsDB</string>
     <string name="matches_source">مصدر المباريات</string>
     <string name="sportsdb_hint">المفتاح التجريبي المشترك «123» يعمل بلا تسجيل لكنه محدود الطلبات. سجّل مفتاحاً باسمك من thesportsdb.com لتحديث أسرع.</string>

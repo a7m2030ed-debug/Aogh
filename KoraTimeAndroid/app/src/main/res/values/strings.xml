@@ -137,6 +137,7 @@
     <string name="attribution_apifootball">Data from API-Football</string>
     <string name="apifootball_key">API-Football key (Roshn + major leagues)</string>
     <string name="apifootball_hint">The bundled free source returns only 3 matches a day from minor leagues — no Roshn and no major leagues. A free key from dashboard.api-football.com brings them all. Leave it empty to stay on the old source.</string>
+    <string name="apifootball_placeholder">Paste your key here</string>
     <string name="sportsdb_key">TheSportsDB key</string>
     <string name="matches_source">Matches source</string>
     <string name="sportsdb_hint">The shared trial key “123” works without signing up but is rate limited. Register your own at thesportsdb.com for faster updates.</string>
