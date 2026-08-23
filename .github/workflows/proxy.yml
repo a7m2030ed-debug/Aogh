@@ -51,21 +51,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # الأسماء وحدها بلا أي قيمة: يكشف الخطأ الشائع — سرّ مكتوب باسم
-      # مختلف، أو موضوع في نطاق بيئة لا يراه الإجراء.
-      - name: أسماء الأسرار المرئية لهذا الإجراء
-        env:
-          ALL: ${{ toJSON(secrets) }}
-        run: |
-          python3 - <<'PY'
-          import json, os
-          names = sorted(json.loads(os.environ["ALL"]).keys())
-          print("المرئي هنا:", ", ".join(names) if names else "لا شيء إطلاقاً")
-          need = ["CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID", "API_FOOTBALL_KEY"]
-          for key in need:
-              print(("موجود  " if key in names else "مفقود  ") + key)
-          PY
-
       - name: التأكّد من الأسرار
         env:
           TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
