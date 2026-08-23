@@ -46,6 +46,38 @@ open KoraTime/KoraTime.xcodeproj
 
 ---
 
+## النشر على App Store (بلا ماك)
+
+[إجراء النشر](../.github/workflows/ios-release.yml) يبني نسخة موقّعة على خادم
+ماك ويرفعها إلى App Store Connect. يُشغَّل بيدك من تبويب **Actions** ← «نشر
+كورة تايم على App Store Connect» ← **Run workflow**.
+
+**قبل أول تشغيل** يلزم اشتراك [Apple Developer Program](https://developer.apple.com/programs/)،
+ثم أربعة أسرار تُضاف من `Settings ← Secrets and variables ← Actions ← New repository secret`:
+
+| السرّ | من أين |
+|---|---|
+| `APP_STORE_CONNECT_ISSUER_ID` | App Store Connect ← Users and Access ← Integrations ← Keys |
+| `APP_STORE_CONNECT_KEY_ID` | رقم المفتاح في الصفحة نفسها |
+| `APP_STORE_CONNECT_PRIVATE_KEY` | محتوى ملف `.p8` كاملاً بما فيه سطرا `BEGIN` و`END` |
+| `APPLE_TEAM_ID` | developer.apple.com ← Membership |
+
+> هذه مفاتيح حسابك: تُلصق في صفحة الأسرار مباشرة، ولا تُرسل في أي محادثة
+> ولا تُكتب في أي ملف داخل المستودع. الإجراء يمحو المفتاح من الخادم بعد
+> كل تشغيل، ناجحاً كان أو فاشلاً.
+
+ويلزم كذلك إنشاء سجلّ التطبيق في App Store Connect بمعرّف الحزمة
+`com.koratime.app` (أو غيّره في `Tools/make_xcodeproj.py` ثم أعد التوليد).
+
+التوقيع تلقائي: `-allowProvisioningUpdates` يُنشئ شهادة التوزيع وملف التهيئة
+عند أول تشغيل. رقم البناء يأخذ رقم تشغيل الإجراء فيزيد وحده مع كل رفع.
+بعد الرفع تظهر النسخة في TestFlight خلال ٥–٣٠ دقيقة، ومنها تُرسل للمراجعة.
+
+بيان الخصوصية `Resources/PrivacyInfo.xcprivacy` مرفق: التطبيق لا يجمع شيئاً
+ولا يتتبّع، ويعلن سبب استعمال `UserDefaults` كما تطلب آبل.
+
+---
+
 ## التبويبات
 
 ### المباريات

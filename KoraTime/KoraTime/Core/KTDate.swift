@@ -60,11 +60,19 @@ enum KTDate {
     static var fullDay: DateFormatter { make("EEEE d MMMM yyyy") }
     static var dayAndMonth: DateFormatter { make("d MMMM") }
 
+    /// يُبنى مرة لكل لغة: شاشة الأخبار تناديه لكل خبر، وإنشاؤه في كل نداء
+    /// كلفة بلا مقابل.
+    private static var relativeCache: (lang: Lang, formatter: RelativeDateTimeFormatter)?
+
     private static var relative: RelativeDateTimeFormatter {
+        let lang = L.current
+        if let cached = relativeCache, cached.lang == lang { return cached.formatter }
+
         let formatter = RelativeDateTimeFormatter()
         formatter.locale = locale
         formatter.calendar = Calendar(identifier: .gregorian)
         formatter.unitsStyle = .full
+        relativeCache = (lang, formatter)
         return formatter
     }
 

@@ -39,6 +39,7 @@
 		FCA452D77917C1B88D7F2A8C /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B68A7FE91934A546401E882F /* OnboardingView.swift */; };
 		FA3AFBF372606BF3652E7D25 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FA6D28BB411E6D56C0FB808 /* SettingsView.swift */; };
 		DC5F9C25298464AAA4254664 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 81366E528FFA180FA0D44044 /* Assets.xcassets */; };
+		D060BD9EBF4CF3D3B897707A /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = BD35199A2C5E65212432F125 /* PrivacyInfo.xcprivacy */; };
 		46D5BA66FE8BEDA053AABC08 /* ar-names.json in Resources */ = {isa = PBXBuildFile; fileRef = BBC53BC6689ED739F9330A38 /* ar-names.json */; };
 		AC7A447BBFDEA8DAD4534BED /* channels.json in Resources */ = {isa = PBXBuildFile; fileRef = F0B40583800F9756A75746FE /* channels.json */; };
 /* End PBXBuildFile section */
@@ -78,6 +79,7 @@
 		B68A7FE91934A546401E882F /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "OnboardingView.swift"; sourceTree = "<group>"; };
 		8FA6D28BB411E6D56C0FB808 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SettingsView.swift"; sourceTree = "<group>"; };
 		81366E528FFA180FA0D44044 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Assets.xcassets"; sourceTree = "<group>"; };
+		BD35199A2C5E65212432F125 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text; path = "PrivacyInfo.xcprivacy"; sourceTree = "<group>"; };
 		BBC53BC6689ED739F9330A38 /* ar-names.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "ar-names.json"; sourceTree = "<group>"; };
 		F0B40583800F9756A75746FE /* channels.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "channels.json"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -212,6 +214,7 @@
 			isa = PBXGroup;
 			children = (
 				81366E528FFA180FA0D44044 /* Assets.xcassets */,
+				BD35199A2C5E65212432F125 /* PrivacyInfo.xcprivacy */,
 				BBC53BC6689ED739F9330A38 /* ar-names.json */,
 				F0B40583800F9756A75746FE /* channels.json */,
 			);
@@ -290,6 +293,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				DC5F9C25298464AAA4254664 /* Assets.xcassets in Resources */,
+				D060BD9EBF4CF3D3B897707A /* PrivacyInfo.xcprivacy in Resources */,
 				46D5BA66FE8BEDA053AABC08 /* ar-names.json in Resources */,
 				AC7A447BBFDEA8DAD4534BED /* channels.json in Resources */,
 			);

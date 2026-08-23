@@ -21,7 +21,7 @@ BUNDLE_ID = "com.koratime.app"
 DEPLOYMENT_TARGET = "17.0"
 
 SOURCE_EXTENSIONS = {".swift"}
-RESOURCE_EXTENSIONS = {".json", ".xcassets", ".strings", ".ttf", ".otf", ".png"}
+RESOURCE_EXTENSIONS = {".json", ".xcassets", ".strings", ".ttf", ".otf", ".png", ".xcprivacy"}
 # يُشار إليه في المشروع لكنه لا يدخل مرحلة النسخ (يُستخدم عبر INFOPLIST_FILE)
 EXCLUDED_FROM_BUILD = {"Info.plist"}
 SKIP_NAMES = {".DS_Store"}
