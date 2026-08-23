@@ -123,10 +123,9 @@
   {
     "name": "ACI Sport TV",
     "group": "رياضة",
-    "url": "http://145.239.5.177/564a/index.m3u8",
-    "note": "قناة مفتوحة — دولية قد تعمل داخل المنطقة فقط — تعذّر التحقّق من خارجها.",
-    "logo": "https://i.imgur.com/U8cHMOt.png",
-    "geoRestricted": true
+    "url": "https://webstream.multistream.it/memfs/e2cb3629-c1a2-495b-b43a-9eb386f04ed8.m3u8",
+    "note": "قناة مفتوحة — دولية",
+    "logo": "https://i.imgur.com/U8cHMOt.png"
   },
   {
     "name": "AS3 Sport TV",
@@ -136,11 +135,11 @@
     "logo": "https://i.ibb.co/bRmGbsyV/A3-SPORTTV.jpg"
   },
   {
-    "name": "Prime",
+    "name": "We Sport TV",
     "group": "رياضة",
-    "url": "https://mn-nl.mncdn.com/primetv/live/index.m3u8",
-    "note": "قناة مفتوحة — سوريا",
-    "logo": "https://prime1tv.com/wp-content/uploads/2025/12/7-1.png"
+    "url": "http://forever.megogo.xyz/iptv/QGB4M3H62GC7E3/2471/index.m3u8",
+    "note": "قناة مفتوحة — دولية",
+    "logo": "https://i.imgur.com/vJZgpOb.png"
   },
   {
     "name": "الجزيرة",
