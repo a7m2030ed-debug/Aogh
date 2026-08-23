@@ -23,10 +23,30 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # الاختبار يعمل على كل دفعة بلا أسرار. فصله عن النشر مقصود: لو كان
+  # الاثنان مهمّة واحدة لظهرت علامة حمراء عند كل دفعة قبل إضافة الأسرار،
+  # فتُخفي الفشل الحقيقي حين يقع.
+  test:
+    name: اختبار منطق الوسيط
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      # التقليم والتخزين ورفض المدخلات الخاطئة والسلوك بلا مفتاح — كلها
+      # بلا لمس API-Football.
+      - working-directory: Proxy
+        run: node worker.test.mjs
+
   deploy:
     name: رفع الوسيط وفحصه
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # بيدك وحدها: النشر يمسّ ما يراه كل المستخدمين.
+    if: github.event_name == 'workflow_dispatch'
+    needs: test
 
     steps:
       - uses: actions/checkout@v4
@@ -50,12 +70,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-
-      # منطق الوسيط يُختبر قبل رفعه: التقليم والتخزين ورفض المدخلات
-      # الخاطئة والسلوك بلا مفتاح — كلها بلا لمس API-Football.
-      - name: اختبار منطق الوسيط
-        working-directory: Proxy
-        run: node worker.test.mjs
 
       # المفتاح يُرسل سرّاً إلى Cloudflare ولا يُكتب في أي ملف داخل المستودع.
       - name: رفع المفتاح ثم نشر الوسيط
