@@ -53,7 +53,7 @@ struct MatchDetailView: View {
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(KT.textSecondary)
                 if let round = match.round, !round.isEmpty {
-                    Text("• الجولة \(round)")
+                    Text("• " + L.s("round_no", round))
                         .font(.system(size: 12))
                         .foregroundStyle(KT.textFaint)
                 }
@@ -86,7 +86,7 @@ struct MatchDetailView: View {
                     }
 
                     if match.isLive {
-                        LiveBadge(text: match.progress ?? "مباشر")
+                        LiveBadge(text: match.progress ?? L.s("status_live"))
                     } else {
                         Text(match.status.label)
                             .font(.system(size: 11, weight: .semibold))
@@ -130,7 +130,7 @@ struct MatchDetailView: View {
     private var actions: some View {
         VStack(spacing: 10) {
             if let broadcaster = broadcaster, let url = broadcaster.openURL {
-                actionButton(title: "شاهد على \(broadcaster.name)",
+                actionButton(title: L.s("watch_on", broadcaster.name),
                              icon: "play.rectangle.fill",
                              prominent: true) {
                     openURL(url)
@@ -143,12 +143,12 @@ struct MatchDetailView: View {
             }
 
             HStack(spacing: 10) {
-                actionButton(title: "القنوات المفتوحة",
+                actionButton(title: L.s("open_channels"),
                              icon: "play.tv.fill",
                              prominent: broadcaster == nil) {
                     router.openChannels()
                 }
-                actionButton(title: "أخبار المباراة", icon: "newspaper.fill", prominent: false) {
+                actionButton(title: L.s("match_news"), icon: "newspaper.fill", prominent: false) {
                     router.openNews(query: "\(match.homeName) \(match.awayName)")
                 }
             }
@@ -188,23 +188,23 @@ struct MatchDetailView: View {
     private var details: some View {
         VStack(spacing: 0) {
             if let kickoff = match.kickoff {
-                detailRow(icon: "calendar", title: "الموعد",
+                detailRow(icon: "calendar", title: L.s("detail_kickoff"),
                           value: "\(KTDate.fullDay.string(from: kickoff)) — \(KTDate.time(kickoff))")
                 divider
             }
             if let venue = match.venue, !venue.isEmpty {
-                detailRow(icon: "mappin.and.ellipse", title: "الملعب", value: venue)
+                detailRow(icon: "mappin.and.ellipse", title: L.s("detail_venue"), value: venue)
                 divider
             }
-            detailRow(icon: "flag.2.crossed", title: "البطولة",
+            detailRow(icon: "flag.2.crossed", title: L.s("detail_competition"),
                       value: match.competitionTitle(arabic: settings.arabicNames))
             divider
             if let broadcaster = broadcaster {
-                detailRow(icon: "dot.radiowaves.left.and.right", title: "الناقل",
+                detailRow(icon: "dot.radiowaves.left.and.right", title: L.s("detail_broadcaster"),
                           value: broadcaster.name)
                 divider
             }
-            detailRow(icon: "clock.arrow.circlepath", title: "الحالة", value: match.status.label)
+            detailRow(icon: "clock.arrow.circlepath", title: L.s("detail_status"), value: match.status.label)
         }
         .ktCard(padding: 4, radius: 18)
     }
@@ -239,6 +239,6 @@ struct MatchDetailView: View {
     private var countdownText: String? {
         guard match.status == .scheduled, let kickoff = match.kickoff else { return nil }
         _ = tick // يعيد الحساب مع كل نبضة مؤقّت
-        return KTDate.countdown(to: kickoff).map { "تبدأ \($0)" }
+        return KTDate.countdown(to: kickoff).map { L.s("starts_in", $0) }
     }
 }

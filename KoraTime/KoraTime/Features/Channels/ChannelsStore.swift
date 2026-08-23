@@ -80,13 +80,13 @@ final class ChannelsStore {
                 let data = try await HTTPClient.shared.data(from: url, maxAge: 60 * 30)
                 let parsed = ChannelsStore.parse(data: data, name: source.name)
                 if parsed.isEmpty {
-                    loadErrors.append("«\(source.name)»: لم يُعثر على قنوات في هذه القائمة.")
+                    loadErrors.append(L.s("playlist_no_channels", source.name))
                 } else {
                     collected.append(contentsOf: parsed)
                 }
             } catch {
                 let reason = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
-                loadErrors.append("«\(source.name)»: \(reason)")
+                loadErrors.append(L.s("playlist_error", source.name, reason))
             }
         }
 

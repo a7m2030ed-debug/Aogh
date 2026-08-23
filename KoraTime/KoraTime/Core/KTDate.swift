@@ -1,10 +1,19 @@
 import Foundation
 
-/// كل التواريخ في التطبيق تمرّ من هنا: تقويم ميلادي، لغة عربية، أرقام لاتينية،
-/// وتوقيت جهاز المستخدم.
+/// كل التواريخ في التطبيق تمرّ من هنا: تقويم ميلادي، لغة الواجهة، أرقام
+/// لاتينية، وتوقيت جهاز المستخدم.
 enum KTDate {
 
-    static let locale = Locale(identifier: "ar_SA@calendar=gregorian;numbers=latn")
+    /// اللغة تتبدّل من الإعدادات، والمحوّلات مكلفة الإنشاء — فنبنيها مرة
+    /// لكل لغة ونحتفظ بها حتى يتبدّل الاختيار.
+    private static var cachedLang: Lang?
+    private static var cache: [String: DateFormatter] = [:]
+
+    static var locale: Locale {
+        L.current == .ar
+            ? Locale(identifier: "ar_SA@calendar=gregorian;numbers=latn")
+            : Locale(identifier: "en_US@calendar=gregorian")
+    }
 
     static var calendar: Calendar {
         var calendar = Calendar(identifier: .gregorian)
@@ -13,14 +22,23 @@ enum KTDate {
         return calendar
     }
 
-    // MARK: - محوّلات ثابتة (إنشاء DateFormatter مكلف، فنُنشئه مرة واحدة)
+    // MARK: - محوّلات العرض
 
     private static func make(_ format: String, utc: Bool = false) -> DateFormatter {
+        let lang = L.current
+        if cachedLang != lang {
+            cachedLang = lang
+            cache.removeAll()
+        }
+        let key = utc ? "utc:\(format)" : format
+        if let existing = cache[key] { return existing }
+
         let formatter = DateFormatter()
         formatter.locale = locale
         formatter.calendar = Calendar(identifier: .gregorian)
         formatter.timeZone = utc ? TimeZone(identifier: "UTC") : .current
         formatter.dateFormat = format
+        cache[key] = formatter
         return formatter
     }
 
@@ -34,38 +52,38 @@ enum KTDate {
         return formatter
     }()
 
-    static let clock = make("HH:mm")
-    static let weekday = make("EEEE")
-    static let shortWeekday = make("EEE")
-    static let dayNumber = make("d")
-    static let shortMonth = make("MMM")
-    static let fullDay = make("EEEE d MMMM yyyy")
-    static let dayAndMonth = make("d MMMM")
+    static var clock: DateFormatter { make("HH:mm") }
+    static var weekday: DateFormatter { make("EEEE") }
+    static var shortWeekday: DateFormatter { make("EEE") }
+    static var dayNumber: DateFormatter { make("d") }
+    static var shortMonth: DateFormatter { make("MMM") }
+    static var fullDay: DateFormatter { make("EEEE d MMMM yyyy") }
+    static var dayAndMonth: DateFormatter { make("d MMMM") }
 
-    private static let relative: RelativeDateTimeFormatter = {
+    private static var relative: RelativeDateTimeFormatter {
         let formatter = RelativeDateTimeFormatter()
         formatter.locale = locale
         formatter.calendar = Calendar(identifier: .gregorian)
         formatter.unitsStyle = .full
         return formatter
-    }()
+    }
 
     // MARK: - عرض
 
     /// "اليوم" / "أمس" / "غداً" وإلا اسم اليوم مع تاريخه.
     static func dayLabel(_ date: Date) -> String {
         let cal = calendar
-        if cal.isDateInToday(date) { return "اليوم" }
-        if cal.isDateInYesterday(date) { return "أمس" }
-        if cal.isDateInTomorrow(date) { return "غداً" }
+        if cal.isDateInToday(date) { return L.s("today") }
+        if cal.isDateInYesterday(date) { return L.s("yesterday") }
+        if cal.isDateInTomorrow(date) { return L.s("tomorrow") }
         return "\(weekday.string(from: date)) \(dayAndMonth.string(from: date))"
     }
 
     static func shortDayLabel(_ date: Date) -> String {
         let cal = calendar
-        if cal.isDateInToday(date) { return "اليوم" }
-        if cal.isDateInYesterday(date) { return "أمس" }
-        if cal.isDateInTomorrow(date) { return "غداً" }
+        if cal.isDateInToday(date) { return L.s("today") }
+        if cal.isDateInYesterday(date) { return L.s("yesterday") }
+        if cal.isDateInTomorrow(date) { return L.s("tomorrow") }
         return shortWeekday.string(from: date)
     }
 
@@ -76,7 +94,7 @@ enum KTDate {
     /// "قبل ٣ ساعات" للأخبار.
     static func ago(_ date: Date) -> String {
         let seconds = Date().timeIntervalSince(date)
-        if seconds < 60 { return "الآن" }
+        if seconds < 60 { return L.s("just_now") }
         return relative.localizedString(for: date, relativeTo: Date())
     }
 
@@ -87,9 +105,9 @@ enum KTDate {
         let days = seconds / 86_400
         let hours = (seconds % 86_400) / 3_600
         let minutes = (seconds % 3_600) / 60
-        if days > 0 { return "بعد \(days) ي \(hours) س" }
-        if hours > 0 { return "بعد \(hours) س \(minutes) د" }
-        return "بعد \(minutes) د"
+        if days > 0 { return L.s("in_days_hours", days, hours) }
+        if hours > 0 { return L.s("in_hours_minutes", hours, minutes) }
+        return L.s("in_minutes", minutes)
     }
 
     // MARK: - تحليل

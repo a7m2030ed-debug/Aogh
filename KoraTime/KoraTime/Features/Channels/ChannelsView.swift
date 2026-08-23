@@ -7,7 +7,6 @@ struct ChannelsView: View {
     @Environment(AppSettings.self) private var settings
     @Environment(ChannelsStore.self) private var store
     @Environment(PlayerController.self) private var player
-    @Environment(MatchesStore.self) private var matches
     @Environment(AppRouter.self) private var router
     @Environment(\.openURL) private var openURL
 
@@ -15,6 +14,9 @@ struct ChannelsView: View {
     @State private var isFullscreen = false
     @State private var showControls = true
     @State private var hideControlsWork: Task<Void, Never>?
+
+    /// مهلة اختفاء الأزرار — قصيرة كما في مشغّلات الفيديو المعروفة.
+    private let controlsTimeout: UInt64 = 3
 
     var body: some View {
         GeometryReader { geometry in
@@ -45,17 +47,31 @@ struct ChannelsView: View {
         }
         .toolbar(isFullscreen ? .hidden : .automatic, for: .tabBar)
         .statusBarHidden(isFullscreen)
+        .persistentSystemOverlays(isFullscreen ? .hidden : .automatic)
         .task {
             await store.loadIfNeeded()
             startPlaybackIfNeeded()
-            matches.loadIfNeeded()
         }
         .onChange(of: router.pendingChannelID) { _, newValue in
             guard let newValue = newValue, let channel = store.channel(withID: newValue) else { return }
             select(channel)
             router.pendingChannelID = nil
         }
-        .onDisappear { hideControlsWork?.cancel() }
+        .onChange(of: isFullscreen) { _, full in
+            // ملء الشاشة يبدأ بصورة نظيفة بلا أزرار — لمسة واحدة تُعيدها،
+            // ويدور الجهاز عرضياً لأن البثّ أعرض من أن يُعرض طولياً.
+            if full {
+                showControls = false
+                ScreenOrientation.request(.landscape)
+            } else {
+                ScreenOrientation.request(.portrait)
+                revealControls()
+            }
+        }
+        .onDisappear {
+            hideControlsWork?.cancel()
+            if isFullscreen { ScreenOrientation.request(.portrait) }
+        }
     }
 
     // MARK: - المشغّل
@@ -81,6 +97,10 @@ struct ChannelsView: View {
                 idlePlaceholder
             }
 
+            if player.isCasting {
+                castingOverlay
+            }
+
             if player.isBuffering && player.errorText == nil {
                 ProgressView()
                     .progressViewStyle(.circular)
@@ -100,8 +120,12 @@ struct ChannelsView: View {
         .modifier(VideoBoxShape(fill: isLandscape || isFullscreen))
         .contentShape(Rectangle())
         .onTapGesture {
-            withAnimation(.easeInOut(duration: 0.18)) { showControls.toggle() }
-            if showControls { scheduleControlsHide() }
+            if showControls {
+                hideControlsWork?.cancel()
+                withAnimation(.easeInOut(duration: 0.18)) { showControls = false }
+            } else {
+                revealControls()
+            }
         }
     }
 
@@ -110,10 +134,29 @@ struct ChannelsView: View {
             Image(systemName: "play.tv")
                 .font(.system(size: 36, weight: .light))
                 .foregroundStyle(.white.opacity(0.5))
-            Text("اختر قناة من القائمة")
+            Text(L.s("pick_channel"))
                 .font(.system(size: 13))
                 .foregroundStyle(.white.opacity(0.65))
         }
+    }
+
+    /// البثّ خرج إلى التلفاز: الصورة هناك، وهنا سطر يشرح ما يجري.
+    private var castingOverlay: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "airplayvideo")
+                .font(.system(size: 30, weight: .light))
+                .foregroundStyle(KT.accent)
+            Text(L.s("casting_to"))
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(.white)
+            if let channel = player.channel {
+                Text(channel.name)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.white.opacity(0.7))
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black.opacity(0.9))
     }
 
     private func errorOverlay(_ message: String) -> some View {
@@ -130,7 +173,7 @@ struct ChannelsView: View {
             Button {
                 player.retry()
             } label: {
-                Label("إعادة المحاولة", systemImage: "arrow.clockwise")
+                Label(L.s("retry"), systemImage: "arrow.clockwise")
                     .font(.system(size: 12, weight: .bold))
                     .padding(.horizontal, 14)
                     .padding(.vertical, 7)
@@ -182,6 +225,11 @@ struct ChannelsView: View {
                     player.fillScreen.toggle()
                     scheduleControlsHide()
                 }
+                // عكس البثّ على التلفاز: قائمة النظام تعرض الأجهزة المتاحة.
+                RoutePickerButton()
+                    .frame(width: 32, height: 32)
+                    .background(Circle().fill(.black.opacity(0.35)))
+                    .accessibilityLabel(L.s("cast_device"))
 
                 Spacer()
 
@@ -193,8 +241,8 @@ struct ChannelsView: View {
                 }
                 controlButton(isFullscreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right") {
                     withAnimation(.snappy) { isFullscreen.toggle() }
-                    scheduleControlsHide()
                 }
+                .accessibilityLabel(L.s(isFullscreen ? "minimize" : "fullscreen"))
             }
             .padding(.horizontal, 10)
             .padding(.bottom, 8)
@@ -221,14 +269,12 @@ struct ChannelsView: View {
 
     // MARK: - تحت المشغّل (الوضع العمودي)
 
+    /// لا جدول مباريات هنا: طُلب صراحةً أن يبقى ما تحت البثّ للقناة وحدها.
     private var belowPlayer: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 if let channel = player.channel {
                     nowPlayingCard(channel)
-                }
-                if !todayMatches.isEmpty {
-                    matchesStrip
                 }
                 officialBroadcastersCard
                 if !store.hasUserChannels {
@@ -266,25 +312,10 @@ struct ChannelsView: View {
         .ktCard(padding: 12, radius: 16)
     }
 
-    private var matchesStrip: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("مباريات اليوم")
-                .font(.system(size: 13, weight: .bold))
-                .foregroundStyle(KT.text)
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(todayMatches) { match in
-                        CompactMatchCard(match: match, arabicNames: settings.arabicNames)
-                    }
-                }
-            }
-        }
-    }
-
     /// البطولات التي لا يمكن بثّها هنا، مع زر يفتح تطبيق صاحب الحق.
     private var officialBroadcastersCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("البطولات الحصرية")
+            Text(L.s("exclusive_competitions"))
                 .font(.system(size: 13, weight: .bold))
                 .foregroundStyle(KT.text)
             ForEach(Broadcasters.all) { broadcaster in
@@ -296,7 +327,8 @@ struct ChannelsView: View {
                         Button {
                             openURL(url)
                         } label: {
-                            Label("فتح \(broadcaster.name)", systemImage: "arrow.up.forward.app.fill")
+                            Label(L.s("open_broadcaster", broadcaster.name),
+                                  systemImage: "arrow.up.forward.app.fill")
                                 .font(.system(size: 13, weight: .bold))
                                 .foregroundStyle(KT.accent)
                         }
@@ -311,16 +343,16 @@ struct ChannelsView: View {
 
     private var addChannelsHint: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("قنواتك الخاصة")
+            Text(L.s("your_channels"))
                 .font(.system(size: 13, weight: .bold))
                 .foregroundStyle(KT.text)
-            Text("التطبيق لا يأتي بقنوات مشفّرة. أضف رابط قائمتك (M3U أو JSON) من الإعدادات وستظهر هنا مباشرة.")
+            Text(L.s("your_channels_hint"))
                 .font(.system(size: 12))
                 .foregroundStyle(KT.textSecondary)
             Button {
                 router.openSettings(focus: .playlists)
             } label: {
-                Label("إضافة قائمة قنوات", systemImage: "plus.circle.fill")
+                Label(L.s("add_playlist"), systemImage: "plus.circle.fill")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(KT.accent)
             }
@@ -328,13 +360,6 @@ struct ChannelsView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .ktCard(padding: 14, radius: 16)
-    }
-
-    private var todayMatches: [Match] {
-        let all = matches.allMatchesForDay
-        let live = all.filter(\.isLive)
-        let upcoming = all.filter { $0.status == .scheduled }
-        return Array((live + upcoming).prefix(12))
     }
 
     // MARK: - قائمة القنوات
@@ -371,7 +396,7 @@ struct ChannelsView: View {
     private func railHeader(compact: Bool) -> some View {
         VStack(spacing: 6) {
             HStack(spacing: 4) {
-                Text("القنوات")
+                Text(L.s("channels_title"))
                     .font(.system(size: compact ? 12 : 14, weight: .heavy))
                     .foregroundStyle(KT.text)
                 Spacer(minLength: 2)
@@ -381,13 +406,13 @@ struct ChannelsView: View {
             }
 
             Menu {
-                Button("الكل") { store.selectedGroup = nil }
+                Button(L.s("filter_all")) { store.selectedGroup = nil }
                 ForEach(store.groups, id: \.self) { group in
                     Button(group) { store.selectedGroup = group }
                 }
             } label: {
                 HStack(spacing: 4) {
-                    Text(store.selectedGroup ?? "كل الفئات")
+                    Text(store.selectedGroup ?? L.s("all_groups"))
                         .font(.system(size: 11, weight: .semibold))
                         .lineLimit(1)
                     Image(systemName: "chevron.down")
@@ -411,13 +436,13 @@ struct ChannelsView: View {
             Image(systemName: "list.and.film")
                 .font(.system(size: 22))
                 .foregroundStyle(KT.textFaint)
-            Text("لا قنوات")
+            Text(L.s("no_channels"))
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(KT.textSecondary)
             Button {
                 router.openSettings(focus: .playlists)
             } label: {
-                Text("أضف قائمة")
+                Text(L.s("add_list"))
                     .font(.system(size: 11, weight: .bold))
                     .foregroundStyle(KT.accent)
             }
@@ -433,13 +458,13 @@ struct ChannelsView: View {
             LazyVStack(spacing: 8) {
                 HStack {
                     Menu {
-                        Button("الكل") { store.selectedGroup = nil }
+                        Button(L.s("filter_all")) { store.selectedGroup = nil }
                         ForEach(store.groups, id: \.self) { group in
                             Button(group) { store.selectedGroup = group }
                         }
                     } label: {
                         HStack(spacing: 5) {
-                            Text(store.selectedGroup ?? "كل الفئات")
+                            Text(store.selectedGroup ?? L.s("all_groups"))
                                 .font(.system(size: 12, weight: .bold))
                             Image(systemName: "chevron.down")
                                 .font(.system(size: 9, weight: .bold))
@@ -447,7 +472,7 @@ struct ChannelsView: View {
                         .foregroundStyle(KT.accent)
                     }
                     Spacer()
-                    Text("\(store.visibleChannels.count) قناة")
+                    Text("\(store.visibleChannels.count)")
                         .font(.system(size: 11))
                         .foregroundStyle(KT.textFaint)
                 }
@@ -476,20 +501,29 @@ struct ChannelsView: View {
     private func select(_ channel: Channel) {
         player.play(channel)
         settings.lastChannelID = channel.id
-        showControls = true
-        scheduleControlsHide()
+        revealControls()
     }
 
+    /// القناة قد تكون محضَّرة مسبقاً عند فتح التطبيق، فيكفي أن نُشغّلها.
     private func startPlaybackIfNeeded() {
-        guard settings.autoPlayOnOpen, player.channel == nil else { return }
+        guard settings.autoPlayOnOpen else { return }
+        if player.channel != nil {
+            player.resume()
+            return
+        }
         guard let channel = store.startupChannel else { return }
         select(channel)
+    }
+
+    private func revealControls() {
+        withAnimation(.easeInOut(duration: 0.18)) { showControls = true }
+        scheduleControlsHide()
     }
 
     private func scheduleControlsHide() {
         hideControlsWork?.cancel()
         hideControlsWork = Task {
-            try? await Task.sleep(nanoseconds: 4 * 1_000_000_000)
+            try? await Task.sleep(nanoseconds: controlsTimeout * 1_000_000_000)
             guard !Task.isCancelled else { return }
             withAnimation(.easeInOut(duration: 0.25)) { showControls = false }
         }
@@ -505,7 +539,7 @@ private struct VideoBoxShape: ViewModifier {
         if fill {
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .ignoresSafeArea(edges: .bottom)
+                .ignoresSafeArea()
         } else {
             content
                 .aspectRatio(16.0 / 9.0, contentMode: .fit)

@@ -15,6 +15,7 @@ struct SettingsView: View {
     @State private var newPlaylistURL = ""
     @State private var showAddFeed = false
     @State private var showAddPlaylist = false
+    @State private var showFavorites = false
 
     var body: some View {
         @Bindable var settings = settings
@@ -24,10 +25,12 @@ struct SettingsView: View {
                 KTBackground()
 
                 VStack(spacing: 0) {
-                    KTScreenTitle(title: "الإعدادات",
-                                  subtitle: "مصادر البيانات، قنواتك، وخلاصات الأخبار")
+                    KTScreenTitle(title: L.s("settings_title"),
+                                  subtitle: L.s("settings_subtitle"))
 
                     Form {
+                        languageSection(settings: settings)
+                        favoritesSection
                         matchesSection(settings: settings)
                         channelsSection(settings: settings)
                         feedsSection(settings: settings)
@@ -44,8 +47,8 @@ struct SettingsView: View {
         .onChange(of: router.settingsFocus) { _, _ in applyFocus() }
         .sheet(isPresented: $showAddFeed) {
             AddSourceSheet(
-                title: "إضافة خلاصة أخبار",
-                hint: "الصق رابط RSS لأي موقع رياضي تتابعه.",
+                title: L.s("add_feed"),
+                hint: L.s("add_feed_hint"),
                 name: $newFeedName,
                 urlString: $newFeedURL
             ) {
@@ -58,8 +61,8 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $showAddPlaylist) {
             AddSourceSheet(
-                title: "إضافة قائمة قنوات",
-                hint: "رابط قائمة M3U أو ملف JSON فيه قنواتك. القوائم لا تُرفَع لأي خادم — تبقى على جهازك.",
+                title: L.s("add_playlist"),
+                hint: L.s("add_playlist_hint"),
                 name: $newPlaylistName,
                 urlString: $newPlaylistURL
             ) {
@@ -69,6 +72,62 @@ struct SettingsView: View {
                 Task { await channelsStore.reload() }
             }
         }
+        .sheet(isPresented: $showFavorites) {
+            OnboardingView(settings: settings) {
+                showFavorites = false
+                // التفضيلات الجديدة تعني ترتيباً وأخباراً مختلفة
+                matchesStore.invalidate()
+                newsStore.invalidate()
+                Task { await newsStore.reload() }
+            }
+        }
+    }
+
+    // MARK: - اللغة
+
+    /// العربية أولاً في القائمة لأنها لغة التطبيق الافتراضية. تغيير اللغة
+    /// يعيد بناء الشجرة كاملة عبر `id` في الجذر، فلا تبقى شاشة بلغة قديمة.
+    private func languageSection(settings: AppSettings) -> some View {
+        Section {
+            HStack(spacing: 8) {
+                ForEach(Lang.allCases) { option in
+                    Button {
+                        settings.language = option
+                    } label: {
+                        Text(option.label)
+                            .font(.system(size: 13, weight: settings.language == option ? .bold : .medium))
+                            .foregroundStyle(settings.language == option ? KT.accent : KT.textSecondary)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 8)
+                            .background(
+                                Capsule().fill(settings.language == option
+                                               ? KT.accent.opacity(0.16)
+                                               : KT.card)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+                Spacer()
+            }
+        } header: {
+            Text(L.s("group_language"))
+        } footer: {
+            Text(L.s("language_hint"))
+        }
+    }
+
+    // MARK: - تفضيلاتي
+
+    private var favoritesSection: some View {
+        Section {
+            Button(L.s("edit_prefs")) { showFavorites = true }
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(KT.accent)
+        } header: {
+            Text(L.s("my_prefs"))
+        } footer: {
+            Text(L.s("my_prefs_hint"))
+        }
     }
 
     // MARK: - المباريات
@@ -77,7 +136,18 @@ struct SettingsView: View {
         @Bindable var settings = settings
 
         return Section {
-            Picker("مصدر البيانات", selection: $settings.matchesSource) {
+            LabeledContent(L.s("apifootball_key")) {
+                TextField("", text: $settings.apiFootballKey)
+                    .multilineTextAlignment(.leading)
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.never)
+                    .onSubmit { matchesStore.invalidate() }
+            }
+            Text(L.s("apifootball_hint"))
+                .font(.system(size: 11))
+                .foregroundStyle(KT.textFaint)
+
+            Picker(L.s("matches_source"), selection: $settings.matchesSource) {
                 ForEach(MatchesSource.allCases) { source in
                     Text(source.title).tag(source)
                 }
@@ -92,7 +162,7 @@ struct SettingsView: View {
 
             switch settings.matchesSource {
             case .sportsDB:
-                LabeledContent("مفتاح TheSportsDB") {
+                LabeledContent(L.s("sportsdb_key")) {
                     TextField("123", text: $settings.sportsDBKey)
                         .multilineTextAlignment(.leading)
                         .autocorrectionDisabled()
@@ -100,7 +170,7 @@ struct SettingsView: View {
                         .onSubmit { matchesStore.invalidate() }
                 }
             case .footballData:
-                LabeledContent("مفتاح football-data") {
+                LabeledContent(L.s("footballdata_key")) {
                     TextField("X-Auth-Token", text: $settings.footballDataToken)
                         .multilineTextAlignment(.leading)
                         .autocorrectionDisabled()
@@ -110,15 +180,15 @@ struct SettingsView: View {
             }
 
             if let url = settings.matchesSource.signupURL {
-                Button("كيف أحصل على مفتاح مجاني؟") { openURL(url) }
+                Button(L.s("signup_key")) { openURL(url) }
                     .font(.system(size: 13))
             }
 
-            Toggle("تحديث تلقائي للنتائج المباشرة", isOn: $settings.autoRefreshLive)
+            Toggle(L.s("auto_refresh_live"), isOn: $settings.autoRefreshLive)
         } header: {
-            Text("المباريات")
+            Text(L.s("matches_title"))
         } footer: {
-            Text("المفتاح التجريبي المشترك محدود الطلبات. سجّل مفتاحاً باسمك لتحديث أسرع وتغطية أوسع.")
+            Text(L.s("sportsdb_hint"))
         }
     }
 
@@ -128,13 +198,13 @@ struct SettingsView: View {
         @Bindable var settings = settings
 
         return Section {
-            Picker("مكان قائمة القنوات", selection: $settings.railPlacement) {
+            Picker(L.s("rail_placement"), selection: $settings.railPlacement) {
                 ForEach(RailPlacement.allCases) { placement in
                     Text(placement.title).tag(placement)
                 }
             }
-            Toggle("تشغيل آخر قناة عند الفتح", isOn: $settings.autoPlayOnOpen)
-            Toggle("إظهار القنوات التجريبية", isOn: $settings.showDemoChannels)
+            Toggle(L.s("autoplay"), isOn: $settings.autoPlayOnOpen)
+            Toggle(L.s("show_demo"), isOn: $settings.showDemoChannels)
                 .onChange(of: settings.showDemoChannels) { _, _ in
                     Task { await channelsStore.reload() }
                 }
@@ -155,7 +225,7 @@ struct SettingsView: View {
             Button {
                 showAddPlaylist = true
             } label: {
-                Label("إضافة قائمة قنوات", systemImage: "plus.circle.fill")
+                Label(L.s("add_playlist"), systemImage: "plus.circle.fill")
             }
 
             if !channelsStore.loadErrors.isEmpty {
@@ -166,9 +236,9 @@ struct SettingsView: View {
                 }
             }
         } header: {
-            Text("القنوات")
+            Text(L.s("channels_title"))
         } footer: {
-            Text("التطبيق لا يوفّر قنوات مشفّرة. أضف روابط بثّك الخاصة أو اشتراكك الرسمي، وستظهر في تبويب القنوات مباشرة.")
+            Text(L.s("channels_footer"))
         }
     }
 
@@ -201,19 +271,19 @@ struct SettingsView: View {
             Button {
                 showAddFeed = true
             } label: {
-                Label("إضافة خلاصة", systemImage: "plus.circle.fill")
+                Label(L.s("add_feed"), systemImage: "plus.circle.fill")
             }
 
-            Button("استعادة الخلاصات الافتراضية") {
+            Button(L.s("restore_feeds")) {
                 settings.resetFeeds()
                 newsStore.invalidate()
                 Task { await newsStore.reload() }
             }
             .foregroundStyle(KT.gold)
         } header: {
-            Text("الأخبار")
+            Text(L.s("news_title"))
         } footer: {
-            Text("الخلاصات الافتراضية تجمع أخبار المواقع الرياضية العربية عبر أخبار Google، مع خلاصات مباشرة من مواقع معروفة.")
+            Text(L.s("feeds_footer"))
         }
     }
 
@@ -222,19 +292,19 @@ struct SettingsView: View {
     private func appearanceSection(settings: AppSettings) -> some View {
         @Bindable var settings = settings
 
-        return Section("العرض") {
-            Toggle("تعريب أسماء الفرق والبطولات", isOn: $settings.arabicNames)
+        return Section(L.s("settings_display")) {
+            Toggle(L.s("arabic_names"), isOn: $settings.arabicNames)
         }
     }
 
     // MARK: - عن التطبيق
 
     private var aboutSection: some View {
-        Section("عن التطبيق") {
-            LabeledContent("الإصدار", value: Bundle.appVersion)
-            LabeledContent("المباريات", value: matchesStore.attribution)
-            LabeledContent("الأخبار", value: "خلاصات RSS")
-            Text("كورة تايم — مواعيد المباريات ونتائجها، وقنواتك، وأخبار الكرة في مكان واحد.")
+        Section(L.s("about")) {
+            LabeledContent(L.s("settings_version"), value: Bundle.appVersion)
+            LabeledContent(L.s("matches_title"), value: matchesStore.attribution)
+            LabeledContent(L.s("news_title"), value: L.s("settings_news_rss"))
+            Text(L.s("about_desc"))
                 .font(.system(size: 11))
                 .foregroundStyle(KT.textFaint)
         }
@@ -303,7 +373,7 @@ private struct AddSourceSheet: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("الاسم", text: $name)
+                    TextField(L.s("field_name"), text: $name)
                     TextField("https://…", text: $urlString)
                         .keyboardType(.URL)
                         .autocorrectionDisabled()
@@ -316,10 +386,10 @@ private struct AddSourceSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("إلغاء") { dismiss() }
+                    Button(L.s("action_cancel")) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("حفظ") {
+                    Button(L.s("action_save")) {
                         onSave()
                         dismiss()
                     }

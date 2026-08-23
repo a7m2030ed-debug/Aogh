@@ -24,15 +24,19 @@ struct KoraTimeApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView()
+            AppGate()
                 .environment(settings)
                 .environment(router)
                 .environment(matchesStore)
                 .environment(channelsStore)
                 .environment(newsStore)
                 .environment(player)
-                .environment(\.layoutDirection, .rightToLeft)
+                // الاتجاه يتبع اللغة: يمين‑يسار للعربية ويسار‑يمين للإنجليزية
+                .environment(\.layoutDirection, settings.language.isRTL ? .rightToLeft : .leftToRight)
                 .environment(\.locale, KTDate.locale)
+                // تبديل اللغة يعيد بناء الشجرة كاملة، كما يفعل أندرويد
+                // بإعادة إنشاء النشاط — وإلا بقيت شاشات بنصّ اللغة السابقة.
+                .id(settings.language)
                 .preferredColorScheme(.dark)
                 .tint(KT.accent)
         }
@@ -58,5 +62,42 @@ struct KoraTimeApp: App {
         UINavigationBar.appearance().standardAppearance = navigationBar
         UINavigationBar.appearance().scrollEdgeAppearance = navigationBar
         UINavigationBar.appearance().compactAppearance = navigationBar
+    }
+}
+
+
+/// يفصل أول تشغيل عن بقية التطبيق: شاشة التفضيلات مرّة واحدة ثم التبويبات.
+private struct AppGate: View {
+
+    @Environment(AppSettings.self) private var settings
+    @Environment(MatchesStore.self) private var matches
+    @Environment(NewsStore.self) private var news
+    @Environment(ChannelsStore.self) private var channels
+    @Environment(PlayerController.self) private var player
+    @State private var onboarded: Bool?
+
+    var body: some View {
+        @Bindable var settings = settings
+        Group {
+            if onboarded ?? settings.onboarded {
+                RootView()
+            } else {
+                OnboardingView(settings: settings) {
+                    onboarded = true
+                    // التفضيلات الجديدة تعني ترتيباً وأخباراً مختلفة
+                    matches.invalidate()
+                    news.reload()
+                }
+            }
+        }
+        // تحضير قناة البداية مع إقلاع التطبيق: البيان وأول مقطع يصلان
+        // بينما المستخدم في تبويب المباريات، فيفتح البثّ عنده بلا انتظار.
+        .task {
+            guard settings.autoPlayOnOpen else { return }
+            await channels.loadIfNeeded()
+            if let channel = channels.startupChannel {
+                player.preload(channel)
+            }
+        }
     }
 }

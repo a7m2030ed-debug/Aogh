@@ -4,14 +4,29 @@ import UIKit
 
 struct NewsView: View {
 
+    @Environment(AppSettings.self) private var settings
     @Environment(NewsStore.self) private var store
     @Environment(AppRouter.self) private var router
 
     @State private var draftQuery = ""
     @State private var reading: NewsItem?
 
-    private let topics = ["كرة القدم", "دوري روشن السعودي", "دوري أبطال أوروبا",
-                          "الهلال", "النصر", "الاتحاد", "الأهلي", "المنتخب السعودي", "انتقالات"]
+    /// مواضيع البحث السريع: فرق المستخدم ودورياته أولاً، فما اختاره في أول
+    /// تشغيل هو ما يجده هنا. ومن لم يختر يحصل على المواضيع العامة.
+    private var topics: [String] {
+        let lang = settings.language
+        let general = [L.s("topic_football"), L.s("topic_ksa_team"), L.s("topic_transfers")]
+        let teams = settings.favoriteTeams
+        let leagues = settings.favoriteLeagues.compactMap { Catalog.league($0)?.name(lang) }
+        guard !teams.isEmpty || !leagues.isEmpty else { return general }
+
+        var pool = Array(teams.prefix(6))
+        pool.append(contentsOf: leagues.prefix(4))
+        pool.append(contentsOf: general)
+
+        var seen = Set<String>()
+        return pool.filter { seen.insert($0).inserted }
+    }
 
     var body: some View {
         NavigationStack {
@@ -48,7 +63,7 @@ struct NewsView: View {
 
     private var header: some View {
         KTScreenTitle(
-            title: "الأخبار",
+            title: L.s("news_title"),
             subtitle: subtitle,
             trailing: AnyView(
                 Button {
@@ -63,16 +78,16 @@ struct NewsView: View {
     }
 
     private var subtitle: String {
-        if store.isSearching { return "نتائج البحث عن «\(store.searchQuery)»" }
-        if let updated = store.lastUpdated { return "آخر تحديث \(KTDate.time(updated))" }
-        return "من الخلاصات التي تتابعها"
+        if store.isSearching { return L.s("news_search_results", store.searchQuery) }
+        if let updated = store.lastUpdated { return L.s("last_updated", KTDate.time(updated)) }
+        return L.s("news_from_feeds")
     }
 
     private var searchBar: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(KT.textFaint)
-            TextField("ابحث عن فريق أو خبر", text: $draftQuery)
+            TextField(L.s("search_hint_news"), text: $draftQuery)
                 .submitLabel(.search)
                 .autocorrectionDisabled()
                 .foregroundStyle(KT.text)
@@ -99,7 +114,7 @@ struct NewsView: View {
     private var topicsRow: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                ChipButton(title: "متابعاتي", isSelected: !store.isSearching) {
+                ChipButton(title: L.s("news_my_feeds"), isSelected: !store.isSearching) {
                     draftQuery = ""
                     Task { await store.clearSearch() }
                 }
@@ -120,13 +135,13 @@ struct NewsView: View {
         ScrollView {
             LazyVStack(spacing: 12) {
                 if store.isLoading && store.items.isEmpty {
-                    KTLoading(title: "جارٍ جلب الأخبار…")
+                    KTLoading(title: L.s("loading_news"))
                 } else if store.items.isEmpty {
                     KTEmptyState(
                         icon: "newspaper",
-                        title: "لا توجد أخبار",
-                        message: store.feedErrors.first ?? "جرّب موضوعاً آخر أو أضف خلاصة من الإعدادات.",
-                        actionTitle: "إدارة الخلاصات",
+                        title: L.s("news_none"),
+                        message: store.feedErrors.first ?? L.s("news_try_other_or_add"),
+                        actionTitle: L.s("manage_feeds"),
                         action: { router.openSettings(focus: .feeds) }
                     )
                 } else {

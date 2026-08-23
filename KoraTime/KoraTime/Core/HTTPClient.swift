@@ -1,6 +1,6 @@
 import Foundation
 
-/// أخطاء التطبيق بصياغة عربية تُعرض للمستخدم مباشرة.
+/// أخطاء التطبيق بلغة الواجهة، تُعرض للمستخدم مباشرة.
 enum KTError: LocalizedError {
     case badURL(String)
     case http(Int)
@@ -11,26 +11,26 @@ enum KTError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .badURL(let value):
-            return "رابط غير صالح: \(value)"
+            return L.s("http_bad_url", value)
         case .http(let code):
             switch code {
             case 401, 403:
-                return "المصدر رفض الطلب (\(code)). تأكّد من مفتاح الـ API في الإعدادات."
+                return L.s("http_rejected", code)
             case 404:
-                return "المصدر غير موجود (404)."
+                return L.s("http_not_found")
             case 429:
-                return "تجاوزت حدّ الطلبات المسموح به (429). انتظر قليلاً ثم أعد المحاولة."
+                return L.s("http_rate_limited")
             case 500...599:
-                return "خادم المصدر لا يستجيب حالياً (\(code))."
+                return L.s("http_server_down", code)
             default:
-                return "تعذّر جلب البيانات (رمز \(code))."
+                return L.s("http_failed", code)
             }
         case .empty:
-            return "لا توجد بيانات في هذا المصدر."
+            return L.s("http_empty")
         case .decoding(let detail):
-            return "تعذّرت قراءة بيانات المصدر. \(detail)"
+            return L.s("http_decoding", detail)
         case .missingKey(let name):
-            return "أضف \(name) من الإعدادات لتفعيل هذا المصدر."
+            return L.s("http_missing_key", name)
         }
     }
 }

@@ -37,10 +37,8 @@ enum MatchesSource: String, CaseIterable, Identifiable, Codable {
 
     var subtitle: String {
         switch self {
-        case .sportsDB:
-            return "يعمل فوراً بدون تسجيل. تغطية واسعة للدوريات العربية والعالمية."
-        case .footballData:
-            return "دقّة أعلى للدوريات الأوروبية الكبرى. يحتاج مفتاحاً مجانياً."
+        case .sportsDB: return L.s("sportsdb_hint")
+        case .footballData: return L.s("footballdata_hint")
         }
     }
 
@@ -60,8 +58,8 @@ enum RailPlacement: String, CaseIterable, Identifiable, Codable {
 
     var title: String {
         switch self {
-        case .side: return "بجانب المشغّل"
-        case .below: return "تحت المشغّل"
+        case .side: return L.s("rail_side")
+        case .below: return L.s("rail_below")
         }
     }
 }
@@ -111,6 +109,28 @@ final class AppSettings {
         didSet { save(feeds, forKey: Keys.feeds) }
     }
 
+    // MARK: التفضيلات واللغة
+
+    /// اللغة المختارة. العربية افتراضياً مهما كانت لغة الجهاز.
+    var language: Lang {
+        didSet { store.set(language.rawValue, forKey: Keys.language) }
+    }
+    /// هل عُرضت شاشة التفضيلات؟ تظهر مرة واحدة عند أول تشغيل.
+    var onboarded: Bool {
+        didSet { store.set(onboarded, forKey: Keys.onboarded) }
+    }
+    /// الترتيب مقصود: أول دوري اختاره المستخدم يتصدّر قائمته.
+    var favoriteLeagues: [String] {
+        didSet { store.set(favoriteLeagues, forKey: Keys.favoriteLeagues) }
+    }
+    var favoriteTeams: [String] {
+        didSet { store.set(favoriteTeams, forKey: Keys.favoriteTeams) }
+    }
+    /// مفتاح API-Football: المصدر الوحيد المجاني الذي يغطّي روشن والكبرى.
+    var apiFootballKey: String {
+        didSet { store.set(apiFootballKey, forKey: Keys.apiFootballKey) }
+    }
+
     // MARK: - التخزين
 
     private let store: UserDefaults
@@ -127,6 +147,11 @@ final class AppSettings {
         static let lastChannelID = "channels.lastChannel"
         static let showDemoChannels = "channels.showDemo"
         static let feeds = "news.feeds"
+        static let language = "general.language"
+        static let onboarded = "general.onboarded"
+        static let favoriteLeagues = "general.favoriteLeagues"
+        static let favoriteTeams = "general.favoriteTeams"
+        static let apiFootballKey = "matches.apifootball.key"
     }
 
     init(store: UserDefaults = .standard) {
@@ -146,32 +171,68 @@ final class AppSettings {
 
         feeds = AppSettings.load([FeedSource].self, forKey: Keys.feeds, from: store)
             ?? AppSettings.defaultFeeds
+
+        language = Lang(rawValue: store.string(forKey: Keys.language) ?? "") ?? .ar
+        onboarded = store.bool(forKey: Keys.onboarded)
+        favoriteLeagues = store.stringArray(forKey: Keys.favoriteLeagues) ?? []
+        favoriteTeams = store.stringArray(forKey: Keys.favoriteTeams) ?? []
+        apiFootballKey = store.string(forKey: Keys.apiFootballKey) ?? ""
+    }
+
+    /// خلاصات مبنية على فرق المستخدم ودورياته؛ من لم يختر يبقى على العامة.
+    var personalFeeds: [FeedSource] {
+        let lang = language
+        let leagues = favoriteLeagues.compactMap { Catalog.league($0)?.name(lang) }
+        guard !favoriteTeams.isEmpty || !leagues.isEmpty else { return AppSettings.defaultFeeds }
+
+        // الفرق أخصّ من الدوريات فتتقدّم، والعدد محدود لأن كل خلاصة طلب مستقلّ
+        var names = Array(favoriteTeams.prefix(4))
+        names.append(contentsOf: leagues.prefix(3))
+        var built: [FeedSource] = names.map { name in
+            FeedSource(name: name,
+                       urlString: GoogleNews.url(for: name)?.absoluteString ?? "",
+                       isEnabled: true, isBuiltIn: true)
+        }
+        built.append(FeedSource(name: L.s("feed_bbc"),
+                                urlString: "https://feeds.bbci.co.uk/arabic/sports/rss.xml",
+                                isEnabled: true, isBuiltIn: true))
+        return built.filter { !$0.urlString.isEmpty }
+    }
+
+    /// يُستدعى بعد تغيير التفضيلات: يعيد بناء الخلاصات المبنيّة تلقائياً.
+    func rebuildFeedsFromFavorites() {
+        feeds = personalFeeds
     }
 
     /// المفتاح التجريبي المجاني المعلن من TheSportsDB — يكفي للتصفّح، ومحدود الطلبات.
     static let defaultSportsDBKey = "123"
 
+    /// تُحسب عند كل طلب لا مرة واحدة، فهي تتبع اللغة: أسماء الدوريات
+    /// تُطلب بلغة المستخدم، والبحث في أخبار Google يجري بها.
     static var defaultFeeds: [FeedSource] {
-        [
-            FeedSource(name: "أخبار كرة القدم (تجميع)",
-                       urlString: GoogleNews.url(for: "كرة القدم")?.absoluteString ?? "",
+        let lang = L.current
+        let roshn = Catalog.league("roshn")?.name(lang) ?? ""
+        let ucl = Catalog.league("ucl")?.name(lang) ?? ""
+        return [
+            FeedSource(name: L.s("feed_football_agg"),
+                       urlString: GoogleNews.url(for: L.s("topic_football"))?.absoluteString ?? "",
                        isEnabled: true, isBuiltIn: true),
-            FeedSource(name: "دوري روشن السعودي",
-                       urlString: GoogleNews.url(for: "دوري روشن السعودي")?.absoluteString ?? "",
+            FeedSource(name: roshn,
+                       urlString: GoogleNews.url(for: roshn)?.absoluteString ?? "",
                        isEnabled: true, isBuiltIn: true),
-            FeedSource(name: "دوري أبطال أوروبا",
-                       urlString: GoogleNews.url(for: "دوري أبطال أوروبا")?.absoluteString ?? "",
+            FeedSource(name: ucl,
+                       urlString: GoogleNews.url(for: ucl)?.absoluteString ?? "",
                        isEnabled: true, isBuiltIn: true),
-            FeedSource(name: "سوق الانتقالات",
-                       urlString: GoogleNews.url(for: "انتقالات كرة القدم صفقة")?.absoluteString ?? "",
+            FeedSource(name: L.s("feed_transfers"),
+                       urlString: GoogleNews.url(for: L.s("topic_transfers"))?.absoluteString ?? "",
                        isEnabled: false, isBuiltIn: true),
-            FeedSource(name: "BBC عربي — رياضة",
+            FeedSource(name: L.s("feed_bbc"),
                        urlString: "https://feeds.bbci.co.uk/arabic/sports/rss.xml",
                        isEnabled: true, isBuiltIn: true),
-            FeedSource(name: "سكاي نيوز عربية — رياضة",
+            FeedSource(name: L.s("feed_sky"),
                        urlString: "https://www.skynewsarabia.com/web/rss/95.xml",
                        isEnabled: false, isBuiltIn: true)
-        ]
+        ].filter { !$0.urlString.isEmpty && !$0.name.isEmpty }
     }
 
     func resetFeeds() {
@@ -182,7 +243,7 @@ final class AppSettings {
         let cleanName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let cleanURL = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanURL.isEmpty else { return }
-        feeds.append(FeedSource(name: cleanName.isEmpty ? "خلاصة مخصّصة" : cleanName,
+        feeds.append(FeedSource(name: cleanName.isEmpty ? L.s("my_feed") : cleanName,
                                 urlString: cleanURL))
     }
 
@@ -190,7 +251,7 @@ final class AppSettings {
         let cleanName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let cleanURL = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanURL.isEmpty else { return }
-        playlists.append(PlaylistSource(name: cleanName.isEmpty ? "قائمتي" : cleanName,
+        playlists.append(PlaylistSource(name: cleanName.isEmpty ? L.s("my_list") : cleanName,
                                         urlString: cleanURL))
     }
 

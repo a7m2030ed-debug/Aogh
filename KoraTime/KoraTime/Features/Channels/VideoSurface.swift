@@ -14,6 +14,25 @@ final class PlayerLayerView: UIView {
     }
 }
 
+/// تدوير الشاشة عند ملء الشاشة، كما تفعل مشغّلات الفيديو المعروفة: البثّ
+/// عرضه أكبر من طوله، فإبقاؤه طولياً يهدر نصف الشاشة.
+///
+/// النظام لا يقبل الطلب إلا إذا كان الاتجاه ضمن ما تدعمه الحزمة — وهي تدعم
+/// الطولي والعرضيين في Info.plist. وإن رُفض الطلب تبقى الصورة كما هي.
+enum ScreenOrientation {
+
+    static func request(_ orientations: UIInterfaceOrientationMask) {
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        guard let scene = scenes.first(where: { $0.activationState == .foregroundActive })
+                ?? scenes.first else { return }
+
+        scene.keyWindow?.rootViewController?.setNeedsUpdateOfSupportedInterfaceOrientations()
+        scene.requestGeometryUpdate(.iOS(interfaceOrientations: orientations)) { _ in
+            // الرفض ليس خطأً يستحقّ إزعاج المستخدم: تبقى الشاشة كما هي.
+        }
+    }
+}
+
 struct VideoSurface: UIViewRepresentable {
     let player: AVPlayer
     var gravity: AVLayerVideoGravity

@@ -2,7 +2,7 @@ import SwiftUI
 
 /// شارة "مباشر" بنبضة خفيفة.
 struct LiveBadge: View {
-    var text: String = "مباشر"
+    var text: String = L.s("status_live")
     var compact: Bool = false
     @State private var pulsing = false
 
@@ -145,7 +145,7 @@ struct KTEmptyState: View {
 }
 
 struct KTLoading: View {
-    var title: String = "جارٍ التحميل…"
+    var title: String = L.s("loading")
 
     var body: some View {
         VStack(spacing: 10) {
@@ -170,7 +170,7 @@ struct KTErrorView: View {
             Image(systemName: "wifi.exclamationmark")
                 .font(.system(size: 34, weight: .light))
                 .foregroundStyle(KT.gold)
-            Text("تعذّر جلب البيانات")
+            Text(L.s("fetch_failed"))
                 .font(.system(size: 16, weight: .bold))
                 .foregroundStyle(KT.text)
             Text(message)
@@ -180,7 +180,7 @@ struct KTErrorView: View {
                 .frame(maxWidth: 340)
             if let retry = retry {
                 Button(action: retry) {
-                    Label("إعادة المحاولة", systemImage: "arrow.clockwise")
+                    Label(L.s("retry"), systemImage: "arrow.clockwise")
                         .font(.system(size: 14, weight: .bold))
                         .padding(.horizontal, 18)
                         .padding(.vertical, 9)

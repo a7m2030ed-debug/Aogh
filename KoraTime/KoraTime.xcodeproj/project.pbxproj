@@ -12,8 +12,10 @@
 		0296D6265A8D6DDF86F89B02 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FBCE4530857033813E833BB /* RootView.swift */; };
 		0FBAFA5AE3E2A1115C1B25FD /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62C49EB32BCDCEBBBF16BA6F /* AppSettings.swift */; };
 		F57038D2095AA056D351D2EA /* ArabicNames.swift in Sources */ = {isa = PBXBuildFile; fileRef = 642BDADDC7EDFBDD72A4EB86 /* ArabicNames.swift */; };
+		B5D41A96EB346AE43DBFB77E /* Catalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A9DB2B86C9CFEEF7E28DA7B /* Catalog.swift */; };
 		6535AC10855F96CBB2B0E65D /* HTTPClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB63D193666445ABC79BF49 /* HTTPClient.swift */; };
 		A3F9626F9C394D8BDA6C8D49 /* KTDate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88039E3104EC2E96D168B55B /* KTDate.swift */; };
+		51D716634B8916230784ED0D /* Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCF1392DBACA61A591A3112B /* Localization.swift */; };
 		56BD43A517DC55A33C380195 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC7D459968F57A9DF340DDE5 /* Components.swift */; };
 		6E9633FB135EC21E30B5AAF3 /* RemoteImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB17ACBC9E32ED69D1946D7F /* RemoteImage.swift */; };
 		159945DF3FD0CA5DB1ECA6B4 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = D11A17785FA071C134883B46 /* Theme.swift */; };
@@ -22,7 +24,9 @@
 		CC7B5CB4856069FB627D5649 /* ChannelsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CB320B9797D66E1AC6AA7B7 /* ChannelsStore.swift */; };
 		1EC5D8B64BA8172275C7B349 /* ChannelsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7939996D918B740052F73D78 /* ChannelsView.swift */; };
 		F5FDF4BD40804F1BF5CA2193 /* PlayerController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5934DE7403A14BECDCFF77C /* PlayerController.swift */; };
+		844C3FFBA251AFBEAAA26ACE /* RoutePickerButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73C8ADFE2346B1A0D3F5775F /* RoutePickerButton.swift */; };
 		003C1CC074CE13900DCF7ED3 /* VideoSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C64A23E288422A723A95FB4 /* VideoSurface.swift */; };
+		943C7DA74C2D6C1B90326798 /* ApiFootballProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73C3DD4E0CADD6D0E40DAF1A /* ApiFootballProvider.swift */; };
 		514B31F67EBA1A5EFD384BFA /* Match.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C7019B1ECF26D20A128C7BB /* Match.swift */; };
 		C20ECCDE443DF27540855340 /* MatchDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AD85485638010C84F5039B0 /* MatchDetailView.swift */; };
 		A90758EC42B1AF4D86B31C0E /* MatchRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0AA8A927ED1330F0E70081 /* MatchRow.swift */; };
@@ -32,6 +36,7 @@
 		B2B64BE2C737511A120B092E /* NewsItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 704B3BD62CC74FF3F670807F /* NewsItem.swift */; };
 		F124EDA1737A327B7D6142D7 /* NewsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEAB757C335BB4095E0DCEB4 /* NewsStore.swift */; };
 		D9DFDEC0967D163E6A1C34FD /* NewsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A6A241E3A630B3E24E5B8D5 /* NewsView.swift */; };
+		FCA452D77917C1B88D7F2A8C /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B68A7FE91934A546401E882F /* OnboardingView.swift */; };
 		FA3AFBF372606BF3652E7D25 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FA6D28BB411E6D56C0FB808 /* SettingsView.swift */; };
 		DC5F9C25298464AAA4254664 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 81366E528FFA180FA0D44044 /* Assets.xcassets */; };
 		46D5BA66FE8BEDA053AABC08 /* ar-names.json in Resources */ = {isa = PBXBuildFile; fileRef = BBC53BC6689ED739F9330A38 /* ar-names.json */; };
@@ -46,8 +51,10 @@
 		8FBCE4530857033813E833BB /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RootView.swift"; sourceTree = "<group>"; };
 		62C49EB32BCDCEBBBF16BA6F /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppSettings.swift"; sourceTree = "<group>"; };
 		642BDADDC7EDFBDD72A4EB86 /* ArabicNames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ArabicNames.swift"; sourceTree = "<group>"; };
+		8A9DB2B86C9CFEEF7E28DA7B /* Catalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Catalog.swift"; sourceTree = "<group>"; };
 		5CB63D193666445ABC79BF49 /* HTTPClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HTTPClient.swift"; sourceTree = "<group>"; };
 		88039E3104EC2E96D168B55B /* KTDate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "KTDate.swift"; sourceTree = "<group>"; };
+		BCF1392DBACA61A591A3112B /* Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Localization.swift"; sourceTree = "<group>"; };
 		FC7D459968F57A9DF340DDE5 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Components.swift"; sourceTree = "<group>"; };
 		EB17ACBC9E32ED69D1946D7F /* RemoteImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RemoteImage.swift"; sourceTree = "<group>"; };
 		D11A17785FA071C134883B46 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Theme.swift"; sourceTree = "<group>"; };
@@ -56,7 +63,9 @@
 		3CB320B9797D66E1AC6AA7B7 /* ChannelsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ChannelsStore.swift"; sourceTree = "<group>"; };
 		7939996D918B740052F73D78 /* ChannelsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ChannelsView.swift"; sourceTree = "<group>"; };
 		C5934DE7403A14BECDCFF77C /* PlayerController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PlayerController.swift"; sourceTree = "<group>"; };
+		73C8ADFE2346B1A0D3F5775F /* RoutePickerButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RoutePickerButton.swift"; sourceTree = "<group>"; };
 		5C64A23E288422A723A95FB4 /* VideoSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "VideoSurface.swift"; sourceTree = "<group>"; };
+		73C3DD4E0CADD6D0E40DAF1A /* ApiFootballProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ApiFootballProvider.swift"; sourceTree = "<group>"; };
 		6C7019B1ECF26D20A128C7BB /* Match.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Match.swift"; sourceTree = "<group>"; };
 		6AD85485638010C84F5039B0 /* MatchDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MatchDetailView.swift"; sourceTree = "<group>"; };
 		FE0AA8A927ED1330F0E70081 /* MatchRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MatchRow.swift"; sourceTree = "<group>"; };
@@ -66,6 +75,7 @@
 		704B3BD62CC74FF3F670807F /* NewsItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NewsItem.swift"; sourceTree = "<group>"; };
 		FEAB757C335BB4095E0DCEB4 /* NewsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NewsStore.swift"; sourceTree = "<group>"; };
 		6A6A241E3A630B3E24E5B8D5 /* NewsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NewsView.swift"; sourceTree = "<group>"; };
+		B68A7FE91934A546401E882F /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "OnboardingView.swift"; sourceTree = "<group>"; };
 		8FA6D28BB411E6D56C0FB808 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SettingsView.swift"; sourceTree = "<group>"; };
 		81366E528FFA180FA0D44044 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Assets.xcassets"; sourceTree = "<group>"; };
 		BBC53BC6689ED739F9330A38 /* ar-names.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "ar-names.json"; sourceTree = "<group>"; };
@@ -114,8 +124,10 @@
 			children = (
 				62C49EB32BCDCEBBBF16BA6F /* AppSettings.swift */,
 				642BDADDC7EDFBDD72A4EB86 /* ArabicNames.swift */,
+				8A9DB2B86C9CFEEF7E28DA7B /* Catalog.swift */,
 				5CB63D193666445ABC79BF49 /* HTTPClient.swift */,
 				88039E3104EC2E96D168B55B /* KTDate.swift */,
+				BCF1392DBACA61A591A3112B /* Localization.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -138,6 +150,7 @@
 				3CB320B9797D66E1AC6AA7B7 /* ChannelsStore.swift */,
 				7939996D918B740052F73D78 /* ChannelsView.swift */,
 				C5934DE7403A14BECDCFF77C /* PlayerController.swift */,
+				73C8ADFE2346B1A0D3F5775F /* RoutePickerButton.swift */,
 				5C64A23E288422A723A95FB4 /* VideoSurface.swift */,
 			);
 			path = Channels;
@@ -146,6 +159,7 @@
 		900A6A62D630135708914591 /* Matches */ = {
 			isa = PBXGroup;
 			children = (
+				73C3DD4E0CADD6D0E40DAF1A /* ApiFootballProvider.swift */,
 				6C7019B1ECF26D20A128C7BB /* Match.swift */,
 				6AD85485638010C84F5039B0 /* MatchDetailView.swift */,
 				FE0AA8A927ED1330F0E70081 /* MatchRow.swift */,
@@ -166,6 +180,14 @@
 			path = News;
 			sourceTree = "<group>";
 		};
+		5342F16EC4FF1A32C962B76E /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				B68A7FE91934A546401E882F /* OnboardingView.swift */,
+			);
+			path = Onboarding;
+			sourceTree = "<group>";
+		};
 		367C650065FADB2C574C4493 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
@@ -180,6 +202,7 @@
 				72650A9D3CA4BBF66F606991 /* Channels */,
 				900A6A62D630135708914591 /* Matches */,
 				38B233CBE4435DF46C14DBBD /* News */,
+				5342F16EC4FF1A32C962B76E /* Onboarding */,
 				367C650065FADB2C574C4493 /* Settings */,
 			);
 			path = Features;
@@ -284,8 +307,10 @@
 				0296D6265A8D6DDF86F89B02 /* RootView.swift in Sources */,
 				0FBAFA5AE3E2A1115C1B25FD /* AppSettings.swift in Sources */,
 				F57038D2095AA056D351D2EA /* ArabicNames.swift in Sources */,
+				B5D41A96EB346AE43DBFB77E /* Catalog.swift in Sources */,
 				6535AC10855F96CBB2B0E65D /* HTTPClient.swift in Sources */,
 				A3F9626F9C394D8BDA6C8D49 /* KTDate.swift in Sources */,
+				51D716634B8916230784ED0D /* Localization.swift in Sources */,
 				56BD43A517DC55A33C380195 /* Components.swift in Sources */,
 				6E9633FB135EC21E30B5AAF3 /* RemoteImage.swift in Sources */,
 				159945DF3FD0CA5DB1ECA6B4 /* Theme.swift in Sources */,
@@ -294,7 +319,9 @@
 				CC7B5CB4856069FB627D5649 /* ChannelsStore.swift in Sources */,
 				1EC5D8B64BA8172275C7B349 /* ChannelsView.swift in Sources */,
 				F5FDF4BD40804F1BF5CA2193 /* PlayerController.swift in Sources */,
+				844C3FFBA251AFBEAAA26ACE /* RoutePickerButton.swift in Sources */,
 				003C1CC074CE13900DCF7ED3 /* VideoSurface.swift in Sources */,
+				943C7DA74C2D6C1B90326798 /* ApiFootballProvider.swift in Sources */,
 				514B31F67EBA1A5EFD384BFA /* Match.swift in Sources */,
 				C20ECCDE443DF27540855340 /* MatchDetailView.swift in Sources */,
 				A90758EC42B1AF4D86B31C0E /* MatchRow.swift in Sources */,
@@ -304,6 +331,7 @@
 				B2B64BE2C737511A120B092E /* NewsItem.swift in Sources */,
 				F124EDA1737A327B7D6142D7 /* NewsStore.swift in Sources */,
 				D9DFDEC0967D163E6A1C34FD /* NewsView.swift in Sources */,
+				FCA452D77917C1B88D7F2A8C /* OnboardingView.swift in Sources */,
 				FA3AFBF372606BF3652E7D25 /* SettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

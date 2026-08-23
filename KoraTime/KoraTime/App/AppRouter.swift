@@ -14,10 +14,10 @@ final class AppRouter {
 
         var title: String {
             switch self {
-            case .matches: return "المباريات"
-            case .channels: return "القنوات"
-            case .news: return "الأخبار"
-            case .settings: return "الإعدادات"
+            case .matches: return L.s("tab_matches")
+            case .channels: return L.s("tab_channels")
+            case .news: return L.s("tab_news")
+            case .settings: return L.s("tab_settings")
             }
         }
 

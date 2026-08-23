@@ -39,7 +39,7 @@ final class NewsStore {
             items = []
             isLoading = false
             hasLoaded = true
-            feedErrors = ["لم تُفعّل أي خلاصة أخبار. أضف واحدة من الإعدادات."]
+            feedErrors = [L.s("news_no_feeds_add")]
             return
         }
 
@@ -85,7 +85,7 @@ final class NewsStore {
         let trimmed = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty {
             guard let url = GoogleNews.url(for: trimmed) else { return [] }
-            return [FeedSource(name: "نتائج \(trimmed)", urlString: url.absoluteString)]
+            return [FeedSource(name: L.s("news_search_feed", trimmed), urlString: url.absoluteString)]
         }
         return settings.feeds.filter { $0.isEnabled && $0.url != nil }
     }
@@ -97,18 +97,18 @@ final class NewsStore {
 
     nonisolated private static func fetch(_ source: FeedSource) async -> FeedResult {
         guard let url = source.url else {
-            return FeedResult(items: [], error: "«\(source.name)»: الرابط غير صالح.")
+            return FeedResult(items: [], error: L.s("feed_invalid_url", source.name))
         }
         do {
             let data = try await HTTPClient.shared.data(from: url, maxAge: 5 * 60)
             let parsed = FeedParser().parse(data: data, fallbackSource: source.name)
             if parsed.isEmpty {
-                return FeedResult(items: [], error: "«\(source.name)»: لم تُقرأ أي أخبار من هذه الخلاصة.")
+                return FeedResult(items: [], error: L.s("feed_no_items", source.name))
             }
             return FeedResult(items: parsed, error: nil)
         } catch {
             let reason = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
-            return FeedResult(items: [], error: "«\(source.name)»: \(reason)")
+            return FeedResult(items: [], error: L.s("news_feed_error", source.name, reason))
         }
     }
 

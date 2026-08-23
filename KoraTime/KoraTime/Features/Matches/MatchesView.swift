@@ -47,7 +47,7 @@ struct MatchesView: View {
 
     private var header: some View {
         KTScreenTitle(
-            title: "المباريات",
+            title: L.s("matches_title"),
             subtitle: subtitleText,
             trailing: AnyView(
                 HStack(spacing: 14) {
@@ -77,10 +77,10 @@ struct MatchesView: View {
 
     private var subtitleText: String {
         if store.liveCount > 0 {
-            return "\(store.liveCount) مباراة جارية الآن"
+            return L.s("matches_live_now", store.liveCount)
         }
         if let updated = store.lastUpdated {
-            return "آخر تحديث \(KTDate.time(updated))"
+            return L.s("last_updated", KTDate.time(updated))
         }
         return KTDate.dayLabel(store.selectedDay)
     }
@@ -89,7 +89,7 @@ struct MatchesView: View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(KT.textFaint)
-            TextField("ابحث عن فريق أو بطولة", text: text)
+            TextField(L.s("search_hint_matches"), text: text)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .foregroundStyle(KT.text)
@@ -114,10 +114,10 @@ struct MatchesView: View {
 
     private var filterRow: some View {
         HStack(spacing: 8) {
-            ChipButton(title: "الكل", isSelected: !store.liveOnly) {
+            ChipButton(title: L.s("filter_all"), isSelected: !store.liveOnly) {
                 store.liveOnly = false
             }
-            ChipButton(title: "المباشرة", isSelected: store.liveOnly, systemImage: "dot.radiowaves.left.and.right") {
+            ChipButton(title: L.s("filter_live"), isSelected: store.liveOnly, systemImage: "dot.radiowaves.left.and.right") {
                 store.liveOnly = true
             }
             Spacer()
@@ -134,13 +134,13 @@ struct MatchesView: View {
         ScrollView {
             LazyVStack(spacing: 14, pinnedViews: []) {
                 if store.isLoading && store.allMatchesForDay.isEmpty {
-                    KTLoading(title: "جارٍ جلب مباريات \(KTDate.dayLabel(store.selectedDay))…")
+                    KTLoading(title: L.s("loading_matches_day", KTDate.dayLabel(store.selectedDay)))
                 } else if let error = store.errorMessage, store.allMatchesForDay.isEmpty {
                     KTErrorView(message: error) {
                         store.load(force: true)
                     }
                     if settings.matchesSource == .footballData && settings.footballDataToken.isEmpty {
-                        Button("فتح الإعدادات لإضافة المفتاح") {
+                        Button(L.s("open_settings_key")) {
                             router.openSettings(focus: .matchesSource)
                         }
                         .font(.system(size: 13, weight: .semibold))
@@ -150,16 +150,16 @@ struct MatchesView: View {
                     if store.liveOnly {
                         KTEmptyState(
                             icon: "dot.radiowaves.left.and.right",
-                            title: "لا توجد مباريات جارية الآن",
-                            message: "جرّب \"الكل\" لعرض مباريات اليوم كاملة.",
-                            actionTitle: "عرض الكل",
+                            title: L.s("no_live_matches"),
+                            message: L.s("try_all_hint"),
+                            actionTitle: L.s("show_all"),
                             action: { store.liveOnly = false }
                         )
                     } else {
                         KTEmptyState(
                             icon: "calendar",
-                            title: "لا مباريات في هذا اليوم",
-                            message: "اختر يوماً آخر من الشريط أعلاه."
+                            title: L.s("no_matches_day"),
+                            message: L.s("pick_another_day")
                         )
                     }
                 } else {
@@ -169,7 +169,7 @@ struct MatchesView: View {
                                 title: section.title,
                                 subtitle: nil,
                                 badgeURL: section.badge,
-                                trailing: section.liveCount > 0 ? "\(section.liveCount) مباشر" : nil
+                                trailing: section.liveCount > 0 ? L.s("section_live_count", section.liveCount) : nil
                             )
                             ForEach(section.matches) { match in
                                 NavigationLink(value: match) {

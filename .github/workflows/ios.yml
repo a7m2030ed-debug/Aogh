@@ -5,11 +5,13 @@ on:
     branches: [claude/kora-time-ios-app-q9dalt]
     paths:
       - "KoraTime/**"
+      - "KoraTimeAndroid/app/src/main/res/values*/strings.xml"
       - ".github/workflows/ios.yml"
       - ".github/scripts/pick_simulator.py"
   pull_request:
     paths:
       - "KoraTime/**"
+      - "KoraTimeAndroid/app/src/main/res/values*/strings.xml"
       - ".github/workflows/ios.yml"
       - ".github/scripts/pick_simulator.py"
   workflow_dispatch:
@@ -43,6 +45,19 @@ jobs:
             | python3 .github/scripts/pick_simulator.py \
             | tee -a "$GITHUB_OUTPUT"
 
+      # جدول نصوص iOS مولَّد من موارد أندرويد. إن حُرِّر بيد أو أُضيف نصّ
+      # لأندرويد بلا إعادة توليد، تفترق ترجمة التطبيقين بصمت — فنكشفه هنا.
+      - name: التحقّق من تطابق النصوص بين النسختين
+        run: |
+          set -euo pipefail
+          python3 KoraTime/Tools/make_localization.py
+          if ! git diff --quiet -- KoraTime/KoraTime/Core/Localization.swift; then
+            echo "::error::Localization.swift لا يطابق موارد أندرويد. شغّل: python3 KoraTime/Tools/make_localization.py"
+            git diff -- KoraTime/KoraTime/Core/Localization.swift | head -60
+            exit 1
+          fi
+          echo "النصوص متطابقة."
+
       - name: بناء التطبيق
         working-directory: KoraTime
         run: |
@@ -54,7 +69,16 @@ jobs:
             -destination "id=${{ steps.sim.outputs.udid }}" \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
-            COMPILER_INDEX_STORE_ENABLE=NO
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            2>&1 | tee "$RUNNER_TEMP/build.log"
+
+      # سطور الخطأ وحدها. البحث عنها داخل سجلّ xcodebuild الكامل مكلف،
+      # وقد كلّفنا فعلاً ثلاث دورات على أندرويد قبل أن نضيف مثل هذه الخطوة.
+      - name: أخطاء المترجم
+        if: failure()
+        run: |
+          echo "— أخطاء البناء —"
+          grep -E "(error|warning): " "$RUNNER_TEMP/build.log" | sort -u | head -40 || echo "لا سطور خطأ في السجل."
 
       - name: تشغيل المحاكي وتثبيت التطبيق
         working-directory: KoraTime

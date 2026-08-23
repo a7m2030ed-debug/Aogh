@@ -15,7 +15,7 @@ struct Channel: Identifiable, Hashable {
 
     init(id: String? = nil,
          name: String,
-         group: String = "قنوات",
+         group: String = L.s("default_group"),
          logo: String? = nil,
          url: String,
          userAgent: String? = nil,
@@ -70,12 +70,12 @@ extension Channel: Codable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        let name = try container.decodeIfPresent(String.self, forKey: .name) ?? "قناة"
+        let name = try container.decodeIfPresent(String.self, forKey: .name) ?? L.s("default_channel_name")
         let url = try container.decodeIfPresent(String.self, forKey: .url) ?? ""
         self.init(
             id: try container.decodeIfPresent(String.self, forKey: .id),
             name: name,
-            group: try container.decodeIfPresent(String.self, forKey: .group) ?? "قنوات",
+            group: try container.decodeIfPresent(String.self, forKey: .group) ?? L.s("default_group"),
             logo: try container.decodeIfPresent(String.self, forKey: .logo),
             url: url,
             userAgent: try container.decodeIfPresent(String.self, forKey: .userAgent),
@@ -153,7 +153,7 @@ enum M3UParser {
 
                 channels.append(
                     Channel(
-                        name: pendingName ?? "قناة \(channels.count + 1)",
+                        name: pendingName ?? L.s("numbered_channel", channels.count + 1),
                         group: pendingGroup?.isEmpty == false ? pendingGroup! : defaultGroup,
                         logo: pendingLogo,
                         url: address,

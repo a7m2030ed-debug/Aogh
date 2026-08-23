@@ -12,7 +12,7 @@ struct SportsDBProvider: MatchesProviding {
 
     let apiKey: String
 
-    var attribution: String { "البيانات من TheSportsDB" }
+    var attribution: String { L.s("attribution_sportsdb") }
 
     private struct Response: Decodable {
         let events: [Event]?
@@ -41,7 +41,7 @@ struct SportsDBProvider: MatchesProviding {
 
     func matches(on day: Date) async throws -> [Match] {
         let key = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !key.isEmpty else { throw KTError.missingKey("مفتاح TheSportsDB") }
+        guard !key.isEmpty else { throw KTError.missingKey(L.s("sportsdb_key")) }
 
         var components = URLComponents(string: "https://www.thesportsdb.com/api/v1/json/\(key)/eventsday.php")
         components?.queryItems = [
@@ -95,7 +95,7 @@ struct SportsDBProvider: MatchesProviding {
             awayScore: awayScore,
             status: status,
             progress: MatchStatusResolver.progressText(raw: rawStatus, status: status),
-            competition: event.strLeague?.value ?? "بطولات أخرى",
+            competition: event.strLeague?.value ?? L.s("other_competitions"),
             competitionID: event.idLeague?.value,
             competitionBadge: event.strLeagueBadge?.urlValue,
             venue: event.strVenue?.value,
@@ -110,7 +110,7 @@ struct FootballDataProvider: MatchesProviding {
 
     let token: String
 
-    var attribution: String { "البيانات من football-data.org" }
+    var attribution: String { L.s("attribution_footballdata") }
 
     private struct Response: Decodable {
         let matches: [Fixture]?
@@ -148,7 +148,7 @@ struct FootballDataProvider: MatchesProviding {
 
     func matches(on day: Date) async throws -> [Match] {
         let key = token.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !key.isEmpty else { throw KTError.missingKey("مفتاح football-data.org") }
+        guard !key.isEmpty else { throw KTError.missingKey(L.s("footballdata_key")) }
 
         let stamp = KTDate.apiDay.string(from: day)
         var components = URLComponents(string: "https://api.football-data.org/v4/matches")
@@ -190,8 +190,8 @@ struct FootballDataProvider: MatchesProviding {
 
         let progress: String?
         switch (fixture.status ?? "").uppercased() {
-        case "PAUSED": progress = "الاستراحة"
-        case "IN_PLAY": progress = "جارية"
+        case "PAUSED": progress = L.s("half_time")
+        case "IN_PLAY": progress = L.s("status_in_play")
         default: progress = nil
         }
 
@@ -206,7 +206,7 @@ struct FootballDataProvider: MatchesProviding {
             awayScore: fixture.score?.fullTime?.away,
             status: status,
             progress: progress,
-            competition: fixture.competition?.name ?? "بطولات أخرى",
+            competition: fixture.competition?.name ?? L.s("other_competitions"),
             competitionID: fixture.competition?.id.map(String.init),
             competitionBadge: fixture.competition?.emblem.flatMap(URL.init(string:)),
             venue: nil,
@@ -248,11 +248,11 @@ enum MatchStatusResolver {
         guard status == .live else { return nil }
         let code = (raw ?? "").trimmingCharacters(in: .whitespaces).uppercased()
         switch code {
-        case "1H": return "الشوط الأول"
-        case "2H": return "الشوط الثاني"
-        case "HT": return "الاستراحة"
-        case "ET": return "وقت إضافي"
-        case "PEN", "P": return "ركلات الترجيح"
+        case "1H": return L.s("half_first")
+        case "2H": return L.s("half_second")
+        case "HT": return L.s("half_time")
+        case "ET": return L.s("extra_time")
+        case "PEN", "P": return L.s("penalties")
         case "": return nil
         default:
             if Int(code.prefix(while: { $0.isNumber })) != nil {

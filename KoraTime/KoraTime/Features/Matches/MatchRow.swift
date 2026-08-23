@@ -85,7 +85,7 @@ struct MatchRow: View {
             }
 
             if match.isLive {
-                LiveBadge(text: match.progress ?? "مباشر", compact: true)
+                LiveBadge(text: match.progress ?? L.s("status_live"), compact: true)
             } else {
                 Text(match.centerCaption)
                     .font(.system(size: 10, weight: .medium))

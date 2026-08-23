@@ -76,24 +76,73 @@ final class MatchesStore {
                 }
                 return sorted
             }
+            // الأهمية قبل «فيها مباراة مباشرة»: كان دوري صغير فيه مباراة
+            // جارية يقفز فوق روشن والدوريات الكبرى، وهذا عكس المطلوب.
+            // ودوريات المستخدم المختارة تسبق الجميع.
             .sorted { lhs, rhs in
-                if (lhs.liveCount > 0) != (rhs.liveCount > 0) { return lhs.liveCount > 0 }
+                let lhsFavorite = favoriteRank(lhs.title)
+                let rhsFavorite = favoriteRank(rhs.title)
+                if lhsFavorite != rhsFavorite { return lhsFavorite < rhsFavorite }
                 let lhsRank = CompetitionPriority.rank(lhs.title)
                 let rhsRank = CompetitionPriority.rank(rhs.title)
                 if lhsRank != rhsRank { return lhsRank < rhsRank }
+                if (lhs.liveCount > 0) != (rhs.liveCount > 0) { return lhs.liveCount > 0 }
                 return lhs.title < rhs.title
             }
     }
 
-    var attribution: String { provider.attribution }
+    /// موضع البطولة في دوريات المستخدم المختارة، ومن لم يختر شيئاً يتساوى
+    /// عنده الجميع فيتولّى `CompetitionPriority` الترتيب وحده.
+    private func favoriteRank(_ title: String) -> Int {
+        let chosen = settings.favoriteLeagues
+        guard !chosen.isEmpty else { return 0 }
+        let needle = title.lowercased()
+        for (position, id) in chosen.enumerated() {
+            guard let league = Catalog.league(id) else { continue }
+            if league.ar == title
+                || needle.contains(league.ar.lowercased())
+                || needle.contains(league.en.lowercased()) {
+                return position
+            }
+        }
+        return chosen.count + 1
+    }
 
-    private var provider: MatchesProviding {
+    var attribution: String {
+        settings.apiFootballKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            ? fallbackProvider.attribution
+            : L.s("attribution_apifootball")
+    }
+
+    /// المصدر القديم بحدوده المعروفة — يعمل بلا مفتاح، ويبقى شبكةَ أمان
+    /// حين لا يُرجع API-Football شيئاً لليوم المطلوب.
+    private var fallbackProvider: MatchesProviding {
         switch settings.matchesSource {
         case .sportsDB:
             return SportsDBProvider(apiKey: settings.sportsDBKey)
         case .footballData:
             return FootballDataProvider(token: settings.footballDataToken)
         }
+    }
+
+    /// مفتاح API-Football يعني تغطية روشن والدوريات الكبرى؛ بلا مفتاح نبقى
+    /// على المصدر القديم. تُقرأ الإعدادات هنا قبل بدء المهمّة، فلا تُلمَس من
+    /// خارج الخيط الرئيسي.
+    private var fetchPlan: (key: String, fallback: MatchesProviding) {
+        (settings.apiFootballKey.trimmingCharacters(in: .whitespacesAndNewlines), fallbackProvider)
+    }
+
+    private static func fetch(
+        day: Date,
+        key: String,
+        fallback: MatchesProviding
+    ) async throws -> [Match] {
+        guard !key.isEmpty else { return try await fallback.matches(on: day) }
+        let primary = try await ApiFootballProvider(apiKey: key).matches(on: day)
+        // يوم بلا مباريات في API-Football قد يكون حدّ الخطة المجانية، لا
+        // يوماً فارغاً — فنسأل المصدر القديم قبل أن نُظهر شاشة خالية.
+        if primary.isEmpty { return try await fallback.matches(on: day) }
+        return primary
     }
 
     // MARK: - التحميل
@@ -121,10 +170,10 @@ final class MatchesStore {
         isLoading = true
         errorMessage = nil
 
-        let currentProvider = provider
+        let plan = fetchPlan
         loadTask = Task { [weak self] in
             do {
-                let result = try await currentProvider.matches(on: day)
+                let result = try await Self.fetch(day: day, key: plan.key, fallback: plan.fallback)
                 guard let self = self, !Task.isCancelled else { return }
                 self.cache[cacheKey] = result
                 self.lastUpdated = Date()
@@ -147,9 +196,9 @@ final class MatchesStore {
     func refresh() async {
         let day = selectedDay
         let cacheKey = key(for: day)
-        let currentProvider = provider
+        let plan = fetchPlan
         do {
-            let result = try await currentProvider.matches(on: day)
+            let result = try await Self.fetch(day: day, key: plan.key, fallback: plan.fallback)
             guard !Task.isCancelled else { return }
             cache[cacheKey] = result
             lastUpdated = Date()
