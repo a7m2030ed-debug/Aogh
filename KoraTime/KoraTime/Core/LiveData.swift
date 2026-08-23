@@ -25,6 +25,9 @@ enum LiveData {
 struct AppVersionInfo: Decodable {
     let latest: String
     let minimum: String
+    /// وسيط المباريات: خادم صغير يملك المفتاح ويخزّن النتائج، فيرى كل
+    /// مستخدم الجدول كاملاً بلا تسجيل. فارغ يعني «لا وسيط».
+    let matchesProxy: String?
     let ios: String?
     let android: String?
     let titleAr: String?
@@ -43,6 +46,59 @@ struct AppVersionInfo: Decodable {
     }
 
     var storeURL: URL? { ios.flatMap(URL.init(string:)) }
+
+    var proxyBase: String? {
+        let value = (matchesProxy ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard value.hasPrefix("https://") else { return nil }
+        return value.hasSuffix("/") ? String(value.dropLast()) : value
+    }
+}
+
+/// الإعدادات المنشورة، تُجلب مرّة واحدة في كل تشغيل ويُحتفظ بآخر ما وصل.
+///
+/// المباريات تحتاج رابط الوسيط قبل أوّل طلب، وبوّابة التحديث تحتاج البيان
+/// نفسه — فيُجلب مرّة ويستفيد منه الاثنان. وآخر رابط وصل يُحفظ على الجهاز،
+/// فأوّل طلب في التشغيل التالي لا ينتظر الشبكة.
+@MainActor
+final class AppConfig {
+
+    static let shared = AppConfig()
+
+    private(set) var info: AppVersionInfo?
+    private var task: Task<AppVersionInfo?, Never>?
+    private let store = UserDefaults.standard
+    private static let proxyKey = "config.matchesProxy"
+
+    /// آخر وسيط معروف، متاح فوراً بلا انتظار شبكة.
+    var cachedProxyBase: String? {
+        if let live = info?.proxyBase { return live }
+        let saved = store.string(forKey: AppConfig.proxyKey) ?? ""
+        return saved.isEmpty ? nil : saved
+    }
+
+    @discardableResult
+    func load() async -> AppVersionInfo? {
+        if let info = info { return info }
+        if let task = task { return await task.value }
+
+        let task = Task { () -> AppVersionInfo? in
+            guard let url = LiveData.appVersion,
+                  let payload = try? await HTTPClient.shared.decode(
+                    AppVersionInfo.self, from: url, maxAge: 60 * 30
+                  ) else { return nil }
+            return payload
+        }
+        self.task = task
+
+        let payload = await task.value
+        self.task = nil
+        guard let payload = payload else { return nil }
+
+        info = payload
+        // نحفظ الفارغ أيضاً: إطفاء الوسيط يجب أن يصل كما يصل تشغيله.
+        store.set(payload.proxyBase ?? "", forKey: AppConfig.proxyKey)
+        return payload
+    }
 }
 
 /// مقارنة أرقام الإصدارات جزءاً جزءاً: "1.10" أحدث من "1.9"، والمقارنة

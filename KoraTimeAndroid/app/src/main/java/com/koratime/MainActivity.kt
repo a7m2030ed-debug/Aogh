@@ -42,6 +42,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.koratime.channels.ChannelsScreen
 import com.koratime.channels.ChannelsViewModel
+import com.koratime.core.AppConfig
 import com.koratime.core.AppText
 import com.koratime.core.ArabicNames
 import com.koratime.core.Lang
@@ -72,6 +73,7 @@ class MainActivity : AppCompatActivity() {
 
         val settings = Settings(applicationContext)
         AppText.init(applicationContext)
+        AppConfig.init(applicationContext)
         LangManager.apply(settings)
         ArabicNames.load(applicationContext)
 

@@ -24,7 +24,15 @@ import java.util.Locale
  *
  * طلب واحد لكل يوم معروض، والنتيجة تُخزَّن، فحصّة الخطة المجانية تكفي.
  */
-class ApiFootballProvider(private val apiKey: String) {
+class ApiFootballProvider(
+    /** مفتاح المستخدم الشخصي. فارغ حين نمرّ عبر الوسيط. */
+    private val apiKey: String = "",
+    /**
+     * وسيط يملك المفتاح ويخزّن النتائج، فلا يحتاج المستخدم تسجيلاً. حين
+     * يوجد، يُسأل هو ولا يُرسل أي مفتاح من الجهاز.
+     */
+    private val proxyBase: String? = null
+) {
 
     private companion object {
         val COUNTRY_PREFIX = mapOf(
@@ -40,13 +48,26 @@ class ApiFootballProvider(private val apiKey: String) {
 
     suspend fun matches(day: Date): List<Match> {
         val key = apiKey.trim()
-        if (key.isEmpty()) return emptyList()
-
         val stamp = KTDate.apiDay.format(day)
+
+        val url: String
+        val headers: Map<String, String>
+        when {
+            proxyBase != null -> {
+                url = "$proxyBase/fixtures?date=$stamp"
+                headers = emptyMap()
+            }
+            key.isNotEmpty() -> {
+                url = "https://v3.football.api-sports.io/fixtures?date=$stamp"
+                headers = mapOf("x-apisports-key" to key)
+            }
+            else -> return emptyList()
+        }
+
         val isToday = KTDate.isSameDay(day, Date())
         val body = Http.text(
-            "https://v3.football.api-sports.io/fixtures?date=$stamp",
-            headers = mapOf("x-apisports-key" to key),
+            url,
+            headers = headers,
             maxAgeSeconds = if (isToday) 45 else 1800
         )
 

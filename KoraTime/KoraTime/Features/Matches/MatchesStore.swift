@@ -109,9 +109,10 @@ final class MatchesStore {
     }
 
     var attribution: String {
-        settings.apiFootballKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            ? fallbackProvider.attribution
-            : L.s("attribution_apifootball")
+        let hasKey = !settings.apiFootballKey
+            .trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let hasProxy = AppConfig.shared.cachedProxyBase != nil
+        return (hasKey || hasProxy) ? L.s("attribution_apifootball") : fallbackProvider.attribution
     }
 
     /// المصدر القديم بحدوده المعروفة — يعمل بلا مفتاح، ويبقى شبكةَ أمان
@@ -125,24 +126,41 @@ final class MatchesStore {
         }
     }
 
-    /// مفتاح API-Football يعني تغطية روشن والدوريات الكبرى؛ بلا مفتاح نبقى
-    /// على المصدر القديم. تُقرأ الإعدادات هنا قبل بدء المهمّة، فلا تُلمَس من
-    /// خارج الخيط الرئيسي.
-    private var fetchPlan: (key: String, fallback: MatchesProviding) {
-        (settings.apiFootballKey.trimmingCharacters(in: .whitespacesAndNewlines), fallbackProvider)
+    /// ثلاثة مسارات بالترتيب:
+    ///
+    /// ١. مفتاح المستخدم الشخصي إن وضعه — حصّته وحده ولا يعتمد على خادمنا.
+    /// ٢. الوسيط المنشور — يملك المفتاح ويخزّن، فيرى كل مستخدم الجدول
+    ///    كاملاً بلا تسجيل. وهذا ما يراه أغلب الناس.
+    /// ٣. المصدر القديم بحدوده المعروفة — شبكة أمان حين يسقط ما قبله.
+    ///
+    /// تُقرأ الإعدادات هنا قبل بدء المهمّة، فلا تُلمَس من خارج الخيط الرئيسي.
+    private var fetchPlan: (key: String, proxy: String?, fallback: MatchesProviding) {
+        (settings.apiFootballKey.trimmingCharacters(in: .whitespacesAndNewlines),
+         AppConfig.shared.cachedProxyBase,
+         fallbackProvider)
     }
 
     private static func fetch(
         day: Date,
         key: String,
+        proxy: String?,
         fallback: MatchesProviding
     ) async throws -> [Match] {
-        guard !key.isEmpty else { return try await fallback.matches(on: day) }
-        let primary = try await ApiFootballProvider(apiKey: key).matches(on: day)
-        // يوم بلا مباريات في API-Football قد يكون حدّ الخطة المجانية، لا
-        // يوماً فارغاً — فنسأل المصدر القديم قبل أن نُظهر شاشة خالية.
-        if primary.isEmpty { return try await fallback.matches(on: day) }
-        return primary
+        // أوّل تشغيل لم يصله الإعداد المنشور بعد، فنسأله قبل أن نستسلم
+        // للمصدر القديم.
+        var proxy = proxy
+        if proxy == nil, key.isEmpty {
+            proxy = await AppConfig.shared.load()?.proxyBase
+        }
+
+        if !key.isEmpty || proxy != nil {
+            let primary = try await ApiFootballProvider(apiKey: key, proxyBase: proxy)
+                .matches(on: day)
+            // يوم بلا مباريات قد يكون حدّ الخطة أو عطباً في الوسيط، لا يوماً
+            // فارغاً — فنسأل المصدر القديم قبل أن نُظهر شاشة خالية.
+            if !primary.isEmpty { return primary }
+        }
+        return try await fallback.matches(on: day)
     }
 
     // MARK: - التحميل
@@ -173,7 +191,7 @@ final class MatchesStore {
         let plan = fetchPlan
         loadTask = Task { [weak self] in
             do {
-                let result = try await Self.fetch(day: day, key: plan.key, fallback: plan.fallback)
+                let result = try await Self.fetch(day: day, key: plan.key, proxy: plan.proxy, fallback: plan.fallback)
                 guard let self = self, !Task.isCancelled else { return }
                 self.cache[cacheKey] = result
                 self.lastUpdated = Date()
@@ -198,7 +216,7 @@ final class MatchesStore {
         let cacheKey = key(for: day)
         let plan = fetchPlan
         do {
-            let result = try await Self.fetch(day: day, key: plan.key, fallback: plan.fallback)
+            let result = try await Self.fetch(day: day, key: plan.key, proxy: plan.proxy, fallback: plan.fallback)
             guard !Task.isCancelled else { return }
             cache[cacheKey] = result
             lastUpdated = Date()

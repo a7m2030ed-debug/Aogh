@@ -11,7 +11,11 @@ import Foundation
 /// طلب واحد لكل يوم معروض، فحصّة الخطة المجانية تكفي.
 struct ApiFootballProvider: MatchesProviding {
 
-    let apiKey: String
+    /// مفتاح المستخدم الشخصي. فارغ حين نمرّ عبر الوسيط.
+    var apiKey: String = ""
+    /// وسيط يملك المفتاح ويخزّن النتائج، فلا يحتاج المستخدم تسجيلاً.
+    /// حين يوجد، يُسأل هو ولا يُرسل أي مفتاح من الجهاز.
+    var proxyBase: String?
 
     var attribution: String { L.s("attribution_apifootball") }
 
@@ -69,19 +73,28 @@ struct ApiFootballProvider: MatchesProviding {
 
     func matches(on day: Date) async throws -> [Match] {
         let key = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !key.isEmpty else { return [] }
+        let stamp = KTDate.apiDay.string(from: day)
 
-        var components = URLComponents(string: "https://v3.football.api-sports.io/fixtures")
-        components?.queryItems = [
-            URLQueryItem(name: "date", value: KTDate.apiDay.string(from: day))
-        ]
+        let endpoint: String
+        var headers: [String: String] = [:]
+        if let proxyBase = proxyBase {
+            endpoint = "\(proxyBase)/fixtures"
+        } else if !key.isEmpty {
+            endpoint = "https://v3.football.api-sports.io/fixtures"
+            headers["x-apisports-key"] = key
+        } else {
+            return []
+        }
+
+        var components = URLComponents(string: endpoint)
+        components?.queryItems = [URLQueryItem(name: "date", value: stamp)]
         guard let url = components?.url else { return [] }
 
         let isToday = Calendar.current.isDateInToday(day)
         let payload = try await HTTPClient.shared.decode(
             Response.self,
             from: url,
-            headers: ["x-apisports-key": key],
+            headers: headers,
             maxAge: isToday ? 45 : 1800
         )
         return (payload.response ?? []).compactMap(convert)

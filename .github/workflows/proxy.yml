@@ -1,0 +1,125 @@
+name: نشر وسيط المباريات
+
+# يُشغَّل بيدك من تبويب Actions. قبل أول تشغيل يلزم سرّان في:
+#   Settings ← Secrets and variables ← Actions
+#
+#   CLOUDFLARE_API_TOKEN   من dash.cloudflare.com ← My Profile ← API Tokens
+#                          بقالب "Edit Cloudflare Workers"
+#   CLOUDFLARE_ACCOUNT_ID  من صفحة Workers في اللوحة
+#   API_FOOTBALL_KEY       مفتاحك المجاني من dashboard.api-football.com
+#
+# تُدخَل في صفحة الأسرار مباشرة ولا تُرسل في أي محادثة.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/kora-time-ios-app-q9dalt]
+    paths:
+      - "Proxy/**"
+      - ".github/workflows/proxy.yml"
+
+concurrency:
+  group: proxy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: رفع الوسيط وفحصه
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: التأكّد من الأسرار
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: |
+          missing=""
+          if [ -z "$TOKEN" ]; then missing="$missing CLOUDFLARE_API_TOKEN"; fi
+          if [ -z "$ACCOUNT" ]; then missing="$missing CLOUDFLARE_ACCOUNT_ID"; fi
+          if [ -z "$KEY" ]; then missing="$missing API_FOOTBALL_KEY"; fi
+          if [ -n "$missing" ]; then
+            echo "::error::تنقص هذه الأسرار:$missing — أضفها من Settings ← Secrets and variables ← Actions"
+            exit 1
+          fi
+          echo "الأسرار الثلاثة موجودة."
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # منطق الوسيط يُختبر قبل رفعه: التقليم والتخزين ورفض المدخلات
+      # الخاطئة والسلوك بلا مفتاح — كلها بلا لمس API-Football.
+      - name: اختبار منطق الوسيط
+        working-directory: Proxy
+        run: node worker.test.mjs
+
+      # المفتاح يُرسل سرّاً إلى Cloudflare ولا يُكتب في أي ملف داخل المستودع.
+      - name: رفع المفتاح ثم نشر الوسيط
+        working-directory: Proxy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$API_FOOTBALL_KEY" | npx --yes wrangler@3 secret put API_FOOTBALL_KEY
+          npx --yes wrangler@3 deploy 2>&1 | tee "$RUNNER_TEMP/deploy.log"
+          grep -oE 'https://[a-z0-9.-]+\.workers\.dev' "$RUNNER_TEMP/deploy.log" \
+            | head -1 > "$RUNNER_TEMP/url.txt" || true
+
+      # النشر الناجح لا يعني وسيطاً يعمل. نسأله عن يوم فعليّ ونعدّ المباريات.
+      - name: فحص الوسيط بيوم حقيقي
+        run: |
+          set -euo pipefail
+          URL=$(cat "$RUNNER_TEMP/url.txt" 2>/dev/null || true)
+          if [ -z "$URL" ]; then
+            echo "::error::لم يُعثر على رابط الوسيط في سجلّ النشر"
+            exit 1
+          fi
+          echo "الوسيط: $URL"
+
+          HEALTH=$(curl -sS "$URL/health")
+          echo "الصحّة: $HEALTH"
+          echo "$HEALTH" | grep -q '"hasKey":true' || {
+            echo "::error::الوسيط لا يرى المفتاح"; exit 1; }
+
+          TODAY=$(date -u +%F)
+          BODY=$(curl -sS "$URL/fixtures?date=$TODAY")
+          COUNT=$(printf '%s' "$BODY" | python3 -c "
+          import json,sys
+          d=json.load(sys.stdin)
+          print(len(d.get('response',[])))
+          ")
+          echo "مباريات $TODAY: $COUNT"
+          if [ "$COUNT" -lt 1 ]; then
+            echo "::warning::الوسيط يعمل لكنه لم يُرجع مباريات لهذا اليوم — تحقّق من حصّة المفتاح"
+          fi
+
+          # الحقول التي يقرؤها التطبيقان يجب أن تصل فعلاً
+          printf '%s' "$BODY" | python3 -c "
+          import json,sys
+          d=json.load(sys.stdin)
+          items=d.get('response',[])
+          if not items: sys.exit(0)
+          f=items[0]
+          need=[('fixture','date'),('teams','home'),('teams','away'),('league','name')]
+          missing=[f'{a}.{b}' for a,b in need if not (f.get(a) or {}).get(b)]
+          if missing: sys.exit('حقول ناقصة: '+', '.join(missing))
+          print('الحقول سليمة، مثال:', f['teams']['home']['name'], 'ضد', f['teams']['away']['name'],
+                'في', f['league']['name'])
+          "
+
+          {
+            echo "### الوسيط جاهز"
+            echo ""
+            echo '```'
+            echo "$URL"
+            echo '```'
+            echo ""
+            echo "ضع هذا الرابط في \`KoraTime/Tools/app-version.json\` تحت المفتاح \`matchesProxy\`"
+            echo "وادفعه — فيصل التطبيقين خلال دقيقة بلا إصدار جديد."
+          } >> "$GITHUB_STEP_SUMMARY"

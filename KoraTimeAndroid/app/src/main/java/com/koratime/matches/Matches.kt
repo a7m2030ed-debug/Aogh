@@ -5,14 +5,17 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.koratime.core.ArabicNames
 import com.koratime.R
+import com.koratime.core.AppConfig
 import com.koratime.core.AppText
+import com.koratime.core.ArabicNames
 import com.koratime.core.Catalog
 import com.koratime.core.Http
 import com.koratime.core.KTDate
 import com.koratime.core.Settings
 import com.koratime.core.ktJson
+import java.util.Date
+import java.util.Locale
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -20,8 +23,6 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
-import java.util.Date
-import java.util.Locale
 
 enum class MatchStatus { SCHEDULED, LIVE, FINISHED, POSTPONED, CANCELED;
 
@@ -249,7 +250,7 @@ class MatchesViewModel(private val settings: Settings) : ViewModel() {
         }
 
     val attribution: String
-        get() = if (settings.apiFootballKey.isNotBlank()) {
+        get() = if (settings.apiFootballKey.isNotBlank() || AppConfig.cachedProxyBase != null) {
             ApiFootballProvider(settings.apiFootballKey).attribution
         } else {
             SportsDbProvider(settings.sportsDbKey).attribution
@@ -333,15 +334,26 @@ class MatchesViewModel(private val settings: Settings) : ViewModel() {
 
         loadJob = viewModelScope.launch {
             try {
-                // مفتاح API-Football يعني تغطية روشن والدوريات الكبرى؛
-                // بلا مفتاح نبقى على المصدر القديم بحدوده المعروفة.
-                val apiKey = settings.apiFootballKey
-                val result = if (apiKey.isNotBlank()) {
-                    ApiFootballProvider(apiKey).matches(day)
-                        .ifEmpty { SportsDbProvider(settings.sportsDbKey).matches(day) }
-                } else {
-                    SportsDbProvider(settings.sportsDbKey).matches(day)
+                // ثلاثة مسارات بالترتيب:
+                // ١. مفتاح المستخدم الشخصي إن وضعه — حصّته وحده.
+                // ٢. الوسيط المنشور — يملك المفتاح ويخزّن، فيرى كل مستخدم
+                //    الجدول كاملاً بلا تسجيل. وهذا ما يراه أغلب الناس.
+                // ٣. المصدر القديم بحدوده — شبكة أمان حين يسقط ما قبله.
+                val apiKey = settings.apiFootballKey.trim()
+                var proxy = AppConfig.cachedProxyBase
+                if (proxy == null && apiKey.isBlank()) {
+                    // أوّل تشغيل لم يصله الإعداد المنشور بعد
+                    proxy = AppConfig.load()?.proxyBase
                 }
+
+                val primary = if (apiKey.isNotBlank() || proxy != null) {
+                    ApiFootballProvider(apiKey, proxy).matches(day)
+                } else {
+                    emptyList()
+                }
+                // يوم فارغ قد يكون حدّ الخطة أو عطباً في الوسيط، لا يوماً بلا
+                // مباريات — فنسأل المصدر القديم قبل إظهار شاشة خالية.
+                val result = primary.ifEmpty { SportsDbProvider(settings.sportsDbKey).matches(day) }
                 cache[key] = result
                 lastUpdated = Date()
                 errorMessage = null

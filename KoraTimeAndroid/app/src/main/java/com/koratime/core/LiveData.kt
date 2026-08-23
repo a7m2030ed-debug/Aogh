@@ -1,6 +1,10 @@
 package com.koratime.core
 
+import android.content.Context
+import android.content.SharedPreferences
 import com.koratime.R
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -30,6 +34,11 @@ object LiveData {
 data class AppVersionInfo(
     val latest: String = "0",
     val minimum: String = "0",
+    /**
+     * وسيط المباريات: خادم صغير يملك المفتاح ويخزّن النتائج، فيرى كل مستخدم
+     * الجدول كاملاً بلا تسجيل. فارغ يعني «لا وسيط».
+     */
+    val matchesProxy: String? = null,
     val ios: String? = null,
     val android: String? = null,
     @SerialName("titleAr") val titleAr: String? = null,
@@ -44,6 +53,59 @@ data class AppVersionInfo(
 
     fun notes(arabic: Boolean): String? =
         (if (arabic) notesAr else notesEn)?.takeIf { it.isNotBlank() }
+
+    val proxyBase: String?
+        get() {
+            val value = matchesProxy?.trim().orEmpty()
+            if (!value.startsWith("https://")) return null
+            return value.trimEnd('/')
+        }
+}
+
+/**
+ * الإعدادات المنشورة، تُجلب مرّة واحدة في كل تشغيل ويُحتفظ بآخر ما وصل.
+ *
+ * المباريات تحتاج رابط الوسيط قبل أوّل طلب، وبوّابة التحديث تحتاج البيان
+ * نفسه — فيُجلب مرّة ويستفيد منه الاثنان. وآخر رابط وصل يُحفظ على الجهاز،
+ * فأوّل طلب في التشغيل التالي لا ينتظر الشبكة.
+ */
+object AppConfig {
+
+    @Volatile private var info: AppVersionInfo? = null
+    private val mutex = Mutex()
+    private var prefs: SharedPreferences? = null
+
+    fun init(context: Context) {
+        if (prefs == null) {
+            prefs = context.applicationContext.getSharedPreferences("koratime", Context.MODE_PRIVATE)
+        }
+    }
+
+    /** آخر وسيط معروف، متاح فوراً بلا انتظار شبكة. */
+    val cachedProxyBase: String?
+        get() = info?.proxyBase ?: prefs?.getString(PROXY_KEY, null)?.takeIf { it.isNotBlank() }
+
+    suspend fun load(): AppVersionInfo? {
+        info?.let { return it }
+        return mutex.withLock {
+            info?.let { return@withLock it }
+            val payload = try {
+                ktJson.decodeFromString<AppVersionInfo>(
+                    Http.text(LiveData.APP_VERSION, maxAgeSeconds = 1800)
+                )
+            } catch (error: Exception) {
+                null
+            }
+            if (payload != null) {
+                info = payload
+                // نحفظ الفارغ أيضاً: إطفاء الوسيط يجب أن يصل كما يصل تشغيله.
+                prefs?.edit()?.putString(PROXY_KEY, payload.proxyBase.orEmpty())?.apply()
+            }
+            payload
+        }
+    }
+
+    private const val PROXY_KEY = "config.matchesProxy"
 }
 
 /**

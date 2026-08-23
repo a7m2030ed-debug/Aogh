@@ -53,8 +53,15 @@ jobs:
               if key not in version:
                   sys.exit(f"بيان الإصدار ينقصه {key}")
 
+          # رابط وسيط خاطئ يعني جدول مباريات فارغاً عند كل مستخدم، فنتحقّق
+          # من شكله قبل النشر. الفارغ مقبول ويعني «لا وسيط».
+          proxy = (version.get("matchesProxy") or "").strip()
+          if proxy and not proxy.startswith("https://"):
+              sys.exit(f"رابط الوسيط يجب أن يبدأ بـ https:// — الحالي: {proxy!r}")
+
           print(f"قنوات: {len(channels)} | دوريات: {len(names['leagues'])} | "
-                f"أحدث إصدار: {version['latest']} | أدنى مقبول: {version['minimum']}")
+                f"أحدث إصدار: {version['latest']} | أدنى مقبول: {version['minimum']} | "
+                f"الوسيط: {proxy or 'غير مفعّل'}")
           PY
 
       - name: رفع الأصول على وسم data

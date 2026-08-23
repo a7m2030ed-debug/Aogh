@@ -39,15 +39,10 @@ class UpdateViewModel(private val context: Context) : ViewModel() {
         if (checked) return
         checked = true
         viewModelScope.launch {
-            // فشل الطلب لا يُعرض للمستخدم: بوّابة التحديث لا يجوز أن تُقلقه
+            // الجلب المشترك مع إعدادات المباريات: طلب واحد يخدم الاثنين.
+            // وفشله لا يُعرض للمستخدم — بوّابة التحديث لا يجوز أن تُقلقه
             // بخطأ شبكة، وغياب البيان يعني ببساطة ألّا شيء يُقال.
-            val payload = try {
-                ktJson.decodeFromString<AppVersionInfo>(
-                    Http.text(LiveData.APP_VERSION, maxAgeSeconds = 1800)
-                )
-            } catch (error: Exception) {
-                return@launch
-            }
+            val payload = AppConfig.load() ?: return@launch
 
             info = payload
             val installed = installedVersion()

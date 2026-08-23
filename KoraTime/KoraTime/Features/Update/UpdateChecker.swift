@@ -34,12 +34,10 @@ final class UpdateChecker {
     }
 
     func check() async {
-        guard let url = LiveData.appVersion else { return }
-        // فشل الطلب لا يُعرض للمستخدم: بوّابة التحديث لا يجوز أن تُقلقه
-        // بخطأ شبكة، وغياب البيان يعني ببساطة ألّا شيء يُقال.
-        guard let payload = try? await HTTPClient.shared.decode(
-            AppVersionInfo.self, from: url, maxAge: 60 * 30
-        ) else { return }
+        // الجلب المشترك مع إعدادات المباريات: طلب واحد يخدم الاثنين.
+        // وفشله لا يُعرض للمستخدم — بوّابة التحديث لا يجوز أن تُقلقه بخطأ
+        // شبكة، وغياب البيان يعني ببساطة ألّا شيء يُقال.
+        guard let payload = await AppConfig.shared.load() else { return }
 
         info = payload
         let current = installed
