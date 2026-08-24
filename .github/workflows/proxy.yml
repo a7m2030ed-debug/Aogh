@@ -99,18 +99,25 @@ jobs:
                    -H "Authorization: Bearer $GH_TOKEN" \
                    -H "Accept: application/vnd.github+json" \
                    "https://api.github.com/repos/${{ github.repository }}/environments" || echo 000)
+          # github-pages بيئة تصنعها GitHub بنفسها، ولا يضع فيها أحد أسرار
+          # Cloudflare. عدّها سبباً مضلّل، فتُستثنى.
           envs=""
           if [ "$code" = "200" ]; then
-            envs=$(python3 -c "import json,os,sys; d=json.load(open(os.environ['RUNNER_TEMP']+'/envs.json')); print(' '.join((e.get('name') or '?') for e in (d.get('environments') or [])))" 2>/dev/null || true)
+            envs=$(python3 -c "import json,os; d=json.load(open(os.environ['RUNNER_TEMP']+'/envs.json')); print(' '.join(n for n in ((e.get('name') or '') for e in (d.get('environments') or [])) if n and n != 'github-pages'))" 2>/dev/null || true)
           fi
 
           if [ "$code" != "200" ]; then
-            echo "::error::تعذّر سؤال المستودع عن بيئاته (HTTP $code)، فلا أجزم. الاحتمالات: أسرار Environment، أو مستودع آخر، أو فراغ زائد في الاسم."
+            echo "::error::تعذّر سؤال المستودع عن بيئاته (HTTP $code)، فلا أجزم بالسبب."
           elif [ -n "$envs" ]; then
-            echo "::error::المستودع فيه بيئات: $envs — وهذا أرجح الأسباب. أسرار البيئة لا يراها إجراء بلا سطر environment. إمّا أن تنقلها إلى Repository secrets، وإمّا أخبرني باسم البيئة فأضيف السطر."
+            echo "::error::المستودع فيه بيئات: $envs — إن كنت أضفت الأسرار داخل إحداها فهي أسرار Environment ولا يراها إجراء بلا سطر environment. انقلها إلى Repository secrets، أو أخبرني باسم البيئة فأضيف السطر."
+            exit 1
           else
-            echo "::error::ولا بيئات في المستودع، فلم يبقَ إلا: (١) أنها أُضيفت في مستودع آخر — تأكّد أن شريط العنوان يقول ${{ github.repository }}، (٢) أو أن في الأسماء فراغاً زائداً أو حرفاً مختلفاً. الأسماء المطلوبة حرفياً: CLOUDFLARE_API_TOKEN و CLOUDFLARE_ACCOUNT_ID و API_FOOTBALL_KEY."
+            echo "ولا بيئات أنشأتَها في المستودع (عدا github-pages التي تصنعها GitHub نفسها)."
           fi
+
+          # الصفحة الواحدة فيها ثلاثة أقسام متشابهة، والأسرار التي تُضاف في
+          # Codespaces أو Dependabot لا تصل إلى Actions أبداً.
+          echo "::error::فالأرجح أن الأسرار في قسم آخر من الصفحة نفسها. الصفحة الصحيحة حرفياً: https://github.com/${{ github.repository }}/settings/secrets/actions — لا Codespaces ولا Dependabot، وتحت العنوان 'Repository secrets'. والأسماء: CLOUDFLARE_API_TOKEN و CLOUDFLARE_ACCOUNT_ID و API_FOOTBALL_KEY."
           exit 1
 
       - uses: actions/setup-node@v4
