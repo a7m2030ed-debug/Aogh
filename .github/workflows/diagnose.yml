@@ -10,6 +10,7 @@ on:
       - ".github/scripts/probe_sources.py"
       - ".github/scripts/probe_arabic.py"
       - ".github/scripts/probe_arab_leagues.py"
+      - ".github/scripts/probe_arab_depth.py"
       - ".github/workflows/diagnose.yml"
   workflow_dispatch:
 
@@ -74,16 +75,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: فحص الدوريات العربية دوري دوري
-        run: python3 .github/scripts/probe_arab_leagues.py
+      # المسح العريض (probe_arab_leagues.py) استنفد معدّل المفتاح بنفسه
+      # فأعطى أصفاراً كاذبة بعد أوّل أربعة دوريات. نتيجته محفوظة في
+      # arab-leagues-report.md، ولا يُعاد تشغيله هنا كي لا يسمّم القياس
+      # الذي يليه. يُشغَّل يدوياً عند الحاجة.
+      - name: عزل حدّ المعدّل عن التغطية
+        run: python3 .github/scripts/probe_arab_depth.py
 
       - name: حفظ التقرير
         run: |
           set -euo pipefail
-          cat docs/arab-leagues-report.md >> "$GITHUB_STEP_SUMMARY"
+          cat docs/arab-fixtures-report.md >> "$GITHUB_STEP_SUMMARY"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/arab-leagues-report.md
+          git add docs/arab-fixtures-report.md
           if git diff --cached --quiet; then
             echo "لا جديد في التقرير"
             exit 0
