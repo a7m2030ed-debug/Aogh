@@ -5,9 +5,9 @@
 
 | المصدر | الحالة | عدد النتائج | ذكر الدوريات المهمّة |
 |---|---|---|---|
-| TheSportsDB key=123 (اليوم) | ✅ 200 | 3 | — |
+| TheSportsDB key=123 (اليوم) | ✅ 200 | 3 | Serie A |
 | TheSportsDB key=1 (اليوم) | HTTP 400 | — | — |
-| TheSportsDB key=3 (اليوم) | ✅ 200 | 3 | — |
+| TheSportsDB key=3 (اليوم) | ✅ 200 | 3 | Serie A |
 | TheSportsDB بحث: الدوري السعودي | ✅ 200 | 0 | Saudi، Hilal، Nassr، Ittihad |
 | football-data.org بلا مفتاح | HTTP 403 | — | — |
 | API-Football بلا مفتاح | HTTP 403 | — | — |
