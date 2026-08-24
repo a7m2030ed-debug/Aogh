@@ -26,7 +26,11 @@ BASE = f"https://www.thesportsdb.com/api/v1/json/{KEY}"
 UA = "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36"
 TIMEOUT = 15
 PAUSE = 0.4          # المفتاح المجاني محدود المعدّل، فلا نُغرقه
-MAX_PER_COUNTRY = 3
+
+# ضبط: الدوري الإنجليزي أغزر ما في المصدر. إن ردّ هو أيضاً بخمس عشرة
+# مباراة للموسم فالرقم سقف المفتاح المجاني لا حدّ التغطية — وحينها لا
+# يصلح المصدر لجدول يومي مهما كان البلد.
+CONTROL = ("English Premier League", "4328")
 
 CTX = ssl.create_default_context()
 CTX.check_hostname = False
@@ -97,7 +101,8 @@ def main():
             lines.append(f"| {country} | لا شيء | — |")
             print(f"{country}: لا دوريات", flush=True)
             continue
-        for item in found[:MAX_PER_COUNTRY]:
+        # بلا سقف: الفحص الأول اقتطع ثلاثة لكل بلد فسقط دوري روشن نفسه.
+        for item in found:
             name = item.get("strLeague") or "?"
             lid = item.get("idLeague")
             if not lid:
@@ -106,12 +111,16 @@ def main():
             lines.append(f"| {country} | {name} | `{lid}` |")
         print(f"{country}: {len(found)} دوري", flush=True)
 
+    leagues.append(("ضبط", CONTROL[0], CONTROL[1]))
+    lines.append(f"| ضبط | {CONTROL[0]} | `{CONTROL[1]}` |")
+
     # ٢) هل تُرجع نقاط «لكل دوري» مباريات فعلاً؟
     lines += ["", "## هل تُرجع مباريات؟", "",
               "| الدوري | القادمة | السابقة | الموسم | مثال |",
               "|---|---|---|---|---|"]
 
     usable = 0
+    control_season = 0
     for country, name, lid in leagues:
         upcoming = events(get(f"{BASE}/eventsnextleague.php?id={lid}")[1])
         past = events(get(f"{BASE}/eventspastleague.php?id={lid}")[1])
@@ -129,23 +138,48 @@ def main():
             first = pool[0]
             sample = (f"{first.get('strHomeTeam', '?')} × {first.get('strAwayTeam', '?')}"
                       f" — {first.get('dateEvent', '?')}")
-        if upcoming:
+        if upcoming and country != "ضبط":
             usable += 1
+        if country == "ضبط":
+            control_season = len(seasonal)
 
         season_cell = f"{len(seasonal)}" + (f" ({season_used})" if season_used else "")
         lines.append(f"| {name} | {len(upcoming)} | {len(past)} | {season_cell} | {sample or '—'} |")
         print(f"{name} ({lid}): قادمة={len(upcoming)} سابقة={len(past)} "
               f"موسم={len(seasonal)}{' ' + season_used if season_used else ''}", flush=True)
 
+    arab_count = max(len(leagues) - 1, 0)
     verdict = (
-        f"**{usable}** من **{len(leagues)}** دوري عربي ردّ بمباريات قادمة."
-        if leagues else "لم يُعثر على أي دوري عربي في المصدر."
+        f"**{usable}** من **{arab_count}** دوري عربي ردّ بمباريات قادمة."
+        if arab_count else "لم يُعثر على أي دوري عربي في المصدر."
     )
+
+    # الضبط يفصل بين «لا تغطية عربية» و«سقف على كل شيء».
+    if control_season and control_season <= 20:
+        control_note = (
+            f"وصفّ الضبط حاسم: الدوري الإنجليزي — أغزر ما في المصدر — ردّ بـ"
+            f"**{control_season}** مباراة للموسم كلّه. فالرقم **سقف المفتاح"
+            " المجاني** لا حدّ التغطية، ولا يصلح المصدر لجدول يومي مهما كان"
+            " البلد."
+        )
+    elif control_season:
+        control_note = (
+            f"وصفّ الضبط: الدوري الإنجليزي ردّ بـ**{control_season}** مباراة"
+            " للموسم — أي لا سقف عامّ، والنقص في التغطية العربية وحدها."
+        )
+    else:
+        control_note = (
+            "وصفّ الضبط ردّ بصفر أيضاً — أي أن نقاط «لكل دوري» محجوبة عن"
+            " المفتاح المجاني أصلاً، لا أن التغطية العربية ناقصة."
+        )
+
     lines += [
         "",
         "## الخلاصة",
         "",
         verdict,
+        "",
+        control_note,
         "",
         "عمود «القادمة» هو الحاسم: إن كان أكبر من صفر لعدّة دوريات فالمصدر",
         "يصلح لبناء جدول عربي **بلا مفتاح من المستخدم**، ويكفي أن نسأل عن كل",
