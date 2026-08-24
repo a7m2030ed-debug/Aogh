@@ -60,7 +60,14 @@ jobs:
             exit 0
           fi
           git commit -m "تقرير جودة البثّ [skip ci]"
-          git push
+          # مهمّة «تغطية الدوريات العربية» تدفع إلى الفرع نفسه وقد تسبقنا.
+          for attempt in 1 2 3; do
+            if git push; then exit 0; fi
+            echo "الدفع تعثّر (محاولة $attempt) — نعيد الأساس"
+            git pull --rebase origin "${GITHUB_REF_NAME}"
+          done
+          echo "::error::تعذّر دفع التقرير بعد ثلاث محاولات"
+          exit 1
 
   # مهمّة منفصلة عمداً: جواب «هل تُغطّي الدوريات العربية؟» هو نقطة القرار،
   # فلا ينبغي أن ينتظر قياس ثلاثين قناة.
