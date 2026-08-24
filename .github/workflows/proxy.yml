@@ -51,21 +51,44 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # الأسرار وصلت فارغة مرّتين والمستخدم يؤكّد أنه أضافها. الاحتمالان
+      # الأكثر شيوعاً: لُصقت في تبويب Variables المجاور لا في Secrets، أو
+      # في نطاق Environment لا يراه إجراء بلا environment. نفحص الأول هنا
+      # مباشرة. القيم لا تُطبع في أي حال — نختبر الخلوّ وحده.
       - name: التأكّد من الأسرار
         env:
           TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          VAR_TOKEN: ${{ vars.CLOUDFLARE_API_TOKEN }}
+          VAR_ACCOUNT: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          VAR_KEY: ${{ vars.API_FOOTBALL_KEY }}
         run: |
           missing=""
-          if [ -z "$TOKEN" ]; then missing="$missing CLOUDFLARE_API_TOKEN"; fi
-          if [ -z "$ACCOUNT" ]; then missing="$missing CLOUDFLARE_ACCOUNT_ID"; fi
-          if [ -z "$KEY" ]; then missing="$missing API_FOOTBALL_KEY"; fi
-          if [ -n "$missing" ]; then
-            echo "::error::تنقص هذه الأسرار:$missing — أضفها من Settings ← Secrets and variables ← Actions"
-            exit 1
+          as_var=""
+          for name in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID API_FOOTBALL_KEY; do
+            case "$name" in
+              CLOUDFLARE_API_TOKEN)  secret="$TOKEN";   variable="$VAR_TOKEN" ;;
+              CLOUDFLARE_ACCOUNT_ID) secret="$ACCOUNT"; variable="$VAR_ACCOUNT" ;;
+              API_FOOTBALL_KEY)      secret="$KEY";     variable="$VAR_KEY" ;;
+            esac
+            [ -n "$secret" ] && continue
+            missing="$missing $name"
+            [ -n "$variable" ] && as_var="$as_var $name"
+          done
+
+          if [ -z "$missing" ]; then
+            echo "الأسرار الثلاثة موجودة."
+            exit 0
           fi
-          echo "الأسرار الثلاثة موجودة."
+
+          echo "::error::تنقص هذه الأسرار:$missing"
+          if [ -n "$as_var" ]; then
+            echo "::error::لكنها موجودة كـ Variables:$as_var — الصفحة نفسها فيها تبويبان، والمطلوب تبويب Secrets. احذفها من Variables وأعد إضافتها في Secrets (خصوصاً مفتاح API الذي يظهر في السجلّات إن بقي متغيّراً)."
+          else
+            echo "::error::وليست في تبويب Variables أيضاً. تحقّق من: (١) أنها في قسم Repository secrets لا Environment secrets، (٢) أن المستودع هو a7m2030ed-debug/Aogh نفسه، (٣) أن الأسماء بلا فراغ زائد في أوّلها أو آخرها."
+          fi
+          exit 1
 
       - uses: actions/setup-node@v4
         with:
