@@ -63,6 +63,7 @@ jobs:
           VAR_TOKEN: ${{ vars.CLOUDFLARE_API_TOKEN }}
           VAR_ACCOUNT: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           VAR_KEY: ${{ vars.API_FOOTBALL_KEY }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           missing=""
           as_var=""
@@ -85,8 +86,30 @@ jobs:
           echo "::error::تنقص هذه الأسرار:$missing"
           if [ -n "$as_var" ]; then
             echo "::error::لكنها موجودة كـ Variables:$as_var — الصفحة نفسها فيها تبويبان، والمطلوب تبويب Secrets. احذفها من Variables وأعد إضافتها في Secrets (خصوصاً مفتاح API الذي يظهر في السجلّات إن بقي متغيّراً)."
+            exit 1
+          fi
+
+          echo "وليست في تبويب Variables أيضاً."
+          echo "المستودع الذي يقرأ منه هذا الإجراء: ${{ github.repository }}"
+
+          # بقي احتمال واحد راجح: أنها أسرار Environment. أسماء البيئات ليست
+          # سرّاً، فنسألها. وجود بيئة يعني أن السرّ فيها ولا يراه إجراء بلا
+          # environment — والعلاج سطر واحد في هذا الملف.
+          code=$(curl -sS -o "$RUNNER_TEMP/envs.json" -w '%{http_code}' \
+                   -H "Authorization: Bearer $GH_TOKEN" \
+                   -H "Accept: application/vnd.github+json" \
+                   "https://api.github.com/repos/${{ github.repository }}/environments" || echo 000)
+          envs=""
+          if [ "$code" = "200" ]; then
+            envs=$(python3 -c "import json,os,sys; d=json.load(open(os.environ['RUNNER_TEMP']+'/envs.json')); print(' '.join((e.get('name') or '?') for e in (d.get('environments') or [])))" 2>/dev/null || true)
+          fi
+
+          if [ "$code" != "200" ]; then
+            echo "::error::تعذّر سؤال المستودع عن بيئاته (HTTP $code)، فلا أجزم. الاحتمالات: أسرار Environment، أو مستودع آخر، أو فراغ زائد في الاسم."
+          elif [ -n "$envs" ]; then
+            echo "::error::المستودع فيه بيئات: $envs — وهذا أرجح الأسباب. أسرار البيئة لا يراها إجراء بلا سطر environment. إمّا أن تنقلها إلى Repository secrets، وإمّا أخبرني باسم البيئة فأضيف السطر."
           else
-            echo "::error::وليست في تبويب Variables أيضاً. تحقّق من: (١) أنها في قسم Repository secrets لا Environment secrets، (٢) أن المستودع هو a7m2030ed-debug/Aogh نفسه، (٣) أن الأسماء بلا فراغ زائد في أوّلها أو آخرها."
+            echo "::error::ولا بيئات في المستودع، فلم يبقَ إلا: (١) أنها أُضيفت في مستودع آخر — تأكّد أن شريط العنوان يقول ${{ github.repository }}، (٢) أو أن في الأسماء فراغاً زائداً أو حرفاً مختلفاً. الأسماء المطلوبة حرفياً: CLOUDFLARE_API_TOKEN و CLOUDFLARE_ACCOUNT_ID و API_FOOTBALL_KEY."
           fi
           exit 1
 
