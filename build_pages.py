@@ -28,7 +28,7 @@ PAGES = [
     },
     {
         "out": "khobar.html",
-        "template": "Cluster2_Daily_Report_SINGLE_Template.pptx",
+        "template": "AlKhobar_Single_Template.pptx",
         "single": True,
         "title": "التقرير اليومي — فرع الخبر",
     },
