@@ -28,9 +28,9 @@ PAGES = [
     },
     {
         "out": "khobar.html",
-        "template": "Cluster5_AlKhobar_Template.pptx",
-        "single": False,
-        "title": "التقرير اليومي — خمسة فروع (Al Khobar)",
+        "template": "Cluster2_Daily_Report_SINGLE_Template.pptx",
+        "single": True,
+        "title": "التقرير اليومي — فرع الخبر",
     },
 ]
 
