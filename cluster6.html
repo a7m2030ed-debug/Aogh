@@ -271,6 +271,7 @@
         </label>
       </div>
       <label class="check"><input type="checkbox" id="cSummary" checked> تضمين شريحة ملخص العنقود في بداية العرض</label>
+      <label class="check"><input type="checkbox" id="cHideMissing"> إخفاء صفوف الفروع غير المرفوعة من جدول الملخص بدل تركها شرطات</label>
       <div class="note"><span class="m"></span><span id="assume"></span></div>
     </div>
   </section>
@@ -1772,6 +1773,33 @@ function renderSlide(srcXml, values, opts = {}) {
   const tree = doc.getElementsByTagNameNS(P, "spTree")[0];
   const shapes = shapesOf(doc).map(el => ({ el, g: geomOf(el), t: textOf(el) }));
 
+  /* A branch nobody uploaded doesn't just go blank in the summary table — its
+     whole row is cut, and every row below it (and everything under the table:
+     the utilization bar, the footer) rides up to close the gap, using the
+     template's own row spacing as the unit of one row's height. */
+  if (opts.dropPrefixes && opts.dropPrefixes.length && opts.summaryRows && opts.summaryRows.length > 1) {
+    const rows = opts.summaryRows, gap = rows[1].y - rows[0].y, drop = new Set(opts.dropPrefixes);
+    const rowIndexOf = y => {
+      if (y < rows[0].y - gap / 2 || y >= rows[rows.length - 1].y + gap) return -1;
+      let idx = 0;
+      for (let i = 0; i < rows.length; i++) if (rows[i].y <= y) idx = i; else break;
+      return idx;
+    };
+    const shiftByRow = rows.map(() => 0);
+    let cum = 0;
+    for (let i = 0; i < rows.length; i++) {
+      if (drop.has(rows[i].prefix)) cum += gap;
+      else shiftByRow[i] = -cum;
+    }
+    for (const s of shapes) {
+      if (!s.g || !s.el.parentNode) continue;
+      const ri = rowIndexOf(s.g.y);
+      if (ri < 0) { if (s.g.y >= rows[rows.length - 1].y + gap) shiftY(s.el, -cum); continue; }
+      if (drop.has(rows[ri].prefix)) s.el.remove();
+      else if (shiftByRow[ri]) shiftY(s.el, shiftByRow[ri]);
+    }
+  }
+
   /* rate pills outside the table body (the summary's branch rows) */
   for (const [slot, hex] of Object.entries(opts.pills || {})) {
     const txt = shapes.find(s => s.g && s.t.includes("{{" + slot + "}}"));
@@ -1893,7 +1921,9 @@ function buildPlan() {
       v[`${p.prefix}_RATE`] = b.calc.rate == null ? DASH : b.calc.rate + "%";
       pills[`${p.prefix}_RATE`] = BANDHEX[band(b.calc.rate)];
     }
-    plan.push({ src: t.summary, values: v, opts: { pills }, label: "ملخص العنقود" });
+    const dropPrefixes = state.hideMissing
+      ? t.prefixes.filter(p => !branches.some(x => x.prefix === p.prefix)).map(p => p.prefix) : [];
+    plan.push({ src: t.summary, values: v, opts: { pills, dropPrefixes, summaryRows: t.prefixes }, label: "ملخص العنقود" });
   }
 
   let page = plan.length + 1;
@@ -2552,6 +2582,7 @@ $("#bPdf").onclick = e => {
 };
 
 $("#cSummary").onchange = e => { state.withSummary = e.target.checked; refresh(); };
+$("#cHideMissing").onchange = e => { state.hideMissing = e.target.checked; refresh(); };
 
 $("#inDate").value = new Date().toISOString().slice(0, 10);
 state.date = $("#inDate").value;
@@ -2568,6 +2599,7 @@ if (MODE.single) {
 }
 $("#build").textContent = BUILD;
 state.withSummary = $("#cSummary").checked;
+state.hideMissing = $("#cHideMissing").checked;
 refresh();
 
 /* the Cluster 2 template ships with the page: only the workbooks change daily */
