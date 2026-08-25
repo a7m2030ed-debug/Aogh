@@ -26,6 +26,12 @@ PAGES = [
         "single": False,
         "title": "التقرير اليومي — ستة فروع + No Show",
     },
+    {
+        "out": "khobar.html",
+        "template": "Cluster5_AlKhobar_Template.pptx",
+        "single": False,
+        "title": "التقرير اليومي — خمسة فروع (Al Khobar)",
+    },
 ]
 
 SRC_TITLE = "<title>مُعبِّئ التقرير اليومي — قالب PowerPoint + إكسل أو PDF</title>"
