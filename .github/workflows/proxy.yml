@@ -1,0 +1,192 @@
+name: نشر وسيط المباريات
+
+# يُشغَّل بيدك من تبويب Actions. قبل أول تشغيل يلزم سرّان في:
+#   Settings ← Secrets and variables ← Actions
+#
+#   CLOUDFLARE_API_TOKEN   من dash.cloudflare.com ← My Profile ← API Tokens
+#                          بقالب "Edit Cloudflare Workers"
+#   CLOUDFLARE_ACCOUNT_ID  من صفحة Workers في اللوحة
+#   API_FOOTBALL_KEY       مفتاحك المجاني من dashboard.api-football.com
+#
+# تُدخَل في صفحة الأسرار مباشرة ولا تُرسل في أي محادثة.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/kora-time-ios-app-q9dalt]
+    paths:
+      - "Proxy/**"
+      - ".github/workflows/proxy.yml"
+
+concurrency:
+  group: proxy
+  cancel-in-progress: false
+
+jobs:
+  # الاختبار يعمل على كل دفعة بلا أسرار. فصله عن النشر مقصود: لو كان
+  # الاثنان مهمّة واحدة لظهرت علامة حمراء عند كل دفعة قبل إضافة الأسرار،
+  # فتُخفي الفشل الحقيقي حين يقع.
+  test:
+    name: اختبار منطق الوسيط
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      # التقليم والتخزين ورفض المدخلات الخاطئة والسلوك بلا مفتاح — كلها
+      # بلا لمس API-Football.
+      - working-directory: Proxy
+        run: node worker.test.mjs
+
+  deploy:
+    name: رفع الوسيط وفحصه
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # بيدك وحدها: النشر يمسّ ما يراه كل المستخدمين.
+    if: github.event_name == 'workflow_dispatch'
+    needs: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # الأسرار وصلت فارغة مرّتين والمستخدم يؤكّد أنه أضافها. الاحتمالان
+      # الأكثر شيوعاً: لُصقت في تبويب Variables المجاور لا في Secrets، أو
+      # في نطاق Environment لا يراه إجراء بلا environment. نفحص الأول هنا
+      # مباشرة. القيم لا تُطبع في أي حال — نختبر الخلوّ وحده.
+      - name: التأكّد من الأسرار
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          VAR_TOKEN: ${{ vars.CLOUDFLARE_API_TOKEN }}
+          VAR_ACCOUNT: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          VAR_KEY: ${{ vars.API_FOOTBALL_KEY }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          missing=""
+          as_var=""
+          for name in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID API_FOOTBALL_KEY; do
+            case "$name" in
+              CLOUDFLARE_API_TOKEN)  secret="$TOKEN";   variable="$VAR_TOKEN" ;;
+              CLOUDFLARE_ACCOUNT_ID) secret="$ACCOUNT"; variable="$VAR_ACCOUNT" ;;
+              API_FOOTBALL_KEY)      secret="$KEY";     variable="$VAR_KEY" ;;
+            esac
+            [ -n "$secret" ] && continue
+            missing="$missing $name"
+            [ -n "$variable" ] && as_var="$as_var $name"
+          done
+
+          if [ -z "$missing" ]; then
+            echo "الأسرار الثلاثة موجودة."
+            exit 0
+          fi
+
+          echo "::error::تنقص هذه الأسرار:$missing"
+          if [ -n "$as_var" ]; then
+            echo "::error::لكنها موجودة كـ Variables:$as_var — الصفحة نفسها فيها تبويبان، والمطلوب تبويب Secrets. احذفها من Variables وأعد إضافتها في Secrets (خصوصاً مفتاح API الذي يظهر في السجلّات إن بقي متغيّراً)."
+            exit 1
+          fi
+
+          echo "وليست في تبويب Variables أيضاً."
+          echo "المستودع الذي يقرأ منه هذا الإجراء: ${{ github.repository }}"
+
+          # بقي احتمال واحد راجح: أنها أسرار Environment. أسماء البيئات ليست
+          # سرّاً، فنسألها. وجود بيئة يعني أن السرّ فيها ولا يراه إجراء بلا
+          # environment — والعلاج سطر واحد في هذا الملف.
+          code=$(curl -sS -o "$RUNNER_TEMP/envs.json" -w '%{http_code}' \
+                   -H "Authorization: Bearer $GH_TOKEN" \
+                   -H "Accept: application/vnd.github+json" \
+                   "https://api.github.com/repos/${{ github.repository }}/environments" || echo 000)
+          # github-pages بيئة تصنعها GitHub بنفسها، ولا يضع فيها أحد أسرار
+          # Cloudflare. عدّها سبباً مضلّل، فتُستثنى.
+          envs=""
+          if [ "$code" = "200" ]; then
+            envs=$(python3 -c "import json,os; d=json.load(open(os.environ['RUNNER_TEMP']+'/envs.json')); print(' '.join(n for n in ((e.get('name') or '') for e in (d.get('environments') or [])) if n and n != 'github-pages'))" 2>/dev/null || true)
+          fi
+
+          if [ "$code" != "200" ]; then
+            echo "::error::تعذّر سؤال المستودع عن بيئاته (HTTP $code)، فلا أجزم بالسبب."
+          elif [ -n "$envs" ]; then
+            echo "::error::المستودع فيه بيئات: $envs — إن كنت أضفت الأسرار داخل إحداها فهي أسرار Environment ولا يراها إجراء بلا سطر environment. انقلها إلى Repository secrets، أو أخبرني باسم البيئة فأضيف السطر."
+            exit 1
+          else
+            echo "ولا بيئات أنشأتَها في المستودع (عدا github-pages التي تصنعها GitHub نفسها)."
+          fi
+
+          # الصفحة الواحدة فيها ثلاثة أقسام متشابهة، والأسرار التي تُضاف في
+          # Codespaces أو Dependabot لا تصل إلى Actions أبداً.
+          echo "::error::فالأرجح أن الأسرار في قسم آخر من الصفحة نفسها. الصفحة الصحيحة حرفياً: https://github.com/${{ github.repository }}/settings/secrets/actions — لا Codespaces ولا Dependabot، وتحت العنوان 'Repository secrets'. والأسماء: CLOUDFLARE_API_TOKEN و CLOUDFLARE_ACCOUNT_ID و API_FOOTBALL_KEY."
+          exit 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # المفتاح يُرسل سرّاً إلى Cloudflare ولا يُكتب في أي ملف داخل المستودع.
+      - name: رفع المفتاح ثم نشر الوسيط
+        working-directory: Proxy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$API_FOOTBALL_KEY" | npx --yes wrangler@3 secret put API_FOOTBALL_KEY
+          npx --yes wrangler@3 deploy 2>&1 | tee "$RUNNER_TEMP/deploy.log"
+          grep -oE 'https://[a-z0-9.-]+\.workers\.dev' "$RUNNER_TEMP/deploy.log" \
+            | head -1 > "$RUNNER_TEMP/url.txt" || true
+
+      # النشر الناجح لا يعني وسيطاً يعمل. نسأله عن يوم فعليّ ونعدّ المباريات.
+      - name: فحص الوسيط بيوم حقيقي
+        run: |
+          set -euo pipefail
+          URL=$(cat "$RUNNER_TEMP/url.txt" 2>/dev/null || true)
+          if [ -z "$URL" ]; then
+            echo "::error::لم يُعثر على رابط الوسيط في سجلّ النشر"
+            exit 1
+          fi
+          echo "الوسيط: $URL"
+
+          HEALTH=$(curl -sS "$URL/health")
+          echo "الصحّة: $HEALTH"
+          echo "$HEALTH" | grep -q '"hasKey":true' || {
+            echo "::error::الوسيط لا يرى المفتاح"; exit 1; }
+
+          TODAY=$(date -u +%F)
+          BODY=$(curl -sS "$URL/fixtures?date=$TODAY")
+          COUNT=$(printf '%s' "$BODY" | python3 -c "
+          import json,sys
+          d=json.load(sys.stdin)
+          print(len(d.get('response',[])))
+          ")
+          echo "مباريات $TODAY: $COUNT"
+          if [ "$COUNT" -lt 1 ]; then
+            echo "::warning::الوسيط يعمل لكنه لم يُرجع مباريات لهذا اليوم — تحقّق من حصّة المفتاح"
+          fi
+
+          # الحقول التي يقرؤها التطبيقان يجب أن تصل فعلاً
+          printf '%s' "$BODY" | python3 -c "
+          import json,sys
+          d=json.load(sys.stdin)
+          items=d.get('response',[])
+          if not items: sys.exit(0)
+          f=items[0]
+          need=[('fixture','date'),('teams','home'),('teams','away'),('league','name')]
+          missing=[f'{a}.{b}' for a,b in need if not (f.get(a) or {}).get(b)]
+          if missing: sys.exit('حقول ناقصة: '+', '.join(missing))
+          print('الحقول سليمة، مثال:', f['teams']['home']['name'], 'ضد', f['teams']['away']['name'],
+                'في', f['league']['name'])
+          "
+
+          {
+            echo "### الوسيط جاهز"
+            echo ""
+            echo '```'
+            echo "$URL"
+            echo '```'
+            echo ""
+            echo "ضع هذا الرابط في \`KoraTime/Tools/app-version.json\` تحت المفتاح \`matchesProxy\`"
+            echo "وادفعه — فيصل التطبيقين خلال دقيقة بلا إصدار جديد."
+          } >> "$GITHUB_STEP_SUMMARY"
