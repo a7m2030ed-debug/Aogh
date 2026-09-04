@@ -64,13 +64,11 @@ class _RegisterDealerScreenState extends ConsumerState<RegisterDealerScreen> {
       if (!mounted) return;
       setState(() => _submitted = true);
     } on DioException catch (e) {
-      if (!mounted) return;
-      if (e.response?.statusCode == 401) {
-        context.push('/login');
-      } else {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('تعذّر إرسال الطلب. حاول مرة أخرى.')));
-      }
+      // A 401 here already triggered ApiClient's global redirect to
+      // /login (core/api/api_client.dart) — nothing left to do for it.
+      if (!mounted || e.response?.statusCode == 401) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('تعذّر إرسال الطلب. حاول مرة أخرى.')));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }

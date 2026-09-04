@@ -14,11 +14,13 @@ import '../../features/search/home_screen.dart';
 import '../../features/search/image_search_screen.dart';
 import '../../features/search/search_results_screen.dart';
 import '../../shared/widgets/app_bottom_nav_shell.dart';
+import 'navigator_key.dart';
 
 /// One router for the whole app: the five-tab shell (customer golden path,
 /// spec section 45) plus pushed routes for everything that shouldn't show
 /// the bottom nav (chat, part details, dealer flows, auth).
 final appRouter = GoRouter(
+  navigatorKey: rootNavigatorKey,
   initialLocation: '/',
   routes: [
     GoRoute(path: '/login', builder: (context, state) => const PhoneOtpScreen()),

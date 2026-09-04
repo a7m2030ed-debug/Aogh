@@ -7,6 +7,7 @@ export enum UploadCategory {
   LISTING_PHOTO = 'listing-photo',
   LISTING_VIDEO = 'listing-video',
   DEALER_DOCUMENT = 'dealer-document',
+  CHAT_IMAGE = 'chat-image',
 }
 
 export class PresignUploadDto {

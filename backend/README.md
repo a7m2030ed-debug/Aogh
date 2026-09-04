@@ -44,7 +44,7 @@ src/
     event-bus/               # in-process pub/sub — modules never call each other directly
     geo/                     # haversine distance helper
   modules/
-    identity/                # Users, Dealers, DealerDocuments, OTP auth, JWT
+    identity/                # Users, Dealers, DealerDocuments, OTP auth, JWT; GET /dealers lists verified dealers (nearby/rating sort)
     catalog/                  # VehicleMakes/Models, PartCategories, CanonicalParts
     inventory/                 # Listings, text search, "ابحث لي عنها" search requests
     conversations/              # chat + negotiation offers, GET /conversations lists the caller's own
@@ -95,14 +95,22 @@ src/
   `listings.controller.ts` and `search-requests.controller.ts`. Wiring an
   actual dealer-staff permission model is flagged there, not silently
   assumed.
+- **Dealer registration promotes the owner's role.** `DealersService.register`
+  runs the `Dealer` create and the owner's `User.role → DEALER_OWNER`
+  update in one transaction. Verification status (the "✅ موثّق" badge,
+  granted by an admin) is deliberately a separate field — a dealer gets the
+  dealer app experience immediately, trust badge or not.
+- **`GET /dealers` only ever returns `VERIFIED` dealers** — the two
+  customer-facing home rails ("تشاليح قريبة", "أفضل التشاليح تقييمًا")
+  should mean the trust badge is real, not just decorative next to
+  unverified listings.
 
 ## Mobile app now calls this for real
 
 `../mobile` was rewired in the same round these list-mine endpoints were
 added — every screen calls its real endpoint instead of rendering mock
-data (see `../mobile/README.md` for the full map and what's still a
-placeholder there, like the two dealer-list home rails this backend has
-no endpoint for yet).
+data (see `../mobile/README.md` for the full map and the couple of gaps
+still open there, like true GPS-based "nearby" sorting).
 
 ## What's deliberately not here yet
 

@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/api/api_client.dart';
 
 /// Spec section 44: "حسابي" tab.
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(title: const Text('حسابي')),
       body: ListView(
@@ -26,7 +28,10 @@ class ProfileScreen extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.logout),
             title: const Text('تسجيل الخروج'),
-            onTap: () => context.go('/login'), // TODO: clear AuthTokenStore
+            onTap: () async {
+              await ref.read(authTokenStoreProvider).clear();
+              if (context.mounted) context.go('/login');
+            },
           ),
         ],
       ),

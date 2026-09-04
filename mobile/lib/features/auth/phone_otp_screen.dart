@@ -64,8 +64,18 @@ class _PhoneOtpScreenState extends ConsumerState<PhoneOtpScreen> {
       });
       final token = response.data['accessToken'] as String;
       await ref.read(authTokenStoreProvider).save(token);
+
+      // Route dealers straight to their dashboard rather than the
+      // customer home screen. Requires a second call (JWT payload only
+      // carries {sub, role} as of when it was issued — see
+      // backend/src/modules/identity/auth.service.ts — not decoded
+      // client-side here, since /users/me is already the source of truth
+      // other screens use for the current user).
+      final me = await apiClient.dio.get('/users/me');
+      final role = me.data['role'] as String?;
       if (!mounted) return;
-      context.go('/');
+      final isDealer = role == 'DEALER_OWNER' || role == 'DEALER_STAFF';
+      context.go(isDealer ? '/dealer/dashboard' : '/');
     } on DioException catch (e) {
       setState(() => _error = _messageFor(e));
     } finally {

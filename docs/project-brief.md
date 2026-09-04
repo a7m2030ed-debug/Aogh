@@ -80,15 +80,18 @@ provider, presigned S3-compatible media uploads, and a legal module serving
 the drafted privacy policy + terms of use.
 
 **Mobile**: full navigation shell (5 tabs, spec section 44), every screen
-in the golden path (sections 45-47) as a real Flutter widget tree — and,
-as of this round, wired to the real backend rather than mock data: OTP
-login, search, part details, the AI photo-capture flow on both the
-customer (image search) and dealer (add listing) sides, chat +
-negotiation, dealer registration, orders, and the legal documents. Not run
-through the Flutter SDK (see `mobile/README.md`) since this environment
-doesn't have it installed — treat as unverified until `flutter analyze`
-runs once. Two home-screen rails ("تشاليح قريبة", "أفضل التشاليح تقييمًا")
-are still placeholders pending a dealer-list backend endpoint.
+in the golden path (sections 45-47) as a real Flutter widget tree, fully
+wired to the real backend rather than mock data — including both home
+rails, session handling (global 401 → logout redirect), and
+role-based routing straight to the dealer dashboard after a dealer logs
+in (which required fixing a real backend gap: registering as a dealer
+never used to promote the owner's `User.role`, so no login could ever
+actually reach that experience). Not run through the Flutter SDK (see
+`mobile/README.md`) since this environment doesn't have it installed —
+treat as unverified until `flutter analyze` runs once. Remaining gap:
+the "nearby dealers" sort doesn't pass real GPS coordinates yet (needs
+the already-added `geolocator` package wired up, plus platform
+permission entries).
 
 **Explicitly deferred to v2**, matching the review's MVP-scope call
 (section 6): payments, external delivery-company API integration, dealer

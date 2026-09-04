@@ -29,9 +29,9 @@ flutter run --dart-define=API_BASE_URL=http://localhost:3000/api/v1
 lib/
   main.dart                 # MaterialApp.router, RTL wrapper, theme
   core/
-    api/                     # Dio client, JWT token storage, MediaUploadService
+    api/                     # Dio client (with a global 401 handler), JWT token storage, MediaUploadService
     config/                  # API base URL (--dart-define=API_BASE_URL)
-    router/                  # go_router: shell (5 tabs) + pushed routes
+    router/                  # go_router: shell (5 tabs) + pushed routes; navigator_key.dart lets ApiClient navigate without a BuildContext
     theme/                   # placeholder color seed — swap for real branding
     utils/                   # phone number → E.164 normalizer
   features/
@@ -51,16 +51,18 @@ lib/
 ## Wired to the real backend
 
 Every screen calls its real endpoint via `ApiClient`
-(`core/api/api_client.dart`, a Dio wrapper that attaches the saved JWT):
-OTP request/verify, home + search results (`GET /inventory/search`), part
-details (`GET /inventory/listings/:id`), "ابحث لي عنها"
+(`core/api/api_client.dart`, a Dio wrapper that attaches the saved JWT and
+handles session expiry globally — see below): OTP request/verify, home +
+search results (`GET /inventory/search`), the "تشاليح قريبة" / "أفضل
+التشاليح تقييمًا" home rails and part details (`GET /dealers`,
+`GET /inventory/listings/:id`), "ابحث لي عنها"
 (`POST /inventory/search-requests`), the AI-photo flow in both
 `image_search_screen.dart` and `add_listing_screen.dart` (upload via
 `MediaUploadService` → `POST /ai/vision/recognize-part`), publishing a
 listing (`POST /inventory/listings`), dealer registration
-(`POST /dealers/register`), starting/reading/sending a chat + negotiation
-offers (`/conversations/**`), the messages list (`GET /conversations`),
-orders (`GET /orders`), and both legal documents
+(`POST /dealers/register`), chat — text, image, and negotiation offers
+alike — (`/conversations/**`), the messages list (`GET /conversations`),
+orders (`GET /orders`), account logout, and both legal documents
 (`GET /legal/privacy-policy`, `GET /legal/terms-of-use`).
 
 `add_listing_screen.dart` is the one screen where the AI response alone
@@ -71,23 +73,36 @@ closest name match to the AI's guess, and leaves it in an editable
 dropdown — which is also just the confirm/edit contract spec section 10
 requires, not a workaround.
 
+**Session handling is global, not per-screen.** `ApiClient` installs one
+Dio interceptor that, on any 401 (except the OTP endpoints themselves,
+which use 401 to mean "wrong code" rather than "expired session"), clears
+the saved token and navigates to `/login` via `rootNavigatorKey`
+(`core/router/navigator_key.dart`) — a small file kept separate from
+`app_router.dart` specifically so importing it from `core/api/` doesn't
+create a circular import through every screen `app_router.dart` pulls in.
+Individual screens no longer special-case 401 themselves.
+
+**Dealers get routed to their own dashboard automatically.** Registering
+as a dealer (`POST /dealers/register`) now also promotes the owner's
+`User.role` to `DEALER_OWNER` on the backend (it didn't before — a real
+gap, since without it no login could ever actually reach the dealer
+experience). After OTP verify, the app fetches `GET /users/me` and routes
+to `/dealer/dashboard` instead of `/` when the role is a dealer role.
+
 ## Known gaps in what's wired
 
-- **Two home-screen rails are still placeholders** ("تشاليح قريبة",
-  "أفضل التشاليح تقييمًا") — they need a dealer-list endpoint the backend
-  doesn't have yet (only per-dealer `GET /dealers/:id` exists).
-- **No 401 → `/login` auto-redirect.** A few screens (search-request,
-  dealer registration) catch a 401 and push `/login` manually; screens that
-  don't yet will just surface a generic error. A global Dio interceptor
-  wired to the router (or a `GlobalKey<NavigatorState>`) would centralize
-  this — worth doing once there's more than a couple of call sites.
-- **No dealer-role routing.** `DealerDashboardScreen` is reachable but
-  nothing checks `User.role` to route a dealer there automatically after
-  login, or to gate `add-listing`/registration behind having a dealer
-  profile at all.
-- **Chat is text-only** — the image button in `conversation_screen.dart`
-  is not wired to `MediaUploadService` yet, even though the pattern exists
-  in the AI-capture screens.
+- **"تشاليح قريبة" isn't true distance order yet** — `GET /dealers?sort=nearest`
+  works, but nothing on the client passes the device's lat/lng, so it falls
+  back to the same unsorted verified-dealer list as "الأحدث" would. Wiring
+  the already-added `geolocator` dependency (permission request +
+  `getCurrentPosition()`) is the remaining step, plus the location
+  permission entries `flutter create .` doesn't add to the platform
+  manifests on its own.
+- **No fine-grained dealer-staff permissions** — any authenticated user can
+  currently create a listing under a `dealerId` in a way that isn't
+  actually checked against their own dealer profile (see the `// NOTE`
+  comments in `listings.controller.ts`/`search-requests.controller.ts` on
+  the backend).
 - Push notifications (spec section 32) — no FCM/APNs setup yet.
 - App icon, splash screen, real branding/colors (placeholder seed color in
   `core/theme/app_theme.dart`).

@@ -1,16 +1,21 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../core/api/api_client.dart';
+import '../../core/api/media_upload_service.dart';
 
 class ChatMessage {
-  const ChatMessage({required this.text, required this.fromMe});
+  const ChatMessage({required this.text, required this.fromMe, this.imageUrl});
   final String text;
   final bool fromMe;
+  final String? imageUrl;
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) => ChatMessage(
         text: json['text'] as String? ?? '',
         fromMe: json['senderType'] == 'USER',
+        imageUrl: json['imageUrl'] as String?,
       );
 }
 
@@ -113,6 +118,27 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     }
   }
 
+  Future<void> _sendImage() async {
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 85);
+    if (picked == null || _resolvedConversationId == null) return;
+    try {
+      final publicUrl = await ref.read(mediaUploadServiceProvider).upload(
+            File(picked.path),
+            UploadCategory.chatImage,
+            contentType: 'image/jpeg',
+          );
+      final apiClient = ref.read(apiClientProvider);
+      await apiClient.dio.post(
+        '/conversations/$_resolvedConversationId/messages',
+        data: {'imageUrl': publicUrl},
+      );
+      await _loadMessages();
+    } on DioException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذّر إرسال الصورة.')));
+    }
+  }
+
   Future<void> _proposePrice(num price) async {
     if (_resolvedConversationId == null) return;
     try {
@@ -208,7 +234,12 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                           : Theme.of(context).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: Text(message.text),
+                    child: message.imageUrl != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.network(message.imageUrl!, width: 180, fit: BoxFit.cover),
+                          )
+                        : Text(message.text),
                   ),
                 );
               },
@@ -219,7 +250,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
               padding: const EdgeInsets.all(8),
               child: Row(
                 children: [
-                  IconButton(onPressed: () {}, icon: const Icon(Icons.image_outlined)),
+                  IconButton(onPressed: _sendImage, icon: const Icon(Icons.image_outlined)),
                   Expanded(
                     child: TextField(
                       controller: _controller,

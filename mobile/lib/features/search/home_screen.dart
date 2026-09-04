@@ -6,10 +6,15 @@ import '../../shared/models/listing.dart';
 import '../../shared/widgets/listing_card.dart';
 
 /// Spec section 6: "الصفحة الرئيسية للعميل — يجب أن تكون بسيطة جدًا".
-/// Search bar + image search up top, then the "قطع متوفرة الآن" rail
-/// backed by a plain (no query) GET /inventory/search. The other two
-/// rails (nearby dealers, top-rated dealers) need dealer-level list
-/// endpoints the backend doesn't have yet — still placeholders.
+/// Search bar + image search up top, then three rails, all backed by real
+/// endpoints now: "قطع متوفرة الآن" (GET /inventory/search, no query),
+/// "تشاليح قريبة" and "أفضل التشاليح تقييمًا" (GET /dealers?sort=nearest/rating
+/// — backend/src/modules/identity/dealers.controller.ts). The "nearby" rail
+/// doesn't yet pass the device's lat/lng, so it currently returns the same
+/// verified-dealers list as an unsorted fallback rather than true distance
+/// order — wiring `geolocator` (already in pubspec.yaml for exactly this)
+/// plus the location permission entries `flutter create .` doesn't add on
+/// its own is the remaining step.
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -17,13 +22,31 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
+class _DealerPreview {
+  const _DealerPreview({required this.businessName, required this.city, required this.ratingAverage});
+
+  factory _DealerPreview.fromJson(Map<String, dynamic> json) => _DealerPreview(
+        businessName: json['businessName'] as String,
+        city: json['city'] as String,
+        ratingAverage: (json['ratingAverage'] as num).toDouble(),
+      );
+
+  final String businessName;
+  final String city;
+  final double ratingAverage;
+}
+
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   late Future<List<Listing>> _availableNow;
+  late Future<List<_DealerPreview>> _nearbyDealers;
+  late Future<List<_DealerPreview>> _topRatedDealers;
 
   @override
   void initState() {
     super.initState();
     _availableNow = _fetchAvailableNow();
+    _nearbyDealers = _fetchDealers('nearest');
+    _topRatedDealers = _fetchDealers('rating');
   }
 
   Future<List<Listing>> _fetchAvailableNow() async {
@@ -32,12 +55,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return (response.data as List).map((e) => Listing.fromJson(e as Map<String, dynamic>)).toList();
   }
 
+  Future<List<_DealerPreview>> _fetchDealers(String sort) async {
+    final apiClient = ref.read(apiClientProvider);
+    final response = await apiClient.dio.get('/dealers', queryParameters: {'sort': sort});
+    return (response.data as List)
+        .map((e) => _DealerPreview.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  void _refreshAll() {
+    setState(() {
+      _availableNow = _fetchAvailableNow();
+      _nearbyDealers = _fetchDealers('nearest');
+      _topRatedDealers = _fetchDealers('rating');
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('قطعتي')),
       body: RefreshIndicator(
-        onRefresh: () async => setState(() => _availableNow = _fetchAvailableNow()),
+        onRefresh: () async => _refreshAll(),
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
@@ -80,13 +119,72 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             const SizedBox(height: 8),
             const _SectionHeader('تشاليح قريبة'),
-            const _PlaceholderRow(text: 'يحتاج نقطة نهاية لقائمة التجار — لم تُبنَ بعد'),
+            _DealerRail(future: _nearbyDealers),
             const SizedBox(height: 8),
             const _SectionHeader('أفضل التشاليح تقييمًا'),
-            const _PlaceholderRow(text: 'يحتاج نقطة نهاية لقائمة التجار — لم تُبنَ بعد'),
+            _DealerRail(future: _topRatedDealers),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _DealerRail extends StatelessWidget {
+  const _DealerRail({required this.future});
+  final Future<List<_DealerPreview>> future;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<_DealerPreview>>(
+      future: future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const SizedBox(height: 90, child: Center(child: CircularProgressIndicator()));
+        }
+        final dealers = snapshot.data ?? const <_DealerPreview>[];
+        if (snapshot.hasError || dealers.isEmpty) {
+          return _PlaceholderRow(
+            text: snapshot.hasError ? 'تعذّر تحميل التشاليح.' : 'لا توجد تشاليح موثقة بعد.',
+          );
+        }
+        return SizedBox(
+          height: 90,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: dealers.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (context, i) {
+              final dealer = dealers[i];
+              return Container(
+                width: 160,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(dealer.businessName,
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleSmall),
+                    Text(dealer.city, style: Theme.of(context).textTheme.bodySmall),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(Icons.star, size: 14, color: Colors.amber),
+                        Text(' ${dealer.ratingAverage.toStringAsFixed(1)}'),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
