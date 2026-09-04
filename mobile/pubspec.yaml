@@ -1,0 +1,45 @@
+name: carparts_app
+description: >
+  Customer + dealer mobile app for the used-car-parts marketplace
+  ("تشاليح") platform. Arabic-first, RTL by default.
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # Routing: one declarative router for both the customer and dealer sides
+  # of the app (section 44's bottom nav + all the flows in sections 45-47).
+  go_router: ^14.6.2
+
+  # State management. Riverpod over Provider/Bloc mainly because the
+  # backend's module boundaries (auth/catalog/inventory/chat/orders) map
+  # cleanly onto one provider file per feature.
+  flutter_riverpod: ^2.6.1
+
+  # HTTP client for the NestJS API in ../backend.
+  dio: ^5.7.0
+
+  # Camera + gallery picking for "تصوير القطعة" (spec sections 9, 12) —
+  # the core AI-recognition upload flow for both customer and dealer.
+  image_picker: ^1.1.2
+
+  # Local persistence for the auth token between app launches.
+  shared_preferences: ^2.3.3
+
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true

@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: carparts
+      POSTGRES_PASSWORD: carparts
+      POSTGRES_DB: carparts
+    ports:
+      - '5432:5432'
+    volumes:
+      - carparts_pgdata:/var/lib/postgresql/data
+
+volumes:
+  carparts_pgdata:
