@@ -116,8 +116,18 @@ src/
   `AI_VISION_PROVIDER=claude` + `AI_VISION_API_KEY` (see `.env.example`).
 - **OTP is behind `OTP_PROVIDER`** (`modules/identity/sms/`). `mock`
   (default) keeps the fixed dev code `0000` from `auth.service.ts`.
-  `twilio` sends a real 6-digit SMS code via `TwilioOtpProvider` — needs
-  only a Twilio account + the three `TWILIO_*` values in `.env.example`.
+  `taqnyat` sends a real 6-digit code through Taqnyat (تقنيات), a Saudi
+  gateway — the recommended one for a KSA launch, since sending A2P SMS to
+  +966 numbers requires a locally registered sender name and the Saudi
+  gateways handle that during onboarding; needs `TAQNYAT_TOKEN` +
+  `TAQNYAT_SENDER`. `twilio` is the international alternative, needing the
+  three `TWILIO_*` values. Both implement the same `OtpProvider`
+  interface, so switching is one `.env` line. The Taqnyat request shape is
+  taken from their published OpenAPI spec
+  ([github.com/taqnyat/OpenAPI](https://github.com/taqnyat/OpenAPI/blob/main/sms/v1/openapi.yaml)),
+  not guessed — but neither provider has been called against a live
+  account from here, so send yourself one real code before opening a
+  pilot.
 - **Push is behind `PUSH_PROVIDER`** (`modules/notifications/push/`).
   `none` (default) is in-app only — `Notification` rows are still created
   and readable via `GET /notifications`, there's just no device wake-up.

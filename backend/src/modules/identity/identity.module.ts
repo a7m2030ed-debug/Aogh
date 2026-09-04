@@ -11,6 +11,7 @@ import { DealersController } from './dealers.controller';
 import { DealersService } from './dealers.service';
 import { OTP_PROVIDER, OtpProvider } from './sms/otp-provider.interface';
 import { MockOtpProvider } from './sms/providers/mock-otp.provider';
+import { TaqnyatOtpProvider } from './sms/providers/taqnyat-otp.provider';
 import { TwilioOtpProvider } from './sms/providers/twilio-otp.provider';
 
 @Module({
@@ -32,19 +33,30 @@ import { TwilioOtpProvider } from './sms/providers/twilio-otp.provider';
     UsersService,
     DealersService,
     MockOtpProvider,
+    TaqnyatOtpProvider,
     TwilioOtpProvider,
     {
       provide: OTP_PROVIDER,
-      // OTP_PROVIDER=twilio + TWILIO_* in .env activates real SMS — see
-      // backend/README.md. Defaults to mock (fixed "0000" code) so a
-      // fresh checkout with no Twilio account still boots and the login
-      // flow still works end to end.
+      // OTP_PROVIDER=taqnyat (Saudi gateway) or =twilio (international),
+      // each with its own credentials in .env — see backend/README.md.
+      // Defaults to mock (fixed "0000" code) so a fresh checkout with no
+      // SMS account still boots and the login flow still works end to end.
       useFactory: (
         config: ConfigService,
         mock: MockOtpProvider,
+        taqnyat: TaqnyatOtpProvider,
         twilioProvider: TwilioOtpProvider,
-      ): OtpProvider => (config.get<string>('otp.provider') === 'twilio' ? twilioProvider : mock),
-      inject: [ConfigService, MockOtpProvider, TwilioOtpProvider],
+      ): OtpProvider => {
+        switch (config.get<string>('otp.provider')) {
+          case 'taqnyat':
+            return taqnyat;
+          case 'twilio':
+            return twilioProvider;
+          default:
+            return mock;
+        }
+      },
+      inject: [ConfigService, MockOtpProvider, TaqnyatOtpProvider, TwilioOtpProvider],
     },
   ],
   exports: [UsersService, DealersService],

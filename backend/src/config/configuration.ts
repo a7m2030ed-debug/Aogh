@@ -18,7 +18,12 @@ export default () => ({
     // Client decision: no paid maps/geocoding provider, and SMS is only
     // ever used for this OTP step — never for order/chat notifications
     // (those go through the notifications module + push, below).
+    // "mock" | "taqnyat" (Saudi gateway — fastest path to sending to +966
+    // numbers, since local sender-name registration is part of their
+    // onboarding) | "twilio" (international).
     provider: process.env.OTP_PROVIDER ?? 'mock',
+    taqnyatToken: process.env.TAQNYAT_TOKEN,
+    taqnyatSender: process.env.TAQNYAT_SENDER,
     twilioAccountSid: process.env.TWILIO_ACCOUNT_SID,
     twilioAuthToken: process.env.TWILIO_AUTH_TOKEN,
     twilioFromNumber: process.env.TWILIO_FROM_NUMBER,
