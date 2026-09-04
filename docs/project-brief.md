@@ -86,16 +86,26 @@ rails, session handling (global 401 → logout redirect), and
 role-based routing straight to the dealer dashboard after a dealer logs
 in (which required fixing a real backend gap: registering as a dealer
 never used to promote the owner's `User.role`, so no login could ever
-actually reach that experience). Not run through the Flutter SDK (see
-`mobile/README.md`) since this environment doesn't have it installed —
-treat as unverified until `flutter analyze` runs once. Device location
-is now wired end to end too: one shared `tryGetCurrentPosition()` call
-per screen feeds real GPS coordinates into dealer search, listing
-search, and part details, so "الأقرب" sorting and every distance badge
-in the UI are backed by real data, not left blank — degrading
-gracefully (unsorted results, no badge, never an error) wherever the
-platform permission entries `mobile/README.md` documents aren't in
-place yet.
+actually reach that experience). Device location is wired end to end
+too: one shared `tryGetCurrentPosition()` call per screen feeds real
+GPS coordinates into dealer search, listing search, and part details,
+so "الأقرب" sorting and every distance badge in the UI are backed by
+real data, not left blank — degrading gracefully (unsorted results, no
+badge, never an error) wherever location permission isn't granted.
+
+**Actually verified, not just written**, as of a later session that
+installed Flutter 3.47.2 stable: `flutter create .` generated the real
+`android`/`ios`/`web` platform folders (now tracked in git, including
+the location + camera/photo-library permission entries added by hand
+afterward — see `mobile/README.md`), `flutter analyze` comes back with
+zero issues, `flutter test` passes, and `flutter build web --release`
+compiles the entire app cleanly. Android/iOS builds themselves weren't
+reachable (that environment's network policy blocks `dl.google.com`,
+so no Android SDK; no Xcode available for iOS either) — but the same
+Dart compiler frontend backs every platform, so a clean web build is
+strong evidence the same code is clean there too. What's genuinely
+still unverified is the Gradle/Kotlin and Xcode/CocoaPods build
+configs themselves, both stock `flutter create` output.
 
 **Explicitly deferred to v2**, matching the review's MVP-scope call
 (section 6): payments, external delivery-company API integration, dealer

@@ -5,27 +5,57 @@ by default (spec section 43).
 
 ## Status
 
-Written without the Flutter SDK available in the environment that created
-it, so it has **not** been run through `flutter pub get` / `flutter
-analyze` / `flutter run`. The Dart code follows standard, current APIs for
-the packages in `pubspec.yaml`, and every screen below is wired to a real
-backend call (not mock data) — but treat all of it as unverified until the
-steps below are run once, since nothing here has actually compiled yet.
+**Verified, not just written.** Most of this app was originally written
+blind (no Flutter SDK in that environment), but a later session installed
+Flutter 3.47.2 stable for real and ran it through the actual toolchain:
 
-The `android/`, `ios/`, `web/` platform folders are intentionally not
-included — they're generated, not hand-written. Set them up once:
+- `flutter create .` generated the real `android/`, `ios/`, `web/`
+  platform folders (previously absent by design — see git history if you
+  need the "here's how to do it yourself" version of this section).
+- `flutter pub get` — clean (had to bump `intl` to `^0.20.3`; the SDK's
+  `flutter_localizations` requires it, `^0.19.0` didn't resolve).
+- `flutter analyze` — **zero issues.** Every finding it surfaced the first
+  time (an unused import, two `DropdownButtonFormField.value` deprecations,
+  a default `test/widget_test.dart` still referencing the counter-app
+  template's `MyApp`) is fixed in the code, not suppressed — except one
+  `use_build_context_synchronously` info in `api_client.dart`'s 401
+  handler, which is a deliberate, commented `// ignore:` (the context
+  there is a fresh `GlobalKey.currentContext` lookup made after the await,
+  not a stale captured one — verified against the `DropdownButtonFormField`
+  source too, to confirm `initialValue` still re-syncs on external changes
+  via its own `didUpdateWidget`, same as the deprecated `value` did, before
+  relying on it for the AI-preselect flow in `add_listing_screen.dart`).
+- `flutter test` — passes (replaced the irrelevant default counter test).
+- `flutter build web --release` — **builds clean**, full production
+  compile of every file in `lib/`, icon fonts tree-shaken. This is the
+  strongest verification available in that environment: android/ios
+  builds need an Android SDK / Xcode this environment's network policy
+  couldn't fetch (`dl.google.com` isn't reachable through its proxy), but
+  the Dart compiler frontend that catches type/API errors is the same one
+  for every platform — a clean web build means the same errors would be
+  clean on Android/iOS too. What's *not* verified: Gradle/Kotlin-side
+  Android build config, and Xcode/CocoaPods-side iOS config, since neither
+  toolchain was reachable — both are stock, unmodified `flutter create`
+  output apart from the permission-file edits below, so risk there is low,
+  but "low risk" isn't "verified."
+
+Location permission entries (Android `AndroidManifest.xml`, iOS
+`Info.plist`) and camera/photo-library usage descriptions (iOS) are
+already added — see the location section below.
+
+To run it:
 
 ```bash
 cd mobile
-flutter create --project-name carparts_app --org com.example .   # adds android/, ios/, web/ around the existing lib/
 flutter pub get
-flutter analyze                                                   # fix whatever the real SDK flags
 flutter run --dart-define=API_BASE_URL=http://localhost:3000/api/v1
 ```
 
 ## What's here
 
 ```
+android/, ios/, web/       # real flutter create output, tracked in git (not regenerated on clone)
+test/widget_test.dart      # smoke test: app builds, home screen renders
 lib/
   main.dart                 # MaterialApp.router, RTL wrapper, theme
   core/
@@ -103,20 +133,15 @@ resolves. If location is off, denied, or the permission entries below
 aren't in place yet, every one of these calls still succeeds — they just
 come back unsorted / without a distance badge, never an error screen.
 
-**Still needs the platform permission entries** —
-`tryGetCurrentPosition()` returns `null` (never crashes) until these
-exist, since `flutter create .` doesn't add them on its own:
-
-- Android (`android/app/src/main/AndroidManifest.xml`, inside `<manifest>`):
-  ```xml
-  <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
-  <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
-  ```
-- iOS (`ios/Runner/Info.plist`):
-  ```xml
-  <key>NSLocationWhenInUseUsageDescription</key>
-  <string>لعرض التشاليح القريبة منك وحساب المسافة والتوصيل</string>
-  ```
+**Platform permission entries are already in place**, not just documented:
+`android/app/src/main/AndroidManifest.xml` has
+`ACCESS_FINE_LOCATION`/`ACCESS_COARSE_LOCATION`, and `ios/Runner/Info.plist`
+has `NSLocationWhenInUseUsageDescription` — plus `NSCameraUsageDescription`
+and `NSPhotoLibraryUsageDescription` for `image_picker` (sections 9, 12),
+which iOS requires or it terminates the app outright the first time a
+screen opens the camera/gallery, rather than just failing that one call.
+None of these existed before `flutter create .` ran; all three were added
+by hand afterward, in the actual generated files.
 
 ## Known gaps in what's wired
 

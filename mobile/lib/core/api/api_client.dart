@@ -32,10 +32,14 @@ class ApiClient {
           final isAuthEndpoint = _authEndpoints.any((p) => path.contains(p));
           if (error.response?.statusCode == 401 && !isAuthEndpoint) {
             await _tokenStore.clear();
+            // Not a stale State.context captured before the await — this is
+            // a fresh GlobalKey.currentContext lookup made right here, so
+            // the "mounted?" concern the lint is generically checking for
+            // doesn't apply. go() replaces the current location rather than
+            // pushing, so calling it again while already on /login is a
+            // harmless no-op — no need to check the current route first.
             final context = rootNavigatorKey.currentContext;
-            // go() replaces the current location rather than pushing, so
-            // calling it again while already on /login is a harmless no-op
-            // — no need to check the current route first.
+            // ignore: use_build_context_synchronously
             if (context != null) GoRouter.of(context).go('/login');
           }
           handler.next(error);

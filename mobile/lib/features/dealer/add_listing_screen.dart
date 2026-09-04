@@ -228,7 +228,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
           ],
           const SizedBox(height: 20),
           DropdownButtonFormField<String>(
-            value: _selectedCanonicalPartId,
+            initialValue: _selectedCanonicalPartId,
             decoration: const InputDecoration(labelText: 'نوع القطعة'),
             items: _canonicalParts
                 .map((p) => DropdownMenuItem(value: p.id, child: Text(p.nameAr)))
@@ -244,7 +244,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<_Condition>(
-            value: _condition,
+            initialValue: _condition,
             decoration: const InputDecoration(labelText: 'الحالة'),
             items: _Condition.values
                 .map((c) => DropdownMenuItem(value: c, child: Text(c.labelAr)))

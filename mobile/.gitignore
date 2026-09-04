@@ -1,12 +1,13 @@
 .dart_tool/
 .packages
 build/
-ios/
-android/
-web/
-macos/
-linux/
-windows/
 *.iml
+.idea/
 .flutter-plugins
 .flutter-plugins-dependencies
+
+# android/, ios/, and web/ ARE tracked — generated once via `flutter
+# create .` and then hand-edited for real (location/camera permissions).
+# Their own nested .gitignore files (android/.gitignore, ios/.gitignore)
+# already exclude the build-artifact/dependency-cache subfolders within
+# them (android/.gradle, ios/Pods, etc.) — nothing extra needed here.
