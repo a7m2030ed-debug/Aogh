@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/api/api_client.dart';
+import '../../core/location/device_location.dart';
 import '../../shared/models/listing.dart';
 
 /// Spec section 20. Backed by GET /inventory/listings/:id
-/// (backend/src/modules/inventory/listings.controller.ts) — same response
-/// shape as search results minus distanceKm, so Listing.fromJson handles
-/// both.
+/// (backend/src/modules/inventory/listings.controller.ts), which now takes
+/// optional lat/lng the same way search does, so the distance badge here
+/// isn't permanently blank the way it would be without device location.
 class PartDetailsScreen extends ConsumerStatefulWidget {
   const PartDetailsScreen({super.key, required this.listingId});
 
@@ -27,8 +28,15 @@ class _PartDetailsScreenState extends ConsumerState<PartDetailsScreen> {
   }
 
   Future<Listing> _fetch() async {
+    final position = await tryGetCurrentPosition();
     final apiClient = ref.read(apiClientProvider);
-    final response = await apiClient.dio.get('/inventory/listings/${widget.listingId}');
+    final response = await apiClient.dio.get(
+      '/inventory/listings/${widget.listingId}',
+      queryParameters: {
+        if (position != null) 'lat': position.latitude,
+        if (position != null) 'lng': position.longitude,
+      },
+    );
     return Listing.fromJson(response.data as Map<String, dynamic>);
   }
 

@@ -31,6 +31,7 @@ lib/
   core/
     api/                     # Dio client (with a global 401 handler), JWT token storage, MediaUploadService
     config/                  # API base URL (--dart-define=API_BASE_URL)
+    location/                # device_location.dart — geolocator wrapped behind a call that never throws
     router/                  # go_router: shell (5 tabs) + pushed routes; navigator_key.dart lets ApiClient navigate without a BuildContext
     theme/                   # placeholder color seed — swap for real branding
     utils/                   # phone number → E.164 normalizer
@@ -89,15 +90,36 @@ gap, since without it no login could ever actually reach the dealer
 experience). After OTP verify, the app fetches `GET /users/me` and routes
 to `/dealer/dashboard` instead of `/` when the role is a dealer role.
 
+**Location is wired end to end, gracefully degrading without it.**
+`core/location/device_location.dart`'s `tryGetCurrentPosition()` resolves
+once per screen (home, search results, and part details each share one
+call rather than prompting three times) and feeds `lat`/`lng` into
+`GET /dealers`, `GET /inventory/search`, and `GET /inventory/listings/:id`
+— all three backend endpoints already accepted these params for exactly
+this, they just weren't being sent before. The "الأقرب" chip on search
+results and the nearby-dealers home rail now do true distance sort;
+`ListingCard` and the dealer cards show the km badge whenever a position
+resolves. If location is off, denied, or the permission entries below
+aren't in place yet, every one of these calls still succeeds — they just
+come back unsorted / without a distance badge, never an error screen.
+
+**Still needs the platform permission entries** —
+`tryGetCurrentPosition()` returns `null` (never crashes) until these
+exist, since `flutter create .` doesn't add them on its own:
+
+- Android (`android/app/src/main/AndroidManifest.xml`, inside `<manifest>`):
+  ```xml
+  <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+  <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+  ```
+- iOS (`ios/Runner/Info.plist`):
+  ```xml
+  <key>NSLocationWhenInUseUsageDescription</key>
+  <string>لعرض التشاليح القريبة منك وحساب المسافة والتوصيل</string>
+  ```
+
 ## Known gaps in what's wired
 
-- **"تشاليح قريبة" isn't true distance order yet** — `GET /dealers?sort=nearest`
-  works, but nothing on the client passes the device's lat/lng, so it falls
-  back to the same unsorted verified-dealer list as "الأحدث" would. Wiring
-  the already-added `geolocator` dependency (permission request +
-  `getCurrentPosition()`) is the remaining step, plus the location
-  permission entries `flutter create .` doesn't add to the platform
-  manifests on its own.
 - **No fine-grained dealer-staff permissions** — any authenticated user can
   currently create a listing under a `dealerId` in a way that isn't
   actually checked against their own dealer profile (see the `// NOTE`

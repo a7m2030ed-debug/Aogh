@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/api/api_client.dart';
+import '../../core/location/device_location.dart';
 import '../../shared/models/listing.dart';
 import '../../shared/widgets/listing_card.dart';
 
 /// Spec section 6: "الصفحة الرئيسية للعميل — يجب أن تكون بسيطة جدًا".
 /// Search bar + image search up top, then three rails, all backed by real
-/// endpoints now: "قطع متوفرة الآن" (GET /inventory/search, no query),
-/// "تشاليح قريبة" and "أفضل التشاليح تقييمًا" (GET /dealers?sort=nearest/rating
-/// — backend/src/modules/identity/dealers.controller.ts). The "nearby" rail
-/// doesn't yet pass the device's lat/lng, so it currently returns the same
-/// verified-dealers list as an unsorted fallback rather than true distance
-/// order — wiring `geolocator` (already in pubspec.yaml for exactly this)
-/// plus the location permission entries `flutter create .` doesn't add on
-/// its own is the remaining step.
+/// endpoints: "قطع متوفرة الآن" (GET /inventory/search), "تشاليح قريبة" and
+/// "أفضل التشاليح تقييمًا" (GET /dealers?sort=nearest/rating — backend/src/
+/// modules/identity/dealers.controller.ts). Device location
+/// (tryGetCurrentPosition, core/location/device_location.dart) is resolved
+/// once per screen load and reused across all three calls — never awaited
+/// before the first build, so a slow or denied permission prompt never
+/// blocks the screen from showing; each rail just renders without
+/// distance/nearest-order until it resolves.
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -23,20 +25,28 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _DealerPreview {
-  const _DealerPreview({required this.businessName, required this.city, required this.ratingAverage});
+  const _DealerPreview({
+    required this.businessName,
+    required this.city,
+    required this.ratingAverage,
+    this.distanceKm,
+  });
 
   factory _DealerPreview.fromJson(Map<String, dynamic> json) => _DealerPreview(
         businessName: json['businessName'] as String,
         city: json['city'] as String,
         ratingAverage: (json['ratingAverage'] as num).toDouble(),
+        distanceKm: (json['distanceKm'] as num?)?.toDouble(),
       );
 
   final String businessName;
   final String city;
   final double ratingAverage;
+  final double? distanceKm;
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  late Future<Position?> _positionFuture;
   late Future<List<Listing>> _availableNow;
   late Future<List<_DealerPreview>> _nearbyDealers;
   late Future<List<_DealerPreview>> _topRatedDealers;
@@ -44,20 +54,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    // One shared Future so the permission prompt/GPS read only ever
+    // happens once per screen load, no matter how many rails await it.
+    _positionFuture = tryGetCurrentPosition();
     _availableNow = _fetchAvailableNow();
     _nearbyDealers = _fetchDealers('nearest');
     _topRatedDealers = _fetchDealers('rating');
   }
 
   Future<List<Listing>> _fetchAvailableNow() async {
+    final position = await _positionFuture;
     final apiClient = ref.read(apiClientProvider);
-    final response = await apiClient.dio.get('/inventory/search');
+    final response = await apiClient.dio.get('/inventory/search', queryParameters: {
+      if (position != null) 'lat': position.latitude,
+      if (position != null) 'lng': position.longitude,
+    });
     return (response.data as List).map((e) => Listing.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   Future<List<_DealerPreview>> _fetchDealers(String sort) async {
+    final position = await _positionFuture;
     final apiClient = ref.read(apiClientProvider);
-    final response = await apiClient.dio.get('/dealers', queryParameters: {'sort': sort});
+    final response = await apiClient.dio.get('/dealers', queryParameters: {
+      'sort': sort,
+      if (position != null) 'lat': position.latitude,
+      if (position != null) 'lng': position.longitude,
+    });
     return (response.data as List)
         .map((e) => _DealerPreview.fromJson(e as Map<String, dynamic>))
         .toList();
@@ -65,6 +87,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _refreshAll() {
     setState(() {
+      _positionFuture = tryGetCurrentPosition();
       _availableNow = _fetchAvailableNow();
       _nearbyDealers = _fetchDealers('nearest');
       _topRatedDealers = _fetchDealers('rating');
@@ -176,6 +199,8 @@ class _DealerRail extends StatelessWidget {
                       children: [
                         const Icon(Icons.star, size: 14, color: Colors.amber),
                         Text(' ${dealer.ratingAverage.toStringAsFixed(1)}'),
+                        if (dealer.distanceKm != null)
+                          Text('  ·  ${dealer.distanceKm!.toStringAsFixed(0)} كم'),
                       ],
                     ),
                   ],

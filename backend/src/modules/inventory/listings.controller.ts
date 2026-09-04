@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ListingAvailability } from '@prisma/client';
@@ -23,8 +23,16 @@ export class ListingsController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.listingsService.findById(id);
+  findOne(
+    @Param('id') id: string,
+    @Query('lat') lat?: string,
+    @Query('lng') lng?: string,
+  ) {
+    return this.listingsService.findById(
+      id,
+      lat != null ? Number(lat) : undefined,
+      lng != null ? Number(lng) : undefined,
+    );
   }
 
   @ApiBearerAuth()

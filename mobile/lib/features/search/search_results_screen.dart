@@ -1,15 +1,20 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/api/api_client.dart';
+import '../../core/location/device_location.dart';
 import '../../shared/models/listing.dart';
 import '../../shared/widgets/listing_card.dart';
 
 /// Spec sections 18-19. The review recommends shipping only four filters
 /// in v1 (price, distance, condition, newest) instead of the full list —
 /// that's a UI decision, so the filter row below only surfaces those four
-/// even though the backend's SearchListingsDto already models more.
+/// even though the backend's SearchListingsDto already models more. Three
+/// of the four map directly onto SearchSort (cheapest/nearest/newest) and
+/// are wired as single-select chips here; "الحالة" needs a value picker
+/// (which condition?) rather than a single tap, so it stays a TODO.
 class SearchResultsScreen extends ConsumerStatefulWidget {
   const SearchResultsScreen({super.key, required this.query});
 
@@ -20,11 +25,14 @@ class SearchResultsScreen extends ConsumerStatefulWidget {
 }
 
 class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
+  late Future<Position?> _positionFuture;
   late Future<List<Listing>> _future;
+  String? _sort;
 
   @override
   void initState() {
     super.initState();
+    _positionFuture = tryGetCurrentPosition();
     _future = _fetch();
   }
 
@@ -37,12 +45,22 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
   }
 
   Future<List<Listing>> _fetch() async {
+    final position = await _positionFuture;
     final apiClient = ref.read(apiClientProvider);
-    final response = await apiClient.dio.get(
-      '/inventory/search',
-      queryParameters: widget.query.isEmpty ? null : {'q': widget.query},
-    );
+    final response = await apiClient.dio.get('/inventory/search', queryParameters: {
+      if (widget.query.isNotEmpty) 'q': widget.query,
+      if (_sort != null) 'sort': _sort,
+      if (position != null) 'lat': position.latitude,
+      if (position != null) 'lng': position.longitude,
+    });
     return (response.data as List).map((e) => Listing.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  void _setSort(String? sort) {
+    setState(() {
+      _sort = sort;
+      _future = _fetch();
+    });
   }
 
   @override
@@ -51,7 +69,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
       appBar: AppBar(title: Text(widget.query.isEmpty ? 'نتائج البحث' : widget.query)),
       body: Column(
         children: [
-          const _FilterRow(),
+          _FilterRow(sort: _sort, onSortChanged: _setSort),
           Expanded(
             child: FutureBuilder<List<Listing>>(
               future: _future,
@@ -91,23 +109,47 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
 }
 
 class _FilterRow extends StatelessWidget {
-  const _FilterRow();
+  const _FilterRow({required this.sort, required this.onSortChanged});
+
+  final String? sort;
+  final ValueChanged<String?> onSortChanged;
 
   @override
   Widget build(BuildContext context) {
-    const filters = ['السعر', 'المسافة', 'الحالة', 'الأحدث'];
     return SizedBox(
       height: 48,
-      child: ListView.separated(
+      child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        itemCount: filters.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (context, i) => ActionChip(
-          label: Text(filters[i]),
-          onPressed: () {}, // TODO: open filter sheet, refine search query
-        ),
+        children: [
+          ActionChip(label: const Text('الحالة'), onPressed: () {}), // TODO: condition-value picker
+          const SizedBox(width: 8),
+          _SortChip(label: 'الأرخص', value: 'cheapest', current: sort, onChanged: onSortChanged),
+          const SizedBox(width: 8),
+          _SortChip(label: 'الأقرب', value: 'nearest', current: sort, onChanged: onSortChanged),
+          const SizedBox(width: 8),
+          _SortChip(label: 'الأحدث', value: 'newest', current: sort, onChanged: onSortChanged),
+        ],
       ),
+    );
+  }
+}
+
+class _SortChip extends StatelessWidget {
+  const _SortChip({required this.label, required this.value, required this.current, required this.onChanged});
+
+  final String label;
+  final String value;
+  final String? current;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = current == value;
+    return ChoiceChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => onChanged(selected ? null : value),
     );
   }
 }

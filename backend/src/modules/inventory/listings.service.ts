@@ -3,6 +3,7 @@ import { ListingAvailability } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { EventBusService } from '../../common/event-bus/event-bus.service';
 import { DomainEvents } from '../../common/event-bus/events';
+import { haversineKm } from '../../common/geo/haversine';
 import { CreateListingDto } from './dto/create-listing.dto';
 
 @Injectable()
@@ -37,13 +38,22 @@ export class ListingsService {
     return listing;
   }
 
-  async findById(id: string) {
+  // lat/lng are optional so the part-details page can show the same
+  // distance badge search results already do (spec section 20) without
+  // requiring location — same pattern as SearchService.search.
+  async findById(id: string, lat?: number, lng?: number) {
     const listing = await this.prisma.inventoryListing.findUnique({
       where: { id },
       include: { images: true, videos: true, dealer: true, canonicalPart: true, vehicleModel: true },
     });
     if (!listing) throw new NotFoundException('Listing not found');
-    return listing;
+
+    const distanceKm =
+      lat != null && lng != null && listing.dealer.lat != null && listing.dealer.lng != null
+        ? haversineKm(lat, lng, listing.dealer.lat, listing.dealer.lng)
+        : null;
+
+    return { ...listing, distanceKm };
   }
 
   async updateAvailability(id: string, availability: ListingAvailability) {
