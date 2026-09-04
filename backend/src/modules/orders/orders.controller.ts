@@ -18,6 +18,11 @@ export class OrdersController {
     return this.ordersService.create(user.userId, dto);
   }
 
+  @Get()
+  listMine(@CurrentUser() user: { userId: string }) {
+    return this.ordersService.listForCustomer(user.userId);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.ordersService.findById(id);

@@ -35,8 +35,12 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/chat/:id',
+      // id is either a real conversation id, or the literal "new" — see
+      // ConversationScreen's doc comment for how those two are told apart.
       builder: (context, state) => ConversationScreen(
+        conversationId: state.pathParameters['id']!,
         listingId: state.uri.queryParameters['listingId'],
+        dealerId: state.uri.queryParameters['dealerId'],
       ),
     ),
     GoRoute(path: '/dealer/add-listing', builder: (context, state) => const AddListingScreen()),

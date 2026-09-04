@@ -1,30 +1,52 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/api/api_client.dart';
 
 class ChatMessage {
   const ChatMessage({required this.text, required this.fromMe});
   final String text;
   final bool fromMe;
+
+  factory ChatMessage.fromJson(Map<String, dynamic> json) => ChatMessage(
+        text: json['text'] as String? ?? '',
+        fromMe: json['senderType'] == 'USER',
+      );
 }
 
 /// Spec sections 21-23: chat tied to one listing/order, with a negotiation
 /// strip pinned above the composer. Matches the review's v1 scope
 /// (section 6): free-text negotiation ending in one "تأكيد الاتفاق"
 /// button, not the structured offer/counter-offer UI deferred to v2.
-class ConversationScreen extends StatefulWidget {
-  const ConversationScreen({super.key, this.listingId});
+///
+/// `conversationId` is either a real id (opened from messages_list_screen)
+/// or the literal "new" (opened from part_details_screen, which also
+/// passes `listingId`/`dealerId` so POST /conversations can be called
+/// here on first load — the route can't call it itself, only a widget can).
+class ConversationScreen extends ConsumerStatefulWidget {
+  const ConversationScreen({super.key, required this.conversationId, this.listingId, this.dealerId});
 
+  final String conversationId;
   final String? listingId;
+  final String? dealerId;
 
   @override
-  State<ConversationScreen> createState() => _ConversationScreenState();
+  ConsumerState<ConversationScreen> createState() => _ConversationScreenState();
 }
 
-class _ConversationScreenState extends State<ConversationScreen> {
+class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   final _controller = TextEditingController();
-  final List<ChatMessage> _messages = [
-    const ChatMessage(text: 'هل فيها كسر؟', fromMe: true),
-    const ChatMessage(text: 'لا، فيها خدوش بسيطة.', fromMe: false),
-  ];
+  String? _resolvedConversationId;
+  List<ChatMessage> _messages = [];
+  num? _lastOfferPrice;
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _init();
+  }
 
   @override
   void dispose() {
@@ -32,23 +54,142 @@ class _ConversationScreenState extends State<ConversationScreen> {
     super.dispose();
   }
 
-  void _send() {
-    final text = _controller.text.trim();
-    if (text.isEmpty) return;
+  Future<void> _init() async {
+    try {
+      if (widget.conversationId == 'new') {
+        if (widget.dealerId == null) {
+          setState(() {
+            _error = 'تعذّر بدء المحادثة: لا يوجد تاجر محدد.';
+            _loading = false;
+          });
+          return;
+        }
+        final apiClient = ref.read(apiClientProvider);
+        final response = await apiClient.dio.post('/conversations', data: {
+          'dealerId': widget.dealerId,
+          'listingId': widget.listingId,
+        });
+        _resolvedConversationId = response.data['id'] as String;
+      } else {
+        _resolvedConversationId = widget.conversationId;
+      }
+      await _loadMessages();
+    } on DioException {
+      if (!mounted) return;
+      setState(() {
+        _error = 'تعذّر فتح المحادثة. تأكد من تسجيل الدخول والاتصال بالخادم.';
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _loadMessages() async {
+    final apiClient = ref.read(apiClientProvider);
+    final response = await apiClient.dio.get('/conversations/$_resolvedConversationId/messages');
+    if (!mounted) return;
     setState(() {
-      _messages.add(ChatMessage(text: text, fromMe: true));
-      _controller.clear();
+      _messages = (response.data as List)
+          .map((e) => ChatMessage.fromJson(e as Map<String, dynamic>))
+          .toList();
+      _loading = false;
     });
-    // TODO: POST /conversations/:id/messages
+  }
+
+  Future<void> _send() async {
+    final text = _controller.text.trim();
+    if (text.isEmpty || _resolvedConversationId == null) return;
+    _controller.clear();
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      await apiClient.dio.post(
+        '/conversations/$_resolvedConversationId/messages',
+        data: {'text': text},
+      );
+      await _loadMessages();
+    } on DioException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('تعذّر إرسال الرسالة.')));
+    }
+  }
+
+  Future<void> _proposePrice(num price) async {
+    if (_resolvedConversationId == null) return;
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      await apiClient.dio.post(
+        '/conversations/$_resolvedConversationId/offers',
+        data: {'price': price},
+      );
+      if (!mounted) return;
+      setState(() => _lastOfferPrice = price);
+    } on DioException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذّر إرسال العرض.')));
+    }
+  }
+
+  Future<void> _promptForPrice() async {
+    final controller = TextEditingController();
+    final price = await showDialog<num>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('عرض سعر'),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(labelText: 'السعر (ريال)'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, num.tryParse(controller.text.trim())),
+            child: const Text('إرسال'),
+          ),
+        ],
+      ),
+    );
+    if (price != null) await _proposePrice(price);
+  }
+
+  Future<void> _acceptOffer() async {
+    if (_resolvedConversationId == null) return;
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      await apiClient.dio.post('/conversations/$_resolvedConversationId/offers/accept');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم الاتفاق.')));
+    } on DioException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('لا يوجد عرض لتأكيده بعد.')));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('المحادثة')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_error != null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('المحادثة')),
+        body: Center(child: Padding(padding: const EdgeInsets.all(24), child: Text(_error!))),
+      );
+    }
+
     return Scaffold(
-      appBar: AppBar(title: const Text('تشليح فوزان')),
+      appBar: AppBar(title: const Text('المحادثة')),
       body: Column(
         children: [
-          const _NegotiationStrip(currentPrice: 400),
+          _NegotiationStrip(
+            currentPrice: _lastOfferPrice,
+            onPropose: _promptForPrice,
+            onAccept: _acceptOffer,
+          ),
           Expanded(
             child: ListView.builder(
               reverse: true,
@@ -98,8 +239,11 @@ class _ConversationScreenState extends State<ConversationScreen> {
 }
 
 class _NegotiationStrip extends StatelessWidget {
-  const _NegotiationStrip({required this.currentPrice});
-  final num currentPrice;
+  const _NegotiationStrip({required this.currentPrice, required this.onPropose, required this.onAccept});
+
+  final num? currentPrice;
+  final VoidCallback onPropose;
+  final VoidCallback onAccept;
 
   @override
   Widget build(BuildContext context) {
@@ -108,9 +252,11 @@ class _NegotiationStrip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
-          Expanded(child: Text('آخر عرض: $currentPrice ريال')),
-          TextButton(onPressed: () {}, child: const Text('عرض سعر')), // TODO: POST offers
-          FilledButton(onPressed: () {}, child: const Text('تم الاتفاق')), // TODO: offers/accept
+          Expanded(
+            child: Text(currentPrice != null ? 'آخر عرض: $currentPrice ريال' : 'لا يوجد عرض بعد'),
+          ),
+          TextButton(onPressed: onPropose, child: const Text('عرض سعر')),
+          FilledButton(onPressed: onAccept, child: const Text('تم الاتفاق')),
         ],
       ),
     );

@@ -20,6 +20,11 @@ export class ConversationsController {
     return this.conversationsService.startConversation(user.userId, dto);
   }
 
+  @Get()
+  listMine(@CurrentUser() user: { userId: string }) {
+    return this.conversationsService.listForCustomer(user.userId);
+  }
+
   @Get(':id/messages')
   messages(@Param('id') id: string) {
     return this.conversationsService.listMessages(id);

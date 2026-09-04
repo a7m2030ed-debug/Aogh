@@ -66,4 +66,16 @@ export class OrdersService {
       include: { statusHistory: true, delivery: true },
     });
   }
+
+  // Backs the mobile app's "طلباتي" tab (spec sections 33-34).
+  listForCustomer(customerId: string) {
+    return this.prisma.order.findMany({
+      where: { customerId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        dealer: { select: { businessName: true } },
+        listing: { select: { canonicalPart: { select: { canonicalNameAr: true } } } },
+      },
+    });
+  }
 }

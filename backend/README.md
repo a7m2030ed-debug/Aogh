@@ -47,8 +47,8 @@ src/
     identity/                # Users, Dealers, DealerDocuments, OTP auth, JWT
     catalog/                  # VehicleMakes/Models, PartCategories, CanonicalParts
     inventory/                 # Listings, text search, "ابحث لي عنها" search requests
-    conversations/              # chat + negotiation offers
-    orders/                      # order creation, status history, delivery fee calculator
+    conversations/              # chat + negotiation offers, GET /conversations lists the caller's own
+    orders/                      # order creation, status history, delivery fee calculator, GET /orders lists the caller's own
     trust/                        # reviews, reports
     notifications/                 # in-app notifications, subscribes to domain events
     admin/                          # dealer verification, audit log, dashboard counts
@@ -95,6 +95,14 @@ src/
   `listings.controller.ts` and `search-requests.controller.ts`. Wiring an
   actual dealer-staff permission model is flagged there, not silently
   assumed.
+
+## Mobile app now calls this for real
+
+`../mobile` was rewired in the same round these list-mine endpoints were
+added — every screen calls its real endpoint instead of rendering mock
+data (see `../mobile/README.md` for the full map and what's still a
+placeholder there, like the two dealer-list home rails this backend has
+no endpoint for yet).
 
 ## What's deliberately not here yet
 

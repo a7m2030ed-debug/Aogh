@@ -24,6 +24,21 @@ export class ConversationsService {
     });
   }
 
+  // Backs the mobile app's "الرسائل" tab (spec section 44) — one row per
+  // conversation with enough to render a preview without a second request
+  // per row.
+  listForCustomer(userId: string) {
+    return this.prisma.conversation.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        dealer: { select: { businessName: true, ratingAverage: true } },
+        listing: { select: { canonicalPart: { select: { canonicalNameAr: true } } } },
+        messages: { take: 1, orderBy: { createdAt: 'desc' } },
+      },
+    });
+  }
+
   sendMessage(conversationId: string, senderType: MessageSenderType, senderUserId: string | undefined, dto: SendMessageDto) {
     return this.prisma.message.create({
       data: {

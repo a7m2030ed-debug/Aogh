@@ -1,23 +1,29 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/api/api_client.dart';
+import '../../core/utils/phone.dart';
 
 /// Spec section 4: phone + OTP registration/login. Matches the backend's
 /// two-step flow (POST /auth/otp/request, POST /auth/otp/verify) in
 /// backend/src/modules/identity/auth.service.ts — the dev/mock OTP there
 /// is always "0000".
-class PhoneOtpScreen extends StatefulWidget {
+class PhoneOtpScreen extends ConsumerStatefulWidget {
   const PhoneOtpScreen({super.key});
 
   @override
-  State<PhoneOtpScreen> createState() => _PhoneOtpScreenState();
+  ConsumerState<PhoneOtpScreen> createState() => _PhoneOtpScreenState();
 }
 
-class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
+class _PhoneOtpScreenState extends ConsumerState<PhoneOtpScreen> {
   final _phoneController = TextEditingController();
   final _codeController = TextEditingController();
   bool _codeSent = false;
   bool _privacyAccepted = false;
+  bool _loading = false;
+  String? _error;
 
   @override
   void dispose() {
@@ -26,14 +32,50 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
     super.dispose();
   }
 
-  void _requestOtp() {
-    // TODO: POST /auth/otp/request
-    setState(() => _codeSent = true);
+  Future<void> _requestOtp() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      await apiClient.dio.post('/auth/otp/request', data: {
+        'phone': toE164Saudi(_phoneController.text),
+      });
+      if (!mounted) return;
+      setState(() => _codeSent = true);
+    } on DioException catch (e) {
+      setState(() => _error = _messageFor(e));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
-  void _verifyOtp() {
-    // TODO: POST /auth/otp/verify, persist token via AuthTokenStore
-    context.go('/');
+  Future<void> _verifyOtp() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final response = await apiClient.dio.post('/auth/otp/verify', data: {
+        'phone': toE164Saudi(_phoneController.text),
+        'code': _codeController.text.trim(),
+      });
+      final token = response.data['accessToken'] as String;
+      await ref.read(authTokenStoreProvider).save(token);
+      if (!mounted) return;
+      context.go('/');
+    } on DioException catch (e) {
+      setState(() => _error = _messageFor(e));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  String _messageFor(DioException e) {
+    if (e.response?.statusCode == 401) return 'رمز التحقق غير صحيح أو منتهي.';
+    return 'تعذّر الاتصال بالخادم. حاول مرة أخرى.';
   }
 
   @override
@@ -58,6 +100,10 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(labelText: 'رمز التحقق (OTP)'),
               ),
+            if (_error != null) ...[
+              const SizedBox(height: 12),
+              Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            ],
             const SizedBox(height: 12),
             CheckboxListTile(
               contentPadding: EdgeInsets.zero,
@@ -86,8 +132,13 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
             ),
             const SizedBox(height: 12),
             FilledButton(
-              onPressed: _privacyAccepted ? (_codeSent ? _verifyOtp : _requestOtp) : null,
-              child: Text(_codeSent ? 'تأكيد الرمز' : 'إرسال رمز التحقق'),
+              onPressed: (_privacyAccepted && !_loading)
+                  ? (_codeSent ? _verifyOtp : _requestOtp)
+                  : null,
+              child: _loading
+                  ? const SizedBox(
+                      width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                  : Text(_codeSent ? 'تأكيد الرمز' : 'إرسال رمز التحقق'),
             ),
           ],
         ),

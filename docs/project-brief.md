@@ -80,9 +80,15 @@ provider, presigned S3-compatible media uploads, and a legal module serving
 the drafted privacy policy + terms of use.
 
 **Mobile**: full navigation shell (5 tabs, spec section 44), every screen
-in the golden path (sections 45-47) as a real Flutter widget tree, backed
-by mock data — no live API calls yet. Not run through the Flutter SDK (see
-`mobile/README.md`) since this environment doesn't have it installed.
+in the golden path (sections 45-47) as a real Flutter widget tree — and,
+as of this round, wired to the real backend rather than mock data: OTP
+login, search, part details, the AI photo-capture flow on both the
+customer (image search) and dealer (add listing) sides, chat +
+negotiation, dealer registration, orders, and the legal documents. Not run
+through the Flutter SDK (see `mobile/README.md`) since this environment
+doesn't have it installed — treat as unverified until `flutter analyze`
+runs once. Two home-screen rails ("تشاليح قريبة", "أفضل التشاليح تقييمًا")
+are still placeholders pending a dealer-list backend endpoint.
 
 **Explicitly deferred to v2**, matching the review's MVP-scope call
 (section 6): payments, external delivery-company API integration, dealer
