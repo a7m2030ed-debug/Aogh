@@ -27,6 +27,46 @@ npm run start:dev
 # → http://localhost:3000/api/docs  (Swagger)
 ```
 
+## Deploying
+
+Host-agnostic — this runs unchanged on any platform that can run a
+container and give it a `DATABASE_URL` (a VPS, Railway, Render, Fly.io,
+ECS, ...). Picking that host, and creating its account, is a client
+decision — nothing here is tied to one provider.
+
+```bash
+docker build -t qitaati-backend .
+docker run -p 3000:3000 --env-file .env qitaati-backend
+```
+
+The `Dockerfile` is a two-stage build: `npm ci` → `prisma generate` →
+`nest build` in the build stage (the exact commands verified in
+"Status" above), then a slim runtime image with only production
+dependencies + the compiled `dist/`. **Not yet run end-to-end as an
+actual container** — the sandbox this was written in can't start a
+Docker daemon (`dockerd` refuses to start: `ulimit: error setting limit
+(Operation not permitted)`, a routine restriction for a container
+without host Docker access) — so build it once yourself before relying
+on it; the underlying commands it runs are individually verified.
+
+Checklist for a real pilot deployment:
+
+1. Provision a real Postgres (any managed provider) and point
+   `DATABASE_URL` at it in `.env`.
+2. `npx prisma migrate deploy && npm run prisma:seed` against it once,
+   from wherever you can reach that database (locally, or a one-off
+   container run).
+3. Build and run the image above with a real `.env` — every var is in
+   `.env.example`, with the account/credential each one needs (Claude,
+   Twilio, Firebase, S3-compatible storage) already documented per
+   section below.
+4. Promote your own account to admin:
+   `npm run promote:admin -- <your phone>` (see "Admin access").
+5. Point the mobile app at it: run/build with
+   `--dart-define=API_BASE_URL=https://your-domain/api/v1`
+   (`mobile/lib/core/config/app_config.dart` — defaults to
+   `localhost:3000` otherwise).
+
 ## Layout
 
 ```

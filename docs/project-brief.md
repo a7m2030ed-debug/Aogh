@@ -198,6 +198,50 @@ upgrades to the real thing the moment credentials exist. Full activation
 steps for all three (where to get each credential, exactly which env vars)
 are in `backend/README.md` and `backend/.env.example`.
 
+## What's left that I genuinely can't finish myself, and why
+
+Asked directly whether I could complete everything remaining before a real
+pilot launch (2026-09-04). Split honestly into what's actual engineering
+(mine to do) versus what needs the client's own identity/ownership (not a
+harder technical problem — a boundary I shouldn't cross even where
+technically possible):
+
+**Done this round, no client action needed:**
+- `backend/Dockerfile` + `.dockerignore` — a two-stage production build
+  (build stage: `npm ci` → `prisma generate` → `nest build`; runtime
+  stage: prod-only deps + the copied Prisma client + `dist/`). Written to
+  run unchanged on any container host. The individual commands it runs
+  are all independently verified in this session; the containerized
+  build itself isn't, since this environment's sandbox can't start a
+  Docker daemon (`dockerd` refuses: `ulimit: error setting limit
+  (Operation not permitted)`) — build it once yourself before relying on
+  it.
+- `backend/README.md` "Deploying" — the concrete checklist to take that
+  image from build to a running pilot: provision Postgres, migrate +
+  seed, run the image with a real `.env`, promote an admin, point the
+  mobile app at the deployed URL via `--dart-define=API_BASE_URL=...`.
+- Closed the admin-access gap (see below).
+
+**Genuinely outside what I can do, not just what this sandbox allows:**
+- Creating the Anthropic/Twilio/Firebase/storage accounts themselves —
+  each needs the client's own identity, payment method, and ToS
+  acceptance. I can wire the code the moment credentials exist (already
+  done, see "Pilot launch readiness" above), but creating the account is
+  the client's step by nature, not a delegable one.
+- Actually provisioning and paying for a live production host/database —
+  same reason; the Dockerfile + checklist make that a same-day task once
+  the client picks and pays for a host, not an engineering blocker.
+- A real Android/iOS build artifact — this specific sandbox blocks the
+  Android SDK download (`dl.google.com` is outside its network policy)
+  and has no Xcode for iOS. This one *is* an environment limit rather
+  than a client-identity one: the mobile code itself is verified
+  (`flutter analyze` clean, `flutter build web --release` compiles), so
+  `flutter build apk` in any normal dev machine or CI runner should just
+  work — worth trying in an environment with the Android SDK reachable
+  before assuming it needs more work.
+- A lawyer's actual certification of the drafted legal docs — I can draft
+  and revise the text, not certify it.
+
 ## Still open
 
 - Branding beyond the name: color palette, logo (placeholder seed color in
