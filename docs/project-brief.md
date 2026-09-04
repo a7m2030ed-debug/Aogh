@@ -70,12 +70,14 @@ review), `SearchRequest`/`SearchRequestOffer` ("ابحث لي عنها"), and
 **Built and verified** (backend compiles clean, boots, maps every route —
 see `backend/README.md` for the exact verification steps run):
 identity/auth (mocked OTP), dealer registration with the municipal-license
-field, canonical parts + bulk import endpoint, vehicle catalog, listings
-CRUD + availability, text search with filters/sort, search-requests,
-conversations + negotiation offers, orders + a pluggable delivery-fee
-calculator, reviews + dealer rating recalculation, reports, notifications
-(event-driven), admin dealer-verification + audit log, and the AI-vision
-abstraction with a mock provider.
+field, canonical parts + bulk import endpoint, vehicle catalog (seeded with
+38 makes / 247 models — see "Decisions" below), listings CRUD +
+availability, text search with filters/sort, search-requests, conversations
++ negotiation offers, orders + a pluggable delivery-fee calculator, reviews
++ dealer rating recalculation, reports, notifications (event-driven), admin
+dealer-verification + audit log, the AI-vision abstraction with a mock
+provider, presigned S3-compatible media uploads, and a legal module serving
+the drafted privacy policy + terms of use.
 
 **Mobile**: full navigation shell (5 tabs, spec section 44), every screen
 in the golden path (sections 45-47) as a real Flutter widget tree, backed
@@ -96,9 +98,16 @@ button).
   (`carparts_app` in `pubspec.yaml`) is left as-is — that's an internal
   identifier, not user-facing, so renaming it buys nothing.
 - **Launch city:** الرياض only. No code change needed — `city` was already
-  a free-text field; this just settles what goes into the canonical-parts
-  seed list (still needed: which 3-5 vehicle models to seed first, per
-  review section 9's step 1).
+  a free-text field.
+- **Vehicle makes/models: all of them**, not a 3-5-model pilot list.
+  Seeded 38 makes and 247 models covering the mainstream Saudi market
+  (`backend/prisma/seed-data/vehicles.ts`, loaded by `backend/prisma/seed.ts` —
+  run via `npm run prisma:seed`). Read as "every make/model actually driven
+  in KSA," not literally every vehicle ever made worldwide — that would be
+  unbounded and useless for a search index. The canonical-parts dictionary
+  (which parts exist per model) is a separate, still-open seeding task —
+  linking specific parts to specific models is real research, not something
+  to bulk-generate the way makes/models were.
 - **Maps: none.** No paid Maps SDK/API key, no on-screen map. Distance
   search and the delivery-fee calculator (spec sections 8, 25) are kept —
   they only ever needed plain lat/lng numbers and a haversine formula
@@ -113,25 +122,42 @@ button).
   (customer and dealer), never for order/chat/other notifications (those
   go through the notifications module + push). This already matches how
   the code is split; no change needed.
-- **Storage:** not yet decided, and nothing in the code depends on it yet
-  — there's no upload endpoint built (`ListingImage`/`DealerDocument`
-  currently just take a URL string; something has to produce that URL
-  before this matters). It's cloud storage for the photos/videos/dealer
-  documents the app is built around — like a private Google Drive the app
-  talks to via API. Revisit when the upload endpoint gets built.
+- **Storage: still needed, confirmed.** The client's own description of the
+  dealer flow (photo → AI confirms → dealer adds price → publish) still
+  needs it — the photo has to outlive the AI call so every future customer
+  browsing the listing can see it (spec sections 15, 20); AI recognition
+  being confirm-only doesn't remove that. Built `backend/src/modules/media`:
+  `POST /media/uploads/presign` returns a short-lived S3-compatible PUT URL
+  + the permanent public URL, the client uploads the file directly to
+  storage (no large file bodies proxied through the API), and that same
+  URL feeds both the AI-recognition call and the published listing. Works
+  with any S3-compatible provider (AWS S3, Cloudflare R2, MinIO for local
+  dev) — provider itself still not chosen, see "Still open".
+- **Legal: drafted by Claude**, at the client's request, rather than
+  waiting on a lawyer first. `backend/legal/privacy-policy-ar.md` and
+  `backend/legal/terms-of-use-ar.md`, served via `GET /legal/privacy-policy`
+  and `GET /legal/terms-of-use` (`backend/src/modules/legal`) so editing the
+  markdown file is the entire "publish an update" workflow. Linked from both
+  the customer OTP screen and the dealer registration screen's consent
+  checkbox in the mobile app. Both files carry a disclaimer at the top:
+  AI-drafted from the PDPL/e-commerce research already done, not
+  lawyer-certified — worth one real legal pass before public launch, same
+  as the original spec document itself said about its own legal sections.
 
 ## Still open
 
 - Branding beyond the name: color palette, logo (placeholder seed color in
   `mobile/lib/core/theme/app_theme.dart`).
-- The 3-5 vehicle models to seed first for Riyadh.
-- Storage provider (see above), push notification provider, AI vision
-  provider — all coded behind swappable config/interfaces, so this doesn't
-  block development, only going live.
-- Legal: privacy policy + ToS text reviewed by a licensed lawyer for PDPL
-  and e-commerce-regulation compliance, and confirming whether the
-  municipal license requirement (review section 4.1) changes the
-  dealer-documents review checklist beyond the one field already added to
-  the schema and the registration screen.
+- The canonical-parts dictionary content (which parts exist per seeded
+  model) — a real research task, unlike the makes/models bulk seed above.
+- Storage provider (Cloudflare R2 is a reasonable default — cheap, no
+  egress fees, drop-in with the existing S3-compatible config), push
+  notification provider, AI vision provider — all coded behind swappable
+  config/interfaces, so this doesn't block development, only going live.
+- A final legal-counsel pass on the drafted privacy policy/ToS before
+  public launch, and confirming whether the municipal license requirement
+  (review section 4.1) changes the dealer-documents review checklist
+  beyond the one field already added to the schema and the registration
+  screen.
 - A dedicated admin-role auth model — the admin API currently reuses the
   regular customer/dealer JWT guard as a placeholder (`backend/src/modules/admin/admin.controller.ts`).

@@ -1,4 +1,6 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 /// Spec section 5 + the technical review's addition (4.1): the municipal
 /// license field is kept separate from the commercial registry number
@@ -68,7 +70,25 @@ class _RegisterDealerScreenState extends State<RegisterDealerScreen> {
             contentPadding: EdgeInsets.zero,
             value: _privacyAccepted,
             onChanged: (v) => setState(() => _privacyAccepted = v ?? false),
-            title: const Text('أوافق على سياسة الخصوصية وشروط الاستخدام'),
+            title: Text.rich(
+              TextSpan(
+                style: Theme.of(context).textTheme.bodyMedium,
+                children: [
+                  const TextSpan(text: 'أوافق على '),
+                  TextSpan(
+                    text: 'سياسة الخصوصية',
+                    style: const TextStyle(decoration: TextDecoration.underline),
+                    recognizer: TapGestureRecognizer()..onTap = () => context.push('/legal/privacy'),
+                  ),
+                  const TextSpan(text: ' و'),
+                  TextSpan(
+                    text: 'شروط الاستخدام',
+                    style: const TextStyle(decoration: TextDecoration.underline),
+                    recognizer: TapGestureRecognizer()..onTap = () => context.push('/legal/terms'),
+                  ),
+                ],
+              ),
+            ),
             controlAffinity: ListTileControlAffinity.leading,
           ),
           const SizedBox(height: 12),

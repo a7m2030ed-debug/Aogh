@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -16,6 +17,7 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
   final _phoneController = TextEditingController();
   final _codeController = TextEditingController();
   bool _codeSent = false;
+  bool _privacyAccepted = false;
 
   @override
   void dispose() {
@@ -56,9 +58,35 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(labelText: 'رمز التحقق (OTP)'),
               ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              value: _privacyAccepted,
+              onChanged: (v) => setState(() => _privacyAccepted = v ?? false),
+              title: Text.rich(
+                TextSpan(
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  children: [
+                    const TextSpan(text: 'أوافق على '),
+                    TextSpan(
+                      text: 'سياسة الخصوصية',
+                      style: const TextStyle(decoration: TextDecoration.underline),
+                      recognizer: TapGestureRecognizer()..onTap = () => context.push('/legal/privacy'),
+                    ),
+                    const TextSpan(text: ' و'),
+                    TextSpan(
+                      text: 'شروط الاستخدام',
+                      style: const TextStyle(decoration: TextDecoration.underline),
+                      recognizer: TapGestureRecognizer()..onTap = () => context.push('/legal/terms'),
+                    ),
+                  ],
+                ),
+              ),
+              controlAffinity: ListTileControlAffinity.leading,
+            ),
+            const SizedBox(height: 12),
             FilledButton(
-              onPressed: _codeSent ? _verifyOtp : _requestOtp,
+              onPressed: _privacyAccepted ? (_codeSent ? _verifyOtp : _requestOtp) : null,
               child: Text(_codeSent ? 'تأكيد الرمز' : 'إرسال رمز التحقق'),
             ),
           ],

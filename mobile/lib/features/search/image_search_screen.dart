@@ -29,8 +29,11 @@ class _ImageSearchScreenState extends State<ImageSearchScreen> {
       _stage = _Stage.analyzing;
     });
 
-    // TODO: upload _image, then POST /ai/vision/recognize-part with the
-    // resulting URL. Simulated result below stands in until that exists.
+    // TODO: MediaUploadService(ref.read(apiClientProvider)).upload(_image!,
+    // UploadCategory.listingPhoto, contentType: 'image/jpeg') for the
+    // public URL, then POST /ai/vision/recognize-part with it. Needs this
+    // widget converted to ConsumerStatefulWidget to reach `ref`. Simulated
+    // result below stands in until that's wired up.
     await Future.delayed(const Duration(seconds: 1));
     if (!mounted) return;
     setState(() => _stage = _Stage.suggested);

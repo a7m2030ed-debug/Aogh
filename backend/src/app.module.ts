@@ -12,6 +12,8 @@ import { TrustModule } from './modules/trust/trust.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { AiModule } from './modules/ai/ai.module';
+import { MediaModule } from './modules/media/media.module';
+import { LegalModule } from './modules/legal/legal.module';
 
 @Module({
   imports: [
@@ -27,6 +29,8 @@ import { AiModule } from './modules/ai/ai.module';
     NotificationsModule,
     AdminModule,
     AiModule,
+    MediaModule,
+    LegalModule,
   ],
 })
 export class AppModule {}

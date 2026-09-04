@@ -21,6 +21,7 @@ docker compose up -d          # starts Postgres 16 + PostGIS on :5432
 cp .env.example .env
 npm install
 npx prisma migrate dev --name init
+npm run prisma:seed           # loads 38 makes / 247 models — see prisma/seed.ts
 npm run start:dev
 # → http://localhost:3000/api/v1
 # → http://localhost:3000/api/docs  (Swagger)
@@ -29,7 +30,11 @@ npm run start:dev
 ## Layout
 
 ```
-prisma/schema.prisma      # full DB design (spec section 51 / review 7.2)
+legal/                     # privacy-policy-ar.md, terms-of-use-ar.md — served as-is by LegalController
+prisma/
+  schema.prisma             # full DB design (spec section 51 / review 7.2)
+  seed.ts                    # loads seed-data/vehicles.ts (38 makes, 247 models)
+  seed-data/vehicles.ts       # every mainstream make/model sold in Saudi Arabia
 src/
   main.ts                  # bootstrap, global prefix /api/v1, Swagger
   app.module.ts             # wires every module below
@@ -48,6 +53,8 @@ src/
     notifications/                 # in-app notifications, subscribes to domain events
     admin/                          # dealer verification, audit log, dashboard counts
     ai/                              # AiVisionProvider interface + MockVisionProvider
+    media/                            # presigned S3-compatible upload URLs for photos/videos/documents
+    legal/                             # serves legal/*.md over GET /legal/privacy-policy, /legal/terms-of-use
 ```
 
 ## Design decisions worth knowing before extending this
@@ -69,6 +76,20 @@ src/
 - **Delivery fee is one method** (`modules/orders/delivery-fee.calculator.ts`)
   so the "no flat 25/30 SAR forever" requirement (spec section 25) is a
   one-file change, not scattered across the order flow.
+- **Media upload is presign-then-PUT, not a proxy through the API.**
+  `POST /media/uploads/presign` (`modules/media`) returns a short-lived S3
+  PUT URL + the permanent public URL; the client uploads the file bytes
+  directly to storage. Works with any S3-compatible provider (AWS S3,
+  Cloudflare R2, MinIO for local dev) via `STORAGE_ENDPOINT` — nothing
+  provider-specific in the code. Still needed even with the confirm-only
+  AI flow the client described: the photo has to outlive the AI call so
+  every future customer sees it on the published listing.
+- **Legal docs are markdown files, not hardcoded strings.**
+  `legal/privacy-policy-ar.md` and `legal/terms-of-use-ar.md` are the
+  single source of truth; `modules/legal` just reads them off disk.
+  Editing the wording is the entire "publish an update" workflow. Drafted
+  from the PDPL/e-commerce research in the technical review (section 4) —
+  flagged in both files as AI-drafted, not lawyer-certified.
 - Several endpoints (e.g. `dealerId` on listing creation) currently take it
   from `user.userId` as a placeholder — see the `// NOTE` comments in
   `listings.controller.ts` and `search-requests.controller.ts`. Wiring an

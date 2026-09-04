@@ -7,6 +7,7 @@ import '../../features/chat/messages_list_screen.dart';
 import '../../features/dealer/add_listing_screen.dart';
 import '../../features/dealer/dealer_dashboard_screen.dart';
 import '../../features/dealer/register_dealer_screen.dart';
+import '../../features/legal/legal_document_screen.dart';
 import '../../features/orders/my_orders_screen.dart';
 import '../../features/profile/profile_screen.dart';
 import '../../features/search/home_screen.dart';
@@ -41,6 +42,14 @@ final appRouter = GoRouter(
     GoRoute(path: '/dealer/add-listing', builder: (context, state) => const AddListingScreen()),
     GoRoute(path: '/dealer/register', builder: (context, state) => const RegisterDealerScreen()),
     GoRoute(path: '/dealer/dashboard', builder: (context, state) => const DealerDashboardScreen()),
+    GoRoute(
+      path: '/legal/privacy',
+      builder: (context, state) => const LegalDocumentScreen(document: LegalDocument.privacyPolicy),
+    ),
+    GoRoute(
+      path: '/legal/terms',
+      builder: (context, state) => const LegalDocumentScreen(document: LegalDocument.termsOfUse),
+    ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) => AppBottomNavShell(navigationShell: navigationShell),
       branches: [

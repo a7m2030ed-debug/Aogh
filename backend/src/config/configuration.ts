@@ -25,10 +25,18 @@ export default () => ({
     credentialsPath: process.env.PUSH_CREDENTIALS_PATH,
   },
   storage: {
+    // Any S3-compatible provider works (AWS S3, Cloudflare R2, MinIO for
+    // local dev) — see src/modules/media. publicBaseUrl is what listing/
+    // document URLs are built from after upload (a CDN domain, or the
+    // bucket's own public endpoint); it's separate from `endpoint`
+    // because the upload endpoint and the public read URL are often
+    // different hosts (e.g. R2's private S3 endpoint vs. its public
+    // r2.dev/custom domain).
     provider: process.env.STORAGE_PROVIDER ?? 's3-compatible',
     bucket: process.env.STORAGE_BUCKET,
-    region: process.env.STORAGE_REGION,
+    region: process.env.STORAGE_REGION ?? 'auto',
     endpoint: process.env.STORAGE_ENDPOINT,
+    publicBaseUrl: process.env.STORAGE_PUBLIC_BASE_URL,
     accessKeyId: process.env.STORAGE_ACCESS_KEY_ID,
     secretAccessKey: process.env.STORAGE_SECRET_ACCESS_KEY,
   },

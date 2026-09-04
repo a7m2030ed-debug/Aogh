@@ -43,8 +43,11 @@ class _AddListingScreenState extends State<AddListingScreen> {
     if (picked == null) return;
     setState(() => _image = File(picked.path));
 
-    // TODO: upload then POST /ai/vision/recognize-part — see
-    // image_search_screen.dart for the same placeholder pattern.
+    // TODO: same MediaUploadService.upload(...) call as
+    // image_search_screen.dart, then POST /ai/vision/recognize-part with
+    // the returned publicUrl. That same URL is what gets sent again in
+    // _publish() below as this listing's imageUrls entry — one upload,
+    // reused for both the AI call and the published listing.
     await Future.delayed(const Duration(milliseconds: 800));
     if (!mounted) return;
     setState(() => _aiSuggested = true);
