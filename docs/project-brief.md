@@ -185,7 +185,7 @@ engineering work:
 | Parts dictionary | ✅ Done — 151 parts seeded | Nothing further |
 | AI vision (`ClaudeVisionProvider`) | ✅ Code complete | Anthropic API key → `AI_VISION_PROVIDER=claude` |
 | SMS/OTP (`TwilioOtpProvider`) | ✅ Code complete | Twilio account → `OTP_PROVIDER=twilio` |
-| Push (`FcmPushProvider`) | ✅ Code complete | Firebase project → `PUSH_PROVIDER=fcm` |
+| Push (`FcmPushProvider` + `PushService`) | ✅ Code complete both ends | Firebase project → `PUSH_PROVIDER=fcm` + config files in the app |
 
 Push specifically wasn't wired earlier in the session because, until this
 round, nothing had asked for it yet — it needs the exact same kind of
@@ -244,8 +244,11 @@ technically possible):
 
 ## Still open
 
-- Branding beyond the name: color palette, logo (placeholder seed color in
-  `mobile/lib/core/theme/app_theme.dart`).
+- Branding beyond the name: color palette, logo, app icon, splash screen
+  (placeholder seed color in `mobile/lib/core/theme/app_theme.dart`). The
+  app's identity itself is settled: `sa.qitaati.app`, display name قطعتي
+  (client decision, 2026-09-04) — it replaced the `com.example.*` default,
+  which Google Play rejects and which Firebase registration is keyed to.
 - Per-make/model OEM part numbers — the seeded dictionary is general parts
   taxonomy, not vehicle-specific part-number matching (see "Decisions"
   above).

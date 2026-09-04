@@ -143,6 +143,55 @@ screen opens the camera/gallery, rather than just failing that one call.
 None of these existed before `flutter create .` ran; all three were added
 by hand afterward, in the actual generated files.
 
+## App identity
+
+```
+Application ID / bundle id:  sa.qitaati.app
+Display name:                قطعتي
+```
+
+Set in `android/app/build.gradle.kts` (`namespace` + `applicationId`),
+`android/app/src/main/AndroidManifest.xml` (`android:label`),
+`ios/Runner.xcodeproj/project.pbxproj` (`PRODUCT_BUNDLE_IDENTIFIER`) and
+`ios/Runner/Info.plist` (`CFBundleDisplayName`). These replaced the
+`com.example.carparts_app` default, which Google Play rejects outright.
+It has to match the app registered in Firebase, so changing it now means
+re-registering there — and after a store release, it's a different app
+entirely.
+
+## Enabling push notifications
+
+The client half is wired (`core/push/push_service.dart`): on login, and
+on app start when a session already exists, the device's FCM token is
+sent to `PATCH /notifications/push-token`, and re-sent whenever FCM
+rotates it. Until a Firebase project exists, `Firebase.initializeApp()`
+fails, the failure is swallowed, and the app runs exactly as before —
+in-app notifications still work, only the device wake-up is skipped.
+
+To turn it on:
+
+1. Create a Firebase project and register an Android app with
+   **`sa.qitaati.app`** (and an iOS app with the same id).
+2. Drop `google-services.json` into `android/app/`, and
+   `GoogleService-Info.plist` into `ios/Runner/`.
+3. Add the Google Services Gradle plugin — deliberately **not** committed,
+   because it fails the build outright when the JSON isn't there, which
+   would block every checkout that hasn't set Firebase up yet:
+   ```kotlin
+   // android/settings.gradle.kts — in the plugins { } block
+   id("com.google.gms.google-services") version "4.4.2" apply false
+
+   // android/app/build.gradle.kts — in the plugins { } block
+   id("com.google.gms.google-services")
+   ```
+4. Set `PUSH_PROVIDER=fcm` plus the `FCM_*` service-account values on the
+   backend (see `backend/README.md`).
+
+Only foreground and system-tray delivery are wired. A background
+`onBackgroundMessage` isolate is only needed for data-only messages; the
+backend sends a `notification` payload, which the OS displays on its own
+while the app is backgrounded.
+
 ## Known gaps in what's wired
 
 - **No fine-grained dealer-staff permissions** — any authenticated user can
@@ -150,7 +199,9 @@ by hand afterward, in the actual generated files.
   actually checked against their own dealer profile (see the `// NOTE`
   comments in `listings.controller.ts`/`search-requests.controller.ts` on
   the backend).
-- Push notifications (spec section 32) — no FCM/APNs setup yet.
+- Push notifications — the code path is complete end to end, but nothing
+  has been sent to a real device: that needs the client's Firebase
+  project (see "Enabling push notifications" above).
 - App icon, splash screen, real branding/colors (placeholder seed color in
   `core/theme/app_theme.dart`).
 - English localization (intentionally deferred — see the note in `main.dart`).

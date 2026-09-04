@@ -12,9 +12,9 @@ import '../../shared/widgets/listing_card.dart';
 /// in v1 (price, distance, condition, newest) instead of the full list —
 /// that's a UI decision, so the filter row below only surfaces those four
 /// even though the backend's SearchListingsDto already models more. Three
-/// of the four map directly onto SearchSort (cheapest/nearest/newest) and
-/// are wired as single-select chips here; "الحالة" needs a value picker
-/// (which condition?) rather than a single tap, so it stays a TODO.
+/// map directly onto SearchSort (cheapest/nearest/newest) and are wired as
+/// single-select chips; "الحالة" is a value filter (`condition=` on the
+/// same endpoint), so it opens a picker instead.
 class SearchResultsScreen extends ConsumerStatefulWidget {
   const SearchResultsScreen({super.key, required this.query});
 
@@ -28,6 +28,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
   late Future<Position?> _positionFuture;
   late Future<List<Listing>> _future;
   String? _sort;
+  String? _condition;
 
   @override
   void initState() {
@@ -50,6 +51,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
     final response = await apiClient.dio.get('/inventory/search', queryParameters: {
       if (widget.query.isNotEmpty) 'q': widget.query,
       if (_sort != null) 'sort': _sort,
+      if (_condition != null) 'condition': _condition,
       if (position != null) 'lat': position.latitude,
       if (position != null) 'lng': position.longitude,
     });
@@ -63,13 +65,54 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
     });
   }
 
+  Future<void> _pickCondition() async {
+    final picked = await showModalBottomSheet<_ConditionChoice>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: RadioGroup<String?>(
+          groupValue: _condition,
+          onChanged: (value) => Navigator.of(sheetContext).pop(_ConditionChoice(value)),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text('حالة القطعة', style: TextStyle(fontWeight: FontWeight.w600)),
+                ),
+              ),
+              for (final option in _conditionOptions)
+                RadioListTile<String?>(
+                  value: option,
+                  title: Text(option == null ? 'الكل' : conditionLabelAr(option)),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+    // null means the sheet was dismissed without choosing — distinct from
+    // choosing "الكل", which is a real selection carrying a null value.
+    if (picked == null) return;
+    setState(() {
+      _condition = picked.value;
+      _future = _fetch();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(widget.query.isEmpty ? 'نتائج البحث' : widget.query)),
       body: Column(
         children: [
-          _FilterRow(sort: _sort, onSortChanged: _setSort),
+          _FilterRow(
+            sort: _sort,
+            onSortChanged: _setSort,
+            condition: _condition,
+            onConditionTap: _pickCondition,
+          ),
           Expanded(
             child: FutureBuilder<List<Listing>>(
               future: _future,
@@ -108,11 +151,28 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
   }
 }
 
+/// The backend's ListingCondition values, plus a leading null for "الكل".
+const _conditionOptions = <String?>[null, 'EXCELLENT', 'GOOD', 'ACCEPTABLE', 'NEEDS_REPAIR'];
+
+/// Wrapper so the picker can return "cleared" (a real choice of "الكل")
+/// distinctly from "dismissed" — both of which are a bare null otherwise.
+class _ConditionChoice {
+  const _ConditionChoice(this.value);
+  final String? value;
+}
+
 class _FilterRow extends StatelessWidget {
-  const _FilterRow({required this.sort, required this.onSortChanged});
+  const _FilterRow({
+    required this.sort,
+    required this.onSortChanged,
+    required this.condition,
+    required this.onConditionTap,
+  });
 
   final String? sort;
   final ValueChanged<String?> onSortChanged;
+  final String? condition;
+  final VoidCallback onConditionTap;
 
   @override
   Widget build(BuildContext context) {
@@ -122,7 +182,11 @@ class _FilterRow extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         children: [
-          ActionChip(label: const Text('الحالة'), onPressed: () {}), // TODO: condition-value picker
+          FilterChip(
+            label: Text(condition == null ? 'الحالة' : conditionLabelAr(condition!)),
+            selected: condition != null,
+            onSelected: (_) => onConditionTap(),
+          ),
           const SizedBox(width: 8),
           _SortChip(label: 'الأرخص', value: 'cheapest', current: sort, onChanged: onSortChanged),
           const SizedBox(width: 8),

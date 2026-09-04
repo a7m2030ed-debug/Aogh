@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.carparts_app"
+    namespace = "sa.qitaati.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -15,8 +15,11 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.carparts_app"
+        // Permanent store identity for "قطعتي" — must match the Android app
+        // registered in the Firebase project (google-services.json), so
+        // changing it later means re-registering there and, once published,
+        // a different app listing entirely.
+        applicationId = "sa.qitaati.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/api/api_client.dart';
+import '../../core/push/push_service.dart';
 import '../../core/utils/phone.dart';
 
 /// Spec section 4: phone + OTP registration/login. Matches the backend's
@@ -64,6 +65,11 @@ class _PhoneOtpScreenState extends ConsumerState<PhoneOtpScreen> {
       });
       final token = response.data['accessToken'] as String;
       await ref.read(authTokenStoreProvider).save(token);
+
+      // Now that there's a session, the push-token endpoint will accept
+      // this device. Best-effort and never blocks the login from
+      // completing (core/push/push_service.dart).
+      await PushService.instance.syncToken(apiClient);
 
       // Route dealers straight to their dashboard rather than the
       // customer home screen. Requires a second call (JWT payload only
