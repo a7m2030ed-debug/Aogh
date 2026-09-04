@@ -69,15 +69,18 @@ review), `SearchRequest`/`SearchRequestOffer` ("ابحث لي عنها"), and
 
 **Built and verified** (backend compiles clean, boots, maps every route —
 see `backend/README.md` for the exact verification steps run):
-identity/auth (mocked OTP), dealer registration with the municipal-license
-field, canonical parts + bulk import endpoint, vehicle catalog (seeded with
-38 makes / 247 models — see "Decisions" below), listings CRUD +
-availability, text search with filters/sort, search-requests, conversations
-+ negotiation offers, orders + a pluggable delivery-fee calculator, reviews
-+ dealer rating recalculation, reports, notifications (event-driven), admin
-dealer-verification + audit log, the AI-vision abstraction with a mock
-provider, presigned S3-compatible media uploads, and a legal module serving
-the drafted privacy policy + terms of use.
+identity/auth (OTP behind a pluggable `mock`/`twilio` provider), dealer
+registration with the municipal-license field, canonical parts + bulk
+import endpoint (now seeded with a real 151-part dictionary — see
+"Decisions" below), vehicle catalog (seeded with 38 makes / 247 models),
+listings CRUD + availability, text search with filters/sort,
+search-requests, conversations + negotiation offers, orders + a pluggable
+delivery-fee calculator, reviews + dealer rating recalculation, reports,
+notifications (event-driven, in-app + a pluggable `none`/`fcm` push
+provider), admin dealer-verification + audit log, the AI-vision
+abstraction behind a pluggable `mock`/`claude` provider, presigned
+S3-compatible media uploads, and a legal module serving the drafted
+privacy policy + terms of use.
 
 **Mobile**: full navigation shell (5 tabs, spec section 44), every screen
 in the golden path (sections 45-47) as a real Flutter widget tree, fully
@@ -128,9 +131,12 @@ button).
   run via `npm run prisma:seed`). Read as "every make/model actually driven
   in KSA," not literally every vehicle ever made worldwide — that would be
   unbounded and useless for a search index. The canonical-parts dictionary
-  (which parts exist per model) is a separate, still-open seeding task —
-  linking specific parts to specific models is real research, not something
-  to bulk-generate the way makes/models were.
+  is seeded too now: 151 real parts across 9 top categories and 28
+  subcategories (`backend/prisma/seed-data/parts.ts`), Arabic + English
+  names plus search synonyms for each — general-purpose taxonomy (a
+  headlight, an alternator, a brake caliper), not per-make/model part
+  numbers, which stays a separate, larger research task if the client
+  wants OEM-number-level matching later.
 - **Maps: none.** No paid Maps SDK/API key, no on-screen map. Distance
   search and the delivery-fee calculator (spec sections 8, 25) are kept —
   they only ever needed plain lat/lng numbers and a haversine formula
@@ -167,16 +173,42 @@ button).
   lawyer-certified — worth one real legal pass before public launch, same
   as the original spec document itself said about its own legal sections.
 
+## Pilot launch readiness (2026-09-04)
+
+The client asked for a real pilot: parts dictionary, a real AI account, and
+a real SMS account. All three are code-complete; each remaining item is an
+external account only the client can create (billing/ownership), not
+engineering work:
+
+| Piece | Status | To activate |
+|---|---|---|
+| Parts dictionary | ✅ Done — 151 parts seeded | Nothing further |
+| AI vision (`ClaudeVisionProvider`) | ✅ Code complete | Anthropic API key → `AI_VISION_PROVIDER=claude` |
+| SMS/OTP (`TwilioOtpProvider`) | ✅ Code complete | Twilio account → `OTP_PROVIDER=twilio` |
+| Push (`FcmPushProvider`) | ✅ Code complete | Firebase project → `PUSH_PROVIDER=fcm` |
+
+Push specifically wasn't wired earlier in the session because, until this
+round, nothing had asked for it yet — it needs the exact same kind of
+missing piece the SMS provider did (an external account under the
+client's ownership), not a harder engineering problem. The plumbing
+(`backend/src/modules/notifications/push/`, `PATCH /notifications/push-token`)
+is now built the same way OTP and AI vision are: a swappable provider that
+defaults to a safe no-op so the app keeps working with zero setup, and
+upgrades to the real thing the moment credentials exist. Full activation
+steps for all three (where to get each credential, exactly which env vars)
+are in `backend/README.md` and `backend/.env.example`.
+
 ## Still open
 
 - Branding beyond the name: color palette, logo (placeholder seed color in
   `mobile/lib/core/theme/app_theme.dart`).
-- The canonical-parts dictionary content (which parts exist per seeded
-  model) — a real research task, unlike the makes/models bulk seed above.
+- Per-make/model OEM part numbers — the seeded dictionary is general parts
+  taxonomy, not vehicle-specific part-number matching (see "Decisions"
+  above).
 - Storage provider (Cloudflare R2 is a reasonable default — cheap, no
-  egress fees, drop-in with the existing S3-compatible config), push
-  notification provider, AI vision provider — all coded behind swappable
-  config/interfaces, so this doesn't block development, only going live.
+  egress fees, drop-in with the existing S3-compatible config) — the only
+  remaining piece with no code-complete real provider yet, since the
+  client hasn't picked a bucket/CDN host.
 - A final legal-counsel pass on the drafted privacy policy/ToS before
   public launch, and confirming whether the municipal license requirement
   (review section 4.1) changes the dealer-documents review checklist

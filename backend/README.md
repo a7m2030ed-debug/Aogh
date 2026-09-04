@@ -21,7 +21,7 @@ docker compose up -d          # starts Postgres 16 + PostGIS on :5432
 cp .env.example .env
 npm install
 npx prisma migrate dev --name init
-npm run prisma:seed           # loads 38 makes / 247 models — see prisma/seed.ts
+npm run prisma:seed           # loads 38 makes/247 models + the 151-part canonical dictionary — see prisma/seed.ts
 npm run start:dev
 # → http://localhost:3000/api/v1
 # → http://localhost:3000/api/docs  (Swagger)
@@ -33,8 +33,9 @@ npm run start:dev
 legal/                     # privacy-policy-ar.md, terms-of-use-ar.md — served as-is by LegalController
 prisma/
   schema.prisma             # full DB design (spec section 51 / review 7.2)
-  seed.ts                    # loads seed-data/vehicles.ts (38 makes, 247 models)
+  seed.ts                    # loads seed-data/vehicles.ts + seed-data/parts.ts
   seed-data/vehicles.ts       # every mainstream make/model sold in Saudi Arabia
+  seed-data/parts.ts           # canonical parts dictionary — 9 categories, 28 subcategories, 151 parts (Arabic + English + synonyms)
 src/
   main.ts                  # bootstrap, global prefix /api/v1, Swagger
   app.module.ts             # wires every module below
@@ -52,7 +53,7 @@ src/
     trust/                        # reviews, reports
     notifications/                 # in-app notifications, subscribes to domain events
     admin/                          # dealer verification, audit log, dashboard counts
-    ai/                              # AiVisionProvider interface + MockVisionProvider
+    ai/                              # AiVisionProvider interface + MockVisionProvider + ClaudeVisionProvider
     media/                            # presigned S3-compatible upload URLs for photos/videos/documents
     legal/                             # serves legal/*.md over GET /legal/privacy-policy, /legal/terms-of-use
 ```
@@ -64,12 +65,32 @@ src/
   another module's tables — that's what keeps a module splittable into its
   own service later without a rewrite (spec section 52).
 - **AI vision is behind `AI_VISION_PROVIDER`** (`modules/ai/ai-vision.interface.ts`).
-  Swap `MockVisionProvider` for a real one in `ai.module.ts`; nothing else
-  changes. The API contract always returns suggestions + a confidence
-  score, never a single answer — enforced in `ai-vision.service.ts` per
-  spec sections 10/57.
-- **OTP is mocked** (`modules/identity/auth.service.ts`, fixed code `0000`)
-  until an SMS gateway is chosen (review section 7.6).
+  `mock` (default) returns canned suggestions with no external call.
+  `claude` uses `ClaudeVisionProvider` — real recognition via
+  `claude-opus-5`, given the photo plus the live canonical-parts list from
+  `CanonicalPartsService`, using structured output (`messages.parse` +
+  `zodOutputFormat`) so a `canonicalPartId` is only ever returned when it
+  matches a real catalog row, never fabricated. The API contract always
+  returns suggestions + a confidence score, never a single answer —
+  enforced in `ai-vision.service.ts` per spec sections 10/57. Needs only
+  `AI_VISION_PROVIDER=claude` + `AI_VISION_API_KEY` (see `.env.example`).
+- **OTP is behind `OTP_PROVIDER`** (`modules/identity/sms/`). `mock`
+  (default) keeps the fixed dev code `0000` from `auth.service.ts`.
+  `twilio` sends a real 6-digit SMS code via `TwilioOtpProvider` — needs
+  only a Twilio account + the three `TWILIO_*` values in `.env.example`.
+- **Push is behind `PUSH_PROVIDER`** (`modules/notifications/push/`).
+  `none` (default) is in-app only — `Notification` rows are still created
+  and readable via `GET /notifications`, there's just no device wake-up.
+  `fcm` sends real Firebase Cloud Messaging pushes via `FcmPushProvider`
+  to whatever token the client last registered with
+  `PATCH /notifications/push-token` — needs a Firebase project + the three
+  `FCM_*` values in `.env.example` (a service-account key, not a Google
+  Maps-style API key). Firebase initialization is deliberately lazy (inside
+  `send()`, not the constructor): NestJS instantiates every provider a
+  module lists regardless of which the `useFactory` selects, so an eager
+  `initializeApp()` would crash boot on any install that never sets
+  `FCM_*` — this bit the first draft of `FcmPushProvider` and was caught
+  before commit.
 - **Geo search is in-application (haversine), not PostGIS yet** — `docker-compose.yml`
   already runs the PostGIS image so that migration is just a query rewrite,
   not an infra change, when search volume justifies it (review section 7.3).
@@ -111,6 +132,19 @@ src/
 added — every screen calls its real endpoint instead of rendering mock
 data (see `../mobile/README.md` for the full map and the couple of gaps
 still open there, like true GPS-based "nearby" sorting).
+
+## Pilot launch: what's real vs. what needs your credentials
+
+All three pieces the client asked for to run a real pilot are code-complete;
+each is gated purely on an external account that only the client can create
+(billing/ownership), not on any remaining engineering work:
+
+| Piece | Status | To activate |
+|---|---|---|
+| Parts dictionary | ✅ Done, seeded — 151 real parts, 9 categories, 28 subcategories, Arabic + English + synonyms (`prisma/seed-data/parts.ts`) | Nothing — `npm run prisma:seed` loads it |
+| AI vision | ✅ Code complete (`ClaudeVisionProvider`) | Anthropic API key → `AI_VISION_PROVIDER=claude`, `AI_VISION_API_KEY` |
+| SMS/OTP | ✅ Code complete (`TwilioOtpProvider`) | Twilio account → `OTP_PROVIDER=twilio`, `TWILIO_*` |
+| Push | ✅ Code complete (`FcmPushProvider`) | Firebase project → `PUSH_PROVIDER=fcm`, `FCM_*` |
 
 ## What's deliberately not here yet
 

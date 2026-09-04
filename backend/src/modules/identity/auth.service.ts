@@ -1,16 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { RequestOtpDto } from './dto/request-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
-
-// OTP delivery is an external service the spec leaves open (section 7.6:
-// "مزوّدون محليون معتمدون في السعودية، أو Firebase Phone Auth"). This
-// in-memory mock lets registration/login be built and demoed end-to-end
-// before that provider is picked — swap requestOtp/verify for a real
-// gateway call and everything downstream (JWT issuance, user creation)
-// is unaffected.
-const MOCK_OTP = '0000';
+import { OTP_PROVIDER, OtpProvider } from './sms/otp-provider.interface';
 
 @Injectable()
 export class AuthService {
@@ -19,11 +12,13 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
+    @Inject(OTP_PROVIDER) private readonly otpProvider: OtpProvider,
   ) {}
 
   async requestOtp(dto: RequestOtpDto) {
-    this.pendingCodes.set(dto.phone, MOCK_OTP);
-    return { sent: true, devHint: `mock OTP is ${MOCK_OTP}` };
+    const { code, devHint } = await this.otpProvider.sendOtp(dto.phone);
+    this.pendingCodes.set(dto.phone, code);
+    return { sent: true, devHint };
   }
 
   async verifyOtp(dto: VerifyOtpDto) {

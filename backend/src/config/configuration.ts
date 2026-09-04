@@ -19,10 +19,20 @@ export default () => ({
     // ever used for this OTP step — never for order/chat notifications
     // (those go through the notifications module + push, below).
     provider: process.env.OTP_PROVIDER ?? 'mock',
+    twilioAccountSid: process.env.TWILIO_ACCOUNT_SID,
+    twilioAuthToken: process.env.TWILIO_AUTH_TOKEN,
+    twilioFromNumber: process.env.TWILIO_FROM_NUMBER,
   },
   push: {
-    provider: process.env.PUSH_PROVIDER ?? 'fcm',
-    credentialsPath: process.env.PUSH_CREDENTIALS_PATH,
+    // "none" ships an in-app-only NotificationsService (no external
+    // delivery) — the client asked why push wasn't wired: it needs a
+    // Firebase project (or another push gateway) created under the
+    // client's own account, the same blocker as the SMS provider used to
+    // be. See modules/notifications/push and backend/README.md.
+    provider: process.env.PUSH_PROVIDER ?? 'none',
+    fcmProjectId: process.env.FCM_PROJECT_ID,
+    fcmClientEmail: process.env.FCM_CLIENT_EMAIL,
+    fcmPrivateKey: process.env.FCM_PRIVATE_KEY,
   },
   storage: {
     // Any S3-compatible provider works (AWS S3, Cloudflare R2, MinIO for
