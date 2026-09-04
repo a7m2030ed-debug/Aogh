@@ -1,4 +1,4 @@
-# Used-car-parts marketplace — project brief
+# قطعتي — used-car-parts marketplace — project brief
 
 Source documents (the client's original requirements, in Arabic, provided
 as .docx and not duplicated here):
@@ -88,19 +88,50 @@ inventory-system linking, voice search, very-advanced AI, structured
 accept/reject negotiation UI (v1 ships free-text chat + one "agree"
 button).
 
-**Open decisions nothing in either source document settles** — still
-needed before this goes further:
+## Decisions made by the client (2026-09-04)
 
-- App name (Arabic + English), branding, color palette, logo.
-- Launch city and the 3-5 vehicle models for the pilot (review section 9
-  recommends deciding this before building the canonical-parts seed list).
-- Which provider for each external service in `backend/.env.example`: SMS/OTP,
-  maps, push notifications, object storage, AI vision. All are coded
-  behind swappable interfaces/config — the code doesn't block on this, but
-  going live does.
-- Legal: privacy policy + ToS text (PDPL-compliant), and confirming
-  whether the municipal license requirement (review section 4.1) changes
-  the dealer-documents review checklist beyond the one new field already
-  added to the schema and the registration screen.
+- **App name:** قطعتي (Arabic only for now). Reflected in the mobile app
+  title (`mobile/lib/main.dart`) and the backend's Swagger title
+  (`backend/src/main.ts`). The Flutter package's technical id
+  (`carparts_app` in `pubspec.yaml`) is left as-is — that's an internal
+  identifier, not user-facing, so renaming it buys nothing.
+- **Launch city:** الرياض only. No code change needed — `city` was already
+  a free-text field; this just settles what goes into the canonical-parts
+  seed list (still needed: which 3-5 vehicle models to seed first, per
+  review section 9's step 1).
+- **Maps: none.** No paid Maps SDK/API key, no on-screen map. Distance
+  search and the delivery-fee calculator (spec sections 8, 25) are kept —
+  they only ever needed plain lat/lng numbers and a haversine formula
+  (`backend/src/common/geo/haversine.ts`), not a maps *service*. The
+  `MAPS_PROVIDER`/`MAPS_API_KEY` config was removed
+  (`backend/src/config/configuration.ts`) since nothing used it; the
+  mobile app is expected to read lat/lng from the device's own GPS
+  permission (added `geolocator` to `mobile/pubspec.yaml`), not a map
+  widget. If "no maps" was meant to also drop distance search/delivery
+  pricing entirely, say so — that's a different, larger change.
+- **SMS:** confirmed scope — used only for the login/registration OTP
+  (customer and dealer), never for order/chat/other notifications (those
+  go through the notifications module + push). This already matches how
+  the code is split; no change needed.
+- **Storage:** not yet decided, and nothing in the code depends on it yet
+  — there's no upload endpoint built (`ListingImage`/`DealerDocument`
+  currently just take a URL string; something has to produce that URL
+  before this matters). It's cloud storage for the photos/videos/dealer
+  documents the app is built around — like a private Google Drive the app
+  talks to via API. Revisit when the upload endpoint gets built.
+
+## Still open
+
+- Branding beyond the name: color palette, logo (placeholder seed color in
+  `mobile/lib/core/theme/app_theme.dart`).
+- The 3-5 vehicle models to seed first for Riyadh.
+- Storage provider (see above), push notification provider, AI vision
+  provider — all coded behind swappable config/interfaces, so this doesn't
+  block development, only going live.
+- Legal: privacy policy + ToS text reviewed by a licensed lawyer for PDPL
+  and e-commerce-regulation compliance, and confirming whether the
+  municipal license requirement (review section 4.1) changes the
+  dealer-documents review checklist beyond the one field already added to
+  the schema and the registration screen.
 - A dedicated admin-role auth model — the admin API currently reuses the
   regular customer/dealer JWT guard as a placeholder (`backend/src/modules/admin/admin.controller.ts`).

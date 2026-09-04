@@ -17,8 +17,8 @@ async function bootstrap() {
   // Swagger/OpenAPI generated straight from the code (review section 7.8)
   // so the API doc for whoever integrates with this backend never drifts.
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('Car Parts Marketplace API')
-    .setDescription('Backend API for the used-car-parts marketplace platform')
+    .setTitle('قطعتي API')
+    .setDescription('Backend API for the "قطعتي" used-car-parts marketplace platform')
     .setVersion('0.1')
     .addBearerAuth()
     .build();
