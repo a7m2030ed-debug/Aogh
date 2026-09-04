@@ -146,10 +146,24 @@ each is gated purely on an external account that only the client can create
 | SMS/OTP | ✅ Code complete (`TwilioOtpProvider`) | Twilio account → `OTP_PROVIDER=twilio`, `TWILIO_*` |
 | Push | ✅ Code complete (`FcmPushProvider`) | Firebase project → `PUSH_PROVIDER=fcm`, `FCM_*` |
 
+## Admin access
+
+`/admin/*` is gated to `User.role === ADMIN` (`common/auth/roles.guard.ts`
++ `@Roles('ADMIN')` on `AdminController`) — no separate admin login;
+`AdminUser` (in the schema) stays a plain audit-attribution table, not a
+second auth system, per the client decision. There's no admin self-signup
+by design. To grant it: sign up once through the normal OTP flow with the
+phone you want as admin, then run
+
+```bash
+npm run promote:admin -- +9665XXXXXXXX
+```
+
+(`prisma/promote-admin.ts`) and log in again so the new JWT carries the
+role.
+
 ## What's deliberately not here yet
 
 Matches the review's MVP-scope recommendation (section 6): payments,
 external delivery-company APIs, dealer inventory-system integration,
-voice search, structured accept/reject negotiation UI backend, and a
-dedicated admin-role auth guard (the admin routes use the same JWT guard
-as everyone else right now — see the `// TODO` in `admin.controller.ts`).
+voice search, and structured accept/reject negotiation UI backend.

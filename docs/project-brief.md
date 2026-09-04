@@ -214,5 +214,9 @@ are in `backend/README.md` and `backend/.env.example`.
   (review section 4.1) changes the dealer-documents review checklist
   beyond the one field already added to the schema and the registration
   screen.
-- A dedicated admin-role auth model — the admin API currently reuses the
-  regular customer/dealer JWT guard as a placeholder (`backend/src/modules/admin/admin.controller.ts`).
+- ~~A dedicated admin-role auth model~~ — closed: `/admin/*` now requires
+  `User.role === ADMIN` (`backend/src/common/auth/roles.guard.ts`). No
+  self-signup by design; promote a user with
+  `npm run promote:admin -- <phone>` (`backend/prisma/promote-admin.ts`)
+  after they've logged in once normally. `AdminUser` in the schema stays
+  a plain audit-attribution table, not a second login system.
