@@ -43,6 +43,41 @@ npm run start:dev
 # → http://localhost:3000/api/docs  (Swagger, dev only)
 ```
 
+## Performance
+
+Measured, not assumed. 50,000 part requests across 2,000 users were
+loaded into a real Postgres and the hot queries timed:
+
+| Query | Before indexes | After |
+|---|---|---|
+| Dealer inbox (open requests, newest first) | 7.4 ms — sequential scan + sort | **0.37 ms** — index scan |
+| "طلباتي" (one customer's requests) | 4.9 ms — sequential scan | **0.29 ms** — index scan |
+
+End-to-end over HTTP at that same data volume: dealer inbox 8.4 ms,
+my-requests 4.3 ms, conversations 4.7 ms, notifications 4.9 ms, catalog
+6.2 ms. The gap widens with scale — a sequential scan grows with the
+table, an index scan barely moves.
+
+Eight indexes now cover every filter+sort the app actually issues
+(`prisma/schema.prisma`); the earlier schema had none on these paths.
+Other work in the same pass:
+
+- **gzip** on responses. The catalog the app loads on open drops from
+  37 KB to 10 KB — the single biggest payload, and the one that decides
+  how fast the first screen becomes usable on mobile data.
+- **Every list query is bounded** (messages 200 newest, conversations
+  100, requests 50/100). Nothing returns an unbounded set, so no screen
+  gets slower forever as a thread or an account ages.
+- **The dealer fan-out never blocks the response.** Posting a request
+  returns as soon as the row is written; notifying every dealer happens
+  after. A failure there is logged and dropped rather than rejected —
+  previously an unhandled rejection could have taken the process down.
+- **The app stopped making avoidable round-trips**: the makes endpoint
+  already nests each make's models, so picking a make fills the model
+  dropdown instantly instead of waiting on a request; and sending a chat
+  message appends the message the server returns rather than
+  re-downloading the whole thread.
+
 ## Security
 
 Closed in the 2026-09-05 review, each verified against the running server:
@@ -60,10 +95,25 @@ Closed in the 2026-09-05 review, each verified against the running server:
 | `GET /dealers/:id` was public and returned the whole row | Requires a session and returns only the customer-facing fields |
 | Swagger exposed the full API surface in production | Off unless `SWAGGER_ENABLED=true` |
 | A second dealer registration crashed with a constraint error | Clean 409 |
+| No security headers | `helmet` (HSTS, nosniff, frameguard) |
+| Unknown request fields were silently ignored | `forbidNonWhitelisted` rejects them with 400 |
+| Unbounded request bodies | Capped at 256 KB (photos never pass through the API) |
+| An unhandled rejection in a notification handler could crash the process | Caught and logged |
 
 Rate limits are per-instance and in-memory, as is the OTP store — fine
 for the single-instance pilot, and the thing to move to Redis before
 running more than one instance.
+
+**On "unhackable":** no system is, and nobody can honestly promise it.
+What is true here: every endpoint requires a session except the three
+that can't (OTP request/verify, catalog read, legal docs); every object
+access is checked against the caller rather than trusted from the
+request; the expensive paths are rate-limited; and each of those was
+verified by attacking it, not by reading the code. The remaining
+exposure is mostly operational — a leaked `JWT_SECRET`, a stolen phone
+(tokens last 7 days and can't be revoked yet), or the storage bucket
+being misconfigured as publicly writable. Those are worth a look before
+the pilot grows.
 
 ## Deploying
 

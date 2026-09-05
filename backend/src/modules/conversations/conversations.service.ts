@@ -24,6 +24,7 @@ export class ConversationsService {
     return this.prisma.conversation.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
+      take: 100,
       include: {
         dealer: { select: { id: true, businessName: true, city: true, contactPhone: true } },
         partRequest: { select: { id: true, partName: true, vehicleMake: true, vehicleModel: true } },
@@ -37,6 +38,7 @@ export class ConversationsService {
     return this.prisma.conversation.findMany({
       where: { dealerId },
       orderBy: { createdAt: 'desc' },
+      take: 100,
       include: {
         user: { select: { id: true, name: true, phone: true } },
         partRequest: { select: { id: true, partName: true, vehicleMake: true, vehicleModel: true } },
@@ -85,11 +87,16 @@ export class ConversationsService {
     return message;
   }
 
+  // Newest 200, then flipped back into reading order. Taking from the end
+  // is what keeps a long-running thread from getting slower every time
+  // it's opened — the app only ever renders the recent tail anyway.
   async listMessages(conversationId: string, userId: string) {
     await this.assertParticipant(conversationId, userId);
-    return this.prisma.message.findMany({
+    const recent = await this.prisma.message.findMany({
       where: { conversationId },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: 'desc' },
+      take: 200,
     });
+    return recent.reverse();
   }
 }

@@ -76,18 +76,27 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     }
   }
 
+  // The POST returns the created message, so it's appended straight to
+  // the list rather than re-downloading the whole thread after every
+  // send — the sent message appears immediately and the cost of sending
+  // stops growing with the length of the conversation.
   Future<void> _send() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
     _controller.clear();
     try {
-      await ref
+      final response = await ref
           .read(apiClientProvider)
           .dio
           .post('/conversations/${widget.conversationId}/messages', data: {'text': text});
-      await _loadMessages();
+      if (!mounted) return;
+      setState(() => _messages = [
+            ..._messages,
+            ChatMessage.fromJson(response.data as Map<String, dynamic>),
+          ]);
     } on DioException {
       if (!mounted) return;
+      _controller.text = text; // don't lose what they typed
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('تعذّر إرسال الرسالة.')));
     }
@@ -103,12 +112,16 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
             UploadCategory.chatImage,
             contentType: 'image/jpeg',
           );
-      await ref
+      final response = await ref
           .read(apiClientProvider)
           .dio
           .post('/conversations/${widget.conversationId}/messages',
               data: {'imageUrl': publicUrl});
-      await _loadMessages();
+      if (!mounted) return;
+      setState(() => _messages = [
+            ..._messages,
+            ChatMessage.fromJson(response.data as Map<String, dynamic>),
+          ]);
     } on DioException {
       if (!mounted) return;
       ScaffoldMessenger.of(context)

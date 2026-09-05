@@ -61,6 +61,7 @@ export class RequestsService {
     return this.prisma.partRequest.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
+      take: 50,
       include: {
         conversations: {
           select: {

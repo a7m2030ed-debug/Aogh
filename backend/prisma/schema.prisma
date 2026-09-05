@@ -83,6 +83,9 @@ model Dealer {
   conversations Conversation[]   @relation("DealerConversations")
   notifications Notification[]
 
+  // Every new request fans out to "all VERIFIED dealers" — the one query
+  // that runs on the app's hottest path.
+  @@index([verificationStatus])
   @@map("dealers")
 }
 
@@ -193,9 +196,12 @@ model PartRequest {
 
   conversations Conversation[]
 
-  // The dealer feed is "open requests, newest first" — see
-  // modules/requests/requests.service.ts.
+  // Every list query in the app gets an index covering both its filter
+  // and its sort, so neither degrades into a scan-and-sort as rows pile
+  // up: the dealer feed reads open requests newest-first, and "طلباتي"
+  // reads one customer's newest-first.
   @@index([status, createdAt])
+  @@index([userId, createdAt])
   @@map("part_requests")
 }
 
@@ -216,8 +222,13 @@ model Conversation {
   messages Message[]
 
   // A dealer answers a given request once; answering again reopens the
-  // thread they already have rather than starting a second one.
+  // thread they already have rather than starting a second one. (This
+  // also indexes partRequestId on its own, which is how a request's
+  // answers are loaded.)
   @@unique([partRequestId, dealerId])
+  // The two conversation lists — customer side and dealer side.
+  @@index([userId, createdAt])
+  @@index([dealerId, createdAt])
   @@map("conversations")
 }
 
@@ -240,6 +251,9 @@ model Message {
   locationLng    Float?
   createdAt      DateTime          @default(now())
 
+  // Serves both reading a thread in order and pulling just its latest
+  // message for the conversation-list preview.
+  @@index([conversationId, createdAt])
   @@map("messages")
 }
 
@@ -256,6 +270,10 @@ model Notification {
   readAt    DateTime?
   createdAt DateTime  @default(now())
 
+  // A notification is addressed to exactly one of these, and the bell
+  // reads whichever applies, newest first.
+  @@index([userId, createdAt])
+  @@index([dealerId, createdAt])
   @@map("notifications")
 }
 

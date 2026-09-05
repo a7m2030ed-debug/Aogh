@@ -1,4 +1,4 @@
-import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { EventBusService } from '../../common/event-bus/event-bus.service';
 import { DomainEvents } from '../../common/event-bus/events';
@@ -16,6 +16,8 @@ const PUSH_COPY: Record<string, { title: string; body: string }> = {
 // answered — it just reacts to events published on the shared bus.
 @Injectable()
 export class NotificationsService implements OnModuleInit {
+  private readonly logger = new Logger(NotificationsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly eventBus: EventBusService,
@@ -23,14 +25,23 @@ export class NotificationsService implements OnModuleInit {
   ) {}
 
   onModuleInit() {
+    // Each handler is fire-and-forget so the HTTP response never waits on
+    // the fan-out — but a rejected promise with no catch takes the whole
+    // process down on Node, which would turn one bad notification into an
+    // outage. Everything here is best-effort by design, so a failure is
+    // logged and dropped.
+    const detach = (label: string, work: Promise<unknown>) => {
+      work.catch((error) => this.logger.warn(`${label} failed: ${(error as Error).message}`));
+    };
+
     this.eventBus.subscribe(DomainEvents.PART_REQUEST_CREATED, (payload: any) => {
-      void this.broadcastToDealers(payload);
+      detach('dealer broadcast', this.broadcastToDealers(payload));
     });
     this.eventBus.subscribe(DomainEvents.REQUEST_ANSWERED, (payload: any) => {
-      void this.notifyCustomer(payload.customerUserId, 'request_answered', payload);
+      detach('answer notification', this.notifyCustomer(payload.customerUserId, 'request_answered', payload));
     });
     this.eventBus.subscribe(DomainEvents.MESSAGE_SENT, (payload: any) => {
-      void this.notifyOtherSide(payload);
+      detach('message notification', this.notifyOtherSide(payload));
     });
   }
 

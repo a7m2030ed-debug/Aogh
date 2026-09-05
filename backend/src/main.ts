@@ -2,17 +2,40 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import compression from 'compression';
+import express from 'express';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const config = app.get(ConfigService);
 
+  // Standard hardening headers (nosniff, frameguard, HSTS, and the rest).
+  app.use(helmet());
+  // gzip on responses — the request feed and conversation lists are JSON
+  // with repetitive keys, which compresses to a fraction of the bytes.
+  // On mobile data that is felt directly as load time.
+  app.use(compression());
+
+  // Cross-origin requests are left disabled (Nest's default). The mobile
+  // app isn't a browser and is unaffected; enable CORS deliberately, for
+  // a named origin, if a web admin dashboard is ever built.
+
+  // Bodies are small by design — the only large payload is a photo, and
+  // that goes straight to storage via a presigned URL, never through here.
+  app.use(express.json({ limit: '256kb' }));
+
   // One API gateway for both the mobile app and the admin web dashboard
   // (review section 7.1 "بوابة API واحدة") — versioned from day one so a
   // breaking change never forces both clients to update in lockstep.
   app.setGlobalPrefix('api/v1');
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  // forbidNonWhitelisted rejects unknown fields outright instead of
+  // silently dropping them, so a client sending something the DTO doesn't
+  // declare gets told rather than quietly ignored.
+  app.useGlobalPipes(
+    new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
+  );
 
   // Swagger/OpenAPI generated straight from the code (review section 7.8)
   // so the API doc never drifts from the API. Off in production: a public

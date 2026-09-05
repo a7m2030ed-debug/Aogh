@@ -26,7 +26,7 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
   final _partNameController = TextEditingController();
 
   List<_Make> _makes = [];
-  List<_Model> _models = [];
+  List<String> _models = [];
   List<String> _partSuggestions = [];
   String? _makeId;
   String? _makeName;
@@ -57,12 +57,21 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
       ]);
       if (!mounted) return;
       setState(() {
+        // GET /catalog/vehicles/makes already nests each make's models, so
+        // they're kept here rather than fetched again when a make is
+        // picked — selecting a make fills the model dropdown instantly
+        // instead of waiting on a round-trip.
         _makes = (results[0].data as List)
             .map((e) => _Make(
                   id: e['id'] as String,
                   name: (e['nameAr'] as String?)?.isNotEmpty == true
                       ? e['nameAr'] as String
                       : e['nameEn'] as String,
+                  models: ((e['models'] as List?) ?? const [])
+                      .map((m) => (m['nameAr'] as String?)?.isNotEmpty == true
+                          ? m['nameAr'] as String
+                          : m['nameEn'] as String)
+                      .toList(),
                 ))
             .toList();
         _partSuggestions = (results[1].data as List)
@@ -76,32 +85,6 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
       // free text below, so a catalog outage can't block a request.
       if (!mounted) return;
       setState(() => _loadingCatalog = false);
-    }
-  }
-
-  Future<void> _loadModels(String makeId) async {
-    setState(() {
-      _models = [];
-      _modelName = null;
-    });
-    try {
-      final response = await ref
-          .read(apiClientProvider)
-          .dio
-          .get('/catalog/vehicles/models', queryParameters: {'makeId': makeId});
-      if (!mounted) return;
-      setState(() {
-        _models = (response.data as List)
-            .map((e) => _Model(
-                  name: (e['nameAr'] as String?)?.isNotEmpty == true
-                      ? e['nameAr'] as String
-                      : e['nameEn'] as String,
-                ))
-            .toList();
-      });
-    } on DioException {
-      if (!mounted) return;
-      setState(() => _models = []);
     }
   }
 
@@ -216,11 +199,13 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
                           .toList(),
                       onChanged: (value) {
                         if (value == null) return;
+                        final make = _makes.firstWhere((m) => m.id == value);
                         setState(() {
                           _makeId = value;
-                          _makeName = _makes.firstWhere((make) => make.id == value).name;
+                          _makeName = make.name;
+                          _models = make.models;
+                          _modelName = null;
                         });
-                        _loadModels(value);
                       },
                       validator: (value) => value == null ? 'اختر الماركة' : null,
                     ),
@@ -235,8 +220,7 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
                         helperText: _makeId == null ? 'اختر الماركة أولاً' : null,
                       ),
                       items: _models
-                          .map((model) =>
-                              DropdownMenuItem(value: model.name, child: Text(model.name)))
+                          .map((model) => DropdownMenuItem(value: model, child: Text(model)))
                           .toList(),
                       onChanged: _models.isEmpty
                           ? null
@@ -311,12 +295,8 @@ class _PhotoField extends StatelessWidget {
 }
 
 class _Make {
-  const _Make({required this.id, required this.name});
+  const _Make({required this.id, required this.name, required this.models});
   final String id;
   final String name;
-}
-
-class _Model {
-  const _Model({required this.name});
-  final String name;
+  final List<String> models;
 }
