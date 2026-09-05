@@ -121,17 +121,39 @@ export class NotificationsService implements OnModuleInit {
     await this.pushProvider.send(dealer.owner.pushToken, copy.title, copy.body, { type });
   }
 
-  listForUser(userId: string) {
+  // A dealer's notifications are addressed to their dealer id, not their
+  // user id, so filtering on userId alone left every dealer with an empty
+  // bell while their pushes arrived normally.
+  async listForUser(userId: string) {
+    const dealer = await this.prisma.dealer.findUnique({
+      where: { ownerUserId: userId },
+      select: { id: true },
+    });
+
     return this.prisma.notification.findMany({
-      where: { userId },
+      where: dealer ? { OR: [{ userId }, { dealerId: dealer.id }] } : { userId },
       orderBy: { createdAt: 'desc' },
+      take: 100,
     });
   }
 
-  markRead(id: string) {
-    return this.prisma.notification.update({
-      where: { id },
+  // Scoped to the caller: without the ownership filter this was an id away
+  // from letting anyone mark anyone else's notifications read. updateMany
+  // (rather than update) means a miss is a no-op instead of an error that
+  // would confirm the id exists.
+  async markRead(id: string, userId: string) {
+    const dealer = await this.prisma.dealer.findUnique({
+      where: { ownerUserId: userId },
+      select: { id: true },
+    });
+
+    await this.prisma.notification.updateMany({
+      where: {
+        id,
+        ...(dealer ? { OR: [{ userId }, { dealerId: dealer.id }] } : { userId }),
+      },
       data: { readAt: new Date() },
     });
+    return { ok: true };
   }
 }

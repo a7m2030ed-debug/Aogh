@@ -6,26 +6,64 @@ architecture matches section 7.1-7.2 of the technical review in
 
 ## Status
 
-Verified in this environment (no Docker/Postgres available here):
+**Verified against a real database and a running server** (2026-09-05).
+A Postgres instance was started, `prisma migrate deploy` applied the
+committed migration, `npm run prisma:seed` loaded the catalog, and the
+whole product loop was exercised over HTTP:
 
-- `npm install` — clean
-- `npx prisma generate` — schema is valid
-- `npx nest build` — zero TypeScript errors across every module
-- `node dist/main.js` — boots, wires all modules, maps every route (fails
-  only on the DB connection, since no Postgres is reachable here)
+- customer posts a request → it appears in the verified dealer's inbox →
+  dealer answers → a conversation opens → both sides exchange messages →
+  customer closes the request → a later answer is refused
+- answering twice returns the same conversation (idempotent)
+- notification rows are created for both sides by the event fan-out
+- an unverified dealer is refused both the inbox and answering (403)
+- a non-participant is refused reading and writing a thread, and reading
+  or closing someone else's request (403)
+- a non-admin is refused the admin API; an admin is allowed (403 / 200)
+- an over-long message is rejected by validation (400)
 
-**Not yet verified against a real database** — do that first, locally:
+Also verified directly: OTP resend cooldown, the five-attempt cap (and
+that the correct code stops working after lockout), the per-IP rate
+limits (429), unauthenticated catalog writes (401), the notification
+ownership check, and that the app refuses to boot in production with a
+missing or default `JWT_SECRET`.
+
+What is still **not** verified: the Docker image build (this sandbox
+can't run a Docker daemon) and Android/iOS native builds (no Android SDK
+or Xcode).
 
 ```bash
 docker compose up -d          # starts Postgres 16 + PostGIS on :5432
 cp .env.example .env
 npm install
-npx prisma migrate dev --name init
-npm run prisma:seed           # loads 38 makes/247 models + the 151-part canonical dictionary — see prisma/seed.ts
+npx prisma migrate deploy     # applies prisma/migrations
+npm run prisma:seed           # 38 makes/247 models + the 151-part dictionary
 npm run start:dev
 # → http://localhost:3000/api/v1
-# → http://localhost:3000/api/docs  (Swagger)
+# → http://localhost:3000/api/docs  (Swagger, dev only)
 ```
+
+## Security
+
+Closed in the 2026-09-05 review, each verified against the running server:
+
+| Gap | Fix |
+|---|---|
+| Catalog write endpoints were fully unauthenticated — anyone could inject rows into the dictionary customers see suggested | `@Roles('ADMIN')`; reads stay open for the request form |
+| OTP had no expiry, no attempt cap and no resend cooldown — free SMS billing and a brute-forceable 6-digit code | 5-minute expiry, 5 attempts, 60-second cooldown, single use |
+| No rate limiting anywhere | Global 60/min, 5/min on OTP send, 10/min on verify, 10/hour on posting requests |
+| `JWT_SECRET` silently fell back to a dev default | Boot fails in production if it's missing or still the default |
+| Unverified dealers could answer requests, bypassing the thing verification exists for | Verification checked on both the inbox and answering |
+| Any user could mark any notification read | Scoped to the caller (their own, or their dealer's) |
+| Dealers never saw their own in-app notifications | `GET /notifications` now includes rows addressed to the caller's dealer |
+| Unbounded strings on messages and dealer registration | Length caps on every field; coordinates range-checked |
+| `GET /dealers/:id` was public and returned the whole row | Requires a session and returns only the customer-facing fields |
+| Swagger exposed the full API surface in production | Off unless `SWAGGER_ENABLED=true` |
+| A second dealer registration crashed with a constraint error | Clean 409 |
+
+Rate limits are per-instance and in-memory, as is the OTP store — fine
+for the single-instance pilot, and the thing to move to Redis before
+running more than one instance.
 
 ## Deploying
 

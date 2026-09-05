@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { RegisterDealerDto } from './dto/register-dealer.dto';
@@ -18,6 +18,14 @@ export class DealersService {
   // review), and conflating them would leave a dealer stuck looking like
   // a plain customer in their own app until an admin acts.
   async register(ownerUserId: string, dto: RegisterDealerDto) {
+    // ownerUserId is unique in the schema, so a second registration would
+    // otherwise surface as an unhandled Prisma constraint error — a 500
+    // for what is really "you already have a dealer account".
+    const existing = await this.prisma.dealer.findUnique({ where: { ownerUserId } });
+    if (existing) {
+      throw new ConflictException('لديك حساب تاجر مسجّل بالفعل.');
+    }
+
     const [dealer] = await this.prisma.$transaction([
       this.prisma.dealer.create({
         data: {
@@ -41,9 +49,22 @@ export class DealersService {
     return dealer;
   }
 
+  // Only what a customer needs to see about whoever answered them.
+  // Returning the whole row would hand out ownerUserId and the internal
+  // verification state alongside it.
   async findById(id: string) {
-    const dealer = await this.prisma.dealer.findUnique({ where: { id } });
-    if (!dealer) throw new NotFoundException('Dealer not found');
+    const dealer = await this.prisma.dealer.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        businessName: true,
+        activityType: true,
+        city: true,
+        contactPhone: true,
+        verificationStatus: true,
+      },
+    });
+    if (!dealer) throw new NotFoundException('التاجر غير موجود.');
     return dealer;
   }
 

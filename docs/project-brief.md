@@ -1,5 +1,26 @@
 # قطعتي — used-car-parts request platform — project brief
 
+## ✅ Verified end to end — 2026-09-05
+
+The longest-standing caveat in this project is closed: everything had
+only ever been "compiles and boots", never run against a database. A
+Postgres instance was stood up, the schema migrated, the catalog seeded,
+and the entire loop exercised over HTTP — request posted, dealer inbox,
+answer, conversation, messages both ways, close. Access control was
+probed rather than assumed (non-participants, non-admins, unverified
+dealers all correctly refused). `backend/README.md` lists exactly what
+was checked.
+
+Still unverified: the Docker image build and the Android/iOS native
+builds, both for want of tooling this environment can't provide.
+
+A security review in the same pass found and closed eleven gaps —
+unauthenticated catalog writes, an unthrottled and unexpiring OTP (free
+SMS billing plus a brute-forceable code), a default JWT secret, missing
+rate limits, unverified dealers able to answer requests, and a
+notification IDOR among them. The table in `backend/README.md` lists each
+one with its fix.
+
 ## ⚠️ Product pivot — 2026-09-05
 
 The client narrowed the product to its core loop. Everything below that

@@ -1,17 +1,29 @@
-// Central place to read every external-service knob mentioned in the spec
-// (section 7.6): push notifications, SMS/OTP, object storage, AI vision.
-// No maps/geocoding provider — the client opted out; distance search
-// (common/geo/haversine.ts) still works off plain lat/lng, which the
-// mobile app is expected to read from the device's own GPS permission,
-// not a paid maps SDK. Nothing here talks to those services yet — modules
-// that need one read it from here so swapping a provider later is a
-// one-file change.
+// Central place to read every external-service knob: push notifications,
+// SMS/OTP, object storage. Modules that need one read it from here, so
+// swapping a provider later is a one-file change.
+
+const DEV_JWT_SECRET = 'dev-secret-change-me';
+
+// The default secret is a convenience for local dev and a full account
+// takeover anywhere else: anyone who knows it can mint a token for any
+// user, including an ADMIN. Refusing to boot is the only safe response —
+// a warning in a log nobody reads is how this ships to production.
+function resolveJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (process.env.NODE_ENV === 'production' && (!secret || secret === DEV_JWT_SECRET)) {
+    throw new Error(
+      'JWT_SECRET must be set to a real random value in production. ' +
+        'Generate one with: openssl rand -base64 48',
+    );
+  }
+  return secret ?? DEV_JWT_SECRET;
+}
 
 export default () => ({
   port: parseInt(process.env.PORT ?? '3000', 10),
   databaseUrl: process.env.DATABASE_URL,
   jwt: {
-    secret: process.env.JWT_SECRET ?? 'dev-secret-change-me',
+    secret: resolveJwtSecret(),
     expiresIn: process.env.JWT_EXPIRES_IN ?? '7d',
   },
   otp: {

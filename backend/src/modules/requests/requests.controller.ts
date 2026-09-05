@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../identity/current-user.decorator';
 import { DealersService } from '../identity/dealers.service';
@@ -18,6 +19,10 @@ export class RequestsController {
   ) {}
 
   // ── Customer side ──────────────────────────────────────────────────
+  // Every request here wakes up every dealer's phone, so one account
+  // posting in a loop is a spam amplifier aimed at the people the whole
+  // product depends on. Ten an hour is far above honest use.
+  @Throttle({ default: { ttl: 3_600_000, limit: 10 } })
   @Post()
   create(@CurrentUser() user: { userId: string }, @Body() dto: CreatePartRequestDto) {
     return this.requestsService.create(user.userId, dto);

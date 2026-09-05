@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import configuration from './config/configuration';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { EventBusModule } from './common/event-bus/event-bus.module';
@@ -15,6 +17,10 @@ import { LegalModule } from './modules/legal/legal.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, load: [configuration] }),
+    // A floor under every endpoint. Individual routes that cost real money
+    // or fan out to everyone (OTP send, request creation) tighten this
+    // further with their own @Throttle.
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]),
     PrismaModule,
     EventBusModule,
     IdentityModule,
@@ -26,5 +32,6 @@ import { LegalModule } from './modules/legal/legal.module';
     MediaModule,
     LegalModule,
   ],
+  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}

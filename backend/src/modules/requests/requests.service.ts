@@ -17,6 +17,20 @@ export class RequestsService {
     private readonly eventBus: EventBusService,
   ) {}
 
+  // Verification gates the notification fan-out, so it gates every
+  // dealer-side action too — otherwise an unverified account could skip
+  // the feed and POST straight to answer, opening a conversation with a
+  // customer, which is exactly what verification exists to prevent.
+  private async assertVerified(dealerId: string) {
+    const dealer = await this.prisma.dealer.findUnique({
+      where: { id: dealerId },
+      select: { verificationStatus: true },
+    });
+    if (dealer?.verificationStatus !== 'VERIFIED') {
+      throw new ForbiddenException('حساب التاجر تحت المراجعة ولم يُوثّق بعد.');
+    }
+  }
+
   async create(userId: string, dto: CreatePartRequestDto) {
     const request = await this.prisma.partRequest.create({
       data: {
@@ -89,7 +103,13 @@ export class RequestsService {
   // may still have the part, and the customer picks between them — but a
   // dealer's own answer is flagged so the app can show "تم الرد" instead
   // of offering the button twice.
+  //
+  // Gated on verification like answering is, so an unverified dealer gets
+  // a clear "your account is still under review" instead of a feed of
+  // buttons that would each fail.
   async listOpenForDealer(dealerId: string) {
+    await this.assertVerified(dealerId);
+
     const requests = await this.prisma.partRequest.findMany({
       where: { status: 'OPEN' },
       orderBy: { createdAt: 'desc' },
@@ -107,6 +127,8 @@ export class RequestsService {
   // means a second tap returns the dealer to the thread they already have
   // rather than creating a duplicate.
   async answer(dealerId: string, requestId: string, dto: AnswerRequestDto) {
+    await this.assertVerified(dealerId);
+
     const request = await this.prisma.partRequest.findUnique({ where: { id: requestId } });
     if (!request) throw new NotFoundException('الطلب غير موجود.');
     if (request.status === 'CLOSED') {

@@ -15,15 +15,22 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
   // Swagger/OpenAPI generated straight from the code (review section 7.8)
-  // so the API doc for whoever integrates with this backend never drifts.
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('قطعتي API')
-    .setDescription('Backend API for the "قطعتي" used-car-parts marketplace platform')
-    .setVersion('0.1')
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, document);
+  // so the API doc never drifts from the API. Off in production: a public
+  // map of every endpoint and its request shape is free reconnaissance,
+  // and nobody needs it from the production host — run the app locally, or
+  // set SWAGGER_ENABLED=true deliberately if a staging box should serve it.
+  const swaggerEnabled =
+    process.env.NODE_ENV !== 'production' || process.env.SWAGGER_ENABLED === 'true';
+  if (swaggerEnabled) {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('قطعتي API')
+      .setDescription('Backend API for the "قطعتي" used-car-parts request platform')
+      .setVersion('0.1')
+      .addBearerAuth()
+      .build();
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup('api/docs', app, document);
+  }
 
   const port = config.get<number>('port') ?? 3000;
   await app.listen(port);

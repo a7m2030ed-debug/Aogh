@@ -22,7 +22,10 @@ export class DealersController {
 
   // Kept for the customer to see who answered their request (the dealer
   // card in a conversation). There's no browse/list endpoint any more —
-  // customers reach dealers only through an answered request.
+  // customers reach dealers only through an answered request, so this
+  // requires a session rather than being open to anyone who can guess ids.
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'))
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.dealersService.findById(id);
