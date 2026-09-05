@@ -1,0 +1,56 @@
+# Runs the API and its database together on a single VPS.
+#
+#   cp .env.example .env    # then fill it in — JWT_SECRET especially
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# The API container applies migrations and loads the catalog on boot, so
+# this is the whole setup. Put a reverse proxy (Caddy, nginx) in front for
+# TLS — the API speaks plain HTTP and should not be exposed directly.
+#
+# For the local development database instead, use docker-compose.yml.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: carparts
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: carparts
+    volumes:
+      - carparts_pgdata:/var/lib/postgresql/data
+    # Not published to the host: only the API needs to reach it, and an
+    # exposed 5432 on a public VPS is found by scanners within hours.
+    expose:
+      - '5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U carparts -d carparts']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      # Overrides whatever .env says: inside the compose network the
+      # database is reachable by service name, not localhost.
+      DATABASE_URL: postgresql://carparts:${POSTGRES_PASSWORD}@postgres:5432/carparts?schema=public
+    ports:
+      - '127.0.0.1:3000:3000'
+    healthcheck:
+      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:3000/api/v1/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  carparts_pgdata:

@@ -95,6 +95,20 @@ async function seedParts() {
 }
 
 async function main() {
+  // Both seeders are find-or-create, so re-running is harmless — but the
+  // container entrypoint calls this on every boot, and re-checking ~290
+  // rows one query at a time is a slow way to do nothing. If the catalog
+  // is already loaded, there is nothing to do.
+  const [makes, parts] = await Promise.all([
+    prisma.vehicleMake.count(),
+    prisma.canonicalPart.count(),
+  ]);
+  if (makes > 0 && parts > 0) {
+    // eslint-disable-next-line no-console
+    console.log(`Catalog already seeded (${makes} makes, ${parts} parts) — skipping.`);
+    return;
+  }
+
   await seedVehicles();
   await seedParts();
 }

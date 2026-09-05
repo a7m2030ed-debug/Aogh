@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import configuration from './config/configuration';
 import { PrismaModule } from './common/prisma/prisma.module';
+import { HealthController } from './common/health/health.controller';
 import { EventBusModule } from './common/event-bus/event-bus.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
@@ -32,6 +33,7 @@ import { LegalModule } from './modules/legal/legal.module';
     MediaModule,
     LegalModule,
   ],
+  controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}
