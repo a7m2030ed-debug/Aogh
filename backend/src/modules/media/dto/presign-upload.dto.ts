@@ -4,8 +4,8 @@ import { IsEnum, IsString, Matches } from 'class-validator';
 // public the moment a listing is published, dealer verification documents
 // (spec section 5) never should be, so they can't share one blanket policy.
 export enum UploadCategory {
-  LISTING_PHOTO = 'listing-photo',
-  LISTING_VIDEO = 'listing-video',
+  // The optional photo a customer attaches to a request.
+  REQUEST_PHOTO = 'request-photo',
   DEALER_DOCUMENT = 'dealer-document',
   CHAT_IMAGE = 'chat-image',
 }

@@ -27,22 +27,22 @@ export class AdminService {
   }
 
   dashboardCounts() {
-    // Backs the "التقارير" section of the admin dashboard (spec section
-    // 35): counts only for now, the "أكثر القطع بحثًا" style breakdowns
-    // read from SearchQuery/Order once there's enough volume to be
-    // meaningful.
+    // The health of this product is: are requests coming in, and are
+    // dealers answering them? answeredRequests counts requests with at
+    // least one conversation — the ratio against openRequests is the one
+    // number that says whether the pilot is working.
     return Promise.all([
       this.prisma.user.count(),
-      this.prisma.dealer.count(),
-      this.prisma.inventoryListing.count(),
-      this.prisma.searchQuery.count(),
-      this.prisma.order.count({ where: { status: 'CLOSED' } }),
-    ]).then(([users, dealers, listings, searches, completedOrders]) => ({
+      this.prisma.dealer.count({ where: { verificationStatus: 'VERIFIED' } }),
+      this.prisma.partRequest.count(),
+      this.prisma.partRequest.count({ where: { status: 'OPEN' } }),
+      this.prisma.partRequest.count({ where: { conversations: { some: {} } } }),
+    ]).then(([users, verifiedDealers, requests, openRequests, answeredRequests]) => ({
       users,
-      dealers,
-      listings,
-      searches,
-      completedOrders,
+      verifiedDealers,
+      requests,
+      openRequests,
+      answeredRequests,
     }));
   }
 }

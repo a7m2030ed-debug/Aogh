@@ -34,8 +34,6 @@ dependencies:
   # Device GPS only — no maps SDK/API key (client decision). Gives the
   # lat/lng the backend's distance search and delivery-fee calculator need
   # (spec sections 8, 25) without a paid Maps provider or an on-screen map.
-  geolocator: ^13.0.2
-
   # Local persistence for the auth token between app launches.
   shared_preferences: ^2.3.3
 

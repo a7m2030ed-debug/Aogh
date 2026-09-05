@@ -55,8 +55,4 @@ export default () => ({
     accessKeyId: process.env.STORAGE_ACCESS_KEY_ID,
     secretAccessKey: process.env.STORAGE_SECRET_ACCESS_KEY,
   },
-  aiVision: {
-    provider: process.env.AI_VISION_PROVIDER ?? 'mock',
-    apiKey: process.env.AI_VISION_API_KEY,
-  },
 });

@@ -5,35 +5,32 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/api/api_client.dart';
 import '../../core/api/media_upload_service.dart';
+import '../../core/session/current_user.dart';
 
 class ChatMessage {
-  const ChatMessage({required this.text, required this.fromMe, this.imageUrl});
+  const ChatMessage({required this.text, required this.senderType, this.imageUrl});
+
   final String text;
-  final bool fromMe;
+  final String senderType;
   final String? imageUrl;
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) => ChatMessage(
         text: json['text'] as String? ?? '',
-        fromMe: json['senderType'] == 'USER',
+        senderType: json['senderType'] as String? ?? 'USER',
         imageUrl: json['imageUrl'] as String?,
       );
 }
 
-/// Spec sections 21-23: chat tied to one listing/order, with a negotiation
-/// strip pinned above the composer. Matches the review's v1 scope
-/// (section 6): free-text negotiation ending in one "تأكيد الاتفاق"
-/// button, not the structured offer/counter-offer UI deferred to v2.
+/// Plain chat between a customer and a dealer who answered their request.
+/// No price, no offers, no "confirm the deal" — the platform introduced the
+/// two of them and stays out of the rest (client decision, 2026-09-05).
 ///
-/// `conversationId` is either a real id (opened from messages_list_screen)
-/// or the literal "new" (opened from part_details_screen, which also
-/// passes `listingId`/`dealerId` so POST /conversations can be called
-/// here on first load — the route can't call it itself, only a widget can).
+/// Conversations are never created here: a dealer answering a request is
+/// what creates one, so this screen always opens on an existing id.
 class ConversationScreen extends ConsumerStatefulWidget {
-  const ConversationScreen({super.key, required this.conversationId, this.listingId, this.dealerId});
+  const ConversationScreen({super.key, required this.conversationId});
 
   final String conversationId;
-  final String? listingId;
-  final String? dealerId;
 
   @override
   ConsumerState<ConversationScreen> createState() => _ConversationScreenState();
@@ -41,16 +38,14 @@ class ConversationScreen extends ConsumerStatefulWidget {
 
 class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   final _controller = TextEditingController();
-  String? _resolvedConversationId;
   List<ChatMessage> _messages = [];
-  num? _lastOfferPrice;
   bool _loading = true;
   String? _error;
 
   @override
   void initState() {
     super.initState();
-    _init();
+    _loadMessages();
   }
 
   @override
@@ -59,26 +54,19 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     super.dispose();
   }
 
-  Future<void> _init() async {
+  Future<void> _loadMessages() async {
     try {
-      if (widget.conversationId == 'new') {
-        if (widget.dealerId == null) {
-          setState(() {
-            _error = 'تعذّر بدء المحادثة: لا يوجد تاجر محدد.';
-            _loading = false;
-          });
-          return;
-        }
-        final apiClient = ref.read(apiClientProvider);
-        final response = await apiClient.dio.post('/conversations', data: {
-          'dealerId': widget.dealerId,
-          'listingId': widget.listingId,
-        });
-        _resolvedConversationId = response.data['id'] as String;
-      } else {
-        _resolvedConversationId = widget.conversationId;
-      }
-      await _loadMessages();
+      final response = await ref
+          .read(apiClientProvider)
+          .dio
+          .get('/conversations/${widget.conversationId}/messages');
+      if (!mounted) return;
+      setState(() {
+        _messages = (response.data as List)
+            .map((e) => ChatMessage.fromJson(e as Map<String, dynamic>))
+            .toList();
+        _loading = false;
+      });
     } on DioException {
       if (!mounted) return;
       setState(() {
@@ -88,28 +76,15 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     }
   }
 
-  Future<void> _loadMessages() async {
-    final apiClient = ref.read(apiClientProvider);
-    final response = await apiClient.dio.get('/conversations/$_resolvedConversationId/messages');
-    if (!mounted) return;
-    setState(() {
-      _messages = (response.data as List)
-          .map((e) => ChatMessage.fromJson(e as Map<String, dynamic>))
-          .toList();
-      _loading = false;
-    });
-  }
-
   Future<void> _send() async {
     final text = _controller.text.trim();
-    if (text.isEmpty || _resolvedConversationId == null) return;
+    if (text.isEmpty) return;
     _controller.clear();
     try {
-      final apiClient = ref.read(apiClientProvider);
-      await apiClient.dio.post(
-        '/conversations/$_resolvedConversationId/messages',
-        data: {'text': text},
-      );
+      await ref
+          .read(apiClientProvider)
+          .dio
+          .post('/conversations/${widget.conversationId}/messages', data: {'text': text});
       await _loadMessages();
     } on DioException {
       if (!mounted) return;
@@ -119,81 +94,35 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   }
 
   Future<void> _sendImage() async {
-    final picked = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 85);
-    if (picked == null || _resolvedConversationId == null) return;
+    final picked =
+        await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 85);
+    if (picked == null) return;
     try {
       final publicUrl = await ref.read(mediaUploadServiceProvider).upload(
             File(picked.path),
             UploadCategory.chatImage,
             contentType: 'image/jpeg',
           );
-      final apiClient = ref.read(apiClientProvider);
-      await apiClient.dio.post(
-        '/conversations/$_resolvedConversationId/messages',
-        data: {'imageUrl': publicUrl},
-      );
+      await ref
+          .read(apiClientProvider)
+          .dio
+          .post('/conversations/${widget.conversationId}/messages',
+              data: {'imageUrl': publicUrl});
       await _loadMessages();
     } on DioException {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذّر إرسال الصورة.')));
-    }
-  }
-
-  Future<void> _proposePrice(num price) async {
-    if (_resolvedConversationId == null) return;
-    try {
-      final apiClient = ref.read(apiClientProvider);
-      await apiClient.dio.post(
-        '/conversations/$_resolvedConversationId/offers',
-        data: {'price': price},
-      );
-      if (!mounted) return;
-      setState(() => _lastOfferPrice = price);
-    } on DioException {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذّر إرسال العرض.')));
-    }
-  }
-
-  Future<void> _promptForPrice() async {
-    final controller = TextEditingController();
-    final price = await showDialog<num>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('عرض سعر'),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(labelText: 'السعر (ريال)'),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, num.tryParse(controller.text.trim())),
-            child: const Text('إرسال'),
-          ),
-        ],
-      ),
-    );
-    if (price != null) await _proposePrice(price);
-  }
-
-  Future<void> _acceptOffer() async {
-    if (_resolvedConversationId == null) return;
-    try {
-      final apiClient = ref.read(apiClientProvider);
-      await apiClient.dio.post('/conversations/$_resolvedConversationId/offers/accept');
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم الاتفاق.')));
-    } on DioException {
-      if (!mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('لا يوجد عرض لتأكيده بعد.')));
+          .showSnackBar(const SnackBar(content: Text('تعذّر إرسال الصورة.')));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Which side "me" is on depends on who's logged in — the same thread
+    // renders mirrored for the customer and the dealer.
+    final isDealer = ref.watch(currentUserProvider).valueOrNull?.isDealer ?? false;
+    final mySenderType = isDealer ? 'DEALER' : 'USER';
+
     if (_loading) {
       return Scaffold(
         appBar: AppBar(title: const Text('المحادثة')),
@@ -211,39 +140,49 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       appBar: AppBar(title: const Text('المحادثة')),
       body: Column(
         children: [
-          _NegotiationStrip(
-            currentPrice: _lastOfferPrice,
-            onPropose: _promptForPrice,
-            onAccept: _acceptOffer,
-          ),
           Expanded(
-            child: ListView.builder(
-              reverse: true,
-              padding: const EdgeInsets.all(16),
-              itemCount: _messages.length,
-              itemBuilder: (context, i) {
-                final message = _messages[_messages.length - 1 - i];
-                return Align(
-                  alignment: message.fromMe ? Alignment.centerLeft : Alignment.centerRight,
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: message.fromMe
-                          ? Theme.of(context).colorScheme.primaryContainer
-                          : Theme.of(context).colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(14),
+            child: _messages.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Text(
+                        isDealer
+                            ? 'اكتب للعميل إن القطعة عندك.'
+                            : 'التاجر يقول إن القطعة عنده — ابدأ المحادثة.',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
                     ),
-                    child: message.imageUrl != null
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: Image.network(message.imageUrl!, width: 180, fit: BoxFit.cover),
-                          )
-                        : Text(message.text),
+                  )
+                : ListView.builder(
+                    reverse: true,
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _messages.length,
+                    itemBuilder: (context, i) {
+                      final message = _messages[_messages.length - 1 - i];
+                      final fromMe = message.senderType == mySenderType;
+                      return Align(
+                        alignment: fromMe ? Alignment.centerLeft : Alignment.centerRight,
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: fromMe
+                                ? Theme.of(context).colorScheme.primaryContainer
+                                : Theme.of(context).colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: message.imageUrl != null
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Image.network(message.imageUrl!,
+                                      width: 180, fit: BoxFit.cover),
+                                )
+                              : Text(message.text),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
           SafeArea(
             child: Padding(
@@ -263,31 +202,6 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _NegotiationStrip extends StatelessWidget {
-  const _NegotiationStrip({required this.currentPrice, required this.onPropose, required this.onAccept});
-
-  final num? currentPrice;
-  final VoidCallback onPropose;
-  final VoidCallback onAccept;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: Theme.of(context).colorScheme.secondaryContainer,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(currentPrice != null ? 'آخر عرض: $currentPrice ريال' : 'لا يوجد عرض بعد'),
-          ),
-          TextButton(onPressed: onPropose, child: const Text('عرض سعر')),
-          FilledButton(onPressed: onAccept, child: const Text('تم الاتفاق')),
         ],
       ),
     );

@@ -1,16 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { MessageSenderType } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { EventBusService } from '../../common/event-bus/event-bus.service';
 import { DomainEvents } from '../../common/event-bus/events';
-import { StartConversationDto } from './dto/start-conversation.dto';
 import { SendMessageDto } from './dto/send-message.dto';
-import { ProposePriceDto } from './dto/propose-price.dto';
 
-// Covers spec sections 21-23 (negotiation + agreement) at skeleton depth:
-// enough structure for the mobile app's chat screen to be built against,
-// full negotiation UX (counter-offer expiry, structured accept/reject
-// buttons) is explicitly deferred to v2 by the review (section 6).
+// Plain chat between a customer and a dealer who answered their request.
+// There's no negotiation state, agreed price or order here by design — the
+// platform introduces the two sides and stays out of the deal itself.
+// Conversations are never created here; they're created by a dealer
+// answering a request (modules/requests).
 @Injectable()
 export class ConversationsService {
   constructor(
@@ -18,76 +17,79 @@ export class ConversationsService {
     private readonly eventBus: EventBusService,
   ) {}
 
-  startConversation(userId: string, dto: StartConversationDto) {
-    return this.prisma.conversation.create({
-      data: { userId, dealerId: dto.dealerId, listingId: dto.listingId },
-    });
-  }
-
-  // Backs the mobile app's "الرسائل" tab (spec section 44) — one row per
-  // conversation with enough to render a preview without a second request
-  // per row.
+  // "الرسائل" for a customer — one row per dealer who answered, with the
+  // request it came from and the last message, so the list renders without
+  // a request per row.
   listForCustomer(userId: string) {
     return this.prisma.conversation.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
       include: {
-        dealer: { select: { businessName: true, ratingAverage: true } },
-        listing: { select: { canonicalPart: { select: { canonicalNameAr: true } } } },
+        dealer: { select: { id: true, businessName: true, city: true, contactPhone: true } },
+        partRequest: { select: { id: true, partName: true, vehicleMake: true, vehicleModel: true } },
         messages: { take: 1, orderBy: { createdAt: 'desc' } },
       },
     });
   }
 
-  sendMessage(conversationId: string, senderType: MessageSenderType, senderUserId: string | undefined, dto: SendMessageDto) {
-    return this.prisma.message.create({
-      data: {
-        conversationId,
-        senderType,
-        senderUserId,
-        text: dto.text,
-        imageUrl: dto.imageUrl,
+  // The same list from the dealer's side.
+  listForDealer(dealerId: string) {
+    return this.prisma.conversation.findMany({
+      where: { dealerId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: { select: { id: true, name: true, phone: true } },
+        partRequest: { select: { id: true, partName: true, vehicleMake: true, vehicleModel: true } },
+        messages: { take: 1, orderBy: { createdAt: 'desc' } },
       },
     });
   }
 
-  listMessages(conversationId: string) {
+  // Both sides of the thread must be checked on every read and write:
+  // conversation ids are opaque, but "unguessable" is not authorization.
+  private async assertParticipant(conversationId: string, userId: string) {
+    const conversation = await this.prisma.conversation.findUnique({
+      where: { id: conversationId },
+      include: { dealer: { select: { ownerUserId: true } } },
+    });
+    if (!conversation) throw new NotFoundException('المحادثة غير موجودة.');
+
+    const isCustomer = conversation.userId === userId;
+    const isDealer = conversation.dealer.ownerUserId === userId;
+    if (!isCustomer && !isDealer) {
+      throw new ForbiddenException('لا تملك صلاحية الوصول لهذه المحادثة.');
+    }
+    return { conversation, senderType: isDealer ? MessageSenderType.DEALER : MessageSenderType.USER };
+  }
+
+  async sendMessage(conversationId: string, userId: string, dto: SendMessageDto) {
+    const { conversation, senderType } = await this.assertParticipant(conversationId, userId);
+
+    const message = await this.prisma.message.create({
+      data: {
+        conversationId,
+        senderType,
+        senderUserId: userId,
+        text: dto.text,
+        imageUrl: dto.imageUrl,
+      },
+    });
+
+    this.eventBus.publish(DomainEvents.MESSAGE_SENT, {
+      conversationId,
+      senderType,
+      customerUserId: conversation.userId,
+      dealerId: conversation.dealerId,
+    });
+
+    return message;
+  }
+
+  async listMessages(conversationId: string, userId: string) {
+    await this.assertParticipant(conversationId, userId);
     return this.prisma.message.findMany({
       where: { conversationId },
       orderBy: { createdAt: 'asc' },
     });
-  }
-
-  async proposePrice(conversationId: string, proposedBy: MessageSenderType, dto: ProposePriceDto) {
-    const negotiation = await this.prisma.negotiation.upsert({
-      where: { conversationId },
-      update: {},
-      create: { conversationId },
-    });
-
-    return this.prisma.negotiationOffer.create({
-      data: { negotiationId: negotiation.id, proposedBy, price: dto.price },
-    });
-  }
-
-  async acceptLatestOffer(conversationId: string) {
-    const negotiation = await this.prisma.negotiation.findUnique({
-      where: { conversationId },
-      include: { offers: { orderBy: { createdAt: 'desc' }, take: 1 } },
-    });
-    if (!negotiation || negotiation.offers.length === 0) {
-      throw new NotFoundException('No offer to accept for this conversation');
-    }
-
-    const updated = await this.prisma.negotiation.update({
-      where: { id: negotiation.id },
-      data: { agreedPrice: negotiation.offers[0].price, agreedAt: new Date() },
-    });
-
-    this.eventBus.publish(DomainEvents.NEGOTIATION_AGREED, {
-      conversationId,
-      agreedPrice: updated.agreedPrice,
-    });
-    return updated;
   }
 }

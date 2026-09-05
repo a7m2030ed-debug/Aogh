@@ -3,12 +3,11 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'api_client.dart';
 
-enum UploadCategory { listingPhoto, listingVideo, dealerDocument, chatImage }
+enum UploadCategory { requestPhoto, dealerDocument, chatImage }
 
 extension on UploadCategory {
   String get wireValue => switch (this) {
-        UploadCategory.listingPhoto => 'listing-photo',
-        UploadCategory.listingVideo => 'listing-video',
+        UploadCategory.requestPhoto => 'request-photo',
         UploadCategory.dealerDocument => 'dealer-document',
         UploadCategory.chatImage => 'chat-image',
       };

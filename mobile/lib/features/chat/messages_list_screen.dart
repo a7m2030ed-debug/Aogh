@@ -4,31 +4,55 @@ import 'package:go_router/go_router.dart';
 import '../../core/api/api_client.dart';
 
 class _ConversationPreview {
-  const _ConversationPreview({required this.id, required this.dealerName, this.lastMessage, this.partNameAr});
+  const _ConversationPreview({
+    required this.id,
+    required this.title,
+    this.lastMessage,
+    this.requestLabel,
+  });
 
-  factory _ConversationPreview.fromJson(Map<String, dynamic> json) {
+  /// `dealerSide` flips whose name heads the row: the customer sees the
+  /// dealer's business name, the dealer sees the customer.
+  factory _ConversationPreview.fromJson(Map<String, dynamic> json, {required bool dealerSide}) {
     final messages = json['messages'] as List?;
-    final listing = json['listing'] as Map<String, dynamic>?;
+    final request = json['partRequest'] as Map<String, dynamic>?;
+
+    String? counterparty;
+    if (dealerSide) {
+      final customer = json['user'] as Map<String, dynamic>?;
+      // Customers often haven't set a name; the phone is the fallback
+      // label the dealer can actually act on.
+      counterparty = (customer?['name'] as String?) ?? (customer?['phone'] as String?);
+    } else {
+      counterparty = (json['dealer'] as Map<String, dynamic>?)?['businessName'] as String?;
+    }
+
+    final partName = request?['partName'] as String?;
+    final make = request?['vehicleMake'] as String?;
+    final model = request?['vehicleModel'] as String?;
+
     return _ConversationPreview(
       id: json['id'] as String,
-      dealerName: (json['dealer'] as Map<String, dynamic>?)?['businessName'] as String? ?? '',
-      lastMessage:
-          (messages != null && messages.isNotEmpty) ? messages.first['text'] as String? : null,
-      partNameAr: (listing?['canonicalPart'] as Map<String, dynamic>?)?['canonicalNameAr'] as String?,
+      title: (counterparty?.isNotEmpty ?? false) ? counterparty! : 'محادثة',
+      lastMessage: (messages != null && messages.isNotEmpty)
+          ? messages.first['text'] as String?
+          : null,
+      requestLabel: partName == null ? null : '$partName — ${make ?? ''} ${model ?? ''}'.trim(),
     );
   }
 
   final String id;
-  final String dealerName;
+  final String title;
   final String? lastMessage;
-  final String? partNameAr;
+  final String? requestLabel;
 }
 
-/// Landing screen for the "الرسائل" tab (section 44) — lists conversations
-/// via GET /conversations (backend/src/modules/conversations, added
-/// alongside my-orders' equivalent list-mine endpoint).
+/// Conversation list. Same screen both sides: customers hit
+/// GET /conversations, dealers GET /conversations/dealer.
 class MessagesListScreen extends ConsumerStatefulWidget {
-  const MessagesListScreen({super.key});
+  const MessagesListScreen({super.key, this.dealerSide = false});
+
+  final bool dealerSide;
 
   @override
   ConsumerState<MessagesListScreen> createState() => _MessagesListScreenState();
@@ -44,10 +68,13 @@ class _MessagesListScreenState extends ConsumerState<MessagesListScreen> {
   }
 
   Future<List<_ConversationPreview>> _fetch() async {
-    final apiClient = ref.read(apiClientProvider);
-    final response = await apiClient.dio.get('/conversations');
+    final path = widget.dealerSide ? '/conversations/dealer' : '/conversations';
+    final response = await ref.read(apiClientProvider).dio.get(path);
     return (response.data as List)
-        .map((e) => _ConversationPreview.fromJson(e as Map<String, dynamic>))
+        .map((e) => _ConversationPreview.fromJson(
+              e as Map<String, dynamic>,
+              dealerSide: widget.dealerSide,
+            ))
         .toList();
   }
 
@@ -56,7 +83,11 @@ class _MessagesListScreenState extends ConsumerState<MessagesListScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('الرسائل')),
       body: RefreshIndicator(
-        onRefresh: () async => setState(() => _future = _fetch()),
+        onRefresh: () async {
+          final future = _fetch();
+          setState(() => _future = future);
+          await future;
+        },
         child: FutureBuilder<List<_ConversationPreview>>(
           future: _future,
           builder: (context, snapshot) {
@@ -68,7 +99,7 @@ class _MessagesListScreenState extends ConsumerState<MessagesListScreen> {
                 children: const [
                   Padding(
                     padding: EdgeInsets.all(24),
-                    child: Text('سجّل الدخول لعرض محادثاتك، أو اسحب للأسفل لإعادة المحاولة.'),
+                    child: Text('تعذّر تحميل المحادثات. اسحب للأسفل لإعادة المحاولة.'),
                   ),
                 ],
               );
@@ -76,20 +107,39 @@ class _MessagesListScreenState extends ConsumerState<MessagesListScreen> {
             final conversations = snapshot.data ?? const <_ConversationPreview>[];
             if (conversations.isEmpty) {
               return ListView(
-                children: const [
-                  Padding(padding: EdgeInsets.all(24), child: Text('لا توجد محادثات بعد.')),
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Text(
+                      widget.dealerSide
+                          ? 'ما فيه محادثات بعد. رد على طلب عميل وتبدأ المحادثة.'
+                          : 'ما فيه محادثات بعد. أول ما يرد تاجر على طلبك بتلقى محادثته هنا.',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                  ),
                 ],
               );
             }
             return ListView.builder(
               itemCount: conversations.length,
               itemBuilder: (context, i) {
-                final c = conversations[i];
+                final conversation = conversations[i];
                 return ListTile(
-                  leading: const CircleAvatar(child: Icon(Icons.storefront_outlined)),
-                  title: Text(c.dealerName.isEmpty ? 'محادثة' : c.dealerName),
-                  subtitle: Text(c.lastMessage ?? c.partNameAr ?? 'لا توجد رسائل بعد'),
-                  onTap: () => context.push('/chat/${c.id}'),
+                  leading: CircleAvatar(
+                    child: Icon(widget.dealerSide
+                        ? Icons.person_outline
+                        : Icons.storefront_outlined),
+                  ),
+                  title: Text(conversation.title),
+                  subtitle: Text(
+                    conversation.lastMessage ??
+                        conversation.requestLabel ??
+                        'لا توجد رسائل بعد',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  onTap: () => context.push('/chat/${conversation.id}'),
                 );
               },
             );

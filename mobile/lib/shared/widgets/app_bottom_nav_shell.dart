@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-/// The five tabs from spec section 44: الرئيسية / البحث / طلباتي / الرسائل / حسابي.
+/// The customer's four tabs. Dealers don't use this shell at all — their
+/// app is the request inbox (features/dealer/dealer_dashboard_screen.dart),
+/// reached by the role redirect in app_router.dart.
 class AppBottomNavShell extends StatelessWidget {
   const AppBottomNavShell({super.key, required this.navigationShell});
 
@@ -18,11 +20,26 @@ class AppBottomNavShell extends StatelessWidget {
           initialLocation: index == navigationShell.currentIndex,
         ),
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'الرئيسية'),
-          NavigationDestination(icon: Icon(Icons.search), label: 'البحث'),
-          NavigationDestination(icon: Icon(Icons.receipt_long_outlined), label: 'طلباتي'),
-          NavigationDestination(icon: Icon(Icons.chat_bubble_outline), label: 'الرسائل'),
-          NavigationDestination(icon: Icon(Icons.person_outline), label: 'حسابي'),
+          NavigationDestination(
+            icon: Icon(Icons.add_circle_outline),
+            selectedIcon: Icon(Icons.add_circle),
+            label: 'اطلب قطعة',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.receipt_long_outlined),
+            selectedIcon: Icon(Icons.receipt_long),
+            label: 'طلباتي',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.chat_bubble_outline),
+            selectedIcon: Icon(Icons.chat_bubble),
+            label: 'الرسائل',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: 'حسابي',
+          ),
         ],
       ),
     );

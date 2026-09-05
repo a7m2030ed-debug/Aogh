@@ -1,11 +1,9 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { MessageSenderType } from '@prisma/client';
 import { CurrentUser } from '../identity/current-user.decorator';
-import { StartConversationDto } from './dto/start-conversation.dto';
+import { DealersService } from '../identity/dealers.service';
 import { SendMessageDto } from './dto/send-message.dto';
-import { ProposePriceDto } from './dto/propose-price.dto';
 import { ConversationsService } from './conversations.service';
 
 @ApiTags('conversations')
@@ -13,21 +11,30 @@ import { ConversationsService } from './conversations.service';
 @UseGuards(AuthGuard('jwt'))
 @Controller('conversations')
 export class ConversationsController {
-  constructor(private readonly conversationsService: ConversationsService) {}
+  constructor(
+    private readonly conversationsService: ConversationsService,
+    private readonly dealersService: DealersService,
+  ) {}
 
-  @Post()
-  start(@CurrentUser() user: { userId: string }, @Body() dto: StartConversationDto) {
-    return this.conversationsService.startConversation(user.userId, dto);
-  }
-
+  // There's no POST to start one: a conversation only comes into being
+  // when a dealer answers a request (POST /requests/:id/answer).
   @Get()
   listMine(@CurrentUser() user: { userId: string }) {
     return this.conversationsService.listForCustomer(user.userId);
   }
 
+  // Declared before ':id' so "dealer" isn't read as a conversation id.
+  @Get('dealer')
+  async listForDealer(@CurrentUser() user: { userId: string }) {
+    const dealer = await this.dealersService.findByOwner(user.userId);
+    return this.conversationsService.listForDealer(dealer.id);
+  }
+
+  // Sender side is derived from the caller's own membership in the
+  // thread, never from the request body — see assertParticipant.
   @Get(':id/messages')
-  messages(@Param('id') id: string) {
-    return this.conversationsService.listMessages(id);
+  messages(@Param('id') id: string, @CurrentUser() user: { userId: string }) {
+    return this.conversationsService.listMessages(id, user.userId);
   }
 
   @Post(':id/messages')
@@ -36,16 +43,6 @@ export class ConversationsController {
     @CurrentUser() user: { userId: string },
     @Body() dto: SendMessageDto,
   ) {
-    return this.conversationsService.sendMessage(id, MessageSenderType.USER, user.userId, dto);
-  }
-
-  @Post(':id/offers')
-  proposePrice(@Param('id') id: string, @Body() dto: ProposePriceDto) {
-    return this.conversationsService.proposePrice(id, MessageSenderType.USER, dto);
-  }
-
-  @Post(':id/offers/accept')
-  acceptLatestOffer(@Param('id') id: string) {
-    return this.conversationsService.acceptLatestOffer(id);
+    return this.conversationsService.sendMessage(id, user.userId, dto);
   }
 }

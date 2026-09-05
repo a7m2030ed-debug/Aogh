@@ -1,5 +1,33 @@
 # Mobile app (Flutter)
 
+## ⚠️ Rebuilt around a narrower product — 2026-09-05
+
+The app is no longer a marketplace. There is no search, no listings, no
+part-details page, no orders and no AI capture — those screens were
+deleted. What the app does now:
+
+**Customer** (four tabs — `shared/widgets/app_bottom_nav_shell.dart`):
+- **اطلب قطعة** (`features/requests/new_request_screen.dart`) — the home
+  screen and the whole product: part name (free text with suggestions from
+  the seeded parts dictionary), car make and model (dropdowns from the
+  vehicle catalog), and an optional photo. `POST /requests`.
+- **طلباتي** (`features/requests/my_requests_screen.dart`) — each request
+  with how many dealers answered; tapping through
+  (`request_details_screen.dart`) lists them and opens a thread.
+- **الرسائل** — conversation list.
+- **حسابي**.
+
+**Dealer** (`features/dealer/dealer_dashboard_screen.dart`, reached by the
+role redirect after login): a feed of open customer requests, each with an
+"عندي هذي القطعة" button that opens a conversation
+(`POST /requests/:id/answer`). Plus their own chat list and profile.
+
+Chat (`features/chat/conversation_screen.dart`) is plain messaging — the
+price/offer/"تم الاتفاق" strip went with the pivot. Which side is "me" is
+resolved from `core/session/current_user.dart`, so the same screen renders
+correctly for both.
+
+
 Customer + dealer app for the used-car-parts marketplace. Arabic-first, RTL
 by default (spec section 43).
 
@@ -62,47 +90,41 @@ lib/
     api/                     # Dio client (with a global 401 handler), JWT token storage, MediaUploadService
     config/                  # API base URL (--dart-define=API_BASE_URL)
     location/                # device_location.dart — geolocator wrapped behind a call that never throws
-    router/                  # go_router: shell (5 tabs) + pushed routes; navigator_key.dart lets ApiClient navigate without a BuildContext
+    push/                    # push_service.dart — FCM token registration, no-ops with no Firebase config
+    router/                  # go_router: customer shell (4 tabs) + pushed routes; navigator_key.dart lets ApiClient navigate without a BuildContext
+    session/                 # current_user.dart — cached GET /users/me (role, id)
     theme/                   # placeholder color seed — swap for real branding
     utils/                   # phone number → E.164 normalizer
   features/
-    auth/                    # phone + OTP (spec section 4) — real /auth/otp/* calls
-    search/                  # home, text search results, image search (6-10, 18-19, 31)
-    catalog/                 # part details (20)
-    chat/                    # conversation + negotiation strip (21-23), messages list
-    orders/                  # my orders (33-34)
-    dealer/                  # dashboard, add-listing (11-14), dealer registration (5)
+    auth/                    # phone + OTP — real /auth/otp/* calls
+    requests/                # the customer product: new request form, my requests, request details
+    chat/                    # conversation + conversation list (both sides)
+    dealer/                  # request inbox (the dealer's whole app), dealer registration
     legal/                   # fetches privacy policy / terms of use from the backend
-    profile/                 # account tab (44)
+    profile/                 # account tab
   shared/
-    models/                  # Listing.fromJson — maps the backend's actual search/listing response shape
-    widgets/                 # ListingCard, bottom-nav shell
+    models/                  # PartRequest.fromJson
+    widgets/                 # bottom-nav shell
 ```
 
 ## Wired to the real backend
 
 Every screen calls its real endpoint via `ApiClient`
 (`core/api/api_client.dart`, a Dio wrapper that attaches the saved JWT and
-handles session expiry globally — see below): OTP request/verify, home +
-search results (`GET /inventory/search`), the "تشاليح قريبة" / "أفضل
-التشاليح تقييمًا" home rails and part details (`GET /dealers`,
-`GET /inventory/listings/:id`), "ابحث لي عنها"
-(`POST /inventory/search-requests`), the AI-photo flow in both
-`image_search_screen.dart` and `add_listing_screen.dart` (upload via
-`MediaUploadService` → `POST /ai/vision/recognize-part`), publishing a
-listing (`POST /inventory/listings`), dealer registration
-(`POST /dealers/register`), chat — text, image, and negotiation offers
-alike — (`/conversations/**`), the messages list (`GET /conversations`),
-orders (`GET /orders`), account logout, and both legal documents
-(`GET /legal/privacy-policy`, `GET /legal/terms-of-use`).
+handles session expiry globally — see below): OTP request/verify; the
+request form (`GET /catalog/vehicles/makes`, `GET /catalog/vehicles/models`,
+`GET /catalog/canonical-parts` for suggestions, then `POST /requests`, with
+the optional photo uploaded first through `MediaUploadService`); "طلباتي"
+(`GET /requests/mine`, `GET /requests/:id`, `PATCH /requests/:id/close`);
+the dealer inbox (`GET /requests/inbox`, `POST /requests/:id/answer`); chat
+(`/conversations/**`, with `GET /conversations/dealer` for the dealer's
+list); push-token registration (`PATCH /notifications/push-token`); dealer
+registration (`POST /dealers/register`); account logout; and both legal
+documents.
 
-`add_listing_screen.dart` is the one screen where the AI response alone
-isn't enough to publish: `POST /inventory/listings` requires a real
-`canonicalPartId`, but the AI vision response only ever returns a free-text
-guess. The screen fetches `GET /catalog/canonical-parts`, pre-selects the
-closest name match to the AI's guess, and leaves it in an editable
-dropdown — which is also just the confirm/edit contract spec section 10
-requires, not a workaround.
+The request form degrades rather than blocking: if the catalog calls fail,
+the screen still renders and the customer can still describe the part — a
+catalog outage must never stop someone asking for a part.
 
 **Session handling is global, not per-screen.** `ApiClient` installs one
 Dio interceptor that, on any 401 (except the OTP endpoints themselves,
@@ -120,26 +142,22 @@ gap, since without it no login could ever actually reach the dealer
 experience). After OTP verify, the app fetches `GET /users/me` and routes
 to `/dealer/dashboard` instead of `/` when the role is a dealer role.
 
-**Location is wired end to end, gracefully degrading without it.**
-`core/location/device_location.dart`'s `tryGetCurrentPosition()` resolves
-once per screen (home, search results, and part details each share one
-call rather than prompting three times) and feeds `lat`/`lng` into
-`GET /dealers`, `GET /inventory/search`, and `GET /inventory/listings/:id`
-— all three backend endpoints already accepted these params for exactly
-this, they just weren't being sent before. The "الأقرب" chip on search
-results and the nearby-dealers home rail now do true distance sort;
-`ListingCard` and the dealer cards show the km badge whenever a position
-resolves. If location is off, denied, or the permission entries below
-aren't in place yet, every one of these calls still succeeds — they just
-come back unsorted / without a distance badge, never an error screen.
+**Location was removed with the pivot.** The old app used device GPS for
+distance badges and "الأقرب" sorting; nothing in the new one shows or
+sorts by distance, so `geolocator`, the location helper, and the
+`ACCESS_FINE_LOCATION`/`ACCESS_COARSE_LOCATION` + `NSLocationWhenInUse`
+entries were all removed rather than left in place — an app that asks for
+location it never uses is a store-review problem. If distance to each
+answering dealer is wanted later, `Dealer.lat`/`lng` are still in the
+schema and the haversine helper is still in the backend.
 
 **Platform permission entries are already in place**, not just documented:
 `android/app/src/main/AndroidManifest.xml` has
 `ACCESS_FINE_LOCATION`/`ACCESS_COARSE_LOCATION`, and `ios/Runner/Info.plist`
-has `NSLocationWhenInUseUsageDescription` — plus `NSCameraUsageDescription`
-and `NSPhotoLibraryUsageDescription` for `image_picker` (sections 9, 12),
-which iOS requires or it terminates the app outright the first time a
-screen opens the camera/gallery, rather than just failing that one call.
+has `NSCameraUsageDescription` and `NSPhotoLibraryUsageDescription` for
+`image_picker` (the optional photo on a request, and images in chat), which
+iOS requires or it terminates the app outright the first time a screen
+opens the camera/gallery, rather than just failing that one call.
 None of these existed before `flutter create .` ran; all three were added
 by hand afterward, in the actual generated files.
 

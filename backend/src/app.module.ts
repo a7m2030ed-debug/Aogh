@@ -5,13 +5,10 @@ import { PrismaModule } from './common/prisma/prisma.module';
 import { EventBusModule } from './common/event-bus/event-bus.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
-import { InventoryModule } from './modules/inventory/inventory.module';
+import { RequestsModule } from './modules/requests/requests.module';
 import { ConversationsModule } from './modules/conversations/conversations.module';
-import { OrdersModule } from './modules/orders/orders.module';
-import { TrustModule } from './modules/trust/trust.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AdminModule } from './modules/admin/admin.module';
-import { AiModule } from './modules/ai/ai.module';
 import { MediaModule } from './modules/media/media.module';
 import { LegalModule } from './modules/legal/legal.module';
 
@@ -22,13 +19,10 @@ import { LegalModule } from './modules/legal/legal.module';
     EventBusModule,
     IdentityModule,
     CatalogModule,
-    InventoryModule,
+    RequestsModule,
     ConversationsModule,
-    OrdersModule,
-    TrustModule,
     NotificationsModule,
     AdminModule,
-    AiModule,
     MediaModule,
     LegalModule,
   ],

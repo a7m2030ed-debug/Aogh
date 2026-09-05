@@ -29,8 +29,6 @@
 	<!-- Device GPS for "تشاليح قريبة" / distance sort and delivery-fee
 	     estimates (core/location/device_location.dart) — no maps SDK,
 	     client decision (see docs/project-brief.md). -->
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>لعرض التشاليح القريبة منك وحساب المسافة والتوصيل</string>
 	<!-- Required by image_picker (spec sections 9, 12) — without these two
 	     keys iOS terminates the app the moment it tries to open the camera
 	     or photo library, rather than just failing that one call. -->

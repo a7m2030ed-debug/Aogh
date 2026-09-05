@@ -1,10 +1,20 @@
-// Database design for the used-car-parts marketplace platform.
+// Database design for "قطعتي" — a request-and-connect platform for used
+// car parts.
 //
-// Grouped by architectural module (see docs/architecture.md, section 7.1/7.2
-// of the technical review). Each module "owns" its tables; cross-module
-// reads should go through a service call or the event bus, not a direct
-// join into another module's table, so a module can be split into its own
-// service later without a schema rewrite.
+// The model is deliberately narrow (client decision, 2026-09-05): a
+// customer posts what part they need for which car, every dealer is
+// notified, and any dealer who has it opens a conversation. The platform
+// introduces the two sides and stays out of everything after that — no
+// dealer inventory, no catalog browsing, no orders, no delivery, no
+// ratings. Those tables existed in an earlier marketplace design and were
+// removed with this pivot; they're recoverable from git history if the
+// scope ever widens again.
+//
+// Grouped by architectural module (see docs/architecture.md, section
+// 7.1/7.2 of the technical review). Each module "owns" its tables;
+// cross-module reads should go through a service call or the event bus,
+// not a direct join into another module's table, so a module can be split
+// into its own service later without a schema rewrite.
 
 generator client {
   provider = "prisma-client-js"
@@ -15,7 +25,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ── Identity & Trust: dealers ────────────────────────────────────────────
+// ── Identity: customers, dealers ─────────────────────────────────────────
 
 enum UserRole {
   CUSTOMER
@@ -36,16 +46,11 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  dealerProfile     Dealer?         @relation("DealerOwner")
-  conversations     Conversation[]  @relation("UserConversations")
-  messages          Message[]       @relation("UserMessages")
-  ordersAsCustomer  Order[]         @relation("CustomerOrders")
-  reviewsGiven      Review[]        @relation("ReviewAuthor")
-  reviewsReceived   Review[]        @relation("ReviewTarget")
-  reportsFiled      Report[]        @relation("ReportAuthor")
-  notifications     Notification[]
-  searchQueries     SearchQuery[]
-  searchRequests    SearchRequest[]
+  dealerProfile Dealer?        @relation("DealerOwner")
+  conversations Conversation[] @relation("UserConversations")
+  messages      Message[]      @relation("UserMessages")
+  notifications Notification[]
+  partRequests  PartRequest[]
 
   @@map("users")
 }
@@ -58,32 +63,25 @@ enum DealerVerificationStatus {
 }
 
 model Dealer {
-  id                     String                    @id @default(uuid())
-  ownerUserId            String                    @unique
-  owner                  User                      @relation("DealerOwner", fields: [ownerUserId], references: [id])
-  businessName            String
-  activityType            String
-  commercialRegistryNo    String?
-  municipalLicenseNo      String?
-  contactName             String
-  contactPhone            String
-  city                    String
-  lat                     Float?
-  lng                     Float?
-  verificationStatus      DealerVerificationStatus @default(PENDING)
-  ratingAverage            Float                     @default(0)
-  ratingCount              Int                       @default(0)
-  createdAt                DateTime                  @default(now())
-  updatedAt                DateTime                  @updatedAt
+  id                   String                   @id @default(uuid())
+  ownerUserId          String                   @unique
+  owner                User                     @relation("DealerOwner", fields: [ownerUserId], references: [id])
+  businessName         String
+  activityType         String
+  commercialRegistryNo String?
+  municipalLicenseNo   String?
+  contactName          String
+  contactPhone         String
+  city                 String
+  lat                  Float?
+  lng                  Float?
+  verificationStatus   DealerVerificationStatus @default(PENDING)
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
 
-  documents      DealerDocument[]
-  listings       InventoryListing[]
-  conversations  Conversation[]      @relation("DealerConversations")
-  offers         SearchRequestOffer[]
-  orders         Order[]
-  reviews        Review[]            @relation("DealerReviews")
-  reports        Report[]            @relation("ReportedDealer")
-  notifications  Notification[]
+  documents     DealerDocument[]
+  conversations Conversation[]   @relation("DealerConversations")
+  notifications Notification[]
 
   @@map("dealers")
 }
@@ -95,23 +93,25 @@ enum DealerDocumentStatus {
 }
 
 model DealerDocument {
-  id        String                @id @default(uuid())
+  id        String               @id @default(uuid())
   dealerId  String
-  dealer    Dealer                @relation(fields: [dealerId], references: [id])
+  dealer    Dealer               @relation(fields: [dealerId], references: [id])
   type      String
   fileUrl   String
-  status    DealerDocumentStatus  @default(PENDING)
-  createdAt DateTime              @default(now())
+  status    DealerDocumentStatus @default(PENDING)
+  createdAt DateTime             @default(now())
 
   @@map("dealer_documents")
 }
 
-// ── Catalog & canonical parts taxonomy ───────────────────────────────────
-// CanonicalParts is the entity the technical review flags as most important:
-// without it, search and AI-suggested part names drift apart.
+// ── Catalog ──────────────────────────────────────────────────────────────
+// Read-only reference data that feeds the three fields on the request
+// form: the parts dictionary powers the part-name suggestions, and
+// makes/models fill the two dropdowns. Nothing writes to these at runtime;
+// they're loaded by prisma/seed.ts.
 
 model VehicleMake {
-  id     String          @id @default(uuid())
+  id     String         @id @default(uuid())
   nameAr String
   nameEn String
   models VehicleModel[]
@@ -120,194 +120,104 @@ model VehicleMake {
 }
 
 model VehicleModel {
-  id       String        @id @default(uuid())
-  makeId   String
-  make     VehicleMake   @relation(fields: [makeId], references: [id])
-  nameAr   String
-  nameEn   String
-  trims    VehicleTrim[]
-  listings InventoryListing[]
+  id     String        @id @default(uuid())
+  makeId String
+  make   VehicleMake   @relation(fields: [makeId], references: [id])
+  nameAr String
+  nameEn String
+  trims  VehicleTrim[]
 
   @@unique([makeId, nameEn])
   @@map("vehicle_models")
 }
 
 model VehicleTrim {
-  id        String        @id @default(uuid())
-  modelId   String
-  model     VehicleModel  @relation(fields: [modelId], references: [id])
-  yearFrom  Int
-  yearTo    Int
-  nameAr    String?
-  nameEn    String?
+  id       String       @id @default(uuid())
+  modelId  String
+  model    VehicleModel @relation(fields: [modelId], references: [id])
+  yearFrom Int
+  yearTo   Int
+  nameAr   String?
+  nameEn   String?
 
   @@map("vehicle_trims")
 }
 
 model PartCategory {
-  id        String          @id @default(uuid())
-  parentId  String?
-  parent    PartCategory?   @relation("CategoryTree", fields: [parentId], references: [id])
-  children  PartCategory[]  @relation("CategoryTree")
-  nameAr    String
-  nameEn    String
-  parts     CanonicalPart[]
+  id       String          @id @default(uuid())
+  parentId String?
+  parent   PartCategory?   @relation("CategoryTree", fields: [parentId], references: [id])
+  children PartCategory[]  @relation("CategoryTree")
+  nameAr   String
+  nameEn   String
+  parts    CanonicalPart[]
 
   @@map("part_categories")
 }
 
 model CanonicalPart {
-  id             String              @id @default(uuid())
-  categoryId     String
-  category       PartCategory        @relation(fields: [categoryId], references: [id])
+  id              String       @id @default(uuid())
+  categoryId      String
+  category        PartCategory @relation(fields: [categoryId], references: [id])
   canonicalNameAr String
   canonicalNameEn String
-  synonyms       String[]            @default([])
-  oemNumbers     String[]            @default([])
-  createdAt      DateTime            @default(now())
-
-  listings       InventoryListing[]
-  searchQueries  SearchQuery[]
-  searchRequests SearchRequest[]
+  synonyms        String[]     @default([])
+  oemNumbers      String[]     @default([])
+  createdAt       DateTime     @default(now())
 
   @@map("canonical_parts")
 }
 
-// ── Inventory & search ───────────────────────────────────────────────────
+// ── Requests ─────────────────────────────────────────────────────────────
+// The whole customer-facing product: three fields and an optional photo.
+// partName/vehicleMake/vehicleModel are stored as the text the customer
+// submitted rather than as foreign keys — the app sources them from the
+// catalog above, but a request must survive a catalog row being renamed or
+// removed, and the part name is free text with suggestions, not a picker.
 
-enum ListingCondition {
-  EXCELLENT
-  GOOD
-  ACCEPTABLE
-  NEEDS_REPAIR
-}
-
-enum ListingAvailability {
-  AVAILABLE
-  LIMITED
-  UNAVAILABLE
-}
-
-model InventoryListing {
-  id              String              @id @default(uuid())
-  dealerId        String
-  dealer          Dealer              @relation(fields: [dealerId], references: [id])
-  canonicalPartId String
-  canonicalPart   CanonicalPart       @relation(fields: [canonicalPartId], references: [id])
-  vehicleModelId  String?
-  vehicleModel    VehicleModel?       @relation(fields: [vehicleModelId], references: [id])
-  vehicleYear     Int?
-  price           Decimal             @db.Decimal(10, 2)
-  quantity        Int                 @default(1)
-  condition       ListingCondition
-  color           String?
-  notes           String?
-  availability    ListingAvailability @default(AVAILABLE)
-  aiSuggested     Boolean             @default(false)
-  aiConfidence    Float?
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-
-  images         ListingImage[]
-  videos         ListingVideo[]
-  conversations  Conversation[]
-  orders         Order[]
-  reports        Report[]            @relation("ReportedListing")
-
-  @@index([canonicalPartId, availability])
-  @@map("inventory_listings")
-}
-
-model ListingImage {
-  id        String            @id @default(uuid())
-  listingId String
-  listing   InventoryListing  @relation(fields: [listingId], references: [id])
-  url       String
-  sortOrder Int               @default(0)
-
-  @@map("listing_images")
-}
-
-model ListingVideo {
-  id        String            @id @default(uuid())
-  listingId String
-  listing   InventoryListing  @relation(fields: [listingId], references: [id])
-  url       String
-
-  @@map("listing_videos")
-}
-
-enum SearchType {
-  TEXT
-  IMAGE
-  STRUCTURED
-}
-
-model SearchQuery {
-  id              String        @id @default(uuid())
-  userId          String?
-  user            User?         @relation(fields: [userId], references: [id])
-  type            SearchType
-  rawQuery        String?
-  canonicalPartId String?
-  canonicalPart   CanonicalPart? @relation(fields: [canonicalPartId], references: [id])
-  resultCount     Int           @default(0)
-  createdAt       DateTime      @default(now())
-
-  @@map("search_queries")
-}
-
-enum SearchRequestStatus {
+enum PartRequestStatus {
   OPEN
-  FULFILLED
   CLOSED
 }
 
-// "ابحث لي عنها" — search-on-demand when nothing is in stock yet.
-model SearchRequest {
-  id              String               @id @default(uuid())
-  userId          String
-  user            User                 @relation(fields: [userId], references: [id])
-  canonicalPartId String?
-  canonicalPart   CanonicalPart?       @relation(fields: [canonicalPartId], references: [id])
-  freeText        String
-  status          SearchRequestStatus  @default(OPEN)
-  createdAt       DateTime             @default(now())
+model PartRequest {
+  id           String            @id @default(uuid())
+  userId       String
+  user         User              @relation(fields: [userId], references: [id])
+  partName     String
+  vehicleMake  String
+  vehicleModel String
+  photoUrl     String?
+  status       PartRequestStatus @default(OPEN)
+  createdAt    DateTime          @default(now())
 
-  offers SearchRequestOffer[]
+  conversations Conversation[]
 
-  @@map("search_requests")
+  // The dealer feed is "open requests, newest first" — see
+  // modules/requests/requests.service.ts.
+  @@index([status, createdAt])
+  @@map("part_requests")
 }
 
-model SearchRequestOffer {
-  id              String        @id @default(uuid())
-  searchRequestId String
-  searchRequest   SearchRequest @relation(fields: [searchRequestId], references: [id])
-  dealerId        String
-  dealer          Dealer        @relation(fields: [dealerId], references: [id])
-  available       Boolean
-  price           Decimal?      @db.Decimal(10, 2)
-  createdAt       DateTime      @default(now())
-
-  @@map("search_request_offers")
-}
-
-// ── Conversations & negotiation ──────────────────────────────────────────
+// ── Conversations ────────────────────────────────────────────────────────
+// A conversation exists only because a dealer answered a request. Several
+// dealers may answer the same one, giving the customer a thread per dealer.
 
 model Conversation {
-  id         String              @id @default(uuid())
-  listingId  String?
-  listing    InventoryListing?   @relation(fields: [listingId], references: [id])
-  userId     String
-  user       User                @relation("UserConversations", fields: [userId], references: [id])
-  dealerId   String
-  dealer     Dealer              @relation("DealerConversations", fields: [dealerId], references: [id])
-  createdAt  DateTime            @default(now())
+  id            String      @id @default(uuid())
+  partRequestId String
+  partRequest   PartRequest @relation(fields: [partRequestId], references: [id])
+  userId        String
+  user          User        @relation("UserConversations", fields: [userId], references: [id])
+  dealerId      String
+  dealer        Dealer      @relation("DealerConversations", fields: [dealerId], references: [id])
+  createdAt     DateTime    @default(now())
 
-  messages     Message[]
-  negotiation  Negotiation?
-  order        Order?
+  messages Message[]
 
+  // A dealer answers a given request once; answering again reopens the
+  // thread they already have rather than starting a second one.
+  @@unique([partRequestId, dealerId])
   @@map("conversations")
 }
 
@@ -333,165 +243,18 @@ model Message {
   @@map("messages")
 }
 
-model Negotiation {
-  id             String                @id @default(uuid())
-  conversationId String                @unique
-  conversation   Conversation          @relation(fields: [conversationId], references: [id])
-  agreedPrice    Decimal?              @db.Decimal(10, 2)
-  agreedAt       DateTime?
-
-  offers NegotiationOffer[]
-
-  @@map("negotiations")
-}
-
-model NegotiationOffer {
-  id            String       @id @default(uuid())
-  negotiationId String
-  negotiation   Negotiation  @relation(fields: [negotiationId], references: [id])
-  proposedBy    MessageSenderType
-  price         Decimal      @db.Decimal(10, 2)
-  createdAt     DateTime     @default(now())
-
-  @@map("negotiation_offers")
-}
-
-// ── Orders & delivery ─────────────────────────────────────────────────────
-
-enum OrderStatus {
-  CREATED
-  SEARCHING
-  PART_FOUND
-  OFFER_SELECTED
-  NEGOTIATING
-  AGREED
-  PICKUP_OR_DELIVERY
-  RECEIVED
-  CLOSED
-  CANCELLED
-}
-
-enum FulfillmentMethod {
-  PICKUP
-  DELIVERY
-}
-
-model Order {
-  id              String            @id @default(uuid())
-  orderNumber     Int               @unique @default(autoincrement())
-  conversationId  String?           @unique
-  conversation    Conversation?     @relation(fields: [conversationId], references: [id])
-  customerId      String
-  customer        User              @relation("CustomerOrders", fields: [customerId], references: [id])
-  dealerId        String
-  dealer          Dealer            @relation(fields: [dealerId], references: [id])
-  listingId       String
-  listing         InventoryListing  @relation(fields: [listingId], references: [id])
-  agreedPrice     Decimal           @db.Decimal(10, 2)
-  fulfillment     FulfillmentMethod
-  deliveryFee     Decimal?          @db.Decimal(10, 2)
-  totalPrice      Decimal           @db.Decimal(10, 2)
-  status          OrderStatus       @default(CREATED)
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-
-  statusHistory  OrderStatusHistory[]
-  delivery       DeliveryDetails?
-  review         Review?
-
-  @@map("orders")
-}
-
-model OrderStatusHistory {
-  id        String      @id @default(uuid())
-  orderId   String
-  order     Order       @relation(fields: [orderId], references: [id])
-  status    OrderStatus
-  note      String?
-  createdAt DateTime    @default(now())
-
-  @@map("order_status_history")
-}
-
-model DeliveryDetails {
-  id              String   @id @default(uuid())
-  orderId         String   @unique
-  order           Order    @relation(fields: [orderId], references: [id])
-  pickupLat       Float?
-  pickupLng       Float?
-  dropoffLat      Float?
-  dropoffLng      Float?
-  distanceKm      Float?
-  feeBasis        String?  // distance | city | size | weight | partType
-  createdAt       DateTime @default(now())
-
-  @@map("delivery_details")
-}
-
-// ── Trust: reviews & reports ─────────────────────────────────────────────
-
-model Review {
-  id             String   @id @default(uuid())
-  orderId        String   @unique
-  order          Order    @relation(fields: [orderId], references: [id])
-  authorUserId   String
-  author         User     @relation("ReviewAuthor", fields: [authorUserId], references: [id])
-  targetUserId   String?
-  targetUser     User?    @relation("ReviewTarget", fields: [targetUserId], references: [id])
-  targetDealerId String?
-  targetDealer   Dealer?  @relation("DealerReviews", fields: [targetDealerId], references: [id])
-  stars          Int
-  comment        String?
-  createdAt      DateTime @default(now())
-
-  @@map("reviews")
-}
-
-enum ReportReason {
-  DESCRIPTION_MISMATCH
-  MISLEADING_LISTING
-  FAKE_PHOTOS
-  WRONG_PRICE
-  DEALER_VIOLATION
-  INAPPROPRIATE_CONTENT
-  OTHER
-}
-
-enum ReportStatus {
-  OPEN
-  REVIEWING
-  RESOLVED
-  DISMISSED
-}
-
-model Report {
-  id              String        @id @default(uuid())
-  authorUserId    String
-  author          User          @relation("ReportAuthor", fields: [authorUserId], references: [id])
-  reportedDealerId String?
-  reportedDealer   Dealer?      @relation("ReportedDealer", fields: [reportedDealerId], references: [id])
-  reportedListingId String?
-  reportedListing   InventoryListing? @relation("ReportedListing", fields: [reportedListingId], references: [id])
-  reason          ReportReason
-  details         String?
-  status          ReportStatus  @default(OPEN)
-  createdAt       DateTime      @default(now())
-
-  @@map("reports")
-}
-
 // ── Notifications ─────────────────────────────────────────────────────────
 
 model Notification {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   userId    String?
-  user      User?    @relation(fields: [userId], references: [id])
+  user      User?     @relation(fields: [userId], references: [id])
   dealerId  String?
-  dealer    Dealer?  @relation(fields: [dealerId], references: [id])
+  dealer    Dealer?   @relation(fields: [dealerId], references: [id])
   type      String
   payload   Json?
   readAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   @@map("notifications")
 }

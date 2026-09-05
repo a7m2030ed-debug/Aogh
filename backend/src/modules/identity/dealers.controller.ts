@@ -1,10 +1,9 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from './current-user.decorator';
 import { DealersService } from './dealers.service';
 import { RegisterDealerDto } from './dto/register-dealer.dto';
-import { ListDealersDto } from './dto/list-dealers.dto';
 
 @ApiTags('dealers')
 @Controller('dealers')
@@ -21,14 +20,9 @@ export class DealersController {
     return this.dealersService.register(user.userId, dto);
   }
 
-  // Registered before ':id' so a literal path segment here is never
-  // swallowed as an :id value — not an issue for the empty path itself,
-  // but keeps the ordering convention consistent with the rest of the app.
-  @Get()
-  list(@Query() dto: ListDealersDto) {
-    return this.dealersService.list(dto);
-  }
-
+  // Kept for the customer to see who answered their request (the dealer
+  // card in a conversation). There's no browse/list endpoint any more —
+  // customers reach dealers only through an answered request.
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.dealersService.findById(id);

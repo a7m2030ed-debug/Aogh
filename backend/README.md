@@ -85,17 +85,14 @@ src/
     event-bus/               # in-process pub/sub — modules never call each other directly
     geo/                     # haversine distance helper
   modules/
-    identity/                # Users, Dealers, DealerDocuments, OTP auth, JWT; GET /dealers lists verified dealers (nearby/rating sort)
-    catalog/                  # VehicleMakes/Models, PartCategories, CanonicalParts
-    inventory/                 # Listings, text search, "ابحث لي عنها" search requests
-    conversations/              # chat + negotiation offers, GET /conversations lists the caller's own
-    orders/                      # order creation, status history, delivery fee calculator, GET /orders lists the caller's own
-    trust/                        # reviews, reports
-    notifications/                 # in-app notifications, subscribes to domain events
-    admin/                          # dealer verification, audit log, dashboard counts
-    ai/                              # AiVisionProvider interface + MockVisionProvider + ClaudeVisionProvider
-    media/                            # presigned S3-compatible upload URLs for photos/videos/documents
-    legal/                             # serves legal/*.md over GET /legal/privacy-policy, /legal/terms-of-use
+    identity/                # Users, Dealers, DealerDocuments, OTP auth, JWT
+    catalog/                  # VehicleMakes/Models, PartCategories, CanonicalParts — read-only reference data for the request form
+    requests/                  # PartRequest: customer posts one, dealers see the feed, a dealer answers
+    conversations/              # chat between a customer and a dealer who answered
+    notifications/               # in-app notifications + push, subscribes to domain events
+    admin/                        # dealer verification, audit log, dashboard counts
+    media/                         # presigned S3-compatible upload URLs for photos/documents
+    legal/                          # serves legal/*.md over GET /legal/privacy-policy, /legal/terms-of-use
 ```
 
 ## Design decisions worth knowing before extending this
@@ -104,16 +101,14 @@ src/
   service call or an event (`common/event-bus`), never a direct query into
   another module's tables — that's what keeps a module splittable into its
   own service later without a rewrite (spec section 52).
-- **AI vision is behind `AI_VISION_PROVIDER`** (`modules/ai/ai-vision.interface.ts`).
-  `mock` (default) returns canned suggestions with no external call.
-  `claude` uses `ClaudeVisionProvider` — real recognition via
-  `claude-opus-5`, given the photo plus the live canonical-parts list from
-  `CanonicalPartsService`, using structured output (`messages.parse` +
-  `zodOutputFormat`) so a `canonicalPartId` is only ever returned when it
-  matches a real catalog row, never fabricated. The API contract always
-  returns suggestions + a confidence score, never a single answer —
-  enforced in `ai-vision.service.ts` per spec sections 10/57. Needs only
-  `AI_VISION_PROVIDER=claude` + `AI_VISION_API_KEY` (see `.env.example`).
+- **The product is deliberately narrow.** A customer posts a part request
+  (three fields + an optional photo), every verified dealer is notified,
+  and a dealer who has it opens a conversation. There is no dealer
+  inventory, no catalog browsing or search, no orders, no delivery and no
+  ratings — the platform introduces the two sides and stays out of the
+  deal (client decision, 2026-09-05). Those modules existed in the earlier
+  marketplace design and were removed wholesale rather than left dormant;
+  they're in git history if the scope ever widens.
 - **OTP is behind `OTP_PROVIDER`** (`modules/identity/sms/`). `mock`
   (default) keeps the fixed dev code `0000` from `auth.service.ts`.
   `taqnyat` sends a real 6-digit code through Taqnyat (تقنيات), a Saudi
@@ -144,57 +139,69 @@ src/
 - **Geo search is in-application (haversine), not PostGIS yet** — `docker-compose.yml`
   already runs the PostGIS image so that migration is just a query rewrite,
   not an infra change, when search volume justifies it (review section 7.3).
-- **Delivery fee is one method** (`modules/orders/delivery-fee.calculator.ts`)
-  so the "no flat 25/30 SAR forever" requirement (spec section 25) is a
-  one-file change, not scattered across the order flow.
+- **The dealer fan-out is a broadcast** (`modules/notifications`, on
+  `PART_REQUEST_CREATED`): every VERIFIED dealer gets an in-app
+  notification and a push. Right for a pilot with a handful of dealers;
+  the obvious first refinement is targeting by make or city once an
+  untargeted blast becomes noise.
 - **Media upload is presign-then-PUT, not a proxy through the API.**
   `POST /media/uploads/presign` (`modules/media`) returns a short-lived S3
   PUT URL + the permanent public URL; the client uploads the file bytes
   directly to storage. Works with any S3-compatible provider (AWS S3,
   Cloudflare R2, MinIO for local dev) via `STORAGE_ENDPOINT` — nothing
-  provider-specific in the code. Still needed even with the confirm-only
-  AI flow the client described: the photo has to outlive the AI call so
-  every future customer sees it on the published listing.
+  provider-specific in the code. Used for the optional photo on a request,
+  images sent in chat, and dealer verification documents.
 - **Legal docs are markdown files, not hardcoded strings.**
   `legal/privacy-policy-ar.md` and `legal/terms-of-use-ar.md` are the
   single source of truth; `modules/legal` just reads them off disk.
   Editing the wording is the entire "publish an update" workflow. Drafted
   from the PDPL/e-commerce research in the technical review (section 4) —
   flagged in both files as AI-drafted, not lawyer-certified.
-- Several endpoints (e.g. `dealerId` on listing creation) currently take it
-  from `user.userId` as a placeholder — see the `// NOTE` comments in
-  `listings.controller.ts` and `search-requests.controller.ts`. Wiring an
-  actual dealer-staff permission model is flagged there, not silently
-  assumed.
+- **Dealer-side endpoints resolve the dealer from the caller**, via
+  `DealersService.findByOwner(user.userId)` — a dealer id is never taken
+  from the request body, so one dealer can't act as another. Dealer *staff*
+  as separate device accounts still isn't modelled; today the owner account
+  is the dealer.
+- **Chat access is checked on every read and write**
+  (`ConversationsService.assertParticipant`), and which side you are is
+  derived from that membership rather than trusted from the client.
 - **Dealer registration promotes the owner's role.** `DealersService.register`
   runs the `Dealer` create and the owner's `User.role → DEALER_OWNER`
   update in one transaction. Verification status (the "✅ موثّق" badge,
   granted by an admin) is deliberately a separate field — a dealer gets the
   dealer app experience immediately, trust badge or not.
-- **`GET /dealers` only ever returns `VERIFIED` dealers** — the two
-  customer-facing home rails ("تشاليح قريبة", "أفضل التشاليح تقييمًا")
-  should mean the trust badge is real, not just decorative next to
-  unverified listings.
+- **Only `VERIFIED` dealers are notified of requests** — verification is
+  what stands between the request feed and anyone who signs up.
 
-## Mobile app now calls this for real
+## The API, end to end
 
-`../mobile` was rewired in the same round these list-mine endpoints were
-added — every screen calls its real endpoint instead of rendering mock
-data (see `../mobile/README.md` for the full map and the couple of gaps
-still open there, like true GPS-based "nearby" sorting).
+```
+POST   /requests            customer posts one (partName, vehicleMake, vehicleModel, photoUrl?)
+GET    /requests/mine       "طلباتي", with the dealers who answered
+GET    /requests/:id        one request + its answers
+PATCH  /requests/:id/close  "لقيت القطعة"
+GET    /requests/inbox      dealer's feed of open requests
+POST   /requests/:id/answer dealer says "عندي" → creates/returns the conversation
+GET    /conversations       customer's threads
+GET    /conversations/dealer  dealer's threads
+GET    /conversations/:id/messages
+POST   /conversations/:id/messages
+```
 
 ## Pilot launch: what's real vs. what needs your credentials
 
-All three pieces the client asked for to run a real pilot are code-complete;
-each is gated purely on an external account that only the client can create
-(billing/ownership), not on any remaining engineering work:
+Everything is code-complete; each remaining item is an external account
+only the client can create (billing/ownership), not engineering work:
 
 | Piece | Status | To activate |
 |---|---|---|
-| Parts dictionary | ✅ Done, seeded — 151 real parts, 9 categories, 28 subcategories, Arabic + English + synonyms (`prisma/seed-data/parts.ts`) | Nothing — `npm run prisma:seed` loads it |
-| AI vision | ✅ Code complete (`ClaudeVisionProvider`) | Anthropic API key → `AI_VISION_PROVIDER=claude`, `AI_VISION_API_KEY` |
-| SMS/OTP | ✅ Code complete (`TwilioOtpProvider`) | Twilio account → `OTP_PROVIDER=twilio`, `TWILIO_*` |
-| Push | ✅ Code complete (`FcmPushProvider`) | Firebase project → `PUSH_PROVIDER=fcm`, `FCM_*` |
+| Parts dictionary | ✅ Done, seeded — 151 parts across 9 categories, Arabic + English + synonyms (`prisma/seed-data/parts.ts`), powering the part-name suggestions | Nothing — `npm run prisma:seed` loads it |
+| SMS/OTP | ✅ Code complete (`TaqnyatOtpProvider`, `TwilioOtpProvider`) | Taqnyat or Twilio account → `OTP_PROVIDER=taqnyat\|twilio` |
+| Push | ✅ Code complete (`FcmPushProvider` + the app's `PushService`) | Firebase project → `PUSH_PROVIDER=fcm`, `FCM_*` |
+| Storage | ✅ Code complete (presigned S3) | Any S3-compatible bucket → `STORAGE_*` |
+
+No AI account is needed any more: the dealer-side AI recognition was
+removed with the pivot, since dealers no longer enter parts at all.
 
 ## Admin access
 
@@ -212,8 +219,10 @@ npm run promote:admin -- +9665XXXXXXXX
 (`prisma/promote-admin.ts`) and log in again so the new JWT carries the
 role.
 
-## What's deliberately not here yet
+## What's deliberately not here
 
-Matches the review's MVP-scope recommendation (section 6): payments,
-external delivery-company APIs, dealer inventory-system integration,
-voice search, and structured accept/reject negotiation UI backend.
+Removed with the 2026-09-05 pivot, and recoverable from git history if the
+scope ever widens: dealer inventory and listings, catalog search and
+browsing, AI part recognition, orders and status tracking, delivery-fee
+calculation, ratings and reviews, and abuse reports. Also still absent, as
+before: payments, delivery-company integrations, and voice search.

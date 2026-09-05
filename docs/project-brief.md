@@ -1,4 +1,40 @@
-# قطعتي — used-car-parts marketplace — project brief
+# قطعتي — used-car-parts request platform — project brief
+
+## ⚠️ Product pivot — 2026-09-05
+
+The client narrowed the product to its core loop. Everything below that
+describes a marketplace with dealer inventory, catalog search, orders,
+delivery or ratings is **superseded** by this section; the code for those
+was removed (recoverable from git history), and `backend/README.md` +
+`mobile/README.md` describe what actually exists now.
+
+**The product, in full:**
+
+1. A customer opens the app and fills three fields — part name, car make,
+   car model — plus an optional photo.
+2. Every verified dealer gets a push notification with that request.
+3. A dealer who has the part taps "عندي هذي القطعة", which opens a
+   conversation with the customer.
+4. The two of them talk. The platform is not involved in price, payment,
+   delivery or outcome.
+
+**Client decisions taken with the pivot:**
+
+- Photo on a request: optional, kept (storage account still needed).
+- Fan-out: every verified dealer, not filtered by make or city — right for
+  a pilot with a handful of dealers; targeting is the first refinement
+  when volume makes untargeted blasts noisy.
+- Orders, delivery fees and ratings: deleted outright, not hidden.
+
+**What this removed from the launch checklist:** the Anthropic account.
+Dealers no longer enter parts, so there is nothing for AI recognition to
+do; the module was deleted with the rest.
+
+**What survived and got more important:** the seeded catalog. The 151-part
+dictionary now powers the part-name suggestions on the request form, and
+the 38 makes / 247 models fill the two dropdowns — the reference data is
+load-bearing for the only screen the customer uses.
+
 
 Source documents (the client's original requirements, in Arabic, provided
 as .docx and not duplicated here):
@@ -18,11 +54,14 @@ TODO.
 
 ## Product in one line
 
-Customer searches a part ("صدام كامري 2022"), sees what's in stock across
-registered dealers with price/photos/condition/rating/distance, negotiates
-in-app, agrees on pickup or delivery. The platform is a technical
+A customer says what part they need and for which car; every dealer hears
+it; whoever has it starts a conversation. The platform is a technical
 intermediary only — no payments, no ownership of parts, no party to the
 sale (spec sections 1, 27-28).
+
+*(Superseded, for the record: the original design had customers searching
+dealer inventory with price/photos/condition/rating/distance and
+negotiating in-app — see the pivot note at the top.)*
 
 ## Architecture: Modular Monolith
 
@@ -40,13 +79,12 @@ Mobile app (Flutter)  ──┐
 Admin dashboard (future,│        │
 web, same API) ─────────┘        ├─ identity        (users, dealers, auth)
                                   ├─ catalog          (vehicles, canonical parts)
-                                  ├─ inventory         (listings, search, search-requests)
-                                  ├─ conversations      (chat, negotiation)
-                                  ├─ orders              (order, delivery fee)
-                                  ├─ trust                (reviews, reports)
-                                  ├─ notifications          (event-driven)
-                                  ├─ admin                   (verification, audit log)
-                                  └─ ai                       (vision, pluggable provider)
+                                  ├─ requests          (part requests, dealer feed, answers)
+                                  ├─ conversations      (chat)
+                                  ├─ notifications        (event-driven, push fan-out)
+                                  ├─ admin                 (verification, audit log)
+                                  ├─ media                  (presigned uploads)
+                                  └─ legal                   (policy docs)
                                         │
                                   PostgreSQL (+ PostGIS, not yet used)
 ```

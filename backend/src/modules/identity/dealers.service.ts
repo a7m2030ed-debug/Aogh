@@ -1,9 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { DealerVerificationStatus, UserRole } from '@prisma/client';
+import { UserRole } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
-import { haversineKm } from '../../common/geo/haversine';
 import { RegisterDealerDto } from './dto/register-dealer.dto';
-import { ListDealersDto, DealerSort } from './dto/list-dealers.dto';
 
 @Injectable()
 export class DealersService {
@@ -49,34 +47,11 @@ export class DealersService {
     return dealer;
   }
 
-  // Backs the home screen's "تشاليح قريبة" / "أفضل التشاليح تقييمًا" rails
-  // (spec section 6). Only ever surfaces VERIFIED dealers to customers —
-  // the "✅ موثّق" badge (section 30) should mean something, not just be
-  // decorative on a card next to unverified listings.
-  async list(dto: ListDealersDto) {
-    const dealers = await this.prisma.dealer.findMany({
-      where: {
-        verificationStatus: DealerVerificationStatus.VERIFIED,
-        city: dto.city,
-      },
-      take: 20,
-    });
-
-    const withDistance = dealers.map((dealer) => ({
-      ...dealer,
-      distanceKm:
-        dto.lat != null && dto.lng != null && dealer.lat != null && dealer.lng != null
-          ? haversineKm(dto.lat, dto.lng, dealer.lat, dealer.lng)
-          : null,
-    }));
-
-    switch (dto.sort) {
-      case DealerSort.NEAREST:
-        return withDistance.sort((a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity));
-      case DealerSort.RATING:
-        return withDistance.sort((a, b) => b.ratingAverage - a.ratingAverage);
-      default:
-        return withDistance;
-    }
+  // Resolves the dealer profile behind a logged-in dealer account — every
+  // dealer-side endpoint needs this to turn a userId into a dealerId.
+  async findByOwner(ownerUserId: string) {
+    const dealer = await this.prisma.dealer.findUnique({ where: { ownerUserId } });
+    if (!dealer) throw new NotFoundException('لا يوجد حساب تاجر مرتبط بهذا المستخدم.');
+    return dealer;
   }
 }

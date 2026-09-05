@@ -1,52 +1,45 @@
 import 'package:go_router/go_router.dart';
 import '../../features/auth/phone_otp_screen.dart';
-import '../../features/catalog/part_details_screen.dart';
 import '../../features/chat/conversation_screen.dart';
 import '../../features/chat/messages_list_screen.dart';
-import '../../features/dealer/add_listing_screen.dart';
 import '../../features/dealer/dealer_dashboard_screen.dart';
 import '../../features/dealer/register_dealer_screen.dart';
 import '../../features/legal/legal_document_screen.dart';
-import '../../features/orders/my_orders_screen.dart';
 import '../../features/profile/profile_screen.dart';
-import '../../features/search/home_screen.dart';
-import '../../features/search/image_search_screen.dart';
-import '../../features/search/search_results_screen.dart';
+import '../../features/requests/my_requests_screen.dart';
+import '../../features/requests/new_request_screen.dart';
+import '../../features/requests/request_details_screen.dart';
 import '../../shared/widgets/app_bottom_nav_shell.dart';
 import 'navigator_key.dart';
 
-/// One router for the whole app: the five-tab shell (customer golden path,
-/// spec section 45) plus pushed routes for everything that shouldn't show
-/// the bottom nav (chat, part details, dealer flows, auth).
+/// Customers get the four-tab shell (اطلب قطعة / طلباتي / الرسائل / حسابي);
+/// dealers get the request inbox at /dealer/dashboard, which the login flow
+/// routes them to directly. Everything that shouldn't show the bottom nav
+/// (chat, request details, auth, legal) is a pushed route.
 final appRouter = GoRouter(
   navigatorKey: rootNavigatorKey,
   initialLocation: '/',
   routes: [
     GoRoute(path: '/login', builder: (context, state) => const PhoneOtpScreen()),
     GoRoute(
-      path: '/search',
-      builder: (context, state) => SearchResultsScreen(
-        query: state.uri.queryParameters['q'] ?? '',
-      ),
-    ),
-    GoRoute(path: '/search/image', builder: (context, state) => const ImageSearchScreen()),
-    GoRoute(
-      path: '/part/:id',
-      builder: (context, state) => PartDetailsScreen(listingId: state.pathParameters['id']!),
+      path: '/requests/:id',
+      builder: (context, state) =>
+          RequestDetailsScreen(requestId: state.pathParameters['id']!),
     ),
     GoRoute(
       path: '/chat/:id',
-      // id is either a real conversation id, or the literal "new" — see
-      // ConversationScreen's doc comment for how those two are told apart.
-      builder: (context, state) => ConversationScreen(
-        conversationId: state.pathParameters['id']!,
-        listingId: state.uri.queryParameters['listingId'],
-        dealerId: state.uri.queryParameters['dealerId'],
-      ),
+      builder: (context, state) =>
+          ConversationScreen(conversationId: state.pathParameters['id']!),
     ),
-    GoRoute(path: '/dealer/add-listing', builder: (context, state) => const AddListingScreen()),
     GoRoute(path: '/dealer/register', builder: (context, state) => const RegisterDealerScreen()),
     GoRoute(path: '/dealer/dashboard', builder: (context, state) => const DealerDashboardScreen()),
+    GoRoute(
+      path: '/dealer/chats',
+      builder: (context, state) => const MessagesListScreen(dealerSide: true),
+    ),
+    // The dealer app has no tab bar, so it reaches the profile through this
+    // pushed route rather than the shell's /profile branch.
+    GoRoute(path: '/profile-page', builder: (context, state) => const ProfileScreen()),
     GoRoute(
       path: '/legal/privacy',
       builder: (context, state) => const LegalDocumentScreen(document: LegalDocument.privacyPolicy),
@@ -56,15 +49,21 @@ final appRouter = GoRouter(
       builder: (context, state) => const LegalDocumentScreen(document: LegalDocument.termsOfUse),
     ),
     StatefulShellRoute.indexedStack(
-      builder: (context, state, navigationShell) => AppBottomNavShell(navigationShell: navigationShell),
+      builder: (context, state, navigationShell) =>
+          AppBottomNavShell(navigationShell: navigationShell),
       branches: [
-        StatefulShellBranch(routes: [GoRoute(path: '/', builder: (context, state) => const HomeScreen())]),
-        StatefulShellBranch(routes: [
-          GoRoute(path: '/tab-search', builder: (context, state) => const SearchResultsScreen(query: ''))
-        ]),
-        StatefulShellBranch(routes: [GoRoute(path: '/orders', builder: (context, state) => const MyOrdersScreen())]),
-        StatefulShellBranch(routes: [GoRoute(path: '/messages', builder: (context, state) => const MessagesListScreen())]),
-        StatefulShellBranch(routes: [GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen())]),
+        StatefulShellBranch(
+          routes: [GoRoute(path: '/', builder: (context, state) => const NewRequestScreen())],
+        ),
+        StatefulShellBranch(
+          routes: [GoRoute(path: '/requests', builder: (context, state) => const MyRequestsScreen())],
+        ),
+        StatefulShellBranch(
+          routes: [GoRoute(path: '/messages', builder: (context, state) => const MessagesListScreen())],
+        ),
+        StatefulShellBranch(
+          routes: [GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen())],
+        ),
       ],
     ),
   ],
