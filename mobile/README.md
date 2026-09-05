@@ -167,11 +167,26 @@ The Android SDK isn't reachable from the environment this was developed
 in (`dl.google.com` is outside its network policy), so the APK is built
 in CI instead — GitHub's runners have the SDK preinstalled.
 
-**To get one:** repository → **Actions** → **Build Android APK** → **Run
-workflow**. It asks for the backend URL, because `API_BASE_URL` is baked
-in at build time — an APK is only useful once it names a server that
-exists. When the run finishes, the APK is at the bottom of the run page
-under **Artifacts → qitaati-apk**.
+**The workflow builds automatically on every push to this branch**, and
+the APK is attached to the run: repository → **Actions** → the run →
+bottom of the page → **Artifacts → qitaati-apk**.
+
+> **Note:** the **Run workflow** button does *not* appear in the Actions
+> tab for this workflow. GitHub only shows that button for workflows that
+> exist on the repository's **default branch**, and this repo's default is
+> `claude/excel-data-form-template-lz5rmp` (unrelated older content) —
+> not the branch this app lives on. The push trigger works regardless,
+> and the workflow can also be dispatched through the REST API with an
+> explicit `ref`, which is how a build with a custom backend URL is
+> started. Moving the workflow to the default branch would make the
+> button appear, but that branch has no `mobile/` directory, so the
+> workflow would fail there.
+
+`API_BASE_URL` is baked in at build time, so an APK is only useful once
+it names a server that exists. A push build uses `http://10.0.2.2:3000`
+(the Android emulator's alias for the host machine) — fine for running
+against a local backend in an emulator, useless on a real phone. For a
+real device, dispatch a build with the deployed URL.
 
 The workflow runs `flutter analyze` and `flutter test` before building,
 so a broken commit produces no APK rather than a broken one.
