@@ -1,0 +1,81 @@
+# Builds an installable Android APK for "قطعتي".
+#
+# Why CI and not a local build: the Android SDK comes from dl.google.com,
+# which the environment this project was developed in cannot reach.
+# GitHub's ubuntu runners ship the SDK preinstalled, so the build happens
+# here instead and the APK comes out as a downloadable artifact.
+name: Build Android APK
+
+on:
+  # Run it by hand from the Actions tab, choosing which backend the build
+  # should point at. This is the one that matters: API_BASE_URL is baked
+  # in at build time, so an APK is only useful once it names a server that
+  # actually exists.
+  workflow_dispatch:
+    inputs:
+      api_base_url:
+        description: 'Backend URL the app should talk to (e.g. https://api.qitaati.sa/api/v1)'
+        required: true
+        default: 'http://10.0.2.2:3000/api/v1'
+  push:
+    branches: [claude/mobile-app-gqyrfz]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/android-apk.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # The Android Gradle Plugin needs a JDK; 17 is what the generated
+      # android/ config targets (sourceCompatibility VERSION_17).
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # Pinned to the version the app was developed and verified against,
+      # so a Flutter release doesn't silently change the build.
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.2'
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
+
+      - name: Build APK
+        # On a push (no input given) this falls back to the emulator's
+        # host address, which is only useful for a local run — real
+        # installable builds should come from workflow_dispatch with the
+        # deployed URL.
+        run: |
+          flutter build apk --release \
+            --dart-define=API_BASE_URL=${{ github.event.inputs.api_base_url || 'http://10.0.2.2:3000/api/v1' }}
+
+      - name: Report size
+        run: ls -lh build/app/outputs/flutter-apk/app-release.apk
+
+      # Signed with the debug key (android/app/build.gradle.kts), which is
+      # what makes it installable by sideloading. That is the right shape
+      # for handing testers an APK; a Play Store upload needs a real
+      # release key, which is a separate step when you get there.
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: qitaati-apk
+          path: mobile/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30

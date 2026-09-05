@@ -161,6 +161,27 @@ opens the camera/gallery, rather than just failing that one call.
 None of these existed before `flutter create .` ran; all three were added
 by hand afterward, in the actual generated files.
 
+## Getting an installable APK
+
+The Android SDK isn't reachable from the environment this was developed
+in (`dl.google.com` is outside its network policy), so the APK is built
+in CI instead — GitHub's runners have the SDK preinstalled.
+
+**To get one:** repository → **Actions** → **Build Android APK** → **Run
+workflow**. It asks for the backend URL, because `API_BASE_URL` is baked
+in at build time — an APK is only useful once it names a server that
+exists. When the run finishes, the APK is at the bottom of the run page
+under **Artifacts → qitaati-apk**.
+
+The workflow runs `flutter analyze` and `flutter test` before building,
+so a broken commit produces no APK rather than a broken one.
+
+It's signed with the debug key (see `android/app/build.gradle.kts`),
+which is exactly what makes it installable by sideloading — right for
+handing testers a file. A Play Store upload needs a real release key
+generated and kept by you; that's a separate step, and deliberately not
+automated here since the key must not live in the repo.
+
 ## App identity
 
 ```
