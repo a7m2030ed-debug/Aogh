@@ -168,8 +168,6 @@ label.check{display:flex; align-items:center; gap:8px; font-size:13.5px; color:v
   --gold:#c07a2a;       /* the date, % of branch, the "system" tag        */
   --cyan:#1c8fa6;       /* the previous period's figure under each number  */
   --cyan-2:#a9e3ee;     /* the same figure, on the navy department/branch rows */
-  --rise:#1a7a52; --fall:#a82838;      /* the move against the period before   */
-  --rise-2:#7fe3b8; --fall-2:#ff9fab;  /* the same, legible on the navy bar    */
   --tint-1:#c9c3e8; --tint-2:#b6aedc;
   --fs:"Liberation Sans",Arial,Helvetica,sans-serif;
   --fr:"Liberation Serif","Times New Roman",Times,serif;
@@ -216,17 +214,10 @@ label.check{display:flex; align-items:center; gap:8px; font-size:13.5px; color:v
 .rep .c-pd{text-align:left; white-space:nowrap}
 .rep .c-pb{font:700 6.91pt/1.1 var(--fs); color:var(--gold)}
 .rep .nil{color:var(--dash)}
-/* the previous period's figure sits under the live one with the move beside
-   it — under, not beside, because a figure and its change will not fit inside
-   a column two centimetres wide */
-.rep .now{display:block}
-.rep .was{display:block; margin-top:.85pt; font:400 5.19pt/1 var(--fs); color:var(--cyan); white-space:nowrap; letter-spacing:0}
-.rep .was i{font-style:normal; font-weight:700; margin-inline-start:1.2pt}
-.rep .was.up i{color:var(--rise)}
-.rep .was.dn i{color:var(--fall)}
-.rep .was.fl i{color:var(--dash)}
-.rep .was.new{color:var(--nav-2); font-weight:700; letter-spacing:.03em}
-.rep .c-pd .was{text-align:left}
+/* the previous period's figure rides beside the live one, small enough to read
+   as a footnote rather than a second column of its own */
+.rep .was{font:400 4.9pt/1.05 var(--fs); color:var(--cyan); margin-inline-start:2.4pt; white-space:nowrap; letter-spacing:0}
+.rep .was.new{color:var(--nav-2); font-weight:700; letter-spacing:.02em}
 .rep tbody tr.alt td{background:var(--stripe)}
 .rep .c-pd .wrap{display:flex; align-items:center; gap:2.8pt; height:7.6pt}
 .rep .meter{width:26.5pt; height:4pt; flex:none; border-radius:2pt; background:var(--track); overflow:hidden}
@@ -253,9 +244,6 @@ label.check{display:flex; align-items:center; gap:8px; font-size:13.5px; color:v
 .rep tbody tr.grand .c-pb{font:700 6.91pt/1.15 var(--fs); color:#fff}
 .rep tbody tr.grand .nil{color:#fff}
 .rep tbody tr.grand .was{color:var(--cyan-2)}
-.rep tbody tr.grand .was.up i{color:var(--rise-2)}
-.rep tbody tr.grand .was.dn i{color:var(--fall-2)}
-.rep tbody tr.grand .was.fl i{color:var(--tint-2)}
 .rep tbody tr.grand .was.new{color:#fff}
 
 .fnote{margin:2.6pt 0 0; font:italic 6.33pt/1.34 var(--fs); color:var(--ink-mut)}
@@ -326,15 +314,15 @@ label.check{display:flex; align-items:center; gap:8px; font-size:13.5px; color:v
       <div class="note">
         <span class="m"></span>
         <span>يحتاج التقرير ورقتين: <b>Service wise Count – Detailed Category Wise</b> للطلبات والدخل،
-        و<b>Appointment Statistics – Doctor Wise</b> لعمودي <b>TOTAL SEEN</b> و<b>TOTAL NEW VISIT</b> (إن وُجد). الورقتان في مصنّف واحد كما في ملفك،
-        أو في ملفين تُرفعان معًا. المدة تُقرأ من الملف نفسه — يوم أو أسبوع أو شهر، لا فرق.</span>
+        و<b>Appointment Statistics – Doctor Wise</b> لعمود <b>TOTAL SEEN</b>. الورقتان في مصنّف واحد كما في ملفك،
+        أو في ملفين تُرفعان معًا. المدة تُقرأ من الملف نفسه — يوم أو أسبوع أو شهر، لا فرق.
+        ولعمود <b>TOTAL NEW VISIT</b> ارفع معها كشف <b>Appointment Statistics – Detailed</b> — سطرًا لكل موعد — فيُعدّ منه ما نوعه <b>New</b> لكل طبيب.</span>
       </div>
       <div id="fileInfo"></div>
       <div class="note">
         <span class="m"></span>
-        <span>اختياري: ارفع ملف الشهر السابق للمقارنة — يظهر تحت <b>كل رقم في الجدول</b> ما كان عليه في تلك المدة
-        ومقدار التغيّر (<b>+</b> صعود بالأخضر و<b>−</b> هبوط بالأحمر). بنفس شكل الملف الأساسي، ورقة أو ورقتين.
-        وارتفاع الصفّ يزيد بسبب السطر الثاني، فقد يصير التقرير في صفحات أكثر.</span>
+        <span>اختياري: ارفع ملف الشهر السابق للمقارنة — يظهر بجانب <b>كل رقم في الجدول</b> رقمُه في تلك المدة،
+        صغيرًا وبلون مائي، بلا نسب. بنفس شكل الملف الأساسي: ورقة الخدمات وكشف المواعيد وكشف المواعيد المفصّل.</span>
       </div>
       <div class="drop" id="dropPrev" tabindex="0" role="button">
         <strong>ملف المقارنة — الشهر السابق (اختياري)</strong>
@@ -506,6 +494,10 @@ const pick = (header, re) => header.findIndex(h => re.test(norm(h)));
 
 const MIS_WANT = [/^provider$/, /^department$/, /^count$/];
 const APPT_WANT = [/^resource name$|^doctor$|^provider$/, /^totalseen$|^total seen$|^seen$/];
+/* "Appointment Statistics – Detailed" is a different animal: a line per
+   appointment, blocked under "Doctor Name:" headings, with the visit's own
+   type beside it. It is where TOTAL NEW VISIT is counted from. */
+const NV_WANT = [/^mrno$|^mrn$/, /^type$/, /^date of visit$|^appt time$|^appt$/];
 
 function shapeMis(sheet) {
   const h = findHeader(sheet.grid, MIS_WANT);
@@ -520,6 +512,38 @@ function shapeMis(sheet) {
       count: pick(head, /^count$/), net: pick(head, /^net amount$/), gross: pick(head, /^gross amount$/),
     },
   };
+}
+function shapeNewVisit(sheet) {
+  const h = findHeader(sheet.grid, NV_WANT);
+  if (h < 0) return null;
+  /* without the doctor headings the lines belong to nobody */
+  if (!sheet.grid.some(r => /^doctor\s*name\s*:/i.test(String(r?.[0] ?? "")))) return null;
+  const head = sheet.grid[h];
+  return { sheet, headerRow: h, col: { type: pick(head, /^type$/), mrno: pick(head, /^mrno$|^mrn$/) } };
+}
+/* every line marked "New" is one new visit, counted under the doctor whose
+   block it sits in — the export's own classification, not a re-reading of it */
+function countNewVisits(nv) {
+  const g = nv.sheet.grid, by = new Map();
+  let doc = null, rows = 0, dups = 0;
+  const seen = new Map();
+  for (let i = nv.headerRow + 1; i < g.length; i++) {
+    const r = g[i] || [], first = String(r[0] ?? "").trim();
+    if (/^doctor\s*name\s*:/i.test(first)) { doc = first.split(":").slice(1).join(":").trim().replace(/\s+/g, " "); continue; }
+    if (/^status\s*:/i.test(first) || !first || !doc) continue;
+    if (!/^new$/i.test(String(r[nv.col.type] ?? "").trim())) continue;
+    const k = nameKey(doc);
+    by.set(k, { n: (by.get(k)?.n || 0) + 1, raw: doc, used: false });
+    rows++;
+    if (nv.col.mrno >= 0) {
+      const file = String(r[nv.col.mrno] ?? "").trim();
+      if (file) {
+        const bag = seen.get(k) || seen.set(k, new Set()).get(k);
+        if (bag.has(file)) dups++; else bag.add(file);
+      }
+    }
+  }
+  return { by, rows, dups };
 }
 function shapeAppt(sheet) {
   const h = findHeader(sheet.grid, APPT_WANT);
@@ -684,7 +708,7 @@ function aggregate(mis, appt, opts) {
   /* TOTAL SEEN and TOTAL NEW VISIT ride in from the appointments export,
      matched on the name; each column is its own map since a name can be
      missing from one and present in the other. */
-  const seenBy = new Map(), newVisitBy = new Map();
+  let seenBy = new Map(), newVisitBy = new Map();
   if (appt) {
     const ag = appt.sheet.grid, ac = appt.col;
     for (let i = appt.headerRow + 1; i < ag.length; i++) {
@@ -696,6 +720,13 @@ function aggregate(mis, appt, opts) {
       if (ac.newVisit >= 0 && isNum(row[ac.newVisit]))
         newVisitBy.set(k, { n: (newVisitBy.get(k)?.n || 0) + Math.round(num(row[ac.newVisit])), raw: nm, used: false });
     }
+  }
+  /* the detailed export counts the new visits line by line, which beats a
+     column of totals when both are uploaded */
+  let nvCount = null;
+  if (opts.newVisit) {
+    nvCount = countNewVisits(opts.newVisit);
+    newVisitBy = nvCount.by;
   }
   /* "Abdulaziz Omar" in one export and "Abdulaziz Omar Jubair" in the other
      are one person: a name of two words or more that opens exactly one name
@@ -726,7 +757,12 @@ function aggregate(mis, appt, opts) {
   if (seenMatch.unmatched.length) notices.push({ kind: "warn", text: "في كشف المواعيد أسماء بلا طلبات في تصدير الخدمات: " + seenMatch.unmatched.join("، ") + " — لا صفّ لها في الجدول." });
   if (nvMatch.fuzzy.length) notices.push({ kind: "warn", text: "أسماء طوبقت بالتقريب لعمود TOTAL NEW VISIT: " + nvMatch.fuzzy.join("، ") });
   if (!appt) notices.push({ kind: "warn", text: "لا يوجد كشف «Appointment Statistics – Doctor Wise» — عمودا TOTAL SEEN وTOTAL NEW VISIT سيخرجان شرطات." });
-  else if (!newVisitBy.size) notices.push({ kind: "warn", text: "لم يجد الملف عمود TOTAL NEW VISIT في كشف المواعيد — العمود سيخرج شرطات." });
+  else if (!newVisitBy.size) notices.push({ kind: "warn", text: "لم يجد الملف عمود TOTAL NEW VISIT ولا كشف «Appointment Statistics – Detailed» — العمود سيخرج شرطات." });
+  if (nvCount) {
+    notices.push({ kind: "", text: "الزيارات الجديدة من كشف «Appointment Statistics – Detailed»: " + nf(nvCount.rows)
+      + " سطرًا نوعه New موزّعة على " + nvCount.by.size + " طبيبًا."
+      + (nvCount.dups ? " ومنها " + nf(nvCount.dups) + " سطرًا يكرّر رقم ملف سبق تصنيفه New عند الطبيب نفسه — عُدّت كما صنّفها النظام." : "") });
+  }
 
   /* departments ranked by income, providers ranked by income inside each */
   const byDept = new Map();
@@ -860,7 +896,7 @@ function periodFrom(sheets) {
   for (const s of sheets) {
     for (const row of s.grid.slice(0, 10)) {
       const t = (row || []).join(" ");
-      const m = /from\s*:?\s*([0-9]{1,2}[-/][A-Za-z0-9]{2,}[-/][0-9]{4})[^,]*,?\s*to\s*:?\s*([0-9]{1,2}[-/][A-Za-z0-9]{2,}[-/][0-9]{4})/i.exec(t);
+      const m = /from(?:\s*date)?\s*:?\s*([0-9]{1,2}[-/][A-Za-z0-9]{2,}[-/][0-9]{4})[^,]*,?\s*to(?:\s*date)?\s*:?\s*([0-9]{1,2}[-/][A-Za-z0-9]{2,}[-/][0-9]{4})/i.exec(t);
       if (m) { const a = parseDate(m[1]), b = parseDate(m[2]); if (a && b) return { from: a, to: b }; }
     }
   }
@@ -877,19 +913,19 @@ const TPL = {
   source: "Meena PHC — Cluster 2  ·  Source: MIS “Service wise Count – Detailed Category Wise”",
 };
 const COLS = [
-  { key: "prov",    head: "PROVIDER",         w: "19.85%", cls: "c-prov", left: true },
-  { key: "seen",    head: "TOTAL SEEN",       w: "6.80%",  cls: "c-seen" },
-  { key: "newVisit",head: "TOTAL NEW VISIT",  w: "6.80%",  cls: "c-newv" },
-  { key: "lab",     head: "LAB",              w: "5.05%",  cls: "c-n" },
-  { key: "rad",     head: "RADIOLOGY",        w: "5.65%",  cls: "c-n" },
-  { key: "proc",    head: "PROCEDURES",       w: "6.05%",  cls: "c-n" },
-  { key: "dent",    head: "DENTAL",           w: "5.05%",  cls: "c-n" },
-  { key: "phys",    head: "PHYSIO",           w: "5.05%",  cls: "c-n" },
-  { key: "home",    head: "HOME CARE",        w: "5.65%",  cls: "c-n" },
-  { key: "other",   head: "OTHER",            w: "5.05%",  cls: "c-n" },
-  { key: "net",     head: "NET INCOME (SAR)", w: "9.70%",  cls: "c-net" },
-  { key: "pd",      head: "% OF DEPT",        w: "11.30%", cls: "c-pd", left: true },
-  { key: "pb",      head: "% OF BRANCH",      w: "8.00%",  cls: "c-pb" },
+  { key: "prov",    head: "PROVIDER",         w: "19.50%", cls: "c-prov", left: true },
+  { key: "seen",    head: "TOTAL SEEN",       w: "6.60%",  cls: "c-seen" },
+  { key: "newVisit",head: "TOTAL NEW VISIT",  w: "7.00%",  cls: "c-newv" },
+  { key: "lab",     head: "LAB",              w: "4.60%",  cls: "c-n" },
+  { key: "rad",     head: "RADIOLOGY",        w: "5.60%",  cls: "c-n" },
+  { key: "proc",    head: "PROCEDURES",       w: "6.00%",  cls: "c-n" },
+  { key: "dent",    head: "DENTAL",           w: "4.80%",  cls: "c-n" },
+  { key: "phys",    head: "PHYSIO",           w: "4.80%",  cls: "c-n" },
+  { key: "home",    head: "HOME CARE",        w: "5.60%",  cls: "c-n" },
+  { key: "other",   head: "OTHER",            w: "4.60%",  cls: "c-n" },
+  { key: "net",     head: "NET INCOME (SAR)", w: "10.00%", cls: "c-net" },
+  { key: "pd",      head: "% OF DEPT",        w: "11.00%", cls: "c-pd", left: true },
+  { key: "pb",      head: "% OF BRANCH",      w: "9.90%",  cls: "c-pb" },
 ];
 const DASH = "–";
 const nf = n => Math.round(n).toLocaleString("en-US");
@@ -915,40 +951,26 @@ function cell(cls, node) {
   if (node instanceof Node) td.append(node); else if (node != null) td.textContent = node;
   return td;
 }
-/* The line under a figure: what the same cell held in the period before, and
-   the way it moved. `undefined` means no comparison workbook was uploaded and
-   nothing is drawn — the cell looks exactly as it did before comparison
-   existed; `null` means the row itself has no counterpart there, which the
-   sheet marks "new". Counts and money move by percent, the two share columns
-   by percentage points, since a percent of a percent says nothing. */
+/* The small figure beside a number is what the same cell held in the period
+   before — the figure itself, no percentage: the branch reads the two numbers
+   and makes its own comparison. `undefined` means no comparison workbook was
+   uploaded and nothing is drawn, so the cell looks exactly as it did before
+   comparison existed; `null` means the row has no counterpart there, which the
+   sheet marks "new". */
 function wasLine(now, was, points) {
   if (was === undefined) return null;
   if (was === null) return el("span", "was new", "new");
-  now = now || 0;
-  if (!now && !was) return null;
-  const d = now - was;
-  const flat = Math.abs(d) < (points ? 0.05 : 0.5);
-  /* the sign carries the direction and the colour repeats it: a triangle would
-     have to be dropped from the PDF, whose base-14 fonts have no glyph for it */
-  const sign = flat ? "\u00B1" : d > 0 ? "+" : "-";
-  /* nothing to take a percentage of when the cell was empty, so the plain
-     difference stands in its place */
-  const mag = flat ? (points ? "0" : "0%")
-            : points ? Math.abs(d).toFixed(1)
-            : was ? Math.round(Math.abs(d) / was * 100) + "%" : nf(Math.abs(d));
-  const line = el("span", "was " + (flat ? "fl" : d > 0 ? "up" : "dn"));
-  line.append(document.createTextNode((points ? pct1(was) : nf(was)) + " "));
-  line.append(el("i", null, sign + mag));
-  return line;
+  if (!(now || 0) && !was) return null;
+  return el("span", "was", points ? pct1(was) : nf(was));
 }
 const withWas = (td, now, was, points) => { const l = wasLine(now, was, points); if (l) td.append(l); return td; };
 const numCell = (cls, v, was) => {
   const td = el("td", cls);
-  td.append(v ? el("span", "now", nf(v)) : el("span", "nil", DASH));
+  td.append(v ? document.createTextNode(nf(v)) : el("span", "nil", DASH));
   return withWas(td, v, was);
 };
-const netCell = (cls, v, was) => withWas(cell(cls, el("span", "now", nf(v))), v, was);
-const pctCell = (cls, v, was) => withWas(cell(cls, el("span", "now", pct1(v))), v, was, true);
+const netCell = (cls, v, was) => withWas(cell(cls, nf(v)), v, was);
+const pctCell = (cls, v, was) => withWas(cell(cls, pct1(v)), v, was, true);
 /* a getter that yields `undefined` with no comparison at all, `null` when the
    row is new, and the prior figure otherwise */
 const wasOf = (prior, on) => f => !on ? undefined : (prior ? f(prior) : null);
@@ -972,8 +994,8 @@ function providerRow(p, cmp) {
   fill.style.width = Math.max(0, Math.min(100, p.pctDept)).toFixed(2) + "%";
   track.append(fill);
   wrap.append(track, el("span", "pv", pct1(p.pctDept)));
+  withWas(wrap, p.pctDept, w(x => x.pctDept), true);
   pd.append(wrap);
-  withWas(pd, p.pctDept, w(x => x.pctDept), true);
   tr.append(pd, pctCell("c-pb", p.pctBranch, w(x => x.pctBranch)));
   return tr;
 }
@@ -1033,10 +1055,9 @@ function footnoteText(data, meta) {
   if (data.erMerged) t += " Every provider billing under an Emergency-named department is combined into one “Adult Emergency Registration” row; the department's own total is unchanged.";
   if (meta.days > 1) t += " Every figure is a total for the period, not a daily average.";
   if (data.total.prev) {
-    t += " The small line under each figure is the same figure for " + (meta.prevLong || "the comparison period")
+    t += " The small figure beside each number is the same figure for " + (meta.prevLong || "the comparison period")
        + (meta.prevDays && meta.prevDays !== meta.days ? " (" + meta.prevDays + " days)" : "")
-       + " and the change from it — percent for counts and income, percentage points for the two shares; "
-       + "“new” marks a provider with no row in that period"
+       + "; “new” marks a provider with no row in that period"
        + (data.compare && data.compare.gone.length
           ? ", and " + data.compare.gone.length + " provider" + (data.compare.gone.length === 1 ? "" : "s")
             + " billed then but not now " + (data.compare.gone.length === 1 ? "is" : "are") + " absent from the table."
@@ -1055,15 +1076,9 @@ function statBox(cls, label, value, note) {
   box.append(b);
   return box;
 }
-/* with a period to compare against, the note under each headline figure
-   carries what it was and the move; without one it keeps the plain word */
-function movedNote(now, was, plain) {
-  if (was == null) return plain;
-  const d = now - was;
-  const flat = Math.abs(d) < 0.5;
-  const mark = flat ? "\u00B10%" : (d > 0 ? "+" : "-") + (was ? Math.round(Math.abs(d) / was * 100) + "%" : "");
-  return "vs " + nf(was) + "   " + mark;
-}
+/* with a period to compare against, the note under each headline figure says
+   what it was; without one it keeps the plain word it always had */
+const movedNote = (now, was, plain) => was == null ? plain : "vs " + nf(was);
 function statsStrip(data, meta, first) {
   const strip = el("div", "stats");
   const days = meta.days ? meta.days + (meta.days === 1 ? " day" : " days") : "";
@@ -1647,19 +1662,13 @@ function collectSlide(page) {
           shapes.push(Object.assign({ kind: "text", x: X(gr), y: Y(gr), w: gr.width * 0.75, h: gr.height * 0.75 },
                                     runOf(tag, tag.textContent.trim()), { align: "ctr" }));
         }
-        /* the comparison line is a paragraph of its own inside the cell: a
-           PowerPoint run carries one format, and the move has its own colour */
-        const paras = [{ runs: [run], align: run.align, marL }];
+        /* the comparison figure is a run of its own on the same line: it is
+           smaller and another colour, and a PowerPoint run carries one format */
+        const runs = [run];
         const wasEl = td.querySelector(".was");
-        if (wasEl) {
-          const arrow = wasEl.querySelector("i");
-          const head = (arrow ? [...wasEl.childNodes].filter(n => n !== arrow).map(n => n.textContent).join("")
-                              : wasEl.textContent).replace(/\s+/g, " ").trim();
-          const runs = [];
-          if (head) runs.push(runOf(wasEl, head + (arrow ? " " : "")));
-          if (arrow) runs.push(runOf(arrow, arrow.textContent.replace(/\s+/g, " ").trim()));
-          if (runs.length) paras.push({ runs, align: run.align, marL });
-        }
+        const wasTxt = wasEl ? wasEl.textContent.replace(/\s+/g, " ").trim() : "";
+        if (wasTxt) runs.push(runOf(wasEl, "  " + wasTxt));
+        const paras = [{ runs, align: run.align, marL }];
         return {
           run, marL, text, paras,
           fill: hex(cs.backgroundColor),
@@ -1856,8 +1865,8 @@ window.__makePdf = makePdf;
 window.__makePptx = makePptx;   // the repo's browser checks build a file without clicking
 
 /* ═════════════════ state and wiring ═════════════════ */
-const state = { files: [], sheets: [], mis: null, appt: null, data: null, touched: {}, pages: 0,
-                 prevFiles: [], prevSheets: [], prevMis: null, prevAppt: null };
+const state = { files: [], sheets: [], mis: null, appt: null, nv: null, data: null, touched: {}, pages: 0,
+                 prevFiles: [], prevSheets: [], prevMis: null, prevAppt: null, prevNv: null };
 
 const val = id => $(id).value.trim();
 function meta() {
@@ -1914,11 +1923,7 @@ function tile(label, value) {
   t.append(el("span", null, label), b);
   return t;
 }
-const signed = (now, was) => {
-  if (!was) return "—";
-  const d = (now - was) / was * 100;
-  return (d > 0 ? "+" : d < 0 ? "−" : "±") + Math.abs(Math.round(d)) + "%";
-};
+
 
 function refresh() {
   const host = $("#notices"), tiles = $("#tiles");
@@ -1930,11 +1935,12 @@ function refresh() {
     $("#st3").textContent = "";
     return;
   }
-  const opts = { sysWords: val("#inSys") };
-  state.data = aggregate(state.mis, state.appt, opts);
+  const sysWords = val("#inSys");
+  state.data = aggregate(state.mis, state.appt, { sysWords, newVisit: state.nv });
   const d = state.data;
   /* the comparison workbook's own notices are its business, not this report's */
-  const prevData = state.prevMis ? aggregate(state.prevMis, state.prevAppt, opts) : null;
+  const prevData = state.prevMis
+    ? aggregate(state.prevMis, state.prevAppt, { sysWords, newVisit: state.prevNv }) : null;
   attachPrev(d, prevData);
   const m = meta();
 
@@ -1964,6 +1970,9 @@ function refresh() {
     if (state.prevBranch && state.wbBranch && state.prevBranch !== state.wbBranch)
       host.append(noticeBox("warn", "الملفان لفرعين مختلفين: " + state.wbBranch + " و " + state.prevBranch + "."));
   }
+  if (state.nv && state.nvFrom && m.from && (+state.nvFrom !== +m.from || +state.nvTo !== +m.to))
+    host.append(noticeBox("warn", "كشف المواعيد المفصّل لمدة أخرى: " + rangeLabel(state.nvFrom, state.nvTo, false)
+      + " بينما التقرير عن " + m.longRange + " — عمود TOTAL NEW VISIT سيكون لتلك المدة لا لهذه."));
   d.notices.forEach(n => host.append(noticeBox(n.kind, n.text)));
 
   $("#stage").hidden = false; $("#noPreview").hidden = true;
@@ -1981,9 +1990,9 @@ function refresh() {
     tile("مجموع الزيارات الجديدة", nf(d.total.newVisit)),
   );
   if (d.total.prev) tiles.append(
-    tile("تغيّر الدخل عن المدة السابقة", signed(d.total.net, d.total.prev.net)),
-    tile("تغيّر المشاهَدين", signed(d.total.seen, d.total.prev.seen)),
-    tile("تغيّر الطلبات", signed(d.total.orders, d.total.prev.orders)),
+    tile("دخل المدة السابقة — SAR", nf(d.total.prev.net)),
+    tile("مشاهَدو المدة السابقة", nf(d.total.prev.seen)),
+    tile("طلبات المدة السابقة", nf(d.total.prev.orders)),
   );
   tiles.append(tile("صفحات الـPDF", String(state.pages)));
 }
@@ -2002,7 +2011,8 @@ async function takeFiles(files) {
 
   for (const s of state.sheets) {
     if (!state.mis) { const shaped = shapeMis(s); if (shaped) { state.mis = shaped; continue; } }
-    if (!state.appt && (!state.mis || state.mis.sheet !== s)) { const shaped = shapeAppt(s); if (shaped) state.appt = shaped; }
+    if (!state.appt) { const shaped = shapeAppt(s); if (shaped) { state.appt = shaped; continue; } }
+    if (!state.nv) { const shaped = shapeNewVisit(s); if (shaped) state.nv = shaped; }
   }
   if (!state.mis) {
     state.err = "لم تُوجد ورقة «Service wise Count – Detailed Category Wise» بأعمدة Provider و Department و Count. "
@@ -2013,13 +2023,19 @@ async function takeFiles(files) {
   }
   state.err = null;
   state.wbBranch = state.wbBranch || branchFrom(state.sheets);
-  const per = periodFrom(state.sheets);
+  /* the report's period comes from the services and appointment sheets; the
+     detailed export is asked separately, since it is often pulled for a whole
+     month while the report covers a day of it */
+  const main = state.sheets.filter(x => !state.nv || state.nv.sheet !== x);
+  const per = periodFrom(main.length ? main : state.sheets);
   if (per) { state.wbFrom = state.wbFrom || per.from; state.wbTo = state.wbTo || per.to; }
+  if (state.nv) { const np = periodFrom([state.nv.sheet]); if (np) { state.nvFrom = np.from; state.nvTo = np.to; } }
 
   const chips = el("div", "chips");
   state.sheets.forEach(s => {
     const role = state.mis && state.mis.sheet === s ? "الخدمات والدخل"
-               : state.appt && state.appt.sheet === s ? "المواعيد — TOTAL SEEN / NEW VISIT" : "غير مستخدمة";
+               : state.appt && state.appt.sheet === s ? "المواعيد — TOTAL SEEN"
+               : state.nv && state.nv.sheet === s ? "المواعيد المفصّلة — NEW VISIT" : "غير مستخدمة";
     const c = el("span", "chip" + (role === "غير مستخدمة" ? "" : " ok"));
     c.append(el("b", null, s.name || s.file), document.createTextNode(" · " + role));
     chips.append(c);
@@ -2056,7 +2072,8 @@ async function takePrevFiles(files) {
 
   for (const s of state.prevSheets) {
     if (!state.prevMis) { const shaped = shapeMis(s); if (shaped) { state.prevMis = shaped; continue; } }
-    if (!state.prevAppt && (!state.prevMis || state.prevMis.sheet !== s)) { const shaped = shapeAppt(s); if (shaped) state.prevAppt = shaped; }
+    if (!state.prevAppt) { const shaped = shapeAppt(s); if (shaped) { state.prevAppt = shaped; continue; } }
+    if (!state.prevNv) { const shaped = shapeNewVisit(s); if (shaped) state.prevNv = shaped; }
   }
   if (!state.prevMis) {
     toast("ملف المقارنة لا يحوي ورقة الخدمات — لن تظهر أرقام الشهر السابق.", "bad");
@@ -2066,7 +2083,8 @@ async function takePrevFiles(files) {
   const chips = el("div", "chips");
   state.prevSheets.forEach(s => {
     const role = state.prevMis && state.prevMis.sheet === s ? "الخدمات والدخل — مقارنة"
-               : state.prevAppt && state.prevAppt.sheet === s ? "المواعيد — مقارنة" : "غير مستخدمة";
+               : state.prevAppt && state.prevAppt.sheet === s ? "المواعيد — مقارنة"
+               : state.prevNv && state.prevNv.sheet === s ? "المواعيد المفصّلة — مقارنة" : "غير مستخدمة";
     const c = el("span", "chip" + (role === "غير مستخدمة" ? "" : " ok"));
     c.append(el("b", null, s.name || s.file), document.createTextNode(" · " + role));
     chips.append(c);
@@ -2074,10 +2092,11 @@ async function takePrevFiles(files) {
   $("#filePrevInfo").textContent = "";
   $("#filePrevInfo").append(chips);
   state.prevBranch = state.prevBranch || branchFrom(state.prevSheets);
-  const pper = periodFrom(state.prevSheets);
+  const pmain = state.prevSheets.filter(x => !state.prevNv || state.prevNv.sheet !== x);
+  const pper = periodFrom(pmain.length ? pmain : state.prevSheets);
   if (pper) { state.prevFrom = state.prevFrom || pper.from; state.prevTo = state.prevTo || pper.to; }
   if (!state.prevFrom) {
-    const probe = aggregate(state.prevMis, state.prevAppt, { sysWords: val("#inSys") });
+    const probe = aggregate(state.prevMis, state.prevAppt, { sysWords: val("#inSys"), newVisit: state.prevNv });
     state.prevFrom = probe.billFrom; state.prevTo = probe.billTo;
   }
   refresh();
@@ -2101,9 +2120,9 @@ hookDrop($("#dropPrev"), $("#filePrev"), takePrevFiles);
 });
 
 $("#bClear").onclick = () => {
-  Object.assign(state, { files: [], sheets: [], mis: null, appt: null, data: null, touched: {}, pages: 0,
-                         wbBranch: null, wbFrom: null, wbTo: null, err: null,
-                         prevFiles: [], prevSheets: [], prevMis: null, prevAppt: null,
+  Object.assign(state, { files: [], sheets: [], mis: null, appt: null, nv: null, data: null, touched: {}, pages: 0,
+                         wbBranch: null, wbFrom: null, wbTo: null, nvFrom: null, nvTo: null, err: null,
+                         prevFiles: [], prevSheets: [], prevMis: null, prevAppt: null, prevNv: null,
                          prevBranch: null, prevFrom: null, prevTo: null });
   ["#inBranch", "#inFrom", "#inTo", "#inName"].forEach(id => $(id).value = "");
   $("#fileInfo").textContent = ""; $("#filePrevInfo").textContent = ""; $("#doc").textContent = "";
