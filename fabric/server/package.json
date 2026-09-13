@@ -1,0 +1,13 @@
+{
+  "name": "naseej-store-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "خادم متجر نسيج للأقمشة الرجالية — بلا اعتماديات",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "seed": "node seed-demo.js",
+    "test": "node test/run.js"
+  },
+  "engines": { "node": ">=18" }
+}

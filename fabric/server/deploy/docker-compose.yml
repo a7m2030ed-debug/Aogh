@@ -1,0 +1,35 @@
+# =====================================================================
+#  تشغيل المتجر بحاوية واحدة
+#      cd fabric && docker compose -f server/deploy/docker-compose.yml up -d
+#
+#  البيانات في حجم naseej-data: تبقى بعد كل تحديث. للنسخ الاحتياطي:
+#      docker run --rm -v naseej-data:/data -v "$PWD":/out alpine \
+#        tar czf /out/naseej-$(date +%F).tar.gz -C /data .
+# =====================================================================
+
+services:
+  naseej:
+    build:
+      context: ../..
+      dockerfile: server/deploy/Dockerfile
+    image: naseej-store
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - naseej-data:/data
+    environment:
+      NODE_ENV: production
+      # غيّره إلى نطاقك بـhttps قبل أي دفع حقيقي
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3000}
+      TRUST_PROXY: "1"
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-demo}
+      SHIPPING_PROVIDER: ${SHIPPING_PROVIDER:-manual}
+      PAYTABS_PROFILE_ID: ${PAYTABS_PROFILE_ID:-}
+      PAYTABS_SERVER_KEY: ${PAYTABS_SERVER_KEY:-}
+      MYFATOORAH_TOKEN: ${MYFATOORAH_TOKEN:-}
+      MYFATOORAH_WEBHOOK_SECRET: ${MYFATOORAH_WEBHOOK_SECRET:-}
+      TAP_SECRET_KEY: ${TAP_SECRET_KEY:-}
+
+volumes:
+  naseej-data:
