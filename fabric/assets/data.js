@@ -530,6 +530,16 @@
     return { mode: "live", health: Mode.health };
   }
 
+  /* مسار الوسيط كما يُرسله الخادم نسبيّ (uploads/…) حتى يبقى صغيرًا في
+     الكتالوج. هنا يُحلّ مقابل عنوان الخادم، فيصحّ أيضًا حين يكون الخادم
+     على نطاق غير نطاق الصفحة. وdata URI في وضع العرض يمرّ كما هو. */
+  function mediaUrl(src) {
+    const s = String(src || "");
+    if (!s || /^(data:|blob:|https?:\/\/|\/)/i.test(s)) return s;
+    const base = Mode.live && api() ? api().base : "";
+    return (base ? base.replace(/\/+$/, "") + "/" : "") + s.replace(/^\/+/, "");
+  }
+
   /* بعد إجراء على الخادم: نعيد قراءة الطلب من مصدره لا نخمّن نتيجته */
   async function refreshAdminOrder(id) {
     if (!Mode.live) return null;
@@ -1016,7 +1026,7 @@
     Mode, boot, loadAdmin, refreshCatalog, refreshAdminOrder,
     isLive: () => Mode.live,
     DB, Cart, Money, Payments, Shipping, placeOrder,
-    fabricArt, bannerArt, wiqfaGlyph, payLogo, shade,
+    fabricArt, bannerArt, wiqfaGlyph, payLogo, shade, mediaUrl,
     fmtQty, fmtDate, fmtDateShort, round2, esc, sleep,
     statusOf, wiqfaOf, categoryOf, onChange, emit,
   };

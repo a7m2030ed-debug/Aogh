@@ -216,7 +216,7 @@
           <div class="stack" style="gap:8px">
             ${low.slice(0, 6).map((l) => `
               <div style="display:flex;align-items:center;gap:10px;background:var(--paper);border-radius:10px;padding:9px 11px">
-                <img src="${esc(l.product.images[0])}" alt="" style="width:34px;height:34px;border-radius:8px;object-fit:cover;flex:none">
+                <img src="${esc(S.mediaUrl(l.product.images[0]))}" alt="" loading="lazy" style="width:34px;height:34px;border-radius:8px;object-fit:cover;flex:none">
                 <span style="flex:1;min-width:0">
                   <b style="font-size:13px;display:block">${esc(l.product.name)}</b>
                   <span class="note">${l.mode === "meter" ? "بيع بالمتر" : "طاقات"} · الحد ${fmtQty(l.threshold, l.mode)}</span>
@@ -311,7 +311,7 @@
               return `<tr>
                 <td class="wrap-cell">
                   <div style="display:flex;gap:9px;align-items:center">
-                    <img src="${esc(p.images[0])}" alt="" style="width:36px;height:36px;border-radius:8px;object-fit:cover;flex:none">
+                    <img src="${esc(S.mediaUrl(p.images[0]))}" alt="" loading="lazy" style="width:36px;height:36px;border-radius:8px;object-fit:cover;flex:none">
                     <span><b>${esc(p.name)}</b><br><span class="note">${esc(p.sku)}</span></span>
                   </div>
                 </td>
@@ -412,7 +412,7 @@
           </div>
           <div class="img-picks" style="margin-bottom:9px">
             ${e.images.map((src, i) => `
-              <div class="img-pick"><img src="${esc(src)}" alt="">
+              <div class="img-pick"><img src="${esc(S.mediaUrl(src))}" alt="">
                 <button class="x" data-act="rmImg" data-i="${i}" title="حذف">×</button></div>`).join("")}
             <button class="img-add" data-act="addImg" title="رفع صورة">+</button>
           </div>
@@ -625,7 +625,7 @@
           <h3 style="font-size:13.5px">الأصناف</h3>
           ${o.items.map((it) => `
             <div class="line-item">
-              <span class="line-thumb"><img src="${esc(it.image)}" alt=""></span>
+              <span class="line-thumb"><img src="${esc(S.mediaUrl(it.image))}" alt="" loading="lazy"></span>
               <span class="line-info"><b>${esc(it.name)}</b>
                 <span class="sub">${esc(it.sku)} · ${fmtQty(it.qty, it.mode)} × ${Money.fmt(it.unitPrice)}</span></span>
               <span class="line-sum">${Money.fmt(it.lineTotal)}</span>
@@ -829,7 +829,7 @@
               <tr>
                 <td class="wrap-cell">
                   <div style="display:flex;gap:9px;align-items:center">
-                    <img src="${esc(p.images[0])}" alt="" style="width:32px;height:32px;border-radius:7px;object-fit:cover;flex:none">
+                    <img src="${esc(S.mediaUrl(p.images[0]))}" alt="" loading="lazy" style="width:32px;height:32px;border-radius:7px;object-fit:cover;flex:none">
                     <span><b>${esc(p.name)}</b><br><span class="note">${esc(p.sku)}</span></span>
                   </div>
                 </td>

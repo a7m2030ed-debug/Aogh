@@ -8,6 +8,7 @@
 const fs = require("node:fs");
 const fsp = require("node:fs/promises");
 const path = require("node:path");
+const zlib = require("node:zlib");
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -69,12 +70,15 @@ class Router {
   delete(p, h) { return this.add("DELETE", p, h); }
 
   match(method, pathname) {
+    // HEAD يُخدَم بمعالج GET نفسه (send يحذف الجسم ويُبقي الترويسات)،
+    // وإلا ردّ الخادم 405 على أدوات المراقبة وفحوص الصحة.
+    const wanted = method === "HEAD" ? "GET" : method;
     let pathExists = false;
     for (const r of this.routes) {
       const m = r.rx.exec(pathname);
       if (!m) continue;
       pathExists = true;
-      if (r.method !== method) continue;
+      if (r.method !== wanted) continue;
       const params = {};
       r.names.forEach((n, i) => (params[n] = decodeURIComponent(m[i + 1])));
       return { handler: r.handler, params };
@@ -148,6 +152,28 @@ function cookie(name, value, opt = {}) {
 
 /* ------------------------------------------------------------ الردود */
 
+/* الأنواع التي يجدي ضغطها. الصور والفيديو مضغوطة أصلًا. */
+const COMPRESSIBLE = /^(?:text\/|application\/(?:json|javascript|xml)|image\/svg)/;
+const COMPRESS_MIN = 1024; // أصغر من هذا: الضغط أغلى من فائدته
+
+function pickEncoding(req) {
+  const accept = String((req && req.headers && req.headers["accept-encoding"]) || "");
+  if (/\bbr\b/.test(accept)) return "br";
+  if (/\bgzip\b/.test(accept)) return "gzip";
+  return null;
+}
+
+function compressSync(buf, encoding) {
+  return encoding === "br"
+    ? zlib.brotliCompressSync(buf, {
+        params: {
+          [zlib.constants.BROTLI_PARAM_QUALITY]: 5, // توازن: سريع وضغط جيد
+          [zlib.constants.BROTLI_PARAM_SIZE_HINT]: buf.length,
+        },
+      })
+    : zlib.gzipSync(buf, { level: 6 });
+}
+
 function send(res, status, body, headers = {}) {
   const h = Object.assign(
     {
@@ -157,8 +183,25 @@ function send(res, status, body, headers = {}) {
     },
     headers
   );
+
+  // الضغط يُتفاوض عليه من الطلب نفسه (res.req)، فلا يتغيّر أي نداء قائم
+  const type = String(h["Content-Type"] || "");
+  let buf = Buffer.isBuffer(body) ? body : Buffer.from(String(body || ""), "utf8");
+  if (buf.length >= COMPRESS_MIN && COMPRESSIBLE.test(type) && !h["Content-Encoding"]) {
+    const enc = pickEncoding(res.req);
+    if (enc) {
+      try {
+        buf = compressSync(buf, enc);
+        h["Content-Encoding"] = enc;
+        h.Vary = h.Vary ? h.Vary + ", Accept-Encoding" : "Accept-Encoding";
+      } catch { /* يُرسل بلا ضغط */ }
+    }
+  }
+  h["Content-Length"] = buf.length;
+
   res.writeHead(status, h);
-  res.end(body);
+  if (res.req && res.req.method === "HEAD") return res.end();
+  res.end(buf);
 }
 
 function sendJson(res, status, obj, headers = {}) {
@@ -213,7 +256,15 @@ async function serveStatic(req, res, root, urlPath, { cache = "no-cache", allowA
   const type = MIME[path.extname(full).toLowerCase()] || "application/octet-stream";
   const etag = `W/"${st.size}-${st.mtimeMs.toString(36)}"`;
   if (req.headers["if-none-match"] === etag) {
-    send(res, 304, "", { ETag: etag, "Cache-Control": cache });
+    res.writeHead(304, { ETag: etag, "Cache-Control": cache });
+    return res.end(), true;
+  }
+
+  // النصية تُقرأ وتُضغط؛ الكبيرة وغير القابلة للضغط تُبَثّ كما هي
+  const compressible = COMPRESSIBLE.test(type) && st.size >= COMPRESS_MIN && st.size <= 4 * 1024 * 1024;
+  if (compressible && pickEncoding(req)) {
+    const body = await fsp.readFile(full);
+    send(res, 200, body, { "Content-Type": type, ETag: etag, "Cache-Control": cache });
     return true;
   }
 

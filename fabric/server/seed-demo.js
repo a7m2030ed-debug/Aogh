@@ -13,6 +13,7 @@
 
 const path = require("node:path");
 const { Store } = require("./lib/store");
+const { Media } = require("./lib/media");
 const CONFIG = require("./config");
 
 /* assets/data.js مكتوب للمتصفح: نعطيه الحد الأدنى مما يتوقعه */
@@ -49,13 +50,21 @@ async function main() {
   }
 
   const raw = loadBrowserCatalog();
-  // الحقول التي يضيفها الخادم ولا وجود لها في نسخة المتصفح
-  const products = raw.map((p) => ({
-    ...p,
-    meter: { ...p.meter, reserved: 0 },
-    bolt: { ...p.bolt, reserved: 0 },
-    updatedAt: Date.now(),
-  }));
+  const media = new Media(config.dataDir);
+
+  // الصور تُكتب ملفات لا data URI داخل المنتج: الكتالوج يبقى صغيرًا
+  const products = [];
+  for (const p of raw) {
+    const withFiles = await media.storeProductMedia(p);
+    products.push({
+      ...p,
+      images: withFiles.images,
+      video: withFiles.video || p.video,
+      meter: { ...p.meter, reserved: 0 },
+      bolt: { ...p.bolt, reserved: 0 },
+      updatedAt: Date.now(),
+    });
+  }
 
   await store.mutate("products", [], () => products);
   console.log(`كُتب ${products.length} قماشًا في ${path.join(config.dataDir, "products.json")}`);
