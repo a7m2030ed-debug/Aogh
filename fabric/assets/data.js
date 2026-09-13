@@ -197,8 +197,11 @@
     storeName: "نسيج",
     tagline: "أقمشة رجالية",
     currency: "SAR",
+    // الضريبة مطفأة افتراضيًا: تحصيلها يستلزم تسجيلًا ضريبيًا، فلا تُفعَّل
+    // إلا بقرار صاحب المتجر من الإعدادات بعد تسجيله.
+    vatEnabled: false,
     vatRate: 0.15,
-    vatIncluded: true,          // الأسعار المعروضة شاملة الضريبة
+    vatIncluded: true,          // عند التفعيل: الأسعار المعروضة شاملة الضريبة
     freeShipOver: 800,
     thobeMetersMin: 3,
     thobeMetersMax: 4,
@@ -450,7 +453,7 @@
         customer: { name: names[i], phone: "05" + (50000000 + i * 111111), email: "" },
         shipping: { city: cities[i], district: "حي النرجس", address: "شارع الأمير سلطان، مبنى " + (12 + i), notes: "", carrier: i % 2 ? "aramex" : "smsa", cost: ship },
         payment: { method: i % 3 === 0 ? "mada" : i % 3 === 1 ? "applepay" : "card", status: "paid", ref: "TXN" + (778001 + i) },
-        totals: { subtotal: sub, shipping: ship, vat: round2((sub + ship) * 0.15 / 1.15), grand: round2(sub + ship) },
+        totals: { subtotal: sub, shipping: ship, vat: 0, grand: round2(sub + ship) },
         status: statuses[i],
         awb: i < 3 ? (i % 2 ? "ARX" : "SMSA") + (90014500 + i * 37) : "",
         timeline: [{ at: Date.now() - (i * 26 + 4) * 3600000, status: "new", note: "تم إنشاء الطلب" }],
@@ -853,14 +856,20 @@
       const carrier = (s.carriers || []).find((c) => c.id === carrierId);
       let shipping = carrier ? carrier.cost : 0;
       if (carrier && carrier.id !== "pickup" && s.freeShipOver && subtotal >= s.freeShipOver) shipping = 0;
-      const grand = round2(subtotal + shipping);
-      const vat = s.vatIncluded ? round2(grand - grand / (1 + s.vatRate)) : round2(grand * s.vatRate);
+      const gross = round2(subtotal + shipping);
+      let vat = 0;
+      let grand = gross;
+      if (s.vatEnabled) {
+        if (s.vatIncluded) vat = round2(gross - gross / (1 + s.vatRate));
+        else { vat = round2(gross * s.vatRate); grand = round2(gross + vat); }
+      }
       return {
         subtotal: subtotal,
         shipping: shipping,
         shippingFree: !!(carrier && carrier.cost > 0 && shipping === 0),
         vat: vat,
-        grand: s.vatIncluded ? grand : round2(grand + vat),
+        vatEnabled: !!s.vatEnabled,
+        grand: grand,
         toFreeShip: s.freeShipOver ? Math.max(0, round2(s.freeShipOver - subtotal)) : 0,
       };
     },

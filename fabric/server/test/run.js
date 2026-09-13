@@ -141,13 +141,15 @@ async function main() {
       assert.ok(r.json.totals.grand > 100, "الإجمالي لم يتأثر بما أرسله العميل");
     });
 
-    await test("الضريبة 15٪ محتسبة ضمن السعر", async () => {
+    await test("الضريبة مطفأة افتراضيًا فلا تُحصَّل", async () => {
       const r = await api("POST", "/api/orders/quote", {
         items: [{ productId: prod.id, mode: "meter", qty: 4 }], carrier: "smsa",
       });
       const t = r.json.totals;
-      const expected = Math.round((t.subtotal + t.shipping - (t.subtotal + t.shipping) / 1.15) * 100) / 100;
-      assert.ok(Math.abs(t.vat - expected) < 0.02, `الضريبة ${t.vat} ≠ ${expected}`);
+      assert.strictEqual(t.vat, 0, "لا ضريبة");
+      assert.strictEqual(t.grand, Math.round((t.subtotal + t.shipping) * 100) / 100, "الإجمالي = المجموع + الشحن");
+      const cat = await api("GET", "/api/catalog", undefined, { noCookie: true });
+      assert.strictEqual(cat.json.settings.vatEnabled, false, "المتجر يعلن أنها مطفأة");
     });
 
     await test("كمية غير مضاعفة لنصف المتر تُرفض", async () => {
@@ -364,6 +366,29 @@ async function main() {
       assert.strictEqual(r.status, 200);
       const adm = await api("GET", "/api/admin/data");
       assert.ok(!adm.json.products.some((p) => p.id === created.id));
+    });
+
+    await test("تفعيل الضريبة يحتسب 15٪ ضمن السعر، وإطفاؤها يعيدها صفرًا", async () => {
+      await api("PUT", "/api/admin/settings", { vatEnabled: true, vatRate: 0.15, vatIncluded: true });
+      const on = await api("POST", "/api/orders/quote", {
+        items: [{ productId: prod.id, mode: "meter", qty: 4 }], carrier: "smsa",
+      }, { noCookie: true });
+      const t = on.json.totals;
+      const expected = Math.round((t.subtotal + t.shipping - (t.subtotal + t.shipping) / 1.15) * 100) / 100;
+      assert.ok(Math.abs(t.vat - expected) < 0.02, `الضريبة ${t.vat} ≠ ${expected}`);
+
+      await api("PUT", "/api/admin/settings", { vatEnabled: false });
+      const off = await api("POST", "/api/orders/quote", {
+        items: [{ productId: prod.id, mode: "meter", qty: 4 }], carrier: "smsa",
+      }, { noCookie: true });
+      assert.strictEqual(off.json.totals.vat, 0, "عادت صفرًا");
+      assert.strictEqual(off.json.totals.grand, t.grand, "الإجمالي لم يتغيّر: السعر هو هو");
+    });
+
+    await test("الفاتورة بلا ضريبة لا تُوسم ضريبية", async () => {
+      const r = await api("GET", `/api/admin/orders/${order.id}/invoice`);
+      assert.strictEqual(r.json.invoice.vatApplied, false, "vatApplied=false");
+      assert.strictEqual(r.json.invoice.totals.vat, 0, "لا ضريبة في الفاتورة");
     });
 
     await test("رقم ضريبي غير صحيح يُرفض", async () => {
