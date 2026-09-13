@@ -633,7 +633,7 @@
           <div class="totals" style="margin-top:11px">
             <div><span>المجموع</span><b>${Money.fmt(o.totals.subtotal)}</b></div>
             <div><span>الشحن</span><b>${o.totals.shipping === 0 ? "مجاني" : Money.fmt(o.totals.shipping)}</b></div>
-            <div class="note" style="display:flex;justify-content:space-between"><span>منها ضريبة القيمة المضافة</span><span>${Money.fmt(o.totals.vat)}</span></div>
+            ${o.totals.vat ? `<div class="note" style="display:flex;justify-content:space-between"><span>منها ضريبة القيمة المضافة</span><span>${Money.fmt(o.totals.vat)}</span></div>` : ""}
             <div class="grand"><span>الإجمالي</span><span>${Money.fmt(o.totals.grand)}</span></div>
           </div>
         </div>
@@ -709,8 +709,8 @@
   async function showInvoice(id) {
     let inv = null;
     try { inv = await DB.invoice(id); } catch (e) { return toast(e.message, "bad"); }
-    if (!inv) return toast("الفاتورة الضريبية تصدر من الخادم بعد تأكيد الدفع", "bad");
-    modal("الفاتورة " + inv.number, invoiceHtml(inv), [
+    if (!inv) return toast("الفاتورة تصدر من الخادم بعد تأكيد الدفع", "bad");
+    modal((inv.vatApplied ? "الفاتورة الضريبية " : "الفاتورة ") + inv.number, invoiceHtml(inv), [
       { label: "طباعة", cls: "btn-gold", act: "printInvoice" },
       { label: "إغلاق", cls: "btn-ghost", act: "closeModal" },
     ]);
@@ -727,7 +727,7 @@
           <tr><th>الطلب</th><td>${esc(inv.orderNumber)}</td></tr>
           <tr><th>التاريخ</th><td>${fmtDate(inv.issuedAt)}</td></tr>
           <tr><th>البائع</th><td>${esc(inv.seller.name || "—")}</td></tr>
-          <tr><th>الرقم الضريبي</th><td>${esc(inv.seller.vatNumber || "—")}</td></tr>
+          ${inv.vatApplied ? `<tr><th>الرقم الضريبي</th><td>${esc(inv.seller.vatNumber || "—")}</td></tr>` : ""}
           <tr><th>المشتري</th><td>${esc(inv.buyer.name)}</td></tr>
         </tbody></table>
       </div>
@@ -735,16 +735,19 @@
         <table class="spec-table"><tbody>
           ${inv.lines.map((l) => `<tr><th style="font-weight:400">${esc(l.name)} · ${S.Money.num(l.qty)} ${esc(l.unit)}</th><td>${Money.fmt(l.total)}</td></tr>`).join("")}
           <tr><th>الشحن</th><td>${Money.fmt(inv.shipping)}</td></tr>
-          <tr><th>الصافي قبل الضريبة</th><td>${Money.fmt(inv.totals.net)}</td></tr>
-          <tr><th>ضريبة القيمة المضافة</th><td>${Money.fmt(inv.totals.vat)}</td></tr>
+          ${inv.vatApplied ? `
+            <tr><th>الصافي قبل الضريبة</th><td>${Money.fmt(inv.totals.net)}</td></tr>
+            <tr><th>ضريبة القيمة المضافة</th><td>${Money.fmt(inv.totals.vat)}</td></tr>` : ""}
           <tr><th>الإجمالي</th><td><b>${Money.fmt(inv.totals.grand)}</b></td></tr>
         </tbody></table>
       </div>
-      <div class="panel" style="padding:12px">
-        <h3 style="font-size:13px">حمولة رمز الاستجابة السريعة</h3>
-        <p class="note" style="margin:0 0 8px">مُرمّزة بصيغة TLV/Base64 كما تشترط الهيئة. تحويلها إلى صورة رمز يتم عند اكتمال ربطك بمنصة فاتورة.</p>
-        <code style="display:block;word-break:break-all;font-size:11px;background:var(--sand-2);padding:9px;border-radius:8px">${esc(inv.qr)}</code>
-      </div>`;
+      ${inv.vatApplied ? `
+        <div class="panel" style="padding:12px">
+          <h3 style="font-size:13px">حمولة رمز الاستجابة السريعة</h3>
+          <p class="note" style="margin:0 0 8px">مُرمّزة بصيغة TLV/Base64 كما تشترط الهيئة. تحويلها إلى صورة رمز يتم عند اكتمال ربطك بمنصة فاتورة.</p>
+          <code style="display:block;word-break:break-all;font-size:11px;background:var(--sand-2);padding:9px;border-radius:8px">${esc(inv.qr)}</code>
+        </div>`
+      : `<div class="note" style="padding:2px">الضريبة مطفأة، فهذه فاتورة بيع لا فاتورة ضريبية: بلا ضريبة وبلا رمز الهيئة.</div>`}`;
   }
 
   function printAwb(id) {
@@ -884,9 +887,18 @@
                 <div class="field"><label>اسم المتجر</label><input data-s="storeName" value="${esc(s.storeName)}"></div>
                 <div class="field"><label>الوصف تحت الاسم</label><input data-s="tagline" value="${esc(s.tagline)}"></div>
               </div>
+              <div class="field">
+                <label style="display:flex;gap:8px;align-items:center;cursor:pointer">
+                  <input type="checkbox" data-s="vatEnabled" ${s.vatEnabled ? "checked" : ""} style="width:18px;height:18px">
+                  تحصيل ضريبة القيمة المضافة
+                </label>
+                <div class="help">${s.vatEnabled
+                  ? "مفعّلة: الأسعار شاملة الضريبة، وتُصدر فاتورة ضريبية بعد كل دفعة. لا تفعّلها إلا إن كانت المنشأة مسجَّلة ضريبيًا."
+                  : "مطفأة: الأسعار بلا ضريبة ولا يظهر سطرها. هذا الصحيح ما دامت المنشأة غير مسجَّلة ضريبيًا."}</div>
+              </div>
               <div class="row-2">
-                <div class="field"><label>نسبة الضريبة</label>
-                  <input type="number" step="0.01" min="0" max="1" data-s="vatRate" value="${s.vatRate}">
+                <div class="field"${s.vatEnabled ? "" : ' style="opacity:.45"'}><label>نسبة الضريبة</label>
+                  <input type="number" step="0.01" min="0" max="1" data-s="vatRate" value="${s.vatRate}" ${s.vatEnabled ? "" : "disabled"}>
                   <div class="help">0.15 تعني 15٪</div></div>
                 <div class="field"><label>الشحن مجاني فوق (ر.س)</label><input type="number" step="10" min="0" data-s="freeShipOver" value="${s.freeShipOver}"></div>
               </div>

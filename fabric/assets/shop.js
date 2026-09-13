@@ -444,7 +444,7 @@
     box.innerHTML = `
       <div class="pd-price">
         <b>${Money.fmt(PD.mode === "meter" ? p.meter.price : p.bolt.price)}</b>
-        <span>${PD.mode === "meter" ? "للمتر · شامل الضريبة" : "للطاقة (" + S.Money.num(p.bolt.metersPer) + " م) · شامل الضريبة"}</span>
+        <span>${PD.mode === "meter" ? "للمتر" : "للطاقة (" + S.Money.num(p.bolt.metersPer) + " م)"}${st.vatEnabled ? " · شامل الضريبة" : ""}</span>
       </div>
 
       <div class="panel">
@@ -701,7 +701,7 @@
       <div class="totals">
         <div><span>المجموع</span><b>${Money.fmt(t.subtotal)}</b></div>
         <div><span>الشحن</span><b>${t.shipping === 0 ? "مجاني" : Money.fmt(t.shipping)}</b></div>
-        <div class="note" style="display:flex;justify-content:space-between"><span>منها ضريبة القيمة المضافة 15٪</span><span>${Money.fmt(t.vat)}</span></div>
+        ${t.vatEnabled ? `<div class="note" style="display:flex;justify-content:space-between"><span>منها ضريبة القيمة المضافة ${S.Money.num(Math.round((DB.settings().vatRate || 0) * 100))}٪</span><span>${Money.fmt(t.vat)}</span></div>` : ""}
         <div class="grand"><span>الإجمالي</span><span>${Money.fmt(t.grand)}</span></div>
       </div>`;
   }
@@ -811,7 +811,7 @@
           <div class="totals" style="margin-top:12px">
             <div><span>المجموع</span><b>${Money.fmt(o.totals.subtotal)}</b></div>
             <div><span>الشحن</span><b>${o.totals.shipping === 0 ? "مجاني" : Money.fmt(o.totals.shipping)}</b></div>
-            <div class="note" style="display:flex;justify-content:space-between"><span>منها ضريبة القيمة المضافة</span><span>${Money.fmt(o.totals.vat)}</span></div>
+            ${o.totals.vat ? `<div class="note" style="display:flex;justify-content:space-between"><span>منها ضريبة القيمة المضافة</span><span>${Money.fmt(o.totals.vat)}</span></div>` : ""}
             <div class="grand"><span>الإجمالي</span><span>${Money.fmt(o.totals.grand)}</span></div>
           </div>
         </div>
@@ -973,7 +973,7 @@
     terms: {
       t: "الشروط والأحكام",
       body: [
-        ["الأسعار", "كل الأسعار بالريال السعودي وشاملة ضريبة القيمة المضافة 15٪."],
+        ["الأسعار", "كل الأسعار بالريال السعودي."],
         ["اختلاف الألوان", "قد يختلف اللون قليلًا بين الشاشة والقماش الفعلي باختلاف الإضاءة والشاشات."],
         ["القياس", "القصّ بالمتر بهامش ±5 سم، ويُحتسب لصالح العميل."],
         ["التوفّر", "المخزون يتغيّر لحظيًا، وإن نفد قماش بعد الطلب نتواصل معك للاستبدال أو الاسترجاع الكامل."],
@@ -993,13 +993,18 @@
   function viewPage(slug) {
     const p = PAGES[slug];
     if (!p) return viewNotFound();
+    const st = DB.settings();
+    // سطر الضريبة يظهر في الشروط فقط حين تكون مفعّلة فعلًا
+    const rows = slug === "terms" && st.vatEnabled
+      ? [["الضريبة", `الأسعار شاملة ضريبة القيمة المضافة ${S.Money.num(Math.round((st.vatRate || 0) * 100))}٪.`]].concat(p.body)
+      : p.body;
     view.innerHTML = `
       <div class="wrap">
         <div class="crumbs"><a href="#/">الرئيسية</a><span>›</span><span>${esc(p.t)}</span></div>
         <h1 style="font-size:22px;margin:6px 0 12px">${esc(p.t)}</h1>
         <div class="panel">
           <table class="spec-table"><tbody>
-            ${p.body.map(([k, v]) => `<tr><th>${esc(k)}</th><td style="font-weight:400">${esc(v)}</td></tr>`).join("")}
+            ${rows.map(([k, v]) => `<tr><th>${esc(k)}</th><td style="font-weight:400">${esc(v)}</td></tr>`).join("")}
           </tbody></table>
         </div>
       </div>`;
@@ -1249,6 +1254,15 @@
   /* ------------------------------------------------------------ الإقلاع */
 
   $("#year").textContent = new Date().getFullYear();
+  /* سطر الضريبة في التذييل: يظهر فقط حين تكون مفعّلة */
+  function renderFooterVat() {
+    const el = $("#footVat");
+    if (!el) return;
+    const st = DB.settings();
+    el.textContent = st.vatEnabled
+      ? `الأسعار شاملة ضريبة القيمة المضافة ${S.Money.num(Math.round((st.vatRate || 0) * 100))}٪`
+      : "";
+  }
   $("#footPay").innerHTML = ["mada", "applepay", "visa", "mastercard"]
     .map((k) => `<img class="pay-logo" src="${S.payLogo(k)}" alt="">`).join("");
 
@@ -1261,6 +1275,7 @@
 
   S.boot().then((r) => {
     if (r.mode === "demo") showDemoBanner();
+    renderFooterVat();
     renderCart();
     route();
   }).catch((e) => {

@@ -22,7 +22,9 @@ const DEFAULT_SETTINGS = {
   storeName: "نسيج",
   tagline: "أقمشة رجالية",
   currency: "SAR",
-  vatEnabled: true,
+  // مطفأة افتراضيًا: تحصيل الضريبة بلا تسجيل ضريبي مخالفة، فلا تُفعَّل
+  // إلا بقرار صاحب المتجر من الإعدادات بعد تسجيله.
+  vatEnabled: false,
   vatRate: 0.15,
   vatIncluded: true,
   freeShipOver: 800,
