@@ -62,11 +62,18 @@ function build(rootDir) {
 }
 
 /* فحوص لا يجوز تشغيل الإنتاج بدونها */
-function auditProduction(config, secrets, payAdapter) {
+function auditProduction(config, secrets, payAdapter, settings) {
   const problems = [];
   if (config.env !== "production") return problems;
 
-  if (config.paymentProvider === "demo") {
+  /* الدفع عند الاستلام لا يمرّ ببوابة، فمتجر يبيع به وحده لا يحتاجها،
+     ولا يصحّ تحذيره من أن البوابة تجريبية. */
+  const active = ((settings && settings.gateways) || []).filter((g) => g.active);
+  const needsGateway = active.length === 0 || active.some((g) => g.id !== "cod");
+
+  if (!needsGateway) {
+    // لا تحذير: البوابة غير مستعملة أصلًا
+  } else if (config.paymentProvider === "demo") {
     problems.push("PAYMENT_PROVIDER ما زال demo — لن يُحصَّل أي مبلغ حقيقي.");
   } else if (payAdapter && !payAdapter.configured({ secrets, config })) {
     problems.push(`مفاتيح بوابة ${config.paymentProvider} ناقصة.`);

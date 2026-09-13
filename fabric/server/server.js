@@ -25,6 +25,7 @@ const { URL } = require("node:url");
 const H = require("./lib/http");
 const { Store } = require("./lib/store");
 const { Auth } = require("./lib/auth");
+const { Media } = require("./lib/media");
 const SHOP = require("./lib/shop");
 const ZATCA = require("./lib/zatca");
 const PAY = require("./payments");
@@ -34,7 +35,15 @@ const CONFIG = require("./config");
 const ROOT = __dirname;
 const { config, secrets } = CONFIG.build(ROOT);
 const store = new Store(config.dataDir);
+/* أي كتابة على المنتجات أو الإعدادات تُبطل الكتالوج المخزَّن */
+const _mutate = store.mutate.bind(store);
+store.mutate = (name, fallback, fn) => {
+  const out = _mutate(name, fallback, fn);
+  if (name === "products" || name === "settings") out.then(() => invalidateCatalog(), () => {});
+  return out;
+};
 const auth = new Auth(store);
+const media = new Media(config.dataDir);
 
 const COLLECTIONS = ["products", "orders", "settings", "admins", "counters", "invoices"];
 
@@ -113,12 +122,41 @@ const router = new H.Router();
 
 /* ====================== الكتالوج ====================== */
 
-router.get("/api/catalog", async (req, res) => {
+/* الكتالوج يُقرأ آلاف المرات ويتغيّر نادرًا. فيُبنى مرة ويُحفظ نصًّا
+   جاهزًا بـETag، ويُبطَل عند أي كتابة تمسّ المنتجات أو الإعدادات. بلا
+   هذا كان كل زائر يعيد بناء الرد وتسلسله من الصفر. */
+let catalogCache = null;
+
+function invalidateCatalog() { catalogCache = null; }
+
+function buildCatalog() {
+  if (catalogCache) return catalogCache;
   const s = settings();
-  H.sendJson(res, 200, {
+  const body = JSON.stringify({
     products: products().filter((p) => p.active !== false).map(publicProduct),
     settings: publicSettings(s),
   });
+  catalogCache = {
+    body,
+    etag: 'W/"' + crypto.createHash("sha1").update(body).digest("base64url").slice(0, 22) + '"',
+  };
+  return catalogCache;
+}
+
+router.get("/api/catalog", async (req, res) => {
+  const c = buildCatalog();
+  // المخزون يتغيّر، لكن صحته تُتحقق على الخادم عند الطلب لا من هذا الرد،
+  // فدقيقة من التخزين مقبولة وتوفّر أغلب الحِمل.
+  const headers = {
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
+    ETag: c.etag,
+  };
+  if (req.headers["if-none-match"] === c.etag) {
+    res.writeHead(304, headers);
+    return res.end();
+  }
+  H.send(res, 200, c.body, headers);
 });
 
 /* ====================== التسعير ====================== */
@@ -447,14 +485,15 @@ router.get("/api/admin/data", async (req, res) => {
       shippingConfigured: SHIP.adapter(config.shippingProvider).configured(ctx()),
       vatNumberValid: ZATCA.isValidVatNumber(s.vatNumber),
       publicUrl: config.publicUrl,
-      warnings: CONFIG.auditProduction(config, secrets, payAdapter),
+      warnings: CONFIG.auditProduction(config, secrets, payAdapter, s),
     },
   });
 });
 
 router.post("/api/admin/products", async (req, res) => {
   requireAdmin(req);
-  const body = await H.readJson(req);
+  const raw = await H.readJson(req);
+  const body = await media.storeProductMedia(raw).catch((e) => { throw H.bad(e.message); });
   let saved;
   await store.mutate("products", [], (list) => {
     saved = SHOP.normalizeProduct(body, null, list);
@@ -466,7 +505,8 @@ router.post("/api/admin/products", async (req, res) => {
 
 router.put("/api/admin/products/:id", async (req, res) => {
   requireAdmin(req);
-  const body = await H.readJson(req);
+  const raw = await H.readJson(req);
+  const body = await media.storeProductMedia(raw).catch((e) => { throw H.bad(e.message); });
   let saved;
   await store.mutate("products", [], (list) => {
     const cur = list.find((p) => p.id === req.params.id);
@@ -663,7 +703,8 @@ router.post("/api/admin/import", async (req, res) => {
   // نمرّر كل منتج على التطبيع حتى لا يدخل ملف خارجي بيانات غير صالحة
   const clean = [];
   for (const raw of body.products) {
-    clean.push(SHOP.normalizeProduct(raw, Object.assign({}, raw, { id: raw.id }), clean));
+    const withFiles = await media.storeProductMedia(raw).catch((e) => { throw H.bad(e.message); });
+    clean.push(SHOP.normalizeProduct(withFiles, Object.assign({}, withFiles, { id: raw.id }), clean));
   }
   await store.mutate("products", [], () => clean);
   if (Array.isArray(body.orders)) await store.mutate("orders", [], () => body.orders);
@@ -710,6 +751,13 @@ const server = http.createServer(async (req, res) => {
 async function main() {
   for (const c of COLLECTIONS) store.read(c, c === "settings" || c === "counters" ? {} : []);
 
+  /* ترحيل: صور حُفظت سابقًا داخل المنتجات تُنقل ملفات، فيصغر الكتالوج */
+  const mig = await media.migrateProducts(products());
+  if (mig.moved) {
+    await store.mutate("products", [], (list) => list);
+    console.log(`  رُحّلت ${mig.moved} صورة من داخل المنتجات إلى ملفات (${(mig.bytes / 1024 / 1024).toFixed(1)} ميغابايت)`);
+  }
+
   const seeded = await auth.ensureSeedAdmin();
   await auth.sweep();
   setInterval(() => auth.sweep().catch(() => {}), 6 * 3600 * 1000).unref();
@@ -717,7 +765,7 @@ async function main() {
   setInterval(() => sweepReservations().catch((e) => console.error("[حجز]", e.message)), 5 * 60 * 1000).unref();
 
   const payAdapter = PAY.ADAPTERS[config.paymentProvider];
-  const warnings = CONFIG.auditProduction(config, secrets, payAdapter);
+  const warnings = CONFIG.auditProduction(config, secrets, payAdapter, settings());
 
   server.listen(config.port, config.host, () => {
     const line = "─".repeat(58);

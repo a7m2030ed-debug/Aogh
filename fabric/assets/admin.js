@@ -216,7 +216,7 @@
           <div class="stack" style="gap:8px">
             ${low.slice(0, 6).map((l) => `
               <div style="display:flex;align-items:center;gap:10px;background:var(--paper);border-radius:10px;padding:9px 11px">
-                <img src="${esc(l.product.images[0])}" alt="" style="width:34px;height:34px;border-radius:8px;object-fit:cover;flex:none">
+                <img src="${esc(S.mediaUrl(l.product.images[0]))}" alt="" loading="lazy" style="width:34px;height:34px;border-radius:8px;object-fit:cover;flex:none">
                 <span style="flex:1;min-width:0">
                   <b style="font-size:13px;display:block">${esc(l.product.name)}</b>
                   <span class="note">${l.mode === "meter" ? "بيع بالمتر" : "طاقات"} · الحد ${fmtQty(l.threshold, l.mode)}</span>
@@ -311,8 +311,10 @@
               return `<tr>
                 <td class="wrap-cell">
                   <div style="display:flex;gap:9px;align-items:center">
-                    <img src="${esc(p.images[0])}" alt="" style="width:36px;height:36px;border-radius:8px;object-fit:cover;flex:none">
-                    <span><b>${esc(p.name)}</b><br><span class="note">${esc(p.sku)}</span></span>
+                    <img src="${esc(S.mediaUrl(p.images[0]))}" alt="" loading="lazy" style="width:36px;height:36px;border-radius:8px;object-fit:cover;flex:none">
+                    <span><b>${esc(p.name)}</b><br><span class="note">${esc(p.sku)}</span>${
+                      p.imagesGenerated ? ' <span class="chip chip-line" style="font-size:10px" title="نقش مولَّد من اللون — ارفع صورة القماش من «تعديل»">بلا صورة</span>' : ""
+                    }</span>
                   </div>
                 </td>
                 <td>${esc(S.categoryOf(p.category).name)}</td>
@@ -345,7 +347,7 @@
     return {
       id: "", sku: "", name: "", category: "summer", wiqfa: "nisf",
       color: "#f0ece1", colorName: "أبيض", blurb: "",
-      images: [], video: { kind: "generated" },
+      images: [], imagesGenerated: true, video: { kind: "generated" },
       specs: { origin: "", composition: "", weight: "", width: 150, season: "صيفي", care: "غسيل جاف · كي على حرارة متوسطة" },
       meter: { enabled: true, price: 0, stock: 0, low: 30 },
       bolt: { enabled: false, price: 0, stock: 0, metersPer: 50, low: 2 },
@@ -369,6 +371,7 @@
       S.fabricArt({ base: editing.color, sheen: (isWinter ? 0.17 : 0.3) + 0.1, scale: isWinter ? 8 : 6, close: true }),
       S.fabricArt({ base: S.shade(editing.color, -10), sheen: isWinter ? 0.17 : 0.3, scale: (isWinter ? 8 : 6) + 2 }),
     ];
+    editing.imagesGenerated = true;
   }
 
   function productForm() {
@@ -412,9 +415,14 @@
           </div>
           <div class="img-picks" style="margin-bottom:9px">
             ${e.images.map((src, i) => `
-              <div class="img-pick"><img src="${esc(src)}" alt="">
+              <div class="img-pick"><img src="${esc(S.mediaUrl(src))}" alt="">
                 <button class="x" data-act="rmImg" data-i="${i}" title="حذف">×</button></div>`).join("")}
             <button class="img-add" data-act="addImg" title="رفع صورة">+</button>
+          </div>
+          <div class="help" id="imgHelp" style="margin-bottom:9px">
+            ${e.imagesGenerated
+              ? "<b>لا تحتاج صورة الآن.</b> هذا نقش مولَّد من اللون يتبعه كلما غيّرته، ويظهر في المتجر كما هو. اضغط «+» لرفع صور قماشك متى صوّرتها، فتحلّ محلّه."
+              : "صور قماشك مرفوعة. «توليد صور من اللون» يعيدها نقشًا مولَّدًا."}
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn btn-ghost btn-sm" data-act="regen">توليد صور من اللون</button>
@@ -625,7 +633,7 @@
           <h3 style="font-size:13.5px">الأصناف</h3>
           ${o.items.map((it) => `
             <div class="line-item">
-              <span class="line-thumb"><img src="${esc(it.image)}" alt=""></span>
+              <span class="line-thumb"><img src="${esc(S.mediaUrl(it.image))}" alt="" loading="lazy"></span>
               <span class="line-info"><b>${esc(it.name)}</b>
                 <span class="sub">${esc(it.sku)} · ${fmtQty(it.qty, it.mode)} × ${Money.fmt(it.unitPrice)}</span></span>
               <span class="line-sum">${Money.fmt(it.lineTotal)}</span>
@@ -829,7 +837,7 @@
               <tr>
                 <td class="wrap-cell">
                   <div style="display:flex;gap:9px;align-items:center">
-                    <img src="${esc(p.images[0])}" alt="" style="width:32px;height:32px;border-radius:7px;object-fit:cover;flex:none">
+                    <img src="${esc(S.mediaUrl(p.images[0]))}" alt="" loading="lazy" style="width:32px;height:32px;border-radius:7px;object-fit:cover;flex:none">
                     <span><b>${esc(p.name)}</b><br><span class="note">${esc(p.sku)}</span></span>
                   </div>
                 </td>
@@ -1101,7 +1109,15 @@
       case "confirmYes": if (confirmBox._yes) confirmBox._yes(); break;
 
       case "regen": collectProduct(); regenImages(); $("#modalBody").innerHTML = productForm(); toast("وُلّدت الصور من اللون", "ok"); break;
-      case "addImg": collectProduct(); pickFile("image/*", 3, (src) => { editing.images.push(src); $("#modalBody").innerHTML = productForm(); }); break;
+      case "addImg":
+        collectProduct();
+        pickFile("image/*", 3, (src) => {
+          // أول صورة حقيقية تُزيح النقش المولَّد، فلا يختلط قماشٌ مصوَّر بنقشٍ مرسوم
+          if (editing.imagesGenerated) { editing.images = []; editing.imagesGenerated = false; }
+          editing.images.push(src);
+          $("#modalBody").innerHTML = productForm();
+        });
+        break;
       case "rmImg": {
         collectProduct();
         const i = Number(el.dataset.i);
@@ -1146,11 +1162,14 @@
 
   document.addEventListener("change", (ev) => {
     const inp = ev.target;
-    if (inp.dataset && inp.dataset.p === "category" && editing) {
-      collectProduct();
-      if (editing.category === "winter") editing.wiqfa = "";
-      regenImages();
-      $("#modalBody").innerHTML = productForm();
-    }
+    if (!editing || !inp.dataset) return;
+    const field = inp.dataset.p;
+    // النقش المولَّد يتبع القسم واللون. الصور المرفوعة لا يمسّها شيء.
+    if (field !== "category" && field !== "color") return;
+    if (field === "color" && !editing.imagesGenerated) return;
+    collectProduct();
+    if (editing.category === "winter") editing.wiqfa = "";
+    if (editing.imagesGenerated) regenImages();
+    $("#modalBody").innerHTML = productForm();
   });
 })();

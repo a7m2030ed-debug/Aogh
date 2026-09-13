@@ -49,7 +49,7 @@
      إن رفع المدير فيديو حقيقيًا للمنتج عُرض بدله. */
   function motionPreview(p) {
     if (p.video && p.video.kind === "file" && p.video.src) {
-      return `<video src="${esc(p.video.src)}" controls playsinline muted loop preload="metadata"></video>`;
+      return `<video src="${esc(S.mediaUrl(p.video.src))}" controls playsinline muted loop preload="metadata"></video>`;
     }
     const uid = "mv" + p.id;
     return `
@@ -68,7 +68,7 @@
           </linearGradient>
         </defs>
         <g filter="url(#${uid})">
-          <image href="${esc(p.images[0])}" x="-40" y="-40" width="680" height="680" preserveAspectRatio="xMidYMid slice"/>
+          <image href="${esc(S.mediaUrl(p.images[0]))}" x="-40" y="-40" width="680" height="680" preserveAspectRatio="xMidYMid slice"/>
         </g>
         <rect width="600" height="600" fill="url(#${uid}s)" opacity=".7">
           <animateTransform attributeName="transform" type="translate" dur="4.5s" values="-600 0;600 0" repeatCount="indefinite"/>
@@ -106,7 +106,7 @@
     return `
       <a class="prod-card" href="#/p/${p.id}">
         <div class="prod-thumb">
-          <img src="${esc(p.images[0])}" alt="${esc(p.name)}" loading="lazy">
+          <img src="${esc(S.mediaUrl(p.images[0]))}" alt="${esc(p.name)}" loading="lazy">
           ${tags.length ? `<div class="thumb-tags">${tags.join("")}</div>` : ""}
         </div>
         <div class="prod-body">
@@ -177,7 +177,7 @@
             ${S.CATEGORY.map((c) => {
               const sample = prods.find((p) => p.category === c.id);
               return `<a class="cat-card" href="#/c/${c.id}">
-                <img src="${esc(sample ? sample.images[0] : "")}" alt="" loading="lazy">
+                <img src="${esc(sample ? S.mediaUrl(sample.images[0]) : "")}" alt="" loading="lazy">
                 <figcaption><b>${esc(c.name)}</b><span>${esc(c.sub)}</span></figcaption>
               </a>`;
             }).join("")}
@@ -414,10 +414,10 @@
       const s = slides[PD.gal] || slides[0];
       main.innerHTML = s.kind === "vid"
         ? motionPreview(p)
-        : `<img src="${esc(s.src)}" alt="${esc(p.name)}">`;
+        : `<img src="${esc(S.mediaUrl(s.src))}" alt="${esc(p.name)}">`;
       strip.innerHTML = slides.map((sl, i) => `
         <button class="gal-thumb${i === PD.gal ? " on" : ""}" data-act="gal" data-i="${i}" aria-label="صورة ${i + 1}">
-          <img src="${esc(sl.kind === "vid" ? p.images[0] : sl.src)}" alt="">
+          <img src="${esc(S.mediaUrl(sl.kind === "vid" ? p.images[0] : sl.src))}" alt="" loading="lazy">
           ${sl.kind === "vid" ? `<span class="play"><svg viewBox="0 0 24 24">${ICONS.play}</svg></span>` : ""}
         </button>`).join("");
     };
@@ -689,7 +689,7 @@
       <div style="margin-bottom:12px">
         ${lines.map((l) => `
           <div class="line-item">
-            <span class="line-thumb"><img src="${esc(l.image)}" alt=""></span>
+            <span class="line-thumb"><img src="${esc(S.mediaUrl(l.image))}" alt="" loading="lazy"></span>
             <span class="line-info">
               <b>${esc(l.name)}</b>
               <span class="sub">${fmtQty(l.qty, l.mode)} × ${Money.fmt(l.unitPrice)}</span>
@@ -804,7 +804,7 @@
           <h3>ما طلبته</h3>
           ${o.items.map((it) => `
             <div class="line-item">
-              <span class="line-thumb"><img src="${esc(it.image)}" alt=""></span>
+              <span class="line-thumb"><img src="${esc(S.mediaUrl(it.image))}" alt="" loading="lazy"></span>
               <span class="line-info"><b>${esc(it.name)}</b><span class="sub">${fmtQty(it.qty, it.mode)} × ${Money.fmt(it.unitPrice)}</span></span>
               <span class="line-sum">${Money.fmt(it.lineTotal)}</span>
             </div>`).join("")}
@@ -1052,7 +1052,7 @@
     const t = Cart.totals(null);
     body.innerHTML = lines.map((l) => `
       <div class="line-item">
-        <span class="line-thumb"><img src="${esc(l.image)}" alt=""></span>
+        <span class="line-thumb"><img src="${esc(S.mediaUrl(l.image))}" alt="" loading="lazy"></span>
         <span class="line-info">
           <b>${esc(l.name)}</b>
           <span class="sub">${l.mode === "meter" ? "بيع بالمتر" : "طاقة كاملة"} · ${Money.fmt(l.unitPrice)}</span>
