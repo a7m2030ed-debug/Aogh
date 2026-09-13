@@ -353,6 +353,42 @@ async function main() {
       assert.ok(cat.json.products.some((p) => p.id === created.id), "ظهر في الكتالوج");
     });
 
+    await test("قماش بنقش مولَّد يُدخَل الآن وتُرفع صورته لاحقًا", async () => {
+      // مسار من يريد إدخال أقمشته قبل تصويرها: اللوحة تولّد نقشًا من اللون،
+      // ويُعلَّم القماش ليُعرف لاحقًا أنه ينتظر صورة حقيقية.
+      const base = {
+        name: "قماش بلا تصوير", sku: "T-GEN-1", category: "summer", wiqfa: "nisf",
+        color: "#3b2a1a", colorName: "بنّي", blurb: "أُدخل قبل التصوير",
+        specs: { origin: "اليابان", composition: "100٪ بوليستر", weight: "180 غم/م²", width: 150 },
+        meter: { enabled: true, price: 210, stock: 40, low: 10 },
+        active: true,
+      };
+      const gen = await api("POST", "/api/admin/products", Object.assign({}, base, {
+        images: ["data:image/svg+xml;charset=utf-8,%3Csvg%3E%3C/svg%3E"],
+        imagesGenerated: true,
+      }));
+      assert.strictEqual(gen.status, 201, gen.text);
+      assert.strictEqual(gen.json.product.imagesGenerated, true, "وُسم بأنه نقش مولَّد");
+
+      // العلامة للوحة وحدها: الزبون لا يعنيه أن النقش مولَّد
+      const pub = (await api("GET", "/api/catalog", undefined, { noCookie: true }))
+        .json.products.find((p) => p.id === gen.json.product.id);
+      assert.ok(pub, "معروض في المتجر كأي قماش");
+      assert.strictEqual(pub.imagesGenerated, undefined, "العلامة لا تخرج للزبون");
+
+      // رفع صورة حقيقية لاحقًا يرفع العلامة
+      const real = await api("PUT", `/api/admin/products/${gen.json.product.id}`,
+        Object.assign({}, gen.json.product, {
+          images: ["data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="],
+          imagesGenerated: false,
+        }));
+      assert.strictEqual(real.status, 200, real.text);
+      assert.strictEqual(real.json.product.imagesGenerated, false, "زالت العلامة");
+      assert.ok(/^uploads\/.+\.png$/.test(real.json.product.images[0]), "الصورة الحقيقية ملف");
+
+      await api("DELETE", `/api/admin/products/${gen.json.product.id}`);
+    });
+
     await test("إخفاء القماش يُخرجه من المتجر ويبقيه في اللوحة", async () => {
       await api("PUT", `/api/admin/products/${created.id}`, Object.assign({}, created, { active: false }));
       const cat = await api("GET", "/api/catalog", undefined, { noCookie: true });

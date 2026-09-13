@@ -80,11 +80,17 @@ async function main() {
          "احذفه من اللوحة وأدخل أقمشتك الحقيقية قبل الإطلاق.");
   }
 
-  const generated = products.filter((p) =>
-    (p.images || []).every((s) => typeof s === "string" && s.startsWith("data:image/svg+xml")));
+  /* العلامة تأتي من اللوحة. وللأقمشة التي أُدخلت قبلها: النقش المولَّد
+     SVG دائمًا، بقي data URI أو صار ملفًا بعد الترحيل. */
+  const isGeneratedArt = (p) =>
+    p.imagesGenerated === true ||
+    (p.imagesGenerated === undefined &&
+      (p.images || []).length > 0 &&
+      (p.images || []).every((s) => typeof s === "string" && /^data:image\/svg\+xml|\.svg$/i.test(s)));
+  const generated = products.filter(isGeneratedArt);
   if (generated.length) {
-    warn(`${generated.length} قماشًا بصور مولَّدة لا صور حقيقية.`,
-         "ارفع صور المنتجات من اللوحة: لا يُباع قماش بصورة مرسومة.");
+    warn(`${generated.length} قماشًا بنقش مولَّد لا بصورة القماش نفسه.`,
+         'لا يمنع الإطلاق. ارفع صورها من اللوحة متى صوّرتها — تجدها بعلامة «بلا صورة» في قائمة الأقمشة.');
   }
 
   const noStock = products.filter((p) =>

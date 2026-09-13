@@ -247,6 +247,7 @@
         colorName: o.colorName,
         blurb: o.blurb,
         images: imgs,
+        imagesGenerated: true, // نقش مولَّد: الكتالوج المبدئي بلا صور قماش حقيقية
         video: o.video !== false ? { kind: "generated", color: o.color } : null,
         specs: {
           origin: o.origin,
