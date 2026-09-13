@@ -50,19 +50,104 @@
     route();
   }
 
-  $("#gateBtn").addEventListener("click", tryPass);
-  $("#gatePass").addEventListener("keydown", (e) => { if (e.key === "Enter") tryPass(); });
-  function tryPass() {
-    const v = $("#gatePass").value.trim();
-    if (v === String(DB.settings().adminPass)) {
-      try { sessionStorage.setItem(SESSION, "1"); } catch (e) { /* وضع خاص */ }
-      unlock();
-    } else {
-      $("#gateErr").hidden = false;
+  function gateError(msg) {
+    const el = $("#gateErr");
+    el.textContent = msg;
+    el.hidden = false;
+  }
+
+  $("#gateBtn").addEventListener("click", tryLogin);
+  $("#gatePass").addEventListener("keydown", (e) => { if (e.key === "Enter") tryLogin(); });
+  const userField = $("#gateUser");
+  if (userField) userField.addEventListener("keydown", (e) => { if (e.key === "Enter") $("#gatePass").focus(); });
+
+  async function tryLogin() {
+    const btn = $("#gateBtn");
+    $("#gateErr").hidden = true;
+    btn.disabled = true;
+    const prev = btn.textContent;
+    btn.textContent = "جارٍ الدخول…";
+    try {
+      if (S.isLive()) {
+        const username = (($("#gateUser") || {}).value || "").trim();
+        const password = $("#gatePass").value;
+        if (!username || !password) throw new Error("أدخل اسم المستخدم وكلمة المرور");
+        const r = await window.NaseejApi.login(username, password);
+        S.Mode.user = r.user;
+        await S.loadAdmin();
+        unlock();
+        if (r.user.mustChangePassword) promptPasswordChange();
+      } else {
+        if ($("#gatePass").value.trim() !== String(DB.settings().adminPass)) throw new Error("رمز غير صحيح");
+        try { sessionStorage.setItem(SESSION, "1"); } catch (e) { /* وضع خاص */ }
+        unlock();
+      }
+    } catch (e) {
+      gateError(e.message || "تعذّر الدخول");
       $("#gatePass").value = "";
+    } finally {
+      btn.disabled = false;
+      btn.textContent = prev;
     }
   }
-  try { if (sessionStorage.getItem(SESSION) === "1") unlock(); } catch (e) { /* تجاهل */ }
+
+  async function logout() {
+    try { if (S.isLive()) await window.NaseejApi.logout(); } catch (e) { /* تجاهل */ }
+    try { sessionStorage.removeItem(SESSION); } catch (e) { /* تجاهل */ }
+    location.reload();
+  }
+
+  function promptPasswordChange() {
+    modal("غيّر كلمة المرور", `
+      <div class="hint" style="margin-bottom:12px">${icon("warn")}
+        <span>هذه كلمة المرور المؤقتة التي طُبعت في الطرفية عند أول تشغيل. غيّرها الآن.</span></div>
+      <div class="form-grid">
+        <div class="field"><label>كلمة المرور الحالية</label><input type="password" id="pwCur" autocomplete="current-password"></div>
+        <div class="field"><label>كلمة المرور الجديدة</label><input type="password" id="pwNew" autocomplete="new-password">
+          <div class="help">عشرة محارف فأكثر</div></div>
+        <div class="field"><label>تأكيد الجديدة</label><input type="password" id="pwNew2" autocomplete="new-password"></div>
+      </div>`, [{ label: "حفظ", cls: "btn-gold", act: "savePassword" }]);
+  }
+
+  async function savePassword() {
+    const cur = $("#pwCur").value, a = $("#pwNew").value, b = $("#pwNew2").value;
+    if (a !== b) return toast("الكلمتان غير متطابقتين", "bad");
+    if (a.length < 10) return toast("كلمة المرور أقصر من عشرة محارف", "bad");
+    try {
+      await window.NaseejApi.changePassword(cur, a);
+      closeModal();
+      toast("تغيّرت كلمة المرور. سجّل الدخول من جديد.", "ok");
+      setTimeout(() => location.reload(), 1200);
+    } catch (e) {
+      toast(e.message || "تعذّر التغيير", "bad");
+    }
+  }
+
+  /* إقلاع: نكتشف الوضع، ثم نستعيد جلسة قائمة إن وُجدت */
+  (async function initGate() {
+    const r = await S.boot();
+    const live = r.mode === "live";
+    const hint = $("#gateHint");
+    const userWrap = $("#gateUserWrap");
+
+    if (live) {
+      if (userWrap) userWrap.hidden = false;
+      if (hint) hint.textContent = "الدخول بحساب المدير على الخادم.";
+      $("#gatePass").placeholder = "كلمة المرور";
+      try {
+        await window.NaseejApi.me();
+        await S.loadAdmin();
+        unlock();
+        return;
+      } catch (e) { /* لا جلسة قائمة */ }
+    } else {
+      if (hint) {
+        hint.innerHTML = "نسخة عرض بلا خادم: البيانات في هذا المتصفح وحده. الرمز الافتراضي <b>1234</b>. " +
+                         "شغّل <code>fabric/server</code> لتصير لوحة حقيقية.";
+      }
+      try { if (sessionStorage.getItem(SESSION) === "1") return unlock(); } catch (e) { /* تجاهل */ }
+    }
+  })();
 
   /* ------------------------------------------------------------ التبويب */
 
@@ -416,7 +501,7 @@
     return editing;
   }
 
-  function saveProduct() {
+  async function saveProduct() {
     const p = collectProduct();
     if (!p.name.trim()) return toast("اكتب اسم القماش", "bad");
     if (!p.sku.trim()) return toast("اكتب رمز القماش (SKU)", "bad");
@@ -428,10 +513,17 @@
     if (dup) return toast("الرمز «" + p.sku + "» مستخدم في قماش آخر", "bad");
     if (!p.wiqfa) p.wiqfa = null;
 
-    DB.saveProduct(p);
-    closeModal();
-    toast("تم حفظ «" + p.name + "»", "ok");
-    route();
+    const btn = $("#modalFoot .btn-gold");
+    if (btn) { btn.disabled = true; btn.textContent = "جارٍ الحفظ…"; }
+    try {
+      await DB.saveProduct(p);
+      closeModal();
+      toast("تم حفظ «" + p.name + "»", "ok");
+      route();
+    } catch (e) {
+      if (btn) { btn.disabled = false; btn.textContent = "حفظ"; }
+      toast(e.message || "تعذّر الحفظ", "bad");
+    }
   }
 
   function pickFile(accept, maxMB, cb) {
@@ -523,7 +615,10 @@
             ${o.awb
               ? `<button class="btn btn-ghost btn-sm" data-act="printAwb" data-id="${o.id}">${icon("print")} طباعة البوليصة</button>`
               : `<button class="btn btn-ghost btn-sm" data-act="makeAwb" data-id="${o.id}">${icon("truck")} إصدار بوليصة الشحن</button>`}
+            ${o.invoiceNumber ? `<button class="btn btn-ghost btn-sm" data-act="invoice" data-id="${o.id}">${icon("money")} الفاتورة الضريبية</button>` : ""}
+            ${o.status !== "cancelled" ? `<button class="btn btn-quiet btn-sm" data-act="cancelOrder" data-id="${o.id}" style="color:var(--bad)">إلغاء الطلب</button>` : ""}
           </div>
+          ${o.needsAttention ? `<div class="hint" style="background:var(--bad-soft);border-color:#eecac6;color:#7d2b24;margin-top:10px">${icon("warn")}<span>${esc(o.needsAttention)}</span></div>` : ""}
         </div>
 
         <div class="panel" style="padding:12px">
@@ -571,32 +666,85 @@
       </div>`, [{ label: "إغلاق", cls: "btn-ghost", act: "closeModal" }]);
   }
 
-  function setStatus(id) {
+  async function setStatus(id) {
     const o = DB.order(id);
     const v = $("#oStatus").value;
     if (!o || o.status === v) return closeModal();
-    o.status = v;
-    o.timeline = o.timeline || [];
-    o.timeline.push({ at: Date.now(), status: v, note: "تغيّرت الحالة إلى: " + S.statusOf(v).name });
-    if (v === "delivered" && o.payment.method === "cod") o.payment.status = "paid";
-    DB.saveOrder(o);
-    toast("تم تحديث حالة " + o.number, "ok");
-    openOrder(id);
-    route();
+    try {
+      await DB.patchOrder(id, { status: v });
+      toast("تم تحديث حالة " + o.number, "ok");
+      openOrder(id);
+      route();
+    } catch (e) {
+      toast(e.message || "تعذّر التحديث", "bad");
+    }
   }
 
   async function makeAwb(id) {
-    const o = DB.order(id);
-    if (!o) return;
     toast("جارٍ إصدار البوليصة…");
-    const awb = await S.Shipping.createWaybill(o);
-    o.awb = awb;
-    if (o.status === "new") o.status = "processing";
-    o.timeline = o.timeline || [];
-    o.timeline.push({ at: Date.now(), status: o.status, note: "صدرت بوليصة الشحن " + awb });
-    DB.saveOrder(o);
-    toast("صدرت البوليصة " + awb, "ok");
-    openOrder(id);
+    try {
+      const r = await DB.issueWaybill(id);
+      toast(r.official ? "صدرت البوليصة " + r.awb : "صدر رقم داخلي " + r.awb, "ok");
+      openOrder(id);
+      route();
+    } catch (e) {
+      toast(e.message || "تعذّر إصدار البوليصة", "bad");
+    }
+  }
+
+  async function cancelOrder(id) {
+    const o = DB.order(id);
+    confirmBox("إلغاء الطلب", `سيُلغى الطلب ${o.number} وتُعاد كميته إلى المخزون.`, async () => {
+      try {
+        const r = await DB.cancelOrder(id);
+        closeModal();
+        toast(r && r.stockRestored ? "أُلغي الطلب وأُعيدت الكمية" : "أُلغي الطلب", "ok");
+        route();
+      } catch (e) {
+        toast(e.message || "تعذّر الإلغاء", "bad");
+      }
+    });
+  }
+
+  async function showInvoice(id) {
+    let inv = null;
+    try { inv = await DB.invoice(id); } catch (e) { return toast(e.message, "bad"); }
+    if (!inv) return toast("الفاتورة الضريبية تصدر من الخادم بعد تأكيد الدفع", "bad");
+    modal("الفاتورة " + inv.number, invoiceHtml(inv), [
+      { label: "طباعة", cls: "btn-gold", act: "printInvoice" },
+      { label: "إغلاق", cls: "btn-ghost", act: "closeModal" },
+    ]);
+    modal._invoice = inv;
+  }
+
+  function invoiceHtml(inv) {
+    return `
+      ${inv.warnings && inv.warnings.length ? inv.warnings.map((w) =>
+        `<div class="hint" style="background:var(--warn-soft);border-color:#e8d3a8;color:#7a5214;margin-bottom:10px">${icon("warn")}<span>${esc(w)}</span></div>`).join("") : ""}
+      <div class="panel" style="padding:12px">
+        <table class="spec-table"><tbody>
+          <tr><th>رقم الفاتورة</th><td>${esc(inv.number)}</td></tr>
+          <tr><th>الطلب</th><td>${esc(inv.orderNumber)}</td></tr>
+          <tr><th>التاريخ</th><td>${fmtDate(inv.issuedAt)}</td></tr>
+          <tr><th>البائع</th><td>${esc(inv.seller.name || "—")}</td></tr>
+          <tr><th>الرقم الضريبي</th><td>${esc(inv.seller.vatNumber || "—")}</td></tr>
+          <tr><th>المشتري</th><td>${esc(inv.buyer.name)}</td></tr>
+        </tbody></table>
+      </div>
+      <div class="panel" style="padding:12px">
+        <table class="spec-table"><tbody>
+          ${inv.lines.map((l) => `<tr><th style="font-weight:400">${esc(l.name)} · ${S.Money.num(l.qty)} ${esc(l.unit)}</th><td>${Money.fmt(l.total)}</td></tr>`).join("")}
+          <tr><th>الشحن</th><td>${Money.fmt(inv.shipping)}</td></tr>
+          <tr><th>الصافي قبل الضريبة</th><td>${Money.fmt(inv.totals.net)}</td></tr>
+          <tr><th>ضريبة القيمة المضافة</th><td>${Money.fmt(inv.totals.vat)}</td></tr>
+          <tr><th>الإجمالي</th><td><b>${Money.fmt(inv.totals.grand)}</b></td></tr>
+        </tbody></table>
+      </div>
+      <div class="panel" style="padding:12px">
+        <h3 style="font-size:13px">حمولة رمز الاستجابة السريعة</h3>
+        <p class="note" style="margin:0 0 8px">مُرمّزة بصيغة TLV/Base64 كما تشترط الهيئة. تحويلها إلى صورة رمز يتم عند اكتمال ربطك بمنصة فاتورة.</p>
+        <code style="display:block;word-break:break-all;font-size:11px;background:var(--sand-2);padding:9px;border-radius:8px">${esc(inv.qr)}</code>
+      </div>`;
   }
 
   function printAwb(id) {
@@ -699,15 +847,23 @@
 
     $$(".cell").forEach((inp) => {
       inp.style.cssText = "width:96px;padding:6px 8px;border:1px solid var(--line-2);border-radius:8px;background:var(--paper)";
-      inp.addEventListener("change", () => {
+      const original = inp.value;
+      inp.addEventListener("change", async () => {
         const p = DB.product(inp.dataset.id);
         if (!p) return;
-        const [grp, key] = inp.dataset.f.split(".");
-        p[grp][key] = Number(inp.value) || 0;
-        DB.saveProduct(p);
-        inp.style.borderColor = "var(--ok)";
-        setTimeout(() => (inp.style.borderColor = "var(--line-2)"), 900);
-        toast("حُفظ: " + p.name, "ok");
+        inp.disabled = true;
+        try {
+          await DB.patchStock(inp.dataset.id, { [inp.dataset.f]: Number(inp.value) || 0 });
+          inp.style.borderColor = "var(--ok)";
+          setTimeout(() => (inp.style.borderColor = "var(--line-2)"), 900);
+          toast("حُفظ: " + p.name, "ok");
+        } catch (e) {
+          inp.value = original;
+          inp.style.borderColor = "var(--bad)";
+          toast(e.message || "تعذّر الحفظ", "bad");
+        } finally {
+          inp.disabled = false;
+        }
       });
     });
   }
@@ -809,40 +965,46 @@
       </div>`;
   }
 
-  function saveSettings() {
+  async function saveSettings() {
     const patch = {};
     $$("[data-s]").forEach((inp) => {
       const k = inp.dataset.s;
-      patch[k] = inp.type === "number" ? Number(inp.value) || 0 : inp.value;
+      if (inp.type === "checkbox") patch[k] = inp.checked;
+      else patch[k] = inp.type === "number" ? Number(inp.value) || 0 : inp.value;
     });
-    DB.saveSettings(patch);
-    toast("حُفظت الإعدادات", "ok");
-    route();
+    try {
+      await DB.saveSettings(patch);
+      toast("حُفظت الإعدادات", "ok");
+      route();
+    } catch (e) {
+      toast(e.message || "تعذّر الحفظ", "bad");
+    }
   }
 
-  function saveCarriers() {
+  async function saveCarriers() {
     const carriers = JSON.parse(JSON.stringify(DB.settings().carriers));
     $$("[data-c]").forEach((inp) => {
       const [i, k] = inp.dataset.c.split(".");
       carriers[i][k] = inp.type === "checkbox" ? inp.checked : inp.type === "number" ? Number(inp.value) || 0 : inp.value;
     });
-    DB.saveSettings({ carriers: carriers });
-    toast("حُفظت شركات الشحن", "ok");
+    try { await DB.saveSettings({ carriers: carriers }); toast("حُفظت شركات الشحن", "ok"); }
+    catch (e) { toast(e.message || "تعذّر الحفظ", "bad"); }
   }
 
-  function saveGateways() {
+  async function saveGateways() {
     const gateways = JSON.parse(JSON.stringify(DB.settings().gateways));
     $$("[data-g]").forEach((inp) => { gateways[inp.dataset.g].active = inp.checked; });
     const prov = $("[data-s2='provider']");
     const patch = { gateways: gateways };
     if (prov) patch.provider = prov.value;
     if (!gateways.some((g) => g.active)) return toast("أبقِ وسيلة دفع واحدة على الأقل", "bad");
-    DB.saveSettings(patch);
-    toast("حُفظت وسائل الدفع", "ok");
+    try { await DB.saveSettings(patch); toast("حُفظت وسائل الدفع", "ok"); }
+    catch (e) { toast(e.message || "تعذّر الحفظ", "bad"); }
   }
 
-  function exportData() {
-    const blob = new Blob([JSON.stringify(DB.exportAll(), null, 2)], { type: "application/json" });
+  async function exportData() {
+    const snap = await DB.exportAll();
+    const blob = new Blob([JSON.stringify(snap, null, 2)], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = "naseej-backup-" + new Date().toISOString().slice(0, 10) + ".json";
@@ -859,12 +1021,12 @@
       const f = inp.files[0];
       if (!f) return;
       const r = new FileReader();
-      r.onload = () => {
+      r.onload = async () => {
         try {
-          DB.importAll(JSON.parse(r.result));
+          await DB.importAll(JSON.parse(r.result));
           toast("استُوردت النسخة", "ok");
           route();
-        } catch (e) { toast("ملف غير صالح: " + e.message, "bad"); }
+        } catch (e) { toast("تعذّر الاستيراد: " + (e.message || ""), "bad"); }
       };
       r.readAsText(f);
     });
@@ -914,11 +1076,13 @@
       case "saveP": saveProduct(); break;
       case "delP": {
         const p = DB.product(el.dataset.id);
-        confirmBox("حذف قماش", "سيُحذف «" + p.name + "» نهائيًا من الكتالوج. الطلبات السابقة تحتفظ ببياناته.", () => {
-          DB.deleteProduct(p.id);
-          closeModal();
-          toast("حُذف «" + p.name + "»", "ok");
-          route();
+        confirmBox("حذف قماش", "سيُحذف «" + p.name + "» نهائيًا من الكتالوج. الطلبات السابقة تحتفظ ببياناته.", async () => {
+          try {
+            await DB.deleteProduct(p.id);
+            closeModal();
+            toast("حُذف «" + p.name + "»", "ok");
+            route();
+          } catch (e) { toast(e.message || "تعذّر الحذف", "bad"); }
         });
         break;
       }
@@ -948,14 +1112,22 @@
       case "export": exportData(); break;
       case "import": importData(); break;
       case "reset":
-        confirmBox("تصفير البيانات", "ستُحذف كل المنتجات والطلبات والإعدادات من هذا المتصفح ويعود الكتالوج التجريبي. صدّر نسخة أولًا إن أردت الاحتفاظ بها.", () => {
-          DB.resetAll();
-          closeModal();
-          toast("أُعيدت البيانات إلى الأصل", "ok");
-          route();
+        confirmBox("تصفير البيانات", "ستُحذف كل المنتجات والطلبات والإعدادات من هذا المتصفح ويعود الكتالوج التجريبي. صدّر نسخة أولًا إن أردت الاحتفاظ بها.", async () => {
+          try {
+            await DB.resetAll();
+            closeModal();
+            toast("أُعيدت البيانات إلى الأصل", "ok");
+            route();
+          } catch (e) { toast(e.message, "bad"); }
         });
         break;
 
+      case "cancelOrder": cancelOrder(el.dataset.id); break;
+      case "invoice": showInvoice(el.dataset.id); break;
+      case "printInvoice": window.print(); break;
+      case "savePassword": savePassword(); break;
+      case "changePassword": promptPasswordChange(); break;
+      case "logout": logout(); break;
       case "closeModal": closeModal(); break;
     }
   });

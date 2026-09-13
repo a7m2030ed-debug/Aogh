@@ -1,9 +1,15 @@
 /* ======================================================================
    متجر الأقمشة الرجالية — طبقة البيانات
    ----------------------------------------------------------------------
-   كل شيء هنا يعمل داخل المتصفح على localStorage. الواجهة كلها تمرّ عبر
-   الدوال في آخر الملف (DB / Cart / Money)، فاستبدال التخزين بواجهة خادم
-   حقيقية لاحقًا لا يمسّ صفحات المتجر: تُبدَّل هذه الطبقة وحدها.
+   طبقة واحدة بوضعين، تختار بينهما تلقائيًا عند الإقلاع:
+
+     · وضع الخادم — إن ردّ /api/catalog. القراءة والكتابة على قاعدة
+       بيانات مشتركة، والطلبات تصل صاحب المتجر، والمخزون واحد لكل
+       الأجهزة، والأسعار والضريبة تُحتسب على الخادم لا هنا.
+     · وضع العرض — إن لم يردّ. كل شيء في متصفح الزائر وحده والدفع
+       محاكاة. صالح للمعاينة على استضافة ثابتة، لا للبيع.
+
+   شاشات المتجر واللوحة لا تعرف أيّ وضع يعمل: كلها تنادي DB و Cart.
    ====================================================================== */
 
 (function (global) {
@@ -478,16 +484,85 @@
 
   let _products = null, _orders = null, _settings = null;
 
+  /* --------------------------------------------------------- الوضع
+
+     وضع الخادم: البيانات من قاعدة بيانات مشتركة، والكتابة تمرّ على
+     الواجهة البرمجية. وضع العرض: كل شيء في متصفح الزائر وحده.
+     الاختيار تلقائي عند الإقلاع، فلا تعرف بقية الشاشات أيّهما يعمل. */
+
+  const Mode = { live: false, user: null, health: null };
+  const api = () => global.NaseejApi;
+
+  /* في وضع العرض تُعيد وعدًا محلولًا، فتتشابه نداءات الشاشتين */
+  const local = (v) => Promise.resolve(v);
+
+  async function boot() {
+    const A = api();
+    if (!A) { Mode.live = false; DB.products(); DB.settings(); return { mode: "demo" }; }
+
+    const data = await A.probe();
+    if (!data) {
+      Mode.live = false;
+      DB.products();
+      DB.settings();
+      return { mode: "demo" };
+    }
+    Mode.live = true;
+    _products = data.products;
+    _settings = Object.assign({}, DEFAULT_SETTINGS, data.settings);
+    _orders = [];
+    emit();
+    return { mode: "live" };
+  }
+
+  /* اللوحة: تحمّل الكتالوج كاملًا (ومنه المخفي) والطلبات */
+  async function loadAdmin() {
+    if (!Mode.live) { DB.products(); DB.orders(); DB.settings(); return { mode: "demo" }; }
+    const data = await api().adminData();
+    _products = data.products;
+    _orders = data.orders;
+    _settings = Object.assign({}, DEFAULT_SETTINGS, data.settings);
+    Mode.health = data.health || null;
+    emit();
+    return { mode: "live", health: Mode.health };
+  }
+
+  /* بعد إجراء على الخادم: نعيد قراءة الطلب من مصدره لا نخمّن نتيجته */
+  async function refreshAdminOrder(id) {
+    if (!Mode.live) return null;
+    const data = await api().adminData();
+    _products = data.products;
+    _orders = data.orders;
+    Mode.health = data.health || Mode.health;
+    emit();
+    return (_orders || []).find((o) => o.id === id) || null;
+  }
+
+  async function refreshCatalog() {
+    if (!Mode.live) return;
+    const data = await api().catalog();
+    _products = data.products;
+    _settings = Object.assign({}, DEFAULT_SETTINGS, data.settings);
+    emit();
+  }
+
   const DB = {
     settings() {
       if (!_settings) _settings = Object.assign({}, DEFAULT_SETTINGS, read(KEY.settings, {}));
       return _settings;
     },
     saveSettings(patch) {
+      if (Mode.live) {
+        return api().saveSettings(patch).then((r) => {
+          _settings = Object.assign({}, DEFAULT_SETTINGS, r.settings);
+          emit();
+          return _settings;
+        });
+      }
       _settings = Object.assign({}, DB.settings(), patch);
       write(KEY.settings, _settings);
       emit();
-      return _settings;
+      return local(_settings);
     },
 
     products() {
@@ -507,6 +582,17 @@
       return DB.products().find((p) => p.id === id) || null;
     },
     saveProduct(p) {
+      if (Mode.live) {
+        const exists = DB.products().some((x) => x.id === p.id);
+        const call = exists ? api().updateProduct(p.id, p) : api().createProduct(p);
+        return call.then((r) => {
+          const list = DB.products();
+          const i = list.findIndex((x) => x.id === r.product.id);
+          if (i >= 0) list[i] = r.product; else list.unshift(r.product);
+          emit();
+          return r.product;
+        });
+      }
       const list = DB.products();
       const i = list.findIndex((x) => x.id === p.id);
       if (i >= 0) list[i] = p;
@@ -517,12 +603,42 @@
       }
       write(KEY.products, list);
       emit();
-      return p;
+      return local(p);
     },
+
+    /* تعديل سعر أو مخزون واحد من جدول اللوحة */
+    patchStock(id, fields) {
+      if (Mode.live) {
+        return api().patchStock(id, fields).then((r) => {
+          const list = DB.products();
+          const i = list.findIndex((x) => x.id === id);
+          if (i >= 0) list[i] = r.product;
+          emit();
+          return r.product;
+        });
+      }
+      const p = DB.product(id);
+      if (!p) return local(null);
+      for (const [k, v] of Object.entries(fields)) {
+        const [grp, key] = k.split(".");
+        p[grp][key] = Number(v) || 0;
+      }
+      write(KEY.products, DB.products());
+      emit();
+      return local(p);
+    },
+
     deleteProduct(id) {
+      if (Mode.live) {
+        return api().deleteProduct(id).then(() => {
+          _products = DB.products().filter((p) => p.id !== id);
+          emit();
+        });
+      }
       _products = DB.products().filter((p) => p.id !== id);
       write(KEY.products, _products);
       emit();
+      return local();
     },
 
     orders() {
@@ -543,9 +659,80 @@
       const i = list.findIndex((x) => x.id === o.id);
       if (i >= 0) list[i] = o;
       else list.unshift(o);
-      write(KEY.orders, list);
+      if (!Mode.live) write(KEY.orders, list);
       emit();
-      return o;
+      return local(o);
+    },
+
+    /* تعديل الطلب على الخادم: الحالة أو رقم البوليصة */
+    patchOrder(id, fields) {
+      if (Mode.live) {
+        return api().patchOrder(id, fields).then((r) => {
+          const list = DB.orders();
+          const i = list.findIndex((x) => x.id === id);
+          if (i >= 0) list[i] = r.order;
+          emit();
+          return r.order;
+        });
+      }
+      const o = DB.order(id);
+      if (!o) return local(null);
+      if (fields.status !== undefined && fields.status !== o.status) {
+        o.status = fields.status;
+        o.timeline = o.timeline || [];
+        o.timeline.push({ at: Date.now(), status: o.status, note: "تغيّرت الحالة" });
+        if (o.status === "delivered" && o.payment.method === "cod") o.payment.status = "paid";
+      }
+      if (fields.awb !== undefined) o.awb = fields.awb;
+      write(KEY.orders, DB.orders());
+      emit();
+      return local(o);
+    },
+
+    cancelOrder(id) {
+      if (Mode.live) {
+        return api().cancelOrder(id).then((r) => refreshAdminOrder(id).then(() => r));
+      }
+      const o = DB.order(id);
+      if (!o) return local(null);
+      if (o.status !== "cancelled") {
+        const list = DB.products();
+        o.items.forEach((it) => {
+          const p = list.find((x) => x.id === it.productId);
+          if (!p) return;
+          if (it.mode === "meter") p.meter.stock = round2(p.meter.stock + it.qty);
+          else p.bolt.stock += it.qty;
+        });
+        write(KEY.products, list);
+        o.status = "cancelled";
+        o.timeline = o.timeline || [];
+        o.timeline.push({ at: Date.now(), status: "cancelled", note: "أُلغي الطلب وأُعيدت الكمية" });
+        write(KEY.orders, DB.orders());
+      }
+      emit();
+      return local({ ok: true, stockRestored: true });
+    },
+
+    issueWaybill(id) {
+      if (Mode.live) {
+        return api().waybill(id).then((r) => refreshAdminOrder(id).then(() => r));
+      }
+      const o = DB.order(id);
+      if (!o) return local(null);
+      return Shipping.createWaybill(o).then((awb) => {
+        o.awb = awb;
+        if (o.status === "new") o.status = "processing";
+        o.timeline = o.timeline || [];
+        o.timeline.push({ at: Date.now(), status: o.status, note: "صدرت بوليصة " + awb });
+        write(KEY.orders, DB.orders());
+        emit();
+        return { awb: awb, official: false, note: "رقم داخلي — الربط بشركة الشحن يُصدر بوليصة رسمية." };
+      });
+    },
+
+    invoice(id) {
+      if (Mode.live) return api().invoice(id).then((r) => r.invoice);
+      return local(null);
     },
     nextOrderNumber() {
       const seq = (read(KEY.seq, 2456) | 0) + 1;
@@ -579,20 +766,25 @@
     },
 
     exportAll() {
-      return { v: 1, exportedAt: new Date().toISOString(), products: DB.products(), orders: DB.orders(), settings: DB.settings() };
+      if (Mode.live) return api().exportAll();
+      return local({ v: 1, exportedAt: new Date().toISOString(), products: DB.products(), orders: DB.orders(), settings: DB.settings() });
     },
     importAll(obj) {
-      if (!obj || !Array.isArray(obj.products)) throw new Error("ملف غير صالح");
+      if (!obj || !Array.isArray(obj.products)) return Promise.reject(new Error("ملف غير صالح"));
+      if (Mode.live) return api().importAll(obj).then(() => loadAdmin());
       _products = obj.products;
       write(KEY.products, _products);
       if (Array.isArray(obj.orders)) { _orders = obj.orders; write(KEY.orders, _orders); }
       if (obj.settings) { _settings = Object.assign({}, DEFAULT_SETTINGS, obj.settings); write(KEY.settings, _settings); }
       emit();
+      return local();
     },
     resetAll() {
+      if (Mode.live) return Promise.reject(new Error("تصفير البيانات غير متاح على الخادم. استعمل نسخة احتياطية."));
       [KEY.products, KEY.orders, KEY.settings, KEY.cart, KEY.seq].forEach((k) => localStorage.removeItem(k));
       _products = _orders = _settings = null;
       emit();
+      return local();
     },
   };
 
@@ -704,6 +896,25 @@
     const bad = lines.find((l) => l.overStock || l.qty <= 0);
     if (bad) throw new Error("الكمية المطلوبة من «" + bad.name + "» تتجاوز المتاح");
 
+    /* وضع الخادم: لا نرسل سعرًا ولا إجماليًا — الخادم يحسبهما من
+       الكتالوج ويحجز الكمية ويعيد رابط بوابة الدفع. */
+    if (Mode.live) {
+      const res = await api().placeOrder({
+        items: Cart.items().map((i) => ({ productId: i.productId, mode: i.mode, qty: i.qty })),
+        customer: payload.customer,
+        shipping: payload.shipping,
+        paymentMethod: payload.paymentMethod,
+      });
+      Cart.clear();
+      refreshCatalog().catch(() => {});
+      if (res.redirectUrl) {
+        // الانتقال إلى صفحة البوابة الآمنة
+        location.href = res.redirectUrl;
+        return Object.assign({}, res.order, { _redirecting: true });
+      }
+      return res.order;
+    }
+
     const t = Cart.totals(payload.shipping.carrier);
     const order = {
       id: "o" + Date.now().toString(36),
@@ -793,6 +1004,8 @@
 
   global.Shop = {
     KEY, WIQFA, CATEGORY, SAUDI_CITIES, ORDER_STATUS, DEFAULT_SETTINGS,
+    Mode, boot, loadAdmin, refreshCatalog, refreshAdminOrder,
+    isLive: () => Mode.live,
     DB, Cart, Money, Payments, Shipping, placeOrder,
     fabricArt, bannerArt, wiqfaGlyph, payLogo, shade,
     fmtQty, fmtDate, fmtDateShort, round2, esc, sleep,

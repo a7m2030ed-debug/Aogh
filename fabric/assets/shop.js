@@ -759,10 +759,12 @@
         shipping: Object.assign({}, CO.shipping),
         paymentMethod: CO.paymentMethod,
       });
+      if (order._redirecting) return; // ننتقل إلى صفحة البوابة الآمنة
       CO.busy = false;
       CO.step = 1;
       CO.customer = { name: "", phone: "", email: "" };
       CO.shipping = { city: "", district: "", address: "", notes: "", carrier: "" };
+      lastOrder = order;
       location.hash = "#/order/" + order.id;
     } catch (e) {
       CO.busy = false;
@@ -774,7 +776,14 @@
   /* ---------------------------------------------------- الصفحة: تأكيد الطلب */
 
   function viewOrder(id) {
-    const o = DB.order(id);
+    let o = DB.order(id) || (lastOrder && lastOrder.id === id ? lastOrder : null);
+    if (!o && S.isLive()) {
+      // رجوع من بوابة الدفع: نقرأ الطلب من الخادم ثم نعيد الرسم
+      view.innerHTML = `<div class="wrap"><div class="empty" style="padding-top:50px">
+        <div class="note">جارٍ تأكيد الطلب…</div></div></div>`;
+      pollOrder(id);
+      return;
+    }
     if (!o) return viewNotFound();
     const st = DB.settings();
     const carrier = (st.carriers || []).find((c) => c.id === o.shipping.carrier);
@@ -821,51 +830,120 @@
 
         <div style="display:flex;gap:9px;margin-top:14px;flex-wrap:wrap">
           <a class="btn btn-ghost" href="#/">العودة للمتجر</a>
-          <a class="btn btn-gold" href="#/track?n=${encodeURIComponent(o.number)}">تتبّع الطلب</a>
+          <a class="btn btn-gold" href="#/track?n=${encodeURIComponent(o.number)}&p=${encodeURIComponent(o.customer.phone)}">تتبّع الطلب</a>
         </div>
       </div>`;
+  }
+
+  /* بعد الرجوع من البوابة قد يصل الإشعار بعد المتصفح بثوانٍ، فنستعلم
+     عدة مرات قبل أن نقرّر أن الدفع لم يكتمل. */
+  let lastOrder = null;
+  async function pollOrder(id) {
+    const phone = (lastOrder && lastOrder.customer && lastOrder.customer.phone) || "";
+    for (let i = 0; i < 6; i++) {
+      try {
+        if (lastOrder && lastOrder.number && phone) {
+          const r = await window.NaseejApi.track(lastOrder.number, phone);
+          if (r.order && r.order.payment.status !== "pending") { lastOrder = r.order; break; }
+        }
+      } catch (e) { /* ما زال قيد المعالجة */ }
+      await S.sleep(1500);
+    }
+    if (lastOrder && lastOrder.id === id) { viewOrder(id); return; }
+    view.innerHTML = `<div class="wrap">
+      <div class="panel" style="margin-top:18px">
+        <h1 style="font-size:19px;margin-bottom:6px">طلبك قيد التأكيد</h1>
+        <p class="note">إن تم الدفع فستصلك رسالة على جوالك خلال دقائق. تابع الحالة من صفحة تتبّع الطلب برقم الطلب ورقم جوالك.</p>
+        <div style="margin-top:14px;display:flex;gap:9px;flex-wrap:wrap">
+          <a class="btn btn-gold" href="#/track">تتبّع الطلب</a>
+          <a class="btn btn-ghost" href="#/">العودة للمتجر</a>
+        </div>
+      </div></div>`;
   }
 
   /* --------------------------------------------------- الصفحة: تتبّع الطلب */
 
   function viewTrack(params) {
     const n = params.get("n") || "";
-    const o = n ? DB.orders().find((x) => x.number.toLowerCase() === n.toLowerCase()) : null;
-    const steps = ["new", "processing", "shipped", "delivered"];
-    const at = o ? steps.indexOf(o.status) : -1;
+    const phone = params.get("p") || "";
+
+    const form = `
+      <div class="panel">
+        <div class="field"><label>رقم الطلب</label>
+          <input id="trkNum" value="${esc(n)}" placeholder="مثال: NS-2457" autocomplete="off">
+          <div class="help">تجده في رسالة التأكيد، ويبدأ بـ NS-</div>
+        </div>
+        <div class="field" style="margin-top:12px"><label>رقم الجوال</label>
+          <input id="trkPhone" value="${esc(phone)}" placeholder="05XXXXXXXX" inputmode="tel" autocomplete="tel">
+          <div class="help">نفس الرقم الذي طلبت به، للتحقق من أن الطلب طلبك</div>
+        </div>
+        <button class="btn btn-gold btn-wide" data-act="track" style="margin-top:12px">ابحث</button>
+      </div>`;
 
     view.innerHTML = `
       <div class="wrap">
         <div class="crumbs"><a href="#/">الرئيسية</a><span>›</span><span>تتبّع الطلب</span></div>
         <h1 style="font-size:22px;margin:6px 0 12px">تتبّع الطلب</h1>
-        <div class="panel">
-          <div class="field"><label>رقم الطلب</label>
-            <input id="trkNum" value="${esc(n)}" placeholder="مثال: NS-2457">
-            <div class="help">تجده في رسالة التأكيد، ويبدأ بـ NS-</div>
-          </div>
-          <button class="btn btn-gold btn-wide" data-act="track" style="margin-top:12px">ابحث</button>
+        ${form}
+        <div id="trkOut"></div>
+      </div>`;
+
+    if (n && phone) lookupOrder(n, phone);
+  }
+
+  async function lookupOrder(number, phone) {
+    const out = $("#trkOut");
+    out.innerHTML = `<div class="note" style="padding:16px 2px">جارٍ البحث…</div>`;
+    let order = null;
+    try {
+      if (S.isLive()) {
+        const r = await window.NaseejApi.track(number, phone);
+        order = r.order;
+      } else {
+        const norm = phone.replace(/[\s-]/g, "").replace(/^(?:\+966|00966)/, "0");
+        order = DB.orders().find(
+          (x) => x.number.toLowerCase() === number.toLowerCase() &&
+                 String(x.customer.phone).replace(/[\s-]/g, "") === norm
+        ) || null;
+        if (!order) throw new Error("لا يوجد طلب بهذا الرقم لهذا الجوال");
+      }
+    } catch (e) {
+      out.innerHTML = `<div class="hint" style="background:var(--bad-soft);border-color:#eecac6;color:#7d2b24">
+        ${icon("info")}<span>${esc(e.message || "تعذّر البحث")}</span></div>`;
+      return;
+    }
+    renderTracked(order);
+  }
+
+  function renderTracked(o) {
+    const steps = ["new", "processing", "shipped", "delivered"];
+    const at = steps.indexOf(o.status);
+    const carrier = (DB.settings().carriers || []).find((c) => c.id === o.shipping.carrier);
+    $("#trkOut").innerHTML = `
+      <div class="panel">
+        <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:12px">
+          <b style="font-size:16px">${esc(o.number)}</b>
+          <span class="chip ${S.statusOf(o.status).chip}">${esc(S.statusOf(o.status).name)}</span>
+          <span class="note" style="margin-inline-start:auto">${fmtDateShort(o.createdAt)}</span>
         </div>
-        ${n && !o ? `<div class="hint" style="background:var(--bad-soft);border-color:#eecac6;color:#7d2b24">${icon("info")}<span>لا يوجد طلب بهذا الرقم.</span></div>` : ""}
-        ${o ? `
-          <div class="panel">
-            <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:12px">
-              <b style="font-size:16px">${esc(o.number)}</b>
-              <span class="chip ${S.statusOf(o.status).chip}">${esc(S.statusOf(o.status).name)}</span>
-              <span class="note" style="margin-inline-start:auto">${fmtDateShort(o.createdAt)}</span>
-            </div>
-            <div class="stack">
-              ${steps.map((s, i) => {
-                const done = at >= i && o.status !== "cancelled";
-                const st = S.statusOf(s);
-                return `<div style="display:flex;gap:11px;align-items:center;opacity:${done ? 1 : .42}">
-                  <span style="width:26px;height:26px;border-radius:50%;flex:none;display:grid;place-items:center;background:${done ? "var(--ok)" : "var(--sand-2)"};color:${done ? "#fff" : "var(--muted)"};font-size:12px;font-weight:800">${done ? "✓" : i + 1}</span>
-                  <b style="font-size:13.5px">${esc(st.name)}</b>
-                </div>`;
-              }).join("")}
-            </div>
-            ${o.awb ? `<div class="hint" style="margin-top:12px">${icon("truck")}<span>رقم البوليصة <b>${esc(o.awb)}</b> لدى ${esc((DB.settings().carriers.find((c) => c.id === o.shipping.carrier) || {}).name || "")}</span></div>` : ""}
-            <div style="margin-top:12px"><a class="btn btn-ghost btn-sm" href="#/order/${o.id}">تفاصيل الطلب</a></div>
-          </div>` : ""}
+        ${o.status === "cancelled"
+          ? `<div class="hint" style="background:var(--bad-soft);border-color:#eecac6;color:#7d2b24">${icon("info")}<span>أُلغي هذا الطلب.</span></div>`
+          : o.status === "pending_payment"
+            ? `<div class="hint">${icon("info")}<span>لم يكتمل الدفع بعد. إن كنت قد دفعت فقد يستغرق التأكيد بضع دقائق.</span></div>`
+            : `<div class="stack">
+                ${steps.map((st, i) => {
+                  const done = at >= i;
+                  return `<div style="display:flex;gap:11px;align-items:center;opacity:${done ? 1 : .42}">
+                    <span style="width:26px;height:26px;border-radius:50%;flex:none;display:grid;place-items:center;background:${done ? "var(--ok)" : "var(--sand-2)"};color:${done ? "#fff" : "var(--muted)"};font-size:12px;font-weight:800">${done ? "✓" : i + 1}</span>
+                    <b style="font-size:13.5px">${esc(S.statusOf(st).name)}</b>
+                  </div>`;
+                }).join("")}
+              </div>`}
+        ${o.awb ? `<div class="hint" style="margin-top:12px">${icon("truck")}<span>رقم البوليصة <b>${esc(o.awb)}</b>${carrier ? " لدى " + esc(carrier.name) : ""}</span></div>` : ""}
+        <div class="totals" style="margin-top:14px">
+          <div><span>عدد الأصناف</span><b>${S.Money.num(o.items.length)}</b></div>
+          <div class="grand"><span>الإجمالي</span><span>${Money.fmt(o.totals.grand)}</span></div>
+        </div>
       </div>`;
   }
 
@@ -1143,8 +1221,10 @@
       case "coPlace": coPlace(); break;
 
       case "track": {
-        const v = ($("#trkNum") || {}).value || "";
-        location.hash = "#/track?n=" + encodeURIComponent(v.trim());
+        const num = (($("#trkNum") || {}).value || "").trim();
+        const ph = (($("#trkPhone") || {}).value || "").trim();
+        if (!num || !ph) { toast("أدخل رقم الطلب ورقم الجوال", "bad"); break; }
+        location.hash = `#/track?n=${encodeURIComponent(num)}&p=${encodeURIComponent(ph)}`;
         break;
       }
     }
@@ -1174,6 +1254,27 @@
 
   window.addEventListener("hashchange", route);
   S.onChange(() => { renderCart(); });
-  renderCart();
-  route();
+
+  /* لا نرسم قبل معرفة الوضع: في وضع الخادم يأتي الكتالوج من الشبكة */
+  view.innerHTML = `<div class="wrap"><div class="empty" style="padding-top:60px">
+      <div class="note">جارٍ تحميل المتجر…</div></div></div>`;
+
+  S.boot().then((r) => {
+    if (r.mode === "demo") showDemoBanner();
+    renderCart();
+    route();
+  }).catch((e) => {
+    console.error(e);
+    view.innerHTML = `<div class="wrap"><div class="empty">${icon("info")}
+      <b>تعذّر تحميل المتجر</b><span>${esc(e.message || "خطأ غير متوقع")}</span>
+      <div style="margin-top:14px"><button class="btn btn-gold" onclick="location.reload()">إعادة المحاولة</button></div></div></div>`;
+  });
+
+  /* في وضع العرض يجب أن يعرف الزائر أن الطلب لن يصل أحدًا */
+  function showDemoBanner() {
+    const b = document.createElement("div");
+    b.style.cssText = "background:var(--warn-soft);border-bottom:1px solid #e8d3a8;color:#7a5214;font-size:12.5px;padding:8px 16px;text-align:center;font-weight:700";
+    b.textContent = "نسخة عرض: البيانات في هذا المتصفح وحده، والدفع محاكاة ولا يصل أي طلب.";
+    document.querySelector(".head").insertAdjacentElement("afterend", b);
+  }
 })();
