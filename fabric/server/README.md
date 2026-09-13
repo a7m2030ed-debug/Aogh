@@ -64,39 +64,39 @@ node test/run.js       # 39 اختبارًا من طرف إلى طرف
 الخادم يحتاج استضافة تشغّل Node. **GitHub Pages لا تصلح** لأنها تخدم ملفات
 ثابتة فقط.
 
-1. ارفع مجلد `fabric/` كاملًا إلى الخادم.
-2. انسخ `.env.example` إلى `.env` واملأه.
-3. اجعل `PUBLIC_URL` هو عنوان موقعك بـ**https**. البوابات ترفض الرجوع إلى http.
-4. شغّله خلف Nginx أو Caddy مع شهادة، واضبط `TRUST_PROXY=1`.
-5. أبقِه يعمل عبر `systemd` أو `pm2` ليعود بعد أي إعادة تشغيل.
+كل شيء جاهز في [`deploy/`](deploy/README.md): على خادم أوبونتو جديد يكفي أمر
+واحد يثبّت Node ويضبط الخدمة وNginx وشهادة https والجدار الناري والنسخ
+الاحتياطي:
 
-خدمة systemd:
-
-```ini
-[Unit]
-Description=Naseej store
-After=network.target
-
-[Service]
-WorkingDirectory=/srv/naseej/fabric/server
-ExecStart=/usr/bin/node server.js
-Restart=always
-User=naseej
-
-[Install]
-WantedBy=multi-user.target
 ```
+bash deploy/setup.sh نطاقك.com بريدك@example.com
+```
+
+ومعه `Dockerfile` و`docker-compose.yml` و`render.yaml` و`fly.toml` لمن يفضّل
+الحاويات أو منصّة بالنقر.
+
+وقبل أول ريال حقيقي:
+
+```
+node deploy/preflight.js https://نطاقك
+```
+
+يفحص الخادم المنشور ويفرّق بين موانع يجب حلّها وتنبيهات للمراجعة.
 
 عند `NODE_ENV=production` يرفض الخادم العمل ببوابة تجريبية، ويحذّر إن كان
 `PUBLIC_URL` غير https أو مفاتيح البوابة ناقصة.
 
 ### النسخ الاحتياطي
 
-كل شيء في `DATA_DIR` (افتراضيًا `fabric/server/data`). انسخه دوريًا:
+كل شيء في `DATA_DIR` (افتراضيًا `data` بجوار الخادم). سكربت النشر يجدول نسخة
+يومية تلقائيًا في `/srv/naseej/backups`، وللنسخ يدويًا:
 
 ```
-tar czf naseej-$(date +%F).tar.gz -C /srv/naseej/fabric/server data
+naseej-backup                       # على خادم نُشر بالسكربت
+tar czf naseej-$(date +%F).tar.gz -C /srv/naseej/server data
 ```
+
+**انقل نسخة خارج الخادم دوريًا:** نسخة على نفس الجهاز لا تنفع إن فُقد الجهاز.
 
 المجلد محجوب عن الويب، وكذلك مجلد `server` كله وكل ملف يبدأ بنقطة، فلا يُنزَّل
 `.env` من المتصفح. هذا مغطّى باختبار.
@@ -179,6 +179,11 @@ server/
 │   └── fetch.js         نداء HTTPS بلا اعتماديات
 ├── payments/            demo · paytabs · myfatoorah · tap
 ├── shipping/            manual · aramex · smsa
+├── deploy/              النشر — اقرأ deploy/README.md
+│   ├── setup.sh         خادم أوبونتو جديد ← جاهز بأمر واحد
+│   ├── preflight.js     فحص ما قبل الإطلاق
+│   ├── Dockerfile       حاوية، ومعها docker-compose.yml
+│   └── render.yaml      ومنصّات بالنقر: fly.toml
 └── test/run.js          الاختبارات
 ```
 

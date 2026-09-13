@@ -1,0 +1,5 @@
+server/data
+server/.env
+server/backups
+**/node_modules
+.git

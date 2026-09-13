@@ -1,0 +1,30 @@
+# Fly.io — من مجلد fabric:  fly launch --config server/deploy/fly.toml
+# الحجم الدائم ضروري: بدونه تضيع الطلبات مع كل نشر.
+app = "naseej-store"
+primary_region = "cdg"
+
+[build]
+  dockerfile = "server/deploy/Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  DATA_DIR = "/data"
+  TRUST_PROXY = "1"
+  PORT = "3000"
+
+[[mounts]]
+  source = "naseej_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = false
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "GET"
+    path = "/api/catalog"

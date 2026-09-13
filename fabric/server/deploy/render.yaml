@@ -1,0 +1,25 @@
+# Render — اربط المستودع ثم اختر هذا الملف
+# القرص الدائم مهم: بدونه تضيع الطلبات مع كل نشر.
+services:
+  - type: web
+    name: naseej-store
+    runtime: node
+    rootDir: fabric/server
+    buildCommand: "echo لا بناء — بلا اعتماديات"
+    startCommand: "node server.js"
+    healthCheckPath: /api/catalog
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATA_DIR
+        value: /var/data
+      - key: TRUST_PROXY
+        value: "1"
+      - key: PUBLIC_URL
+        sync: false      # ضع نطاقك هنا من لوحة Render
+      - key: PAYMENT_PROVIDER
+        value: demo
+    disk:
+      name: naseej-data
+      mountPath: /var/data
+      sizeGB: 1
