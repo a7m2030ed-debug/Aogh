@@ -106,9 +106,16 @@ async function main() {
 
   /* ------------------------------------------------------ وسائل الدفع */
 
+  /* الكتالوج العام لا يعيد إلا الوسائل المفعّلة */
   const gateways = settings.gateways || [];
   if (!gateways.length) block("لا وسيلة دفع مفعّلة.", "فعّل واحدة على الأقل من الإعدادات.");
   else ok(`وسائل الدفع المعروضة: ${gateways.map((g) => g.name).join("، ")}`);
+
+  /* الدفع عند الاستلام لا يمرّ ببوابة: الخادم يعتمد الطلب مباشرة. فمتجر
+     يبيع به وحده لا يحتاج بوابة أصلًا، ولا يصحّ منعه من الإطلاق لأن
+     PAYMENT_PROVIDER ما زال التجريبية. */
+  const onlineGateways = gateways.filter((g) => g.id !== "cod");
+  const needsGateway = onlineGateways.length > 0;
 
   /* --------------------------------------------- الإعداد من ملف البيئة */
 
@@ -132,9 +139,16 @@ async function main() {
   }
 
   const provider = (env.PAYMENT_PROVIDER || process.env.PAYMENT_PROVIDER || "demo").toLowerCase();
+
   if (provider === "demo") {
-    block("بوابة الدفع ما زالت التجريبية.",
-          "لن يُحصَّل أي مبلغ. ضع PAYMENT_PROVIDER ومفاتيح بوابتك في .env ثم: systemctl restart naseej");
+    if (needsGateway) {
+      block(`بوابة الدفع ما زالت التجريبية، و${onlineGateways.map((g) => g.name).join("، ")} تحتاجها.`,
+            "لن يُحصَّل أي مبلغ. إما أن تضع بوابتك ومفاتيحها في .env، أو تُبقي «الدفع عند الاستلام» وحده مفعّلًا من الإعدادات.");
+    } else {
+      ok("الدفع عند الاستلام وحده — لا حاجة لبوابة، والطلب يُعتمد على الخادم مباشرة");
+      warn("لا دفع إلكتروني: الزبون يدفع نقدًا عند التسليم.",
+           "حين يجهز حسابك لدى بوابة، ضع مفاتيحها في .env وفعّل مدى وApple Pay من الإعدادات.");
+    }
   } else {
     const need = {
       paytabs: ["PAYTABS_PROFILE_ID", "PAYTABS_SERVER_KEY"],
@@ -142,8 +156,14 @@ async function main() {
       tap: ["TAP_SECRET_KEY"],
     }[provider] || [];
     const missing = need.filter((k) => !(env[k] || process.env[k]));
-    if (missing.length) block(`مفاتيح ${provider} ناقصة: ${missing.join("، ")}`, "أضفها في .env ثم أعد التشغيل.");
-    else ok(`بوابة الدفع: ${provider}، ومفاتيحها مضبوطة`);
+    if (missing.length) {
+      // بلا وسيلة إلكترونية مفعّلة لا تُستدعى البوابة، فالنقص تنبيه لا مانع
+      const msg = `مفاتيح ${provider} ناقصة: ${missing.join("، ")}`;
+      if (needsGateway) block(msg, "أضفها في .env ثم أعد التشغيل.");
+      else warn(msg, "لا يمنع الإطلاق ما دام «الدفع عند الاستلام» هو الوسيلة الوحيدة المفعّلة.");
+    } else {
+      ok(`بوابة الدفع: ${provider}، ومفاتيحها مضبوطة`);
+    }
 
     const testKey = Object.entries(env).find(([, v]) => /(^|_)test(_|$)|sk_test_/i.test(String(v)));
     if (testKey) warn(`المفتاح ${testKey[0]} يبدو مفتاح اختبار.`, "استبدله بمفتاح الإنتاج قبل الإطلاق.");

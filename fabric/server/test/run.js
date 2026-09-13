@@ -391,6 +391,43 @@ async function main() {
       assert.strictEqual(r.json.invoice.totals.vat, 0, "لا ضريبة في الفاتورة");
     });
 
+    await test("الدفع عند الاستلام يُعتمد فورًا بلا بوابة ويخصم المخزون", async () => {
+      // هذا مسار الإطلاق لمن لم تجهز بوابته بعد: لا بوابة تُستدعى أصلًا
+      const cur = (await api("GET", "/api/admin/data")).json.settings;
+      await api("PUT", "/api/admin/settings", {
+        gateways: cur.gateways.map((g) => Object.assign({}, g, { active: g.id === "cod" })),
+      });
+
+      const cat = await api("GET", "/api/catalog", undefined, { noCookie: true });
+      assert.deepStrictEqual(cat.json.settings.gateways.map((g) => g.id), ["cod"], "الدفع عند الاستلام وحده");
+      const target = cat.json.products.find((p) => p.meter.enabled && p.meter.stock > 10);
+      const before = target.meter.stock;
+
+      const r = await api("POST", "/api/orders", {
+        items: [{ productId: target.id, mode: "meter", qty: 3 }],
+        customer: { name: "زبون الدفع عند الاستلام", phone: "0553334444" },
+        shipping: { carrier: "smsa", city: "الرياض", address: "شارع العليا، مبنى 9" },
+        paymentMethod: "cod",
+      }, { noCookie: true });
+
+      assert.strictEqual(r.status, 201, r.text);
+      assert.strictEqual(r.json.redirectUrl, null, "لا انتقال إلى بوابة");
+      assert.strictEqual(r.json.order.status, "new", "اعتُمد فورًا لا pending_payment");
+      assert.strictEqual(r.json.order.payment.status, "pending", "يُحصَّل عند التسليم");
+
+      const after = (await api("GET", "/api/catalog", undefined, { noCookie: true }))
+        .json.products.find((p) => p.id === target.id).meter.stock;
+      assert.strictEqual(after, Math.round((before - 3) * 100) / 100, "خُصم المخزون");
+
+      // التسليم يحوّله إلى مدفوع
+      await api("PATCH", `/api/admin/orders/${r.json.order.id}`, { status: "delivered" });
+      const adm = (await api("GET", "/api/admin/data")).json.orders.find((o) => o.id === r.json.order.id);
+      assert.strictEqual(adm.payment.status, "paid", "صار مدفوعًا بعد التسليم");
+
+      // نعيد وسائل الدفع كما كانت لبقية الاختبارات
+      await api("PUT", "/api/admin/settings", { gateways: cur.gateways });
+    });
+
     await test("رقم ضريبي غير صحيح يُرفض", async () => {
       const r = await api("PUT", "/api/admin/settings", { vatEnabled: true, vatNumber: "123" });
       assert.strictEqual(r.status, 400);

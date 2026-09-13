@@ -447,7 +447,7 @@ router.get("/api/admin/data", async (req, res) => {
       shippingConfigured: SHIP.adapter(config.shippingProvider).configured(ctx()),
       vatNumberValid: ZATCA.isValidVatNumber(s.vatNumber),
       publicUrl: config.publicUrl,
-      warnings: CONFIG.auditProduction(config, secrets, payAdapter),
+      warnings: CONFIG.auditProduction(config, secrets, payAdapter, s),
     },
   });
 });
@@ -717,7 +717,7 @@ async function main() {
   setInterval(() => sweepReservations().catch((e) => console.error("[حجز]", e.message)), 5 * 60 * 1000).unref();
 
   const payAdapter = PAY.ADAPTERS[config.paymentProvider];
-  const warnings = CONFIG.auditProduction(config, secrets, payAdapter);
+  const warnings = CONFIG.auditProduction(config, secrets, payAdapter, settings());
 
   server.listen(config.port, config.host, () => {
     const line = "─".repeat(58);
