@@ -1,0 +1,45 @@
+# =====================================================================
+#  تشغيل النظام بحاوية واحدة
+#      cd staff && docker compose -f server/deploy/docker-compose.yml up -d
+#
+#  المنفذ مربوط بـ127.0.0.1 عمدًا: النظام لا يُفتح للإنترنت مباشرة، بل
+#  خلف Nginx بشهادة https (انظر setup.sh و nginx.conf).
+#
+#  النسخ الاحتياطية في حجم مستقل (staff-backups). انسخها خارج الخادم
+#  دوريًا — نسخة على نفس الجهاز لا تنجو من عطب الجهاز:
+#      docker run --rm -v staff-backups:/b -v "$PWD":/out alpine \
+#        tar czf /out/staff-backups-$(date +%F).tar.gz -C /b .
+# =====================================================================
+
+services:
+  staff:
+    build:
+      context: ../..
+      dockerfile: server/deploy/Dockerfile
+    image: staff-hr
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - staff-data:/data
+      - staff-backups:/backups
+    environment:
+      NODE_ENV: production
+      # نطاق النظام بـhttps — الخادم يرفض الإقلاع في الإنتاج بدونه
+      PUBLIC_URL: ${PUBLIC_URL:?اضبط PUBLIC_URL=https://staff.example.com}
+      TRUST_PROXY: "1"
+      SESSION_IDLE_MINUTES: ${SESSION_IDLE_MINUTES:-30}
+      SESSION_MAX_HOURS: ${SESSION_MAX_HOURS:-12}
+      BACKUP_HOUR: ${BACKUP_HOUR:-2}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-10}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      # اتركه فارغًا ليُولَّد سرّ عشوائي يُطبع مرة في سجل الحاوية
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "5" }
+
+volumes:
+  staff-data:
+  staff-backups:

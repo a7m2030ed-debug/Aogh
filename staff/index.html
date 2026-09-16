@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex, nofollow">
+<title>نظام إدارة الموظفين</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f3a5f'/%3E%3Ccircle cx='16' cy='12' r='5' fill='%23fff'/%3E%3Cpath d='M6 28c0-5.5 4.5-9 10-9s10 3.5 10 9z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+
+<!-- شاشة الدخول -->
+<div id="login" class="login" hidden>
+  <form class="login-card" id="login-form" autocomplete="on">
+    <div class="login-brand">
+      <svg viewBox="0 0 32 32" width="40" height="40" aria-hidden="true">
+        <rect width="32" height="32" rx="7" fill="currentColor"/>
+        <circle cx="16" cy="12" r="5" fill="#fff"/>
+        <path d="M6 28c0-5.5 4.5-9 10-9s10 3.5 10 9z" fill="#fff"/>
+      </svg>
+      <div>
+        <h1 id="login-title">نظام إدارة الموظفين</h1>
+        <p class="muted" id="login-sub">سجّل الدخول للمتابعة</p>
+      </div>
+    </div>
+    <label class="field">
+      <span id="login-user-label">اسم المستخدم</span>
+      <input name="username" autocomplete="username" required autofocus>
+    </label>
+    <label class="field">
+      <span id="login-pass-label">كلمة المرور</span>
+      <input name="password" type="password" autocomplete="current-password" required>
+    </label>
+    <p class="error" id="login-error" hidden></p>
+    <button class="btn primary block" type="submit" id="login-btn">دخول</button>
+    <p class="login-foot muted" id="login-foot">اتصال محمي · تُسجَّل محاولات الدخول</p>
+  </form>
+</div>
+
+<!-- التطبيق -->
+<div id="app" class="app" hidden>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-head">
+      <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+        <rect width="32" height="32" rx="7" fill="currentColor"/>
+        <circle cx="16" cy="12" r="5" fill="#fff"/>
+        <path d="M6 28c0-5.5 4.5-9 10-9s10 3.5 10 9z" fill="#fff"/>
+      </svg>
+      <strong id="org-name">نظام إدارة الموظفين</strong>
+    </div>
+    <nav id="nav" class="nav"></nav>
+    <div class="sidebar-foot">
+      <button class="btn ghost small" id="btn-theme" type="button" title="السمة">◐</button>
+      <button class="btn ghost small" id="btn-lang" type="button">EN</button>
+      <button class="btn ghost small" id="btn-logout" type="button">خروج</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="btn ghost icon" id="btn-menu" type="button" aria-label="القائمة">☰</button>
+      <form class="search" id="quick-search">
+        <input id="quick-search-input" placeholder="ابحث برقم الهوية أو الرقم الوظيفي أو الاسم" autocomplete="off">
+        <button class="btn primary small" type="submit" id="quick-search-btn">بحث</button>
+      </form>
+      <div class="topbar-right">
+        <button class="btn ghost icon" id="btn-alerts" type="button" title="التنبيهات">
+          <span>🔔</span><span class="badge" id="alerts-count" hidden>0</span>
+        </button>
+        <div class="who">
+          <strong id="who-name"></strong>
+          <span class="muted" id="who-role"></span>
+        </div>
+      </div>
+    </header>
+    <main id="view" class="view"></main>
+  </div>
+</div>
+
+<div id="toasts" class="toasts" aria-live="polite"></div>
+<div id="modal-root"></div>
+<div id="tooltip" class="chart-tip" hidden></div>
+
+<script src="assets/i18n.js"></script>
+<script src="assets/api.js"></script>
+<script src="assets/ui.js"></script>
+<script src="assets/charts.js"></script>
+<script src="assets/views-dashboard.js"></script>
+<script src="assets/views-employees.js"></script>
+<script src="assets/views-hr.js"></script>
+<script src="assets/views-reports.js"></script>
+<script src="assets/views-admin.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
