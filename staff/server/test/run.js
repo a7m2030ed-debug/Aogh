@@ -86,7 +86,7 @@ function startServer() {
     const done = setTimeout(() => reject(new Error("لم يُقلع الخادم:\n" + out)), 15000);
     child.stdout.on("data", (d) => {
       out += d.toString();
-      if (out.includes("يستمع على")) { clearTimeout(done); resolve(child); }
+      if (out.includes(`localhost:${PORT}`)) { clearTimeout(done); resolve(child); }
     });
     child.stderr.on("data", (d) => { out += d.toString(); });
     child.on("exit", (code) => { clearTimeout(done); reject(new Error(`خرج الخادم (${code}):\n${out}`)); });

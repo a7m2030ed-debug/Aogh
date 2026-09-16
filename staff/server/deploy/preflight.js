@@ -19,6 +19,11 @@ const path = require("node:path");
 const BASE = (process.argv[2] || process.env.PUBLIC_URL || "http://127.0.0.1:3000").replace(/\/+$/, "");
 const SERVER_DIR = path.join(__dirname, "..");
 
+/* وضع الشبكة المحلية يغيّر معنى بعض الفحوص: http داخل شبكة مغلقة تنبيه
+   لا مانع، والنطاق والشهادة لا معنى لهما أصلًا. */
+const DOT_ENV = require("../config").loadDotEnv(path.join(SERVER_DIR, ".env"));
+const LAN = (process.env.LAN || DOT_ENV.LAN) === "1";
+
 const blockers = [];
 const warnings = [];
 const good = [];
@@ -44,8 +49,14 @@ async function main() {
 
   /* ------------------------------------------------------ https */
   if (!BASE.startsWith("https://")) {
-    if (/^https?:\/\/(127\.0\.0\.1|localhost)/.test(BASE)) warn("الفحص محلي — أعِده على النطاق العام بـhttps");
-    else block("النظام يُفتح على http — أرقام الهوية وكلمات المرور تمرّ بلا تشفير");
+    if (LAN) {
+      warn("شبكة محلية بلا تشفير: مقبول داخل شبكة مغلقة — تأكد ألا يكون منفذ الجهاز مفتوحًا على الإنترنت");
+      warn("ولتشفير الشبكة الداخلية أيضًا: أنشئ شهادة محلية واضبط TLS_CERT وTLS_KEY");
+    } else if (/^https?:\/\/(127\.0\.0\.1|localhost)/.test(BASE)) {
+      warn("الفحص محلي — أعِده على النطاق العام بـhttps");
+    } else {
+      block("النظام يُفتح على http — أرقام الهوية وكلمات المرور تمرّ بلا تشفير");
+    }
   } else {
     ok("https");
   }
@@ -97,7 +108,7 @@ async function main() {
     if (env.ADMIN_PASSWORD && env.ADMIN_PASSWORD.length < 12) {
       warn("ADMIN_PASSWORD قصيرة — الأفضل تركها فارغة ليُولَّد سرّ عشوائي");
     }
-    if (env.PUBLIC_URL && !env.PUBLIC_URL.startsWith("https://")) block("PUBLIC_URL في .env ليس https");
+    if (!LAN && env.PUBLIC_URL && !env.PUBLIC_URL.startsWith("https://")) block("PUBLIC_URL في .env ليس https");
 
     const dataDir = path.resolve(SERVER_DIR, env.DATA_DIR || "data");
     const backupDir = path.resolve(SERVER_DIR, env.BACKUP_DIR || "backups");

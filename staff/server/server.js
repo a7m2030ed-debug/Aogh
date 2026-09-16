@@ -14,6 +14,7 @@
 "use strict";
 
 const http = require("node:http");
+const fs = require("node:fs");
 const path = require("node:path");
 const { URL } = require("node:url");
 
@@ -475,7 +476,7 @@ const PASSWORD_CHANGE_PATHS = new Set(["/api/auth/me", "/api/auth/password", "/a
 
 /* ------------------------------------------------------------ الخادم */
 
-const server = http.createServer(async (req, res) => {
+const handler = async (req, res) => {
   const started = Date.now();
   res.baseHeaders = H.securityHeaders(config.secureCookies);
   let url;
@@ -562,7 +563,14 @@ const server = http.createServer(async (req, res) => {
       details: e.extra || null,
     });
   }
-});
+};
+
+/* خادم عادي، أو مشفَّر إن أُعطيت شهادة — ولو كانت محلية موقَّعة ذاتيًا */
+const server = config.tls
+  ? require("node:https").createServer(
+    { cert: require("node:fs").readFileSync(config.tls.cert), key: require("node:fs").readFileSync(config.tls.key) },
+    handler)
+  : http.createServer(handler);
 
 /* ------------------------------------------------------------ الإقلاع */
 
@@ -578,8 +586,27 @@ function boot() {
     console.log("\n  ── الحساب الأول ──────────────────────────────");
     console.log(`  المستخدم: ${seeded.username}`);
     console.log(`  كلمة المرور: ${seeded.password}`);
-    console.log(seeded.generated ? "  (مولَّدة عشوائيًا، ولن تُطبع مرة أخرى — ويُطلب تغييرها عند أول دخول)" : "  (من ملف .env)");
-    console.log("  ─────────────────────────────────────────────\n");
+    console.log(seeded.generated ? "  (مولَّدة عشوائيًا، ويُطلب تغييرها عند أول دخول)" : "  (من ملف .env)");
+    console.log("  ─────────────────────────────────────────────");
+
+    /* تُحفظ أيضًا في ملف: من يفتح النظام بنقرة مزدوجة قد تُغلق نافذته
+       قبل أن يقرأها، وبلا كلمة المرور لا مدخل للنظام أصلًا. */
+    if (seeded.generated) {
+      try {
+        const file = path.join(ROOT, "كلمة-المرور-الأولى.txt");
+        fs.writeFileSync(file,
+          `نظام إدارة الموظفين — بيانات أول دخول\r\n\r\n` +
+          `اسم المستخدم: ${seeded.username}\r\n` +
+          `كلمة المرور: ${seeded.password}\r\n\r\n` +
+          `سيطلب النظام تغييرها عند أول دخول.\r\n` +
+          `احذف هذا الملف بعد الدخول وتغيير كلمة المرور.\r\n`,
+          { mode: 0o600 });
+        console.log(`  وحُفظت في: ${file}`);
+        console.log("  احذف الملف بعد أول دخول.\n");
+      } catch { console.log(""); }
+    } else {
+      console.log("");
+    }
   }
 
   A.purgeSessions(db);
@@ -597,13 +624,43 @@ function boot() {
   daily.unref();
 
   server.listen(config.port, config.host, () => {
-    console.log(`  نظام إدارة الموظفين — ${config.env}`);
-    console.log(`  يستمع على http://${config.host}:${config.port}  ·  ${config.publicUrl}`);
+    const scheme = config.tls ? "https" : "http";
+    const line = "  " + "─".repeat(58);
+    console.log(`\n  نظام إدارة الموظفين${config.lan ? " — شبكة محلية" : ` — ${config.env}`}`);
+    console.log(line);
+    console.log(`  على هذا الجهاز:   ${scheme}://localhost:${config.port}`);
+
+    // عناوين الشبكة: يكتبها الموظفون في جوالاتهم وأجهزتهم
+    const addrs = CONFIG.localAddresses();
+    if (addrs.length && config.host !== "127.0.0.1") {
+      addrs.forEach((ip, i) => {
+        console.log(`  ${i ? "               " : "من أي جهاز:    "}   ${scheme}://${ip}:${config.port}`);
+      });
+    }
+    console.log(line);
     console.log(`  البيانات: ${config.dataDir}`);
     console.log(`  النسخ الاحتياطية: ${config.backupDir}` +
       (config.backupHour >= 0 ? ` (يوميًا الساعة ${config.backupHour})` : " (تلقائي مُطفأ)"));
+
+    const warn = CONFIG.warnings(config);
+    if (warn.length) console.log("\n" + warn.map((w) => "  ! " + w).join("\n"));
+    console.log("\n  لإيقاف النظام: أغلق هذه النافذة أو اضغط Ctrl+C\n");
   });
 }
+
+/* أشيع خطأ عند من يفتح النظام بنقرة مزدوجة: نسخة تعمل أصلًا على المنفذ */
+server.on("error", (e) => {
+  if (e.code === "EADDRINUSE") {
+    console.error(`\n  المنفذ ${config.port} مستعمل — يبدو أن النظام يعمل بالفعل.`);
+    console.error(`  افتحه من المتصفح: http://localhost:${config.port}`);
+    console.error("  أو أغلق النافذة التي تشغّله، أو غيّر PORT في server/.env\n");
+  } else if (e.code === "EACCES") {
+    console.error(`\n  لا صلاحية للاستماع على المنفذ ${config.port}. اختر منفذًا فوق 1024 في server/.env\n`);
+  } else {
+    console.error("\n  تعذّر تشغيل الخادم:", e.message, "\n");
+  }
+  process.exit(1);
+});
 
 function shutdown(signal) {
   console.log(`\n  إيقاف (${signal})…`);

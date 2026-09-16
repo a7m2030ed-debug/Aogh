@@ -37,10 +37,24 @@ function build(rootDir) {
 
   const nodeEnv = (env.NODE_ENV || "development").toLowerCase() === "production" ? "production" : "development";
   const port = num(env.PORT, 3000);
-  const publicUrl = (env.PUBLIC_URL || `http://localhost:${port}`).replace(/\/+$/, "");
+
+  /* وضع الشبكة المحلية: النظام يعمل على جهاز في العيادة ويفتحه الموظفون
+     من الشبكة نفسها — بلا نطاق ولا استضافة ولا إنترنت. يُسمح فيه بـhttp
+     لأن حركة البيانات لا تغادر الشبكة، ويبقى كل ما عداه كما هو. */
+  const lan = bool(env.LAN, false);
+
+  /* شهادة محلية اختيارية (self-signed) تجعل حتى الشبكة المحلية مشفَّرة */
+  const tls = env.TLS_CERT && env.TLS_KEY
+    ? { cert: path.resolve(rootDir, env.TLS_CERT), key: path.resolve(rootDir, env.TLS_KEY) }
+    : null;
+
+  const scheme = tls ? "https" : "http";
+  const publicUrl = (env.PUBLIC_URL || `${scheme}://localhost:${port}`).replace(/\/+$/, "");
 
   const config = {
     env: nodeEnv,
+    lan,
+    tls,
     port,
     host: env.HOST || "0.0.0.0",
     publicUrl,
@@ -53,7 +67,8 @@ function build(rootDir) {
     sessionMaxHours: num(env.SESSION_MAX_HOURS, 12),
     maxUploadMb: num(env.MAX_UPLOAD_MB, 10),
     trustProxy: bool(env.TRUST_PROXY, false),
-    secureCookies: nodeEnv === "production" ? bool(env.SECURE_COOKIES, true) : false,
+    // الكوكي المحمي لا يُرسل إلا على https، فلا يُفعَّل على شبكة محلية بلا شهادة
+    secureCookies: bool(env.SECURE_COOKIES, !!tls || (nodeEnv === "production" && !lan)),
     allowedOrigins: String(env.ALLOWED_ORIGINS || publicUrl)
       .split(",").map((s) => s.trim().replace(/\/+$/, "")).filter(Boolean),
     seedAdmin: {
@@ -67,12 +82,16 @@ function build(rootDir) {
 }
 
 /* فحوص لا يجوز تشغيل الإنتاج بدونها — تُوقف الإقلاع لا تُطبع فقط،
-   لأن بيانات الموظفين وأرقام الهوية لا تُترك على اتصال غير مشفَّر. */
+   لأن بيانات الموظفين وأرقام الهوية لا تُترك على اتصال غير مشفَّر.
+
+   وتُستثنى الشبكة المحلية (LAN=1): هناك لا يخرج شيء إلى الإنترنت أصلًا،
+   فيُسمح بـhttp ويُكتفى بتنبيه ظاهر عند الإقلاع. */
 function auditProduction(config) {
   const problems = [];
-  if (config.env !== "production") return problems;
+  if (config.env !== "production" || config.lan) return problems;
   if (!config.publicUrl.startsWith("https://")) {
-    problems.push("PUBLIC_URL ليس https — لا يجوز نقل أرقام الهوية على اتصال غير مشفَّر، والكوكي لن يُحمى.");
+    problems.push("PUBLIC_URL ليس https — لا يجوز نقل أرقام الهوية على اتصال غير مشفَّر، والكوكي لن يُحمى." +
+      "\n     (إن كان النظام على شبكة داخلية بلا إنترنت فاضبط LAN=1)");
   }
   if (!config.secureCookies) {
     problems.push("SECURE_COOKIES مُطفأ في الإنتاج — كوكي الجلسة سيُرسل على http.");
@@ -83,4 +102,27 @@ function auditProduction(config) {
   return problems;
 }
 
-module.exports = { build, auditProduction, loadDotEnv };
+/* تنبيهات لا توقف التشغيل، تُطبع عند الإقلاع ليعرف المشغّل ما يجري */
+function warnings(config) {
+  const out = [];
+  if (config.lan && !config.tls) {
+    out.push("وضع الشبكة المحلية بلا تشفير: كلمات المرور تمرّ داخل شبكتك كما هي.");
+    out.push("لا تفتح منفذ هذا الجهاز على الإنترنت، واحمِ شبكة الواي فاي بكلمة قوية.");
+  }
+  if (config.backupHour < 0) out.push("النسخ الاحتياطي التلقائي مُطفأ (BACKUP_HOUR=-1).");
+  return out;
+}
+
+/* عناوين هذا الجهاز على الشبكة المحلية — ليعرف الموظفون ماذا يكتبون */
+function localAddresses() {
+  const os = require("node:os");
+  const out = [];
+  for (const list of Object.values(os.networkInterfaces())) {
+    for (const ni of list || []) {
+      if (ni.family === "IPv4" && !ni.internal) out.push(ni.address);
+    }
+  }
+  return out;
+}
+
+module.exports = { build, auditProduction, warnings, localAddresses, loadDotEnv };
