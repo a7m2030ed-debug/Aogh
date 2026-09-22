@@ -706,7 +706,7 @@ function sheetPart(book,sheet,aoa,objs){
  if(sv&&(isNaN(sv)||sv.getFullYear()<2015))sv=null;
  var cd=cellDate(aoa);
  return {objs:objs,wb:book,sheet:sheet,
-  date:cd||sv, dateSrc:cd?"the date written in the sheet":"the file’s last-saved date — edit if the sales day differs"};
+  date:cd, dateSrc:"the date written in the sheet", saved:sv};
 }
 function readCsvFile(f){
  return f.text().then(function(t){
@@ -724,6 +724,15 @@ function kindOf(f){
  if(SHEET_RE.test(n)||/sheet|excel|spreadsheet/.test(f.type||""))return "sheet";
  return "";
 }
+/* "21-09-2026.xlsx", "Sales 2026-09-21", "21.9.2026" … — a date in the file name. */
+function nameDate(n){
+ var t=String(n||"").replace(/\.[a-z0-9]+$/i,""),m;
+ function mk(y,mo,da){ var d=new Date(y,mo,da); return d.getFullYear()===y&&d.getMonth()===mo&&d.getDate()===da&&y>=2015?d:null; }
+ if((m=t.match(/(^|\D)(20\d\d)[\-_.\/ ](\d{1,2})[\-_.\/ ](\d{1,2})(?!\d)/)))return mk(+m[2],+m[3]-1,+m[4]);
+ if((m=t.match(/(^|\D)(\d{1,2})[\-_.\/ ](\d{1,2})[\-_.\/ ](20\d\d)(?!\d)/)))return mk(+m[4],+m[3]-1,+m[2]);
+ if((m=t.match(/(^|\D)(\d{1,2})[\-_ ]?(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[\-_ ]?(20\d\d)/i)))return mk(+m[4],MON.indexOf(m[3].toUpperCase()),+m[2]);
+ return null;
+}
 function readOne(f){
  var k=kindOf(f);
  var p=k==="image"?readImages([f]).then(function(r){ r.extracted=true; r.dateSrc="the date written in the image"; return r; })
@@ -734,6 +743,7 @@ function readOne(f){
  return p.then(function(r){
   if(!r||!r.objs||!r.objs.length)throw {code:"empty"};
   r.name=f.name||"Pasted image"; r.key=[f.name,f.size,f.lastModified].join("|");
+  r.nameDate=nameDate(r.name);
   return r;
  });
 }
@@ -1249,8 +1259,10 @@ function partDay(p){
   if(counts[k]>bc){bc=counts[k];bestD=d;}
  });
  raw=keep;
- if(bestD)return {d:bestD,src:"the “"+col+"” column in the file"};
- if(p.date)return {d:p.date,src:p.dateSrc||"the file"};
+ if(bestD)return {d:bestD,src:"the “"+col+"” column in the file",how:"column"};
+ if(p.date)return {d:p.date,src:p.dateSrc||"the date written in the file",how:"written"};
+ if(p.nameDate)return {d:p.nameDate,src:"the date in the file name",how:"name"};
+ if(p.saved)return {d:p.saved,src:"the file’s last-saved date — edit if the sales day differs",how:"saved"};
  return null;
 }
 var reportRange=null;
@@ -1275,14 +1287,29 @@ function autoDate(){
   else $("fDate").value=fmtDate(a);
   src="From the dates of the "+parts.length+" files ("+list.length+(list.length>1?" days)":" day)")+
    (got.length<parts.length?" — "+(parts.length-got.length)+" file(s) had no date":"");
+  if(list.length===1&&parts.length>1)src+=" — all files show the same day; if they are different days, put the date in each file name (e.g. 21-09-2026.xlsx) or type the range here";
  }
  var t=$("fTitle");
  if(reportRange&&t.value===TITLE_DAY)t.value=TITLE_RANGE;
  else if(!reportRange&&t.value===TITLE_RANGE)t.value=TITLE_DAY;
  reportDate=d;
  $("dateSrc").textContent=src;
+ if(parts.length>1){
+  var info=$("fileInfo"),lines=parts.map(function(p,i){ var x=days[i]; return esc(p.name)+' · '+p.objs.length+' rows · '+(x?fmtDate(x.d)+(x.how==="saved"?" (saved date)":""):"no date"); });
+  info.innerHTML='<b>'+parts.length+' files</b> — '+raw.rows.length+' rows<br>'+lines.join('<br>');
+ }
+}
+/* A range typed by hand ("17-21 SEP 2026", "28 AUG – 03 SEP 2026") counts as several days. */
+function typedDays(v){
+ var m=String(v).match(/^\s*(\d{1,2})(?:\s+([A-Za-z]{3}))?\s*[–—\-]\s*(\d{1,2})\s+([A-Za-z]{3})[a-z]*\s+(20\d\d)\s*$/);
+ if(!m)return 0;
+ var mb=MON.indexOf(m[4].toUpperCase()),ma=m[2]?MON.indexOf(m[2].toUpperCase()):mb;
+ if(ma<0||mb<0)return 0;
+ var a=new Date(+m[5],ma,+m[1]),b=new Date(+m[5],mb,+m[3]),n=Math.round((b-a)/864e5)+1;
+ return n>1&&n<400?n:0;
 }
 function weekday(){
+ var td=typedDays($("fDate").value); if(td)return td+" Days";
  if(reportRange)return reportRange.days+" Days";
  var d=new Date($("fDate").value);
  return isNaN(d)?"Daily Summary":d.toLocaleDateString("en-US",{weekday:"long"});
