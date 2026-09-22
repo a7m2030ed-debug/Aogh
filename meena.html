@@ -86,6 +86,10 @@ button,select,input,textarea{font:inherit;color:inherit}
 .map-row{display:grid;grid-template-columns:96px minmax(0,1fr);gap:8px;align-items:center}
 .map-row span{font-size:12px;font-weight:600;color:var(--text-dim)}
 .map-row select{background:var(--field);border:1px solid var(--field-line);border-radius:8px;padding:6px 8px;font-size:12.5px;min-width:0}
+.name-row{display:grid;gap:4px}
+.name-row .ar{font-size:12px;font-weight:600;color:var(--text-dim);direction:rtl;text-align:right;font-family:"IBM Plex Sans Arabic",sans-serif}
+.name-row input{background:var(--field);border:1px solid var(--field-line);border-radius:8px;padding:6px 8px;font-size:12.5px;width:100%}
+.name-row input.todo{border-color:var(--warn)}
 
 /* ---------- document ---------- */
 .stage{display:grid;gap:18px;justify-items:center}
@@ -186,6 +190,7 @@ table.rep tbody tr:nth-child(even) td.hl{background:#E8E4F4}
   </div>
   <div class="actions">
     <button class="btn" id="btnReset" hidden>New file</button>
+    <button class="btn" id="btnSet" hidden aria-expanded="false">Names &amp; settings</button>
     <button class="btn" id="btnPptx" hidden>PowerPoint</button>
     <button class="btn primary" id="btnPrint" hidden>Save PDF</button>
   </div>
@@ -236,6 +241,11 @@ table.rep tbody tr:nth-child(even) td.hl{background:#E8E4F4}
           <input id="fNote" value="">
         </div>
         <div class="hint" id="qc"></div>
+        <div class="field" id="namesWrap" hidden>
+          <label>English names</label>
+          <div class="hint">Arabic names from the file are translated automatically. Fix any translation — your edits are remembered on this device. <span class="tag warn">Orange</span> = still has Arabic words.</div>
+          <div class="body" style="padding:0;gap:9px" id="namesList"></div>
+        </div>
       </div>
       <div class="hint">To save as PDF: <b>Print</b> → Destination <b>Save as PDF</b> → Margins <b>None</b>, with <b>Background graphics</b> on.</div>
     </div>
@@ -316,7 +326,7 @@ function parseCSV(text){
 var extracted=false, busyCtl=null, pdfDate="", approxRev=false;
 
 function renderBusy(msg,sub){
- $("btnPrint").hidden=true; $("btnReset").hidden=true; $("btnPptx").hidden=true;
+ $("btnPrint").hidden=true; $("btnReset").hidden=true; $("btnPptx").hidden=true; showPanel(false); $("btnSet").hidden=true;
  $("stage").innerHTML='<div class="hero" style="cursor:default">'+
   '<div class="spin"></div><h3>'+esc(msg)+'</h3><p id="busySub">'+esc(sub||"")+'</p>'+
   '<div class="steps"><button class="btn" id="busyCancel">Cancel</button></div></div>';
@@ -688,7 +698,89 @@ function sharedPrefix(list){
 }
 function strip(v,p){ return v.slice(p).replace(/^[\s\-–—:|،,]+/,"").replace(/\s+/g," ").trim(); }
 
+/* ---------------- Arabic → English names ---------------- */
+var AR=/[؀-ۿ]/;
+var NAMES={};
+try{ NAMES=JSON.parse(localStorage.getItem("meena.names")||"{}")||{}; }catch(e){ NAMES={}; }
+function saveNames(){ try{ localStorage.setItem("meena.names",JSON.stringify(NAMES)); }catch(e){} }
+function arNorm(t){ return String(t).replace(/[ً-ْـ]/g,"").replace(/[أإآ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه").replace(/\s+/g," ").trim(); }
+var DICT_SRC={
+ "باقه":"Package","باقات":"Packages","عرض":"Offer","عروض":"Offers","اليوم الوطني":"National Day","الوطني":"National","يوم التاسيس":"Founding Day",
+ "فحص":"Check-up","فحوصات":"Tests","تحليل":"Test","تحاليل":"Lab Tests","مختبر":"Lab","كشف":"Consultation","استشاره":"Consultation","زياره":"Visit","متابعه":"Follow-up",
+ "شامل":"Comprehensive","الشامل":"Comprehensive","الشامله":"Comprehensive","كامل":"Complete","الكامل":"Complete","الكامله":"Complete","اساسي":"Basic","الاساسي":"Basic","الاساسيه":"Basic",
+ "متقدم":"Advanced","المتقدم":"Advanced","المتقدمه":"Advanced","مميز":"Premium","المميز":"Premium","المميزه":"Premium","الممتاز":"Premium","الممتازه":"Premium","شهري":"Monthly","سنوي":"Annual","دوري":"Periodic","الدوري":"Periodic",
+ "ذهبي":"Gold","الذهبي":"Gold","الذهبيه":"Gold","فضي":"Silver","الفضي":"Silver","الفضيه":"Silver","برونزي":"Bronze","البرونزيه":"Bronze","بلاتيني":"Platinum","البلاتيني":"Platinum","البلاتينيه":"Platinum","ماسي":"Diamond","الماسي":"Diamond","الماسيه":"Diamond",
+ "صحه":"Health","الصحه":"Health","الصحه العامه":"General Health","عام":"General","العام":"General","العامه":"General","طب الاسره":"Family Medicine","الطب العام":"General Medicine","باطنيه":"Internal Medicine","الباطنيه":"Internal Medicine",
+ "المراه":"Women's","مراه":"Women's","النساء":"Women's","نساء":"Women's","نسائي":"Women's","الرجل":"Men's","الرجال":"Men's","رجال":"Men's","رجالي":"Men's","الاطفال":"Children","اطفال":"Children","طفل":"Child","الطفل":"Child","كبار السن":"Seniors","الشباب":"Youth","العائله":"Family","عائلي":"Family","الموظفين":"Employees","الطلاب":"Students","الرياضيين":"Athletes","رياضي":"Sports",
+ "القلب":"Heart","قلب":"Heart","السكر":"Diabetes","السكري":"Diabetes","الغده الدرقيه":"Thyroid","الغده":"Gland","الدرقيه":"Thyroid","الكلي":"Kidney","الكليه":"Kidney","الكبد":"Liver","الدم":"Blood","دم":"Blood","فقر الدم":"Anemia","الانيميا":"Anemia","الحديد":"Iron","حديد":"Iron",
+ "فيتامين":"Vitamin","فيتامينات":"Vitamins","الفيتامينات":"Vitamins","فيتامين د":"Vitamin D","د":"D","ب12":"B12","الكوليسترول":"Cholesterol","الدهون":"Lipids","ضغط الدم":"Blood Pressure","الضغط":"Blood Pressure","الهرمونات":"Hormones","هرمونات":"Hormones","المناعه":"Immunity","الحساسيه":"Allergy","العظام":"Bones","هشاشه العظام":"Osteoporosis","المفاصل":"Joints","الجهاز الهضمي":"Digestive","المعده":"Stomach","البروستاتا":"Prostate","الخصوبه":"Fertility","الحمل":"Pregnancy","ما قبل الزواج":"Premarital","قبل الزواج":"Premarital","الزواج":"Marriage","السمنه":"Obesity","الوزن":"Weight","التغذيه":"Nutrition","تغذيه":"Nutrition","النوم":"Sleep",
+ "الاسنان":"Dental","اسنان":"Dental","الفم":"Oral","تنظيف":"Cleaning","تبييض":"Whitening","حشوه":"Filling","حشوات":"Fillings","تقويم":"Orthodontics","زراعه":"Implant","خلع":"Extraction","عصب":"Root Canal","تلميع":"Polishing","فلورايد":"Fluoride",
+ "الجلديه":"Dermatology","جلديه":"Dermatology","البشره":"Skin","بشره":"Skin","الشعر":"Hair","شعر":"Hair","تساقط الشعر":"Hair Loss","ازاله الشعر":"Hair Removal","ليزر":"Laser","الليزر":"Laser","تجميل":"Cosmetic","التجميل":"Cosmetic","نضاره":"Glow","هيدرافيشل":"HydraFacial","بوتوكس":"Botox","فيلر":"Filler","تقشير":"Peeling","بلازما":"PRP","ميزوثيرابي":"Mesotherapy","كربون":"Carbon","فراكشنل":"Fractional",
+ "العيون":"Eye","عيون":"Eye","النظر":"Vision","الانف والاذن والحنجره":"ENT","انف واذن وحنجره":"ENT","السمع":"Hearing","علاج طبيعي":"Physiotherapy","العلاج الطبيعي":"Physiotherapy","جلسه":"Session","جلسات":"Sessions","الاشعه":"Radiology","اشعه":"X-ray","سونار":"Ultrasound","تخطيط القلب":"ECG","تطعيم":"Vaccination","تطعيمات":"Vaccinations","لقاح":"Vaccine","الانفلونزا":"Influenza",
+ "و":"&","مع":"with","لل":"for","ل":"for","من":"from","الي":"to","مجاني":"Free","مجانا":"Free","خصم":"Discount","اضافي":"Extra","واحد":"One","واحده":"One","اثنين":"Two","ثلاث":"Three","شهر":"Month","اشهر":"Months","سنه":"Year",
+ "فرع":"Branch","الفرع":"Branch","مركز":"Center","المركز":"Center","مجمع":"Complex","عياده":"Clinic","العياده":"Clinic","عيادات":"Clinics","طبي":"Medical","الطبي":"Medical","الطبيه":"Medical","مستشفي":"Hospital",
+ "الرياض":"Riyadh","جده":"Jeddah","مكه":"Makkah","المدينه":"Madinah","الدمام":"Dammam","الخبر":"Al Khobar","الظهران":"Dhahran","الاحساء":"Al Ahsa","القصيم":"Qassim","بريده":"Buraidah","ابها":"Abha","تبوك":"Tabuk","حائل":"Hail","الطائف":"Taif","جازان":"Jazan","نجران":"Najran","ينبع":"Yanbu","الجبيل":"Jubail",
+ "الملقا":"Al Malqa","الورود":"Al Wurud","السويدي":"Al Suwaidi","القيروان":"Al Qirawan","حطين":"Hittin","الروضه":"Al Rawdah","ابحر":"Obhur","السليمانيه":"Al Sulaimaniyah","العليا":"Al Olaya","النرجس":"Al Narjis","الياسمين":"Al Yasmin","الربيع":"Al Rabi","الصحافه":"Al Sahafa","النخيل":"Al Nakheel","الملز":"Al Malaz","الشفا":"Al Shifa","العزيزيه":"Al Aziziyah","الحمراء":"Al Hamra","الصفا":"Al Safa","الروابي":"Al Rawabi","الشاطئ":"Al Shati","النسيم":"Al Naseem","الفيصليه":"Al Faisaliyah","المروج":"Al Muruj","الغدير":"Al Ghadir","قرطبه":"Qurtubah","اشبيليا":"Ishbiliyah","الرمال":"Al Rimal","العارض":"Al Arid","لبن":"Laban","ظهره لبن":"Dhahrat Laban","الدرعيه":"Diriyah","الخرج":"Al Kharj","شمال":"North","جنوب":"South","شرق":"East","غرب":"West"
+};
+var DICT={},DICT_MAX=1;
+Object.keys(DICT_SRC).forEach(function(k){ var n=arNorm(k); DICT[n]=DICT_SRC[k]; DICT_MAX=Math.max(DICT_MAX,n.split(" ").length); });
+function arWord(w){
+ if(DICT[w])return DICT[w];
+ if(/^و./.test(w)){ var r=arWord(w.slice(1)); if(r)return "& "+r; }
+ if(/^(لل|بال)./.test(w)){ var r2=arWord("ال"+w.slice(w.indexOf("ل")===0?2:3)); if(r2)return (w.charAt(0)==="ب"?"with ":"for ")+r2; }
+ if(/^ال./.test(w)&&DICT[w.slice(2)])return DICT[w.slice(2)];
+ if(!/^ال/.test(w)&&DICT["ال"+w])return DICT["ال"+w];
+ return null;
+}
+function autoEn(t){
+ var parts=arNorm(t).split(" "),out=[],miss=false,i=0;
+ while(i<parts.length){
+  var hit=null,len=0;
+  for(var L=Math.min(DICT_MAX,parts.length-i);L>1&&!hit;L--){ var ph=parts.slice(i,i+L).join(" "); if(DICT[ph]){hit=DICT[ph];len=L;} }
+  if(!hit){ var w=parts[i]; hit=AR.test(w)?arWord(w):w; len=1; if(!hit){hit=w;miss=true;} }
+  out.push(hit); i+=len;
+ }
+ /* Arabic puts the noun first ("تنظيف الأسنان" = cleaning of teeth); English puts it last,
+    so reverse the words inside each run between connectors (& / with / for). */
+ var groups=[{c:"",w:[]}];
+ out.forEach(function(h){
+  var m=h.match(/^(&|with|for|from|to)(\s+(.*))?$/);
+  if(m){ groups.push({c:m[1],w:m[3]?[m[3]]:[]}); } else groups[groups.length-1].w.push(h);
+ });
+ var res=groups.filter(function(g){return g.w.length;}).map(function(g,i){ return (i&&g.c?g.c+" ":"")+g.w.reverse().join(" "); }).join(" ").replace(/\s+/g," ").trim();
+ if(miss)return {text:String(t).replace(/\s+/g," ").trim(),miss:true};
+ return {text:/^[a-z]/.test(res)?res.charAt(0).toUpperCase()+res.slice(1):res,miss:miss};
+}
+var arSeen=[];
+function enName(t){
+ if(!AR.test(t))return t;
+ if(arSeen.indexOf(t)<0)arSeen.push(t);
+ var o=NAMES[arNorm(t)];
+ return o&&o.trim()?o.trim():autoEn(t).text;
+}
+function showPanel(on){
+ $("panel").hidden=!on; $("wrap").classList.toggle("solo",!on);
+ $("btnSet").setAttribute("aria-expanded",on?"true":"false"); fit();
+}
+var namesPrompted=false;
+function renderNames(){
+ var box=$("namesList"); if(!box)return;
+ $("namesWrap").hidden=!arSeen.length;
+ box.innerHTML="";
+ arSeen.forEach(function(t){
+  var k=arNorm(t),a=autoEn(t),v=NAMES[k]&&NAMES[k].trim()?NAMES[k]:a.text;
+  var row=document.createElement("div"); row.className="name-row";
+  var lb=document.createElement("div"); lb.className="ar"; lb.textContent=t;
+  var inp=document.createElement("input"); inp.value=v; inp.setAttribute("aria-label","English name for "+t);
+  if(AR.test(v))inp.className="todo";
+  inp.addEventListener("change",function(){ var x=inp.value.trim(); if(x&&x!==a.text)NAMES[k]=x; else delete NAMES[k]; saveNames(); build(); });
+  row.appendChild(lb); row.appendChild(inp); box.appendChild(row);
+ });
+ if(!namesPrompted&&arSeen.some(function(t){ return AR.test(enName(t)); })){ namesPrompted=true; showPanel(true); }
+}
+
 function buildModel(){
+ arSeen=[];
  var rows=raw.rows,m=map;
  var rawBr=[],rawPk=[],codes=[],qtys=[];
  rows.forEach(function(r){
@@ -704,8 +796,8 @@ function buildModel(){
  var pb=sharedPrefix(rawBr), pp=sharedPrefix(rawPk);
  var branches={},pkgs={},matrix={},labB={},labP={},totalQty=0;
  rawBr.forEach(function(b,i){
-  var bn=titleCase(pb?strip(b,pb):b)||"—";
-  var pn=titleCase(pp?strip(rawPk[i],pp):rawPk[i])||"Package";
+  var bn=enName(titleCase(pb?strip(b,pb):b)||"—");
+  var pn=enName(titleCase(pp?strip(rawPk[i],pp):rawPk[i])||"Package");
   var key=pn+(codes[i]?" ("+codes[i]+")":"");
   var q=qtys[i]||0; if(!q)return;
   labB[bn.toLowerCase()]=labB[bn.toLowerCase()]||bn; bn=labB[bn.toLowerCase()];
@@ -741,7 +833,7 @@ function build(){
  model=buildModel();
  var m=model,stage=$("stage");
  if(!m.branches.length){ renderHero(); return; }
- $("docFields").hidden=false; $("btnPrint").hidden=false; $("btnReset").hidden=false; $("btnPptx").hidden=false;
+ $("docFields").hidden=false; $("btnPrint").hidden=false; $("btnReset").hidden=false; $("btnPptx").hidden=false; $("btnSet").hidden=false;
  var maxN=m.branches[0].n||1;
  var dense=m.branches.length>9?(m.branches.length>14?(m.branches.length>19?"dense3":"dense2"):"dense"):"";
 
@@ -797,9 +889,10 @@ function build(){
  fit();
  $("qc").innerHTML='<span class="tag">'+m.totalQty+' packages</span> · '+m.branches.length+' branches · '+m.packages.length+' package types'+(hasRev?' · SAR '+money(m.totalNet):'')+
   (extracted?' <span class="tag warn">Extracted from image/PDF — check the numbers</span>':'');
+ renderNames();
 }
 function renderHero(err){
- $("btnPrint").hidden=true; $("btnReset").hidden=true; $("btnPptx").hidden=true;
+ $("btnPrint").hidden=true; $("btnReset").hidden=true; $("btnPptx").hidden=true; showPanel(false); $("btnSet").hidden=true;
  $("stage").innerHTML='<div class="hero" id="hero" tabindex="0" role="button">'+
   (err?'<div class="tag warn" style="margin-bottom:14px">'+esc(err)+'</div>':'')+
   '<div class="ic"><svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L8 8m4-4 4 4"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg></div>'+
@@ -1116,8 +1209,9 @@ function savePdf(){
   window.print();
  }).then(function(){ btn.disabled=false; btn.textContent=old; });
 }
-$("btnReset").addEventListener("click",function(){ raw={headers:[],rows:[]}; map={}; wb=null; extracted=false; $("file").value="";
- $("btnPrint").hidden=true; $("btnReset").hidden=true; $("btnPptx").hidden=true;
+$("btnSet").addEventListener("click",function(){ showPanel($("panel").hidden); });
+$("btnReset").addEventListener("click",function(){ namesPrompted=false; raw={headers:[],rows:[]}; map={}; wb=null; extracted=false; $("file").value="";
+ $("btnPrint").hidden=true; $("btnReset").hidden=true; $("btnPptx").hidden=true; showPanel(false); $("btnSet").hidden=true;
  $("mapWrap").hidden=true; $("docFields").hidden=true; $("sheetWrap").hidden=true; renderHero(); });
 function setSize(){ $("pageRule").textContent="@page{size:297mm 172mm;margin:0}"; }
 window.addEventListener("resize",fit);
