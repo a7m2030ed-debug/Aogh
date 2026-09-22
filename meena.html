@@ -234,6 +234,7 @@ table.rep tbody tr:nth-child(even) td.hl{background:#E8E4F4}
           <div class="field">
             <label for="fDate">Date</label>
             <input id="fDate" value="">
+            <div class="hint" id="dateSrc"></div>
           </div>
         </div>
         <div class="field">
@@ -323,7 +324,7 @@ function parseCSV(text){
   if(t!==""&&/^-?\d+(\.\d+)?$/.test(t))return parseFloat(t);
   return t;});});
 }
-var extracted=false, busyCtl=null, pdfDate="", approxRev=false;
+var extracted=false, busyCtl=null, pdfDate="", approxRev=false, sheetDate=null;
 
 function renderBusy(msg,sub){
  $("btnPrint").hidden=true; $("btnReset").hidden=true; $("btnPptx").hidden=true; showPanel(false); $("btnSet").hidden=true;
@@ -559,7 +560,7 @@ function pdfImages(pdf,name){
 }
 
 function handleFile(f){
- if(!f)return; approxRev=false; pdfDate="";
+ if(!f)return; approxRev=false; pdfDate=""; wb=null; sheetDate=null;
  var n=(f.name||"").toLowerCase();
  if(/\.(png|jpe?g|webp|gif)$/.test(n)||/^image\//.test(f.type||"")){ claudeExtract(null,[f],f.name||"Image"); return; }
  if(/\.pdf$/.test(n)||f.type==="application/pdf"){ pdfText(f); return; }
@@ -592,7 +593,7 @@ function handleFile(f){
  fr.readAsArrayBuffer(f);
 }
 function handleText(t){
- var objs=[];
+ var objs=[]; wb=null; sheetDate=null; pdfDate="";
  try{ objs=readAoA(parseCSV(t)); }catch(e){}
  var wide=objs.length&&Object.keys(objs[0]).length>=2;
  if(wide){ extracted=false; $("fNote").value=""; $("sheetWrap").hidden=true;
@@ -601,6 +602,7 @@ function handleText(t){
 }
 function useSheet(name,fname){
  var aoa=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,raw:true,defval:""});
+ sheetDate=cellDate(aoa);
  var objs=readAoA(aoa);
  if(!objs.length){renderHero("This sheet is empty — pick a sheet with data.");return;}
  loadRows(objs,'<b>'+(fname||name)+'</b> — '+objs.length+' rows, '+Object.keys(objs[0]).length+' columns');
@@ -705,7 +707,7 @@ try{ NAMES=JSON.parse(localStorage.getItem("meena.names")||"{}")||{}; }catch(e){
 function saveNames(){ try{ localStorage.setItem("meena.names",JSON.stringify(NAMES)); }catch(e){} }
 function arNorm(t){ return String(t).replace(/[ً-ْـ]/g,"").replace(/[أإآ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه").replace(/\s+/g," ").trim(); }
 var DICT_SRC={
- "باقه":"Package","باقات":"Packages","عرض":"Offer","عروض":"Offers","اليوم الوطني":"National Day","الوطني":"National","يوم التاسيس":"Founding Day",
+ "باقه":"Package","باقات":"Packages","عافيتك":"Afiatak","عافيه":"Wellness","عرض":"Offer","عروض":"Offers","اليوم الوطني":"National Day","الوطني":"National","يوم التاسيس":"Founding Day",
  "فحص":"Check-up","فحوصات":"Tests","تحليل":"Test","تحاليل":"Lab Tests","مختبر":"Lab","كشف":"Consultation","استشاره":"Consultation","زياره":"Visit","متابعه":"Follow-up",
  "شامل":"Comprehensive","الشامل":"Comprehensive","الشامله":"Comprehensive","كامل":"Complete","الكامل":"Complete","الكامله":"Complete","اساسي":"Basic","الاساسي":"Basic","الاساسيه":"Basic",
  "متقدم":"Advanced","المتقدم":"Advanced","المتقدمه":"Advanced","مميز":"Premium","المميز":"Premium","المميزه":"Premium","الممتاز":"Premium","الممتازه":"Premium","شهري":"Monthly","سنوي":"Annual","دوري":"Periodic","الدوري":"Periodic",
@@ -733,7 +735,7 @@ function arWord(w){
  return null;
 }
 function autoEn(t){
- var parts=arNorm(t).split(" "),out=[],miss=false,i=0;
+ var parts=arNorm(t).replace(/\s*([\-–\/+])\s*/g," $1 ").trim().split(" "),out=[],miss=false,i=0;
  while(i<parts.length){
   var hit=null,len=0;
   for(var L=Math.min(DICT_MAX,parts.length-i);L>1&&!hit;L--){ var ph=parts.slice(i,i+L).join(" "); if(DICT[ph]){hit=DICT[ph];len=L;} }
@@ -744,7 +746,7 @@ function autoEn(t){
     so reverse the words inside each run between connectors (& / with / for). */
  var groups=[{c:"",w:[]}];
  out.forEach(function(h){
-  var m=h.match(/^(&|with|for|from|to)(\s+(.*))?$/);
+  var m=h.match(/^(&|with|for|from|to|-|–|\/|\+)(\s+(.*))?$/);
   if(m){ groups.push({c:m[1],w:m[3]?[m[3]]:[]}); } else groups[groups.length-1].w.push(h);
  });
  var res=groups.filter(function(g){return g.w.length;}).map(function(g,i){ return (i&&g.c?g.c+" ":"")+g.w.reverse().join(" "); }).join(" ").replace(/\s+/g," ").trim();
@@ -790,7 +792,7 @@ function buildModel(){
   var inl=pnRaw.match(/\(([A-Za-z]{2,5}-?\d{2,})\)/);
   if(!code&&inl)code=inl[1];
   var q=m.Qty?num(r[m.Qty]):1; if(!q)q=m.Qty?0:1;
-  rawBr.push(br); rawPk.push(pnRaw.replace(/\s*\([A-Za-z]{2,5}-?\d{2,}\)\s*$/,"").trim()||"Package");
+  rawBr.push(br); rawPk.push(pnRaw.replace(/\s*\([A-Za-z]{2,5}-?\d{2,}\)\s*$/,"").replace(/^باق[ةه]\s+(?=\S)/,"").trim()||"Package");
   codes.push(code); qtys.push(q);
  });
  var pb=sharedPrefix(rawBr), pp=sharedPrefix(rawPk);
@@ -943,16 +945,47 @@ function findDateCol(){
  }
  return "";
 }
+/* A date written anywhere in the sheet — e.g. "Date: 17/09/2026" in a title row above
+   the table. Only whole-cell dates count, so MRNs and amounts are never taken for one. */
+function cellDate(aoa){
+ var counts={},best=null,bc=0;
+ for(var r=0;r<aoa.length;r++)for(var c=0;c<aoa[r].length;c++){
+  var v=aoa[r][c],d=null;
+  if(v instanceof Date&&!isNaN(v))d=v;
+  else if(typeof v==="string"){
+   var m=v.match(/(^|[^\d])(\d{1,2})[\/\-.](\d{1,2})[\/\-.](20\d{2})(?!\d)/)||null;
+   if(m)d=new Date(+m[4],+m[3]-1,+m[2]);
+   else if((m=v.match(/(^|[^\d])(20\d{2})-(\d{2})-(\d{2})(?!\d)/)))d=new Date(+m[2],+m[3]-1,+m[4]);
+  }
+  if(!d||isNaN(d)||d.getFullYear()<2015||d.getFullYear()>2100)continue;
+  var k=fmtDate(d); counts[k]=(counts[k]||0)+1;
+  if(counts[k]>bc){bc=counts[k];best=d;}
+ }
+ return best;
+}
+/* The day the Excel file was last saved, as recorded inside the file itself —
+   not the day it was uploaded. */
+function savedDate(){
+ var P=wb&&wb.Props; if(!P)return null;
+ var d=P.ModifiedDate||P.CreatedDate; d=d?new Date(d):null;
+ return d&&!isNaN(d)&&d.getFullYear()>=2015?d:null;
+}
 function autoDate(){
  $("fNote").value="";
- var col=findDateCol(),counts={},best=null,bc=0,bestD=null;
+ var col=findDateCol(),counts={},best=null,bc=0,bestD=null,src="";
  if(col)raw.rows.forEach(function(r){
   var d=toDate(r[col]); if(!d)return;
   var k=fmtDate(d); counts[k]=(counts[k]||0)+1;
   if(counts[k]>bc){bc=counts[k];best=k;bestD=d;}
  });
- reportDate=bestD||new Date();
- $("fDate").value=best||fmtDate(new Date());
+ if(bestD)src="From the “"+col+"” column in the file";
+ else if(sheetDate){ bestD=sheetDate; src="From the date written in the sheet"; }
+ else if(pdfDate&&toDate(pdfDate)){ bestD=toDate(pdfDate); src="From the date written in the PDF"; }
+ else if(savedDate()){ bestD=savedDate(); src="From the file’s last-saved date — edit if the sales day differs"; }
+ else { bestD=new Date(); src="No date found in the file — today’s date is used"; }
+ reportDate=bestD;
+ $("fDate").value=fmtDate(bestD);
+ $("dateSrc").textContent=src;
 }
 function weekday(){
  var d=new Date($("fDate").value);
@@ -1210,7 +1243,7 @@ function savePdf(){
  }).then(function(){ btn.disabled=false; btn.textContent=old; });
 }
 $("btnSet").addEventListener("click",function(){ showPanel($("panel").hidden); });
-$("btnReset").addEventListener("click",function(){ namesPrompted=false; raw={headers:[],rows:[]}; map={}; wb=null; extracted=false; $("file").value="";
+$("btnReset").addEventListener("click",function(){ namesPrompted=false; raw={headers:[],rows:[]}; map={}; wb=null; sheetDate=null; extracted=false; $("file").value="";
  $("btnPrint").hidden=true; $("btnReset").hidden=true; $("btnPptx").hidden=true; showPanel(false); $("btnSet").hidden=true;
  $("mapWrap").hidden=true; $("docFields").hidden=true; $("sheetWrap").hidden=true; renderHero(); });
 function setSize(){ $("pageRule").textContent="@page{size:297mm 172mm;margin:0}"; }
