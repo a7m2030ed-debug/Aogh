@@ -24,7 +24,7 @@ python3 build_pages.py
 |---|---|---|
 | **[تقرير الأطباء التفصيلي](#تقرير-الأطباء-التفصيلي--physicianhtml)** | https://a7m2030ed-debug.github.io/Aogh/physician.html | قالب الـPDF «Physician Detail — Single Table» يُملأ من تصدير MIS لأي مدة: يوم أو أسبوع أو شهر |
 | **[سجل الموظفين](#سجل-الموظفين--hrhtml)** | https://a7m2030ed-debug.github.io/Aogh/hr.html | قاعدة بيانات الموارد البشرية وواجهتها |
-| **تقرير عروض اليوم الوطني — Meena** | https://a7m2030ed-debug.github.io/Aogh/meena.html | يقرأ جدول المبيعات (إكسل أو CSV أو PDF أو لصق) ويُخرج تقرير الصفحتين، ويحفظه PDF أو PowerPoint |
+| **National Day Offer Report — Meena** | https://a7m2030ed-debug.github.io/Aogh/meena.html | يقرأ جدول المبيعات (إكسل أو CSV أو PDF أو لصق) ويُخرج تقرير الصفحتين، ويحفظه PDF أو PowerPoint — الواجهة بالإنجليزي |
 | **[نظام إدارة وتوثيق الفرع الطبي](#نظام-إدارة-وتوثيق-الفرع-الطبي--branchhtml)** | https://a7m2030ed-debug.github.io/Aogh/branch.html | نسخة Pilot لفرع واحد بثلاث وحدات: توثيق الموظفين · كادر الفرع · القدرة الاستيعابية |
 
 ## طريقة الاستخدام
