@@ -694,6 +694,12 @@ function sharedPrefix(list){
   while(j<p&&j<b.length&&a.charAt(j)===b.charAt(j))j++;
   p=j; if(p<4)return 0;
  }
+ /* Cut only at a word boundary, so "…Offer- Pregnancy" and "…Offer- Physiotherapy"
+    don't lose their shared first letter. */
+ var SEP=/[\s\-–—:|،,_\/]/;
+ function atEdge(q){ return SEP.test(a.charAt(q-1))||uniq.every(function(u){ return SEP.test(u.charAt(q)); }); }
+ while(p>0&&!atEdge(p))p--;
+ if(p<4)return 0;
  for(var k2=0;k2<uniq.length;k2++){
   if(uniq[k2].slice(p).replace(/^[\s\-–—:|،,]+/,"").trim().length<2)return 0;
  }
@@ -873,11 +879,11 @@ function build(){
  var kTop=m.tops.slice(0,2).join(" & ")||"—";
  var p1='<div class="paper '+dense+'">'+head($("fSub").value+" · "+weekday(),1)+
   '<div class="kpis">'+
-   kpi("Packages Sold",m.totalQty,m.rows+" entries")+
+   kpi("Packages Sold",m.totalQty,m.rows+(m.rows===1?" entry":" entries"))+
    kpi("Branches",m.branches.length,"with sales today")+
    (hasRev?kpi("Net Revenue","SAR "+Math.round(m.totalNet).toLocaleString("en-US"),(approxRev?"distributed by branch":(m.base?("SAR "+m.base+" per package"):"all packages")),true)
-         :kpi("Top Branch",m.branches[0].name,m.branches[0].n+" packages",true))+
-   kpi("Top Packages",kTop,m.topN+" sales each",true)+
+         :kpi("Top Branch",m.branches[0].name,m.branches[0].n+(m.branches[0].n===1?" package":" packages"),true))+
+   kpi("Top Packages",kTop,m.topN+(m.topN===1?" sale each":" sales each"),true)+
   '</div>'+
   '<div class="sec"><i>1</i><h3>Packages by Branch</h3></div>'+
   '<div class="tbl-wrap"><table class="rep"><thead><tr><th class="ctr" style="width:42px">#</th><th>Branch</th>'+
@@ -1069,10 +1075,10 @@ function buildPptx(){
  header(s1,$("fSub").value+" · "+weekday());
  var kw=(1000-44-3*14)/4;
  var kp=[
-  {l:"Packages Sold",v:String(m.totalQty),s:m.rows+" entries",b:30},
+  {l:"Packages Sold",v:String(m.totalQty),s:m.rows+(m.rows===1?" entry":" entries"),b:30},
   {l:"Branches",v:String(m.branches.length),s:"with sales today",b:30},
-  {l:"Top Branch",v:m.branches[0].name,s:m.branches[0].n+" packages",b:21},
-  {l:"Top Packages",v:m.tops.slice(0,2).join(" & ")||"—",s:m.topN+" sales each",b:21}
+  {l:"Top Branch",v:m.branches[0].name,s:m.branches[0].n+(m.branches[0].n===1?" package":" packages"),b:21},
+  {l:"Top Packages",v:m.tops.slice(0,2).join(" & ")||"—",s:m.topN+(m.topN===1?" sale each":" sales each"),b:21}
  ];
  kp.forEach(function(k,i){
   var x=22+i*(kw+14);
