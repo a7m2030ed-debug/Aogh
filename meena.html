@@ -679,6 +679,7 @@ function money(n){ return n.toLocaleString("en-US",{minimumFractionDigits:2,maxi
 function titleCase(t){
  return t.replace(/\s+/g," ").trim().split(" ").map(function(w){
   if(!w)return w;
+  if(/^(AL|EL)$/.test(w))return w.charAt(0)+w.charAt(1).toLowerCase();
   if(/^[A-Z0-9\-]+$/.test(w)&&w.length<=4)return w;
   return w.charAt(0).toUpperCase()+w.slice(1).toLowerCase();
  }).join(" ");
@@ -781,6 +782,16 @@ function renderNames(){
  if(!namesPrompted&&arSeen.some(function(t){ return AR.test(enName(t)); })){ namesPrompted=true; showPanel(true); }
 }
 
+/* One branch is often typed several ways across rows ("AABHOR" / "Aubhor", "Al wourod" /
+   "Al Wurud"). Compare on a consonant skeleton — no "Al", no vowels, no doubled letters —
+   and show the spelling the file uses most. */
+function branchKey(b){
+ var t=String(b).toLowerCase().trim();
+ if(AR.test(t))return "ar:"+arNorm(t).replace(/^ال/,"").replace(/\s+/g,"");
+ t=t.replace(/^(al|el)[\s\-]*/,"").replace(/[^a-z0-9]/g,"");
+ var k=t.replace(/[aeiou]/g,"").replace(/(.)\1+/g,"$1").replace(/h$/,"");
+ return k.length>=2?k:t;
+}
 function buildModel(){
  arSeen=[];
  var rows=raw.rows,m=map;
@@ -797,8 +808,19 @@ function buildModel(){
  });
  var pb=sharedPrefix(rawBr), pp=sharedPrefix(rawPk);
  var branches={},pkgs={},matrix={},labB={},labP={},totalQty=0;
+ var brCount={},brPick={};
  rawBr.forEach(function(b,i){
-  var bn=enName(titleCase(pb?strip(b,pb):b)||"—");
+  if(!(qtys[i]||0))return;
+  var v=titleCase(pb?strip(b,pb):b)||"—",k=branchKey(v);
+  brCount[k]=brCount[k]||{}; brCount[k][v]=(brCount[k][v]||0)+qtys[i];
+ });
+ Object.keys(brCount).forEach(function(k){
+  var best=null; Object.keys(brCount[k]).forEach(function(v){ if(best===null||brCount[k][v]>brCount[k][best])best=v; });
+  brPick[k]=best;
+ });
+ rawBr.forEach(function(b,i){
+  var v0=titleCase(pb?strip(b,pb):b)||"—";
+  var bn=enName(brPick[branchKey(v0)]||v0);
   var pn=enName(titleCase(pp?strip(rawPk[i],pp):rawPk[i])||"Package");
   var key=pn+(codes[i]?" ("+codes[i]+")":"");
   var q=qtys[i]||0; if(!q)return;
