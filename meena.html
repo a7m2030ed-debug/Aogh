@@ -800,8 +800,8 @@ function mergeParts(){
   var src=p.objs;
   if(!same){
    raw.headers=Object.keys(src[0]).filter(function(k){return k.indexOf("__")!==0;}); raw.rows=src; map={}; autoMap();
-   var mp=map;
-   src=src.map(function(o){ var n={}; Object.keys(CANON).forEach(function(k){ n[CANON[k]]=mp[k]?o[mp[k]]:(k==="Qty"?1:""); }); return n; });
+   var mp=map,hosp=/hospital|مستشفى/i.test(String(mp.Branch||""));
+   src=src.map(function(o){ var n={}; Object.keys(CANON).forEach(function(k){ n[CANON[k]]=mp[k]?o[mp[k]]:(k==="Qty"?1:""); }); if(hosp)n.__hosp=1; return n; });
   }
   src.forEach(function(o){ o.__file=p.name; rows.push(o); });
   p.rows=src;
@@ -854,6 +854,8 @@ function autoMap(){
   Package:["service_description","service description","the package","package","package name","package_name","offer","العرض","الباقة"],
   Code:["service_code","service code","package_code","package code","pkg_code","pkg code"]
  };
+ /* Branch names come from the Hospital column whenever the file has one. */
+ hs.forEach(function(h){ if(!map.Branch&&/hospital|مستشفى/i.test(String(h))&&!/(^|[\s_\-])(id|code|no|num|number)$/i.test(String(h).trim())&&numericity(h)<.5){ map.Branch=h; used[h]=1; } });
  Object.keys(KNOWN).forEach(function(k){
   for(var i=0;i<KNOWN[k].length&&!map[k];i++){
    hs.forEach(function(h){ if(!map[k]&&!used[h]&&String(h).trim().toLowerCase()===KNOWN[k][i]){ map[k]=h; used[h]=1; } });
@@ -1065,11 +1067,13 @@ function buildModel(){
  }
  rawBr.forEach(function(b,i){ if(!cutB[i])cutB[i]=learned(b,seenB); cutP[i]=cutP[i]||learned(rawPk[i],seenP); });
  var branches={},pkgs={},matrix={},labB={},labP={},totalQty=0;
- var brCount={},brPick={};
+ var brCount={},brPick={},allHosp=/hospital|مستشفى/i.test(String(m.Branch||""));
+ /* A branch spelled several ways is shown as the Hospital column spells it. */
  rawBr.forEach(function(b,i){
   if(!(qtys[i]||0))return;
   var v=titleCase(cutB[i]?strip(b,cutB[i]):b)||"—",k=branchKey(v);
-  brCount[k]=brCount[k]||{}; brCount[k][v]=(brCount[k][v]||0)+qtys[i];
+  var w=(allHosp||rows[i].__hosp)?1000:1;
+  brCount[k]=brCount[k]||{}; brCount[k][v]=(brCount[k][v]||0)+qtys[i]*w;
  });
  Object.keys(brCount).forEach(function(k){
   var best=null; Object.keys(brCount[k]).forEach(function(v){ if(best===null||brCount[k][v]>brCount[k][best])best=v; });
