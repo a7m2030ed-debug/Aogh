@@ -190,6 +190,7 @@ table.rep tbody tr:nth-child(even) td.hl{background:#E8E4F4}
   </div>
   <div class="actions">
     <button class="btn" id="btnReset" hidden>New file</button>
+    <button class="btn" id="btnAdd" hidden>+ Add files</button>
     <button class="btn" id="btnSet" hidden aria-expanded="false">Names &amp; settings</button>
     <button class="btn" id="btnPptx" hidden>PowerPoint</button>
     <button class="btn primary" id="btnPrint" hidden>Save PDF</button>
@@ -197,7 +198,7 @@ table.rep tbody tr:nth-child(even) td.hl{background:#E8E4F4}
 </div>
 
 <div class="wrap solo" id="wrap">
-  <input type="file" id="file" accept=".xlsx,.xls,.csv,.pdf,.png,.jpg,.jpeg,.webp,.gif" hidden>
+  <input type="file" id="file" multiple accept=".xlsx,.xlsm,.xlsb,.xls,.xltx,.ods,.csv,.tsv,.txt,.pdf,.png,.jpg,.jpeg,.jfif,.webp,.gif,.bmp,image/*" hidden>
   <div class="panel noprint" id="panel" hidden>
     <h2>Report settings</h2>
     <div class="body">
@@ -273,12 +274,12 @@ var PAT={
 };
 var NEG=/(doctor|physician|staff|user|employee|entered|طبيب|موظف)/i;
 var IDCOL=/(^|[\s_\-])(mrn|no\.?#?|#|id|file\s*(no|num)?|serial|s\/?n)(\s|$)|patient|اسم|المريض|الملف|الهوية|رقم/i;
-var raw={headers:[],rows:[]}, map={}, wb=null, model=null;
+var raw={headers:[],rows:[]}, map={}, model=null;
 var $=function(id){return document.getElementById(id);};
 
 /* ---------------- ingest ---------------- */
 function loadRows(objRows,label){
- raw.headers=Object.keys(objRows[0]||{});
+ raw.headers=Object.keys(objRows[0]||{}).filter(function(k){return k.indexOf("__")!==0;});
  raw.rows=objRows;
  $("fileInfo").innerHTML=label;
  fillSelects(); autoMap(); autoDate(); build();
@@ -324,10 +325,10 @@ function parseCSV(text){
   if(t!==""&&/^-?\d+(\.\d+)?$/.test(t))return parseFloat(t);
   return t;});});
 }
-var extracted=false, busyCtl=null, pdfDate="", approxRev=false, sheetDate=null;
+var extracted=false, busyCtl=null, approxRev=false;
 
 function renderBusy(msg,sub){
- $("btnPrint").hidden=true; $("btnReset").hidden=true; $("btnPptx").hidden=true; showPanel(false); $("btnSet").hidden=true;
+ $("btnPrint").hidden=true; $("btnReset").hidden=true; $("btnPptx").hidden=true; showPanel(false); $("btnSet").hidden=true; $("btnAdd").hidden=true;
  $("stage").innerHTML='<div class="hero" style="cursor:default">'+
   '<div class="spin"></div><h3>'+esc(msg)+'</h3><p id="busySub">'+esc(sub||"")+'</p>'+
   '<div class="steps"><button class="btn" id="busyCancel">Cancel</button></div></div>';
@@ -349,32 +350,21 @@ var EXTRACT_RULES=
  'One object per line item with qty 1; if the table is a matrix of branches (columns) by packages (rows), expand every non-empty cell into a row with qty = that number; '+
  'ignore Total rows and Total columns; keep branch and package names exactly as written; a code like PKG-0048 goes in "code", not in "package".';
 
-function claudeExtract(text,images,label){
- renderBusy("Reading the file…", images?"Extracting the table from the image":"Extracting the table from the text");
- busyCtl=new AbortController();
- getSample().then(function(s){
-  if(!s){ renderHero("Reading images only works inside claude.ai while signed in — otherwise upload the table as Excel, CSV or PDF."); return; }
+/* Resolves to row objects, or rejects with {code}. Only works inside claude.ai. */
+function claudeExtract(text,images){
+ busyCtl=busyCtl||new AbortController();
+ return getSample().then(function(s){
+  if(!s)throw {code:"no_claude"};
   var opts={modelTier:"default",signal:busyCtl.signal};
   if(images&&images.length)opts.images=images;
-  return s.json(EXTRACT_RULES+(text?("\n\nTable:\n\n"+text):""),opts).then(function(d){
-   var rows=(d&&d.rows)||[];
-   if(!rows.length)throw {code:"empty_completion"};
-   var objs=rows.map(function(r){
-    return {"Branch":String(r.branch||"—"),"Package Name":String(r.package||"Package"),
-      "Package Code":r.code?String(r.code):"", "Qty":Number(r.qty)||1};
-   });
-   extracted=true;
-   $("sheetWrap").hidden=true;
-   loadRows(objs,'<b>'+esc(label)+'</b> — '+objs.length+' rows extracted');
+  return s.json(EXTRACT_RULES+(text?("\n\nTable:\n\n"+text):""),opts);
+ }).then(function(d){
+  var rows=(d&&d.rows)||[];
+  if(!rows.length)throw {code:"empty_completion"};
+  return rows.map(function(r){
+   return {"Branch":String(r.branch||"—"),"Package Name":String(r.package||"Package"),
+     "Package Code":r.code?String(r.code):"", "Qty":Number(r.qty)||1};
   });
- }).catch(function(e){
-  var c=e&&e.code;
-  if(c==="cancelled")return;
-  renderHero(
-   c==="not_granted"||c==="sampling_disabled"?"Allow the page to use Claude to read images and PDFs — or upload the file as Excel/CSV.":
-   c==="rate_limited"?"The service is busy right now — try again shortly or upload the file as Excel/CSV.":
-   c==="image_rejected"?"The image is too large or not supported — try a clearer PNG or JPG.":
-   "Couldn't read the table from this file — try a clearer image or upload it as Excel/CSV.");
  });
 }
 
@@ -412,10 +402,14 @@ function pdfLines(tc){
 }
 var TOTAL_RE=/^(total|grand total|sum|الإجمالي|المجموع|الاجمالي)$/i;
 function colOf(x,bounds){ var i=0; while(i<bounds.length&&x>bounds[i])i++; return i; }
-function linesToTables(lines){
+function linesToTables(lines,minRun){
+ minRun=minRun||3;
  var best=null;
  for(var i=0;i<lines.length;i++){
-  var hdr=lines[i]; if(hdr.length<3)continue;
+  var hdr=lines[i]; if(hdr.length<2)continue;
+  var hits=0; hdr.forEach(function(c){ for(var k in PAT){ if(PAT[k].test(c.s)){hits++;break;} } });
+  if(hdr.length<3&&hits<2)continue;
+  if(minRun<3&&hits<2)continue;
   var expect=null,run=[];
   for(var k=i+1;k<lines.length;k++){
    var n=lines[k].length;
@@ -424,7 +418,7 @@ function linesToTables(lines){
    if(Math.abs(n-expect)>1)break;
    run.push(lines[k]);
   }
-  if(run.length<3)continue;
+  if(run.length<minRun)continue;
   if(best&&run.length<=best.run.length)continue;
   best={hdr:hdr,run:run};
  }
@@ -437,7 +431,7 @@ function linesToTables(lines){
   L.forEach(function(c){ var ci=colOf(c.x,bounds); row[ci]=row[ci]?(row[ci]+" "+c.s):c.s; });
   if(row.some(function(v){return v!=="";}))aoa.push(row);
  });
- return aoa.length>2?aoa:null;
+ return aoa.length>=1+minRun?aoa:null;
 }
 function cleanInt(v){
  var t=String(v==null?"":v).trim();
@@ -498,114 +492,302 @@ function applyRev(objs,rev){
   o["Net Amount"]=+(r/cnt[o.Branch]*(Number(o.Qty)||1)).toFixed(2);
  });
 }
-function pdfText(f){
- renderBusy("Reading PDF…","Extracting the table from the pages");
- if(typeof pdfjsLib==="undefined"){ renderHero("Couldn't load the PDF reader — check your connection or upload the file as Excel/CSV."); return; }
+/* Rows of text cells (per page) → row objects, the same way for PDF text and OCR. */
+function objsFromPages(pages,minRun){
+ var tables=[];
+ pages.forEach(function(lines){ var t=linesToTables(lines,minRun); if(t)tables.push(t); });
+ var mat=null,flat=null;
+ tables.forEach(function(t){
+  if(isMatrix(t)){ if(!mat||t.length>mat.length)mat=t; }
+  else if(!flat||t.length>flat.length)flat=t;
+ });
+ var objs=null;
+ if(mat){
+  objs=expandMatrix(mat);
+  var rev=flat?branchRevMap(flat):null;
+  if(rev&&objs.length)applyRev(objs,rev);
+ } else if(flat){
+  objs=readAoA(flat).filter(function(o){
+   var vals=Object.keys(o).map(function(k){return String(o[k]).trim();});
+   return !vals.some(function(v){return TOTAL_RE.test(v);});
+  });
+ }
+ return objs&&objs.length?objs:null;
+}
+function pagesText(pages,sep){
+ return pages.map(function(ls){return ls.map(function(c){return c.map(function(o){return o.s;}).join(sep);}).join("\n");}).join("\n");
+}
+function textDate(t){
+ var dm=t.match(/\b(\d{1,2})[\s\-\/.]([A-Za-z]{3,9}|\d{1,2})[\s\-\/.](20\d\d)\b/);
+ if(!dm)return null;
+ var d=/[A-Za-z]/.test(dm[2])?toDate(dm[1]+" "+dm[2]+" "+dm[3]):new Date(+dm[3],+dm[2]-1,+dm[1]);
+ return d&&!isNaN(d)?d:null;
+}
+
+/* ---------- image reading: Claude inside claude.ai, otherwise OCR in the browser ---------- */
+var ocrReady=null;
+function loadScript(src){
+ return new Promise(function(res,rej){ var s=document.createElement("script"); s.src=src; s.onload=res; s.onerror=function(){rej({code:"ocr_load"});}; document.head.appendChild(s); });
+}
+function getOcr(){
+ if(!ocrReady){
+  busySub("Loading the text reader (first time only)…");
+  ocrReady=(window.Tesseract?Promise.resolve():loadScript("https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"))
+   .then(function(){ return Tesseract.createWorker(["ara","eng"],1); })
+   .then(function(w){ return w.setParameters({preserve_interword_spaces:"1"}).then(function(){return w;}); })
+   .catch(function(e){ ocrReady=null; throw (e&&e.code)?e:{code:"ocr_load"}; });
+ }
+ return ocrReady;
+}
+/* Words → table rows: words whose vertical centres line up form a row, and words close
+   together on a row form one cell. Arabic cells are read right to left. */
+function ocrLines(data){
+ var words=(data.words||[]).filter(function(w){ return w.text&&w.text.trim()&&w.confidence>20; }).map(function(w){
+  var b=w.bbox; return {x0:b.x0,x1:b.x1,yc:(b.y0+b.y1)/2,h:b.y1-b.y0,s:w.text.trim()};
+ });
+ if(!words.length)return [];
+ var hs=words.map(function(w){return w.h;}).sort(function(a,b){return a-b;}), h=hs[Math.floor(hs.length/2)]||10;
+ words.sort(function(a,b){return a.yc-b.yc;});
+ var rows=[];
+ words.forEach(function(w){
+  var r=rows[rows.length-1];
+  if(r&&Math.abs(w.yc-r.yc)<=h*.6){ r.w.push(w); r.yc=(r.yc*(r.w.length-1)+w.yc)/r.w.length; }
+  else rows.push({yc:w.yc,w:[w]});
+ });
+ return rows.map(function(r){
+  var cells=[],cur=null;
+  r.w.sort(function(a,b){return a.x0-b.x0;}).forEach(function(w){
+   if(cur&&w.x0-cur.x1<h*1.3){ cur.w.push(w); cur.x1=Math.max(cur.x1,w.x1); }
+   else { cur={x0:w.x0,x1:w.x1,w:[w]}; cells.push(cur); }
+  });
+  return cells.map(function(c){
+   var ar=c.w.filter(function(w){return AR.test(w.s);}).length*2>c.w.length;
+   var ws=ar?c.w.slice().reverse():c.w;
+   return {x:(c.x0+c.x1)/2,s:ws.map(function(w){return w.s;}).join(" ").replace(/\s+/g," ").trim()};
+  }).filter(function(c){return c.s&&!/^[|‖¦:;.,_\-–—]+$/.test(c.s);});
+ }).filter(function(r){return r.length;});
+}
+function toCanvas(img){
+ if(img&&img.getContext)return Promise.resolve(img);
+ return new Promise(function(res,rej){
+  var u=URL.createObjectURL(img),im=new Image();
+  im.onload=function(){
+   var k=Math.max(1,Math.min(3,1800/Math.max(im.width,1)));
+   var cv=document.createElement("canvas"); cv.width=Math.round(im.width*k); cv.height=Math.round(im.height*k);
+   var cx=cv.getContext("2d"); cx.fillStyle="#fff"; cx.fillRect(0,0,cv.width,cv.height); cx.drawImage(im,0,0,cv.width,cv.height);
+   URL.revokeObjectURL(u); res(cv);
+  };
+  im.onerror=function(){ URL.revokeObjectURL(u); rej({code:"image_rejected"}); };
+  im.src=u;
+ });
+}
+function ocrImages(imgs){
+ return getOcr().then(function(w){
+  var pages=[],chain=Promise.resolve();
+  imgs.forEach(function(img,i){
+   chain=chain.then(function(){ busySub("Reading the text"+(imgs.length>1?" — page "+(i+1)+" of "+imgs.length:"")+"…"); return toCanvas(img); })
+    .then(function(cv){ return w.recognize(cv); })
+    .then(function(r){ pages.push(ocrLines(r.data)); });
+  });
+  return chain.then(function(){
+   var objs=objsFromPages(pages,1);
+   if(!objs)throw {code:"no_table"};
+   return {objs:objs,date:textDate(pagesText(pages," "))};
+  });
+ });
+}
+function readImages(imgs){
+ return claudeExtract(null,imgs).then(function(objs){ return {objs:objs,date:null}; },function(e){
+  if(e&&e.code==="cancelled")throw e;
+  return ocrImages(imgs);
+ });
+}
+function blobOf(cv){ return new Promise(function(res){ cv.toBlob(function(b){ res(b); },"image/jpeg",.9); }); }
+
+/* ---------- one file → {objs, date, dateSrc, extracted, wb} ---------- */
+function readPdf(f){
+ if(typeof pdfjsLib==="undefined")return Promise.reject({code:"pdf_load"});
  try{ pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"; }catch(e){}
- f.arrayBuffer().then(function(buf){
+ var pdf;
+ return f.arrayBuffer().then(function(buf){
   return pdfjsLib.getDocument({data:new Uint8Array(buf)}).promise;
- }).then(function(pdf){
+ }).then(function(p){
+  pdf=p;
   var n=Math.min(pdf.numPages,6), all=[], chain=Promise.resolve();
-  for(var i=1;i<=n;i++)(function(p){
-   chain=chain.then(function(){ return pdf.getPage(p); })
+  for(var i=1;i<=n;i++)(function(pg){
+   chain=chain.then(function(){ return pdf.getPage(pg); })
      .then(function(page){ return page.getTextContent(); })
      .then(function(tc){ all.push(pdfLines(tc)); });
   })(i);
-  return chain.then(function(){ return {pdf:pdf,pages:all}; });
- }).then(function(r){
-  var tables=[];
-  r.pages.forEach(function(lines){ var t=linesToTables(lines); if(t)tables.push(t); });
-  var mat=null,flat=null;
-  tables.forEach(function(t){
-   if(isMatrix(t)){ if(!mat||t.length>mat.length)mat=t; }
-   else if(!flat||t.length>flat.length)flat=t;
-  });
-  var objs=null;
-  if(mat){
-   objs=expandMatrix(mat);
-   var rev=flat?branchRevMap(flat):null;
-   if(rev&&objs.length)applyRev(objs,rev);
-  } else if(flat){
-   objs=readAoA(flat).filter(function(o){
-    var vals=Object.keys(o).map(function(k){return String(o[k]).trim();});
-    return !vals.some(function(v){return TOTAL_RE.test(v);});
-   });
-  }
-  if(objs&&objs.length){
-   extracted=false; $("fNote").value=""; $("sheetWrap").hidden=true;
-   var flatTxt=r.pages.map(function(ls){return ls.map(function(c){return c.map(function(o){return o.s;}).join(" ");}).join("\n");}).join("\n");
-   var dm=flatTxt.match(/\b(\d{1,2})[\s\-\/]([A-Za-z]{3,9}|\d{1,2})[\s\-\/](20\d\d)\b/);
-   pdfDate=""; if(dm){ var d=toDate(dm[0].replace(/[\-\/]/g," ")); if(d)pdfDate=fmtDate(d); }
-   loadRows(objs,'<b>'+esc(f.name)+'</b> — '+objs.length+' rows from PDF');
-   return;
-  }
-  var txt=r.pages.map(function(ls){return ls.map(function(c){return c.map(function(o){return o.s;}).join(" | ");}).join("\n");}).join("\n");
-  if(txt.replace(/[^A-Za-z؀-ۿ0-9]/g,"").length>120){ claudeExtract(txt,null,f.name); return; }
-  return pdfImages(r.pdf,f.name);
- }).catch(function(){ renderHero("Couldn't open the PDF — try exporting it as Excel/CSV or take a picture of the table."); });
+  return chain.then(function(){ return all; });
+ }).then(function(pages){
+  var objs=objsFromPages(pages,3);
+  if(objs)return {objs:objs,date:textDate(pagesText(pages," ")),dateSrc:"the date written in the PDF"};
+  var txt=pagesText(pages," | ");
+  var viaText=txt.replace(/[^A-Za-z؀-ۿ0-9]/g,"").length>120
+   ? claudeExtract(txt,null).then(function(o){ return {objs:o,date:textDate(txt)}; })
+   : Promise.reject({code:"scanned"});
+  return viaText.catch(function(e){
+   if(e&&e.code==="cancelled")throw e;
+   busySub("Scanned PDF — converting the pages to images");
+   var n=Math.min(pdf.numPages,4), cvs=[], chain=Promise.resolve();
+   for(var i=1;i<=n;i++)(function(pg){
+    chain=chain.then(function(){ return pdf.getPage(pg); }).then(function(page){
+     var vp=page.getViewport({scale:2.5});
+     var cv=document.createElement("canvas"); cv.width=vp.width; cv.height=vp.height;
+     return page.render({canvasContext:cv.getContext("2d"),viewport:vp}).promise.then(function(){ cvs.push(cv); });
+    });
+   })(i);
+   return chain.then(function(){
+    return Promise.all(cvs.map(blobOf)).then(function(blobs){
+     return claudeExtract(null,blobs).then(function(o){ return {objs:o,date:null}; },function(e2){
+      if(e2&&e2.code==="cancelled")throw e2;
+      return ocrImages(cvs);
+     });
+    });
+   }).then(function(r){ r.extracted=true; r.dateSrc="the date written in the PDF"; return r; });
+  }).then(function(r){ if(r.extracted===undefined)r.extracted=true; return r; });
+ });
 }
-function pdfImages(pdf,name){
- renderBusy("Reading PDF…","Scanned file — converting the pages and reading them");
- var n=Math.min(pdf.numPages,3), blobs=[], chain=Promise.resolve();
- for(var i=1;i<=n;i++)(function(p){
-  chain=chain.then(function(){ return pdf.getPage(p); }).then(function(page){
-   var vp=page.getViewport({scale:2});
-   var cv=document.createElement("canvas"); cv.width=vp.width; cv.height=vp.height;
-   return page.render({canvasContext:cv.getContext("2d"),viewport:vp}).promise.then(function(){
-    return new Promise(function(res){ cv.toBlob(function(b){ if(b)blobs.push(b); res(); },"image/jpeg",.9); });
-   });
-  });
- })(i);
- return chain.then(function(){ claudeExtract(null,blobs,name); });
+function readSheetFile(f){
+ return f.arrayBuffer().then(function(buf){
+  if(typeof XLSX==="undefined")throw {code:"xlsx_load"};
+  var book=XLSX.read(buf,{type:"array",cellDates:true});
+  var pick=null;
+  for(var i=0;i<book.SheetNames.length&&!pick;i++){
+   var aoa=XLSX.utils.sheet_to_json(book.Sheets[book.SheetNames[i]],{header:1,raw:true,defval:""});
+   var objs=readAoA(aoa);
+   if(objs.length&&Object.keys(objs[0]).length>=2)pick={sheet:book.SheetNames[i],aoa:aoa,objs:objs};
+  }
+  if(!pick)throw {code:"empty"};
+  return sheetPart(book,pick.sheet,pick.aoa,pick.objs);
+ });
+}
+function sheetPart(book,sheet,aoa,objs){
+ var P=book.Props||{},sv=P.ModifiedDate||P.CreatedDate; sv=sv?new Date(sv):null;
+ if(sv&&(isNaN(sv)||sv.getFullYear()<2015))sv=null;
+ var cd=cellDate(aoa);
+ return {objs:objs,wb:book,sheet:sheet,
+  date:cd||sv, dateSrc:cd?"the date written in the sheet":"the file’s last-saved date — edit if the sales day differs"};
+}
+function readCsvFile(f){
+ return f.text().then(function(t){
+  var objs=readAoA(parseCSV(t));
+  if(!objs.length)throw {code:"empty"};
+  return {objs:objs};
+ });
+}
+var IMG_RE=/\.(png|jpe?g|webp|gif|bmp|jfif)$/i, SHEET_RE=/\.(xlsx|xlsm|xlsb|xls|xltx|xltm|ods|fods|numbers)$/i, TEXT_RE=/\.(csv|tsv|txt)$/i;
+function kindOf(f){
+ var n=f.name||"";
+ if(IMG_RE.test(n)||/^image\//.test(f.type||""))return "image";
+ if(/\.pdf$/i.test(n)||f.type==="application/pdf")return "pdf";
+ if(TEXT_RE.test(n)||/^text\//.test(f.type||""))return "text";
+ if(SHEET_RE.test(n)||/sheet|excel|spreadsheet/.test(f.type||""))return "sheet";
+ return "";
+}
+function readOne(f){
+ var k=kindOf(f);
+ var p=k==="image"?readImages([f]).then(function(r){ r.extracted=true; r.dateSrc="the date written in the image"; return r; })
+  : k==="pdf"?readPdf(f)
+  : k==="text"?readCsvFile(f)
+  : k==="sheet"?readSheetFile(f)
+  : Promise.reject({code:"type"});
+ return p.then(function(r){
+  if(!r||!r.objs||!r.objs.length)throw {code:"empty"};
+  r.name=f.name||"Pasted image"; r.key=[f.name,f.size,f.lastModified].join("|");
+  return r;
+ });
+}
+function errText(c){
+ return c==="type"?"not a supported file type":
+  c==="xlsx_load"?"couldn't load the Excel reader — check your connection":
+  c==="pdf_load"?"couldn't load the PDF reader — check your connection":
+  c==="ocr_load"?"couldn't load the image text reader — check your connection":
+  c==="image_rejected"?"the image couldn't be opened — try PNG or JPG":
+  c==="no_table"||c==="empty_completion"?"no table found — try a clearer, straight picture of the table":
+  c==="rate_limited"?"the service is busy — try again shortly":
+  c==="empty"?"no rows found — make sure a row holds the column headers":
+  "couldn't read this file";
 }
 
-function handleFile(f){
- if(!f)return; approxRev=false; pdfDate=""; wb=null; sheetDate=null;
- var n=(f.name||"").toLowerCase();
- if(/\.(png|jpe?g|webp|gif)$/.test(n)||/^image\//.test(f.type||"")){ claudeExtract(null,[f],f.name||"Image"); return; }
- if(/\.pdf$/.test(n)||f.type==="application/pdf"){ pdfText(f); return; }
- var fr=new FileReader();
- if(/\.csv$/i.test(n)||/\.txt$/i.test(n)){
-  fr.onload=function(e){
-   try{
-    var objs=readAoA(parseCSV(String(e.target.result)));
-    if(!objs.length)throw new Error("empty");
-    extracted=false; $("fNote").value=""; $("sheetWrap").hidden=true;
-    loadRows(objs,'<b>'+f.name+'</b> — '+objs.length+' rows, '+Object.keys(objs[0]).length+' columns');
-   }catch(err){ renderHero("Couldn't read the file — make sure the first row holds the column headers."); }
-  };
-  fr.readAsText(f,"utf-8"); return;
+/* ---------- several files → one report ---------- */
+var parts=[];
+function handleFiles(list,append){
+ list=[].slice.call(list||[]).filter(function(f){return f;});
+ if(!list.length)return;
+ if(!append)parts=[];
+ var have={}; parts.forEach(function(p){have[p.key]=1;});
+ var skipped=[],fresh=[];
+ list.forEach(function(f){ var k=[f.name,f.size,f.lastModified].join("|"); if(have[k]&&f.name)skipped.push(f.name); else { have[k]=1; fresh.push(f); } });
+ if(!fresh.length){ toast("Already added: "+skipped.join(", ")); return; }
+ var ctl=busyCtl=new AbortController();
+ var keep=parts.slice(),errs=[],chain=Promise.resolve();
+ fresh.forEach(function(f,i){
+  chain=chain.then(function(){
+   if(ctl.signal.aborted)return;
+   renderBusy(fresh.length>1?("Reading file "+(i+1)+" of "+fresh.length+"…"):"Reading the file…", f.name||"");
+   return readOne(f).then(function(r){ parts.push(r); },function(e){
+    if(ctl.signal.aborted)return;
+    errs.push((f.name||"File")+": "+errText(e&&e.code));
+   });
+  });
+ });
+ chain.then(function(){
+  if(busyCtl===ctl)busyCtl=null;
+  if(ctl.signal.aborted){ parts=keep; if(parts.length)mergeParts(); return; }
+  if(!parts.length){ renderHero(errs.join(" · ")||"Couldn't read the file."); return; }
+  mergeParts();
+  if(errs.length)toast("Skipped — "+errs.join(" · "));
+  else if(skipped.length)toast("Already added: "+skipped.join(", "));
+ });
+}
+function headerSig(objs){ return Object.keys(objs[0]||{}).filter(function(k){return k.indexOf("__")!==0;}).join("\u0001"); }
+var CANON={Branch:"Branch",Package:"Package Name",Code:"Package Code",Qty:"Qty",Amount:"Net Amount",Vat:"VAT",Patient:"Patient",Date:"Date"};
+function mergeParts(){
+ extracted=parts.some(function(p){return p.extracted;});
+ var one=parts.length===1, same=parts.every(function(p){return headerSig(p.objs)===headerSig(parts[0].objs);});
+ var rows=[];
+ parts.forEach(function(p){
+  var src=p.objs;
+  if(!same){
+   raw.headers=Object.keys(src[0]).filter(function(k){return k.indexOf("__")!==0;}); raw.rows=src; map={}; autoMap();
+   var mp=map;
+   src=src.map(function(o){ var n={}; Object.keys(CANON).forEach(function(k){ n[CANON[k]]=mp[k]?o[mp[k]]:(k==="Qty"?1:""); }); return n; });
+  }
+  src.forEach(function(o){ o.__file=p.name; rows.push(o); });
+  p.rows=src;
+ });
+ var sheetOk=one&&parts[0].wb&&parts[0].wb.SheetNames.length>1;
+ $("sheetWrap").hidden=!sheetOk;
+ if(sheetOk){
+  var sel=$("sheetSel"); sel.innerHTML="";
+  parts[0].wb.SheetNames.forEach(function(nm){var o=document.createElement("option");o.value=nm;o.textContent=nm;sel.appendChild(o);});
+  sel.value=parts[0].sheet;
  }
- renderBusy("Reading the file…","");
- fr.onload=function(e){
-  try{
-   if(typeof XLSX==="undefined")throw new Error("lib");
-   wb=XLSX.read(e.target.result,{type:"array",cellDates:true});
-   var sel=$("sheetSel"); sel.innerHTML="";
-   wb.SheetNames.forEach(function(nm){var o=document.createElement("option");o.value=nm;o.textContent=nm;sel.appendChild(o);});
-   $("sheetWrap").hidden=wb.SheetNames.length<2;
-   extracted=false; $("fNote").value="";
-   useSheet(wb.SheetNames[0],f.name);
-  }catch(err){ renderHero(err&&err.message==="lib"
-   ? "Couldn't load the Excel reader — check your connection, or save the file as CSV and upload it."
-   : "Couldn't read the file — try saving it as xlsx or csv."); }
- };
- fr.readAsArrayBuffer(f);
+ $("fNote").value="";
+ var label=one?('<b>'+esc(parts[0].name)+'</b> — '+rows.length+' rows'+(parts[0].extracted?'':', '+headerSig(parts[0].objs).split("\u0001").length+' columns'))
+  :('<b>'+parts.length+' files</b> — '+rows.length+' rows<br>'+parts.map(function(p){return esc(p.name)+' · '+p.objs.length;}).join('<br>'));
+ loadRows(rows,label);
 }
 function handleText(t){
- var objs=[]; wb=null; sheetDate=null; pdfDate="";
+ var objs=[];
  try{ objs=readAoA(parseCSV(t)); }catch(e){}
  var wide=objs.length&&Object.keys(objs[0]).length>=2;
- if(wide){ extracted=false; $("fNote").value=""; $("sheetWrap").hidden=true;
-  loadRows(objs,'<b>Pasted table</b> — '+objs.length+' rows'); return; }
- claudeExtract(t,null,"Pasted text");
+ if(wide){ parts=[{objs:objs,name:"Pasted table",key:"paste|"+Date.now()}]; mergeParts(); return; }
+ renderBusy("Reading the pasted text…","");
+ busyCtl=new AbortController();
+ claudeExtract(t,null).then(function(o){
+  parts=[{objs:o,name:"Pasted text",key:"paste|"+Date.now(),extracted:true}]; mergeParts();
+ },function(e){ if(e&&e.code==="cancelled")return; renderHero("Couldn't read a table from the pasted text — paste it from Excel, or upload the file."); });
 }
-function useSheet(name,fname){
- var aoa=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,raw:true,defval:""});
- sheetDate=cellDate(aoa);
+function useSheet(name){
+ var p=parts[0]; if(!p||!p.wb)return;
+ var aoa=XLSX.utils.sheet_to_json(p.wb.Sheets[name],{header:1,raw:true,defval:""});
  var objs=readAoA(aoa);
- if(!objs.length){renderHero("This sheet is empty — pick a sheet with data.");return;}
- loadRows(objs,'<b>'+(fname||name)+'</b> — '+objs.length+' rows, '+Object.keys(objs[0]).length+' columns');
+ if(!objs.length){ toast("This sheet is empty — pick a sheet with data."); $("sheetSel").value=p.sheet; return; }
+ var np=sheetPart(p.wb,name,aoa,objs); np.name=p.name; np.key=p.key;
+ parts=[np]; mergeParts();
 }
 
 /* ---------------- column detection ---------------- */
@@ -812,23 +994,47 @@ function buildModel(){
   rawBr.push(br); rawPk.push(pnRaw.replace(/\s*\([A-Za-z]{2,5}-?\d{2,}\)\s*$/,"").replace(/^باق[ةه]\s+(?=\S)/,"").trim()||"Package");
   codes.push(code); qtys.push(q);
  });
- var pb=sharedPrefix(rawBr), pp=sharedPrefix(rawPk);
+ /* Each file strips its own repeated prefix ("Meena Center …", "National Day Offer- …"),
+    so a system export and a hand-made sheet end up with matching names. */
+ var groups={};
+ rows.forEach(function(r,i){ var g=r.__file||""; (groups[g]=groups[g]||[]).push(i); });
+ var cutB=[],cutP=[],seenB={},seenP={};
+ Object.keys(groups).forEach(function(g){
+  var ix=groups[g], b=sharedPrefix(ix.map(function(i){return rawBr[i];})), q=sharedPrefix(ix.map(function(i){return rawPk[i];}));
+  if(b)seenB[rawBr[ix[0]].slice(0,b).toLowerCase().replace(/[\s\-–—:|،,_\/]+$/,"")]=1;
+  if(q)seenP[rawPk[ix[0]].slice(0,q).toLowerCase().replace(/[\s\-–—:|،,_\/]+$/,"")]=1;
+  ix.forEach(function(i){ cutB[i]=b; cutP[i]=q; });
+ });
+ /* A file with a single branch or package has nothing to compare against — reuse a
+    prefix another file showed, when the name starts with it at a word edge. */
+ function learned(v,seen){
+  var t=v.toLowerCase(),best=0;
+  Object.keys(seen).forEach(function(k){ if(k.length>best&&t.indexOf(k)===0&&/^[\s\-–—:|،,_\/]/.test(t.slice(k.length))&&t.slice(k.length).replace(/^[\s\-–—:|،,_\/]+/,"").length>=2)best=k.length; });
+  return best;
+ }
+ rawBr.forEach(function(b,i){ if(!cutB[i])cutB[i]=learned(b,seenB); cutP[i]=cutP[i]||learned(rawPk[i],seenP); });
  var branches={},pkgs={},matrix={},labB={},labP={},totalQty=0;
  var brCount={},brPick={};
  rawBr.forEach(function(b,i){
   if(!(qtys[i]||0))return;
-  var v=titleCase(pb?strip(b,pb):b)||"—",k=branchKey(v);
+  var v=titleCase(cutB[i]?strip(b,cutB[i]):b)||"—",k=branchKey(v);
   brCount[k]=brCount[k]||{}; brCount[k][v]=(brCount[k][v]||0)+qtys[i];
  });
  Object.keys(brCount).forEach(function(k){
   var best=null; Object.keys(brCount[k]).forEach(function(v){ if(best===null||brCount[k][v]>brCount[k][best])best=v; });
   brPick[k]=best;
  });
+ /* Same package name → one row, even when only some files carry its code. */
+ var pns=[],pkCodes={};
+ rawPk.forEach(function(x,i){
+  var pn=enName(titleCase(cutP[i]?strip(x,cutP[i]):x)||"Package"); pns[i]=pn;
+  var k=pn.toLowerCase(); pkCodes[k]=pkCodes[k]||{}; pkCodes[k][codes[i]||""]=1;
+ });
  rawBr.forEach(function(b,i){
-  var v0=titleCase(pb?strip(b,pb):b)||"—";
+  var v0=titleCase(cutB[i]?strip(b,cutB[i]):b)||"—";
   var bn=enName(brPick[branchKey(v0)]||v0);
-  var pn=enName(titleCase(pp?strip(rawPk[i],pp):rawPk[i])||"Package");
-  var key=pn+(codes[i]?" ("+codes[i]+")":"");
+  var pn=pns[i], cs=pkCodes[pn.toLowerCase()], one=Object.keys(cs).filter(function(c){return c;});
+  var key=pn+(one.length===1?" ("+one[0]+")":"");
   var q=qtys[i]||0; if(!q)return;
   labB[bn.toLowerCase()]=labB[bn.toLowerCase()]||bn; bn=labB[bn.toLowerCase()];
   labP[key.toLowerCase()]=labP[key.toLowerCase()]||key; key=labP[key.toLowerCase()];
@@ -863,7 +1069,7 @@ function build(){
  model=buildModel();
  var m=model,stage=$("stage");
  if(!m.branches.length){ renderHero(); return; }
- $("docFields").hidden=false; $("btnPrint").hidden=false; $("btnReset").hidden=false; $("btnPptx").hidden=false; $("btnSet").hidden=false;
+ $("docFields").hidden=false; $("btnPrint").hidden=false; $("btnReset").hidden=false; $("btnPptx").hidden=false; $("btnSet").hidden=false; $("btnAdd").hidden=false;
  var maxN=m.branches[0].n||1;
  var dense=m.branches.length>9?(m.branches.length>14?(m.branches.length>19?"dense3":"dense2"):"dense"):"";
 
@@ -880,7 +1086,7 @@ function build(){
  var p1='<div class="paper '+dense+'">'+head($("fSub").value+" · "+weekday(),1)+
   '<div class="kpis">'+
    kpi("Packages Sold",m.totalQty,m.rows+(m.rows===1?" entry":" entries"))+
-   kpi("Branches",m.branches.length,"with sales today")+
+   kpi("Branches",m.branches.length,(reportRange?"with sales":"with sales today"))+
    (hasRev?kpi("Net Revenue","SAR "+Math.round(m.totalNet).toLocaleString("en-US"),(approxRev?"distributed by branch":(m.base?("SAR "+m.base+" per package"):"all packages")),true)
          :kpi("Top Branch",m.branches[0].name,m.branches[0].n+(m.branches[0].n===1?" package":" packages"),true))+
    kpi("Top Packages",kTop,m.topN+(m.topN===1?" sale each":" sales each"),true)+
@@ -922,19 +1128,18 @@ function build(){
  renderNames();
 }
 function renderHero(err){
- $("btnPrint").hidden=true; $("btnReset").hidden=true; $("btnPptx").hidden=true; showPanel(false); $("btnSet").hidden=true;
+ $("btnPrint").hidden=true; $("btnReset").hidden=true; $("btnPptx").hidden=true; showPanel(false); $("btnSet").hidden=true; $("btnAdd").hidden=true;
  $("stage").innerHTML='<div class="hero" id="hero" tabindex="0" role="button">'+
   (err?'<div class="tag warn" style="margin-bottom:14px">'+esc(err)+'</div>':'')+
   '<div class="ic"><svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L8 8m4-4 4 4"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg></div>'+
-  '<h3>Drop the file here</h3>'+
-  '<p>'+(window.claude?'Excel, CSV, PDF or an image of the table':'Excel, CSV or PDF')+' — reads the data, builds the two-page National Day Offer report and saves it as PDF. You can also paste the table or image directly (Ctrl+V).</p>'+
-  '<div class="steps"><span>xlsx · csv</span><span>PDF</span>'+(window.claude?'<span>Image</span>':'')+'<span>Paste</span></div></div>';
+  '<h3>Drop the files here</h3>'+
+  '<p>One file or several at once — e.g. 5 days in one report. Excel, CSV, PDF or a photo/screenshot of the table. You can also paste a table or image (Ctrl+V).</p>'+
+  '<div class="steps"><span>xlsx · xls · csv</span><span>PDF</span><span>Image</span><span>Paste</span></div></div>';
  var h=$("hero");
  h.addEventListener("click",function(){$("file").click();});
  h.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();$("file").click();}});
  ["dragenter","dragover"].forEach(function(t){h.addEventListener(t,function(e){e.preventDefault();h.classList.add("over");});});
  ["dragleave","drop"].forEach(function(t){h.addEventListener(t,function(e){e.preventDefault();h.classList.remove("over");});});
- h.addEventListener("drop",function(e){var f=e.dataTransfer.files[0];if(f)handleFile(f);});
 }
 function kpi(l,v,s,small){
  return '<div class="kpi"><div class="k-l">'+esc(l)+'</div><div class="k-v'+(small?" sm":"")+'">'+esc(v)+'</div><div class="k-s">'+esc(s)+'</div></div>';
@@ -991,31 +1196,53 @@ function cellDate(aoa){
  }
  return best;
 }
-/* The day the Excel file was last saved, as recorded inside the file itself —
-   not the day it was uploaded. */
-function savedDate(){
- var P=wb&&wb.Props; if(!P)return null;
- var d=P.ModifiedDate||P.CreatedDate; d=d?new Date(d):null;
- return d&&!isNaN(d)&&d.getFullYear()>=2015?d:null;
-}
-function autoDate(){
- $("fNote").value="";
- var col=findDateCol(),counts={},best=null,bc=0,bestD=null,src="";
+/* The report's day for one file: the most common day in its date column, else the date
+   the file itself carries (written in the sheet/PDF/image, or the day it was last saved). */
+function partDay(p){
+ var keep=raw;
+ raw={headers:Object.keys(p.rows[0]||{}).filter(function(k){return k.indexOf("__")!==0;}),rows:p.rows};
+ var col=findDateCol(),counts={},bc=0,bestD=null;
  if(col)raw.rows.forEach(function(r){
   var d=toDate(r[col]); if(!d)return;
   var k=fmtDate(d); counts[k]=(counts[k]||0)+1;
-  if(counts[k]>bc){bc=counts[k];best=k;bestD=d;}
+  if(counts[k]>bc){bc=counts[k];bestD=d;}
  });
- if(bestD)src="From the “"+col+"” column in the file";
- else if(sheetDate){ bestD=sheetDate; src="From the date written in the sheet"; }
- else if(pdfDate&&toDate(pdfDate)){ bestD=toDate(pdfDate); src="From the date written in the PDF"; }
- else if(savedDate()){ bestD=savedDate(); src="From the file’s last-saved date — edit if the sales day differs"; }
- else { bestD=new Date(); src="No date found in the file — today’s date is used"; }
- reportDate=bestD;
- $("fDate").value=fmtDate(bestD);
+ raw=keep;
+ if(bestD)return {d:bestD,src:"the “"+col+"” column"};
+ if(p.date)return {d:p.date,src:p.dateSrc||"the file"};
+ return null;
+}
+var reportRange=null;
+function dayKey(d){ return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate(); }
+function fmtRange(a,b){
+ if(a.getFullYear()!==b.getFullYear())return fmtDate(a)+" – "+fmtDate(b);
+ if(a.getMonth()!==b.getMonth())return ("0"+a.getDate()).slice(-2)+" "+MON[a.getMonth()]+" – "+fmtDate(b);
+ return ("0"+a.getDate()).slice(-2)+"–"+fmtDate(b);
+}
+var TITLE_DAY="National Day Offer — Daily Package Sales", TITLE_RANGE="National Day Offer — Package Sales";
+function autoDate(){
+ $("fNote").value="";
+ var days=parts.map(partDay),got=days.filter(function(x){return x;}),src,d;
+ reportRange=null;
+ if(!got.length){ d=new Date(); src="No date found in the file — today’s date is used"; $("fDate").value=fmtDate(d); }
+ else if(parts.length===1){ d=got[0].d; src="From "+got[0].src+" in the file"; $("fDate").value=fmtDate(d); }
+ else {
+  var ks={}; got.forEach(function(x){ ks[dayKey(x.d)]=x.d; });
+  var list=Object.keys(ks).sort().map(function(k){return ks[k];});
+  var a=list[0],b=list[list.length-1]; d=b;
+  if(list.length>1){ reportRange={from:a,to:b,days:list.length}; $("fDate").value=fmtRange(a,b); }
+  else $("fDate").value=fmtDate(a);
+  src="From the dates of the "+parts.length+" files ("+list.length+(list.length>1?" days)":" day)")+
+   (got.length<parts.length?" — "+(parts.length-got.length)+" file(s) had no date":"");
+ }
+ var t=$("fTitle");
+ if(reportRange&&t.value===TITLE_DAY)t.value=TITLE_RANGE;
+ else if(!reportRange&&t.value===TITLE_RANGE)t.value=TITLE_DAY;
+ reportDate=d;
  $("dateSrc").textContent=src;
 }
 function weekday(){
+ if(reportRange)return reportRange.days+" Days";
  var d=new Date($("fDate").value);
  return isNaN(d)?"Daily Summary":d.toLocaleDateString("en-US",{weekday:"long"});
 }
@@ -1076,7 +1303,7 @@ function buildPptx(){
  var kw=(1000-44-3*14)/4;
  var kp=[
   {l:"Packages Sold",v:String(m.totalQty),s:m.rows+(m.rows===1?" entry":" entries"),b:30},
-  {l:"Branches",v:String(m.branches.length),s:"with sales today",b:30},
+  {l:"Branches",v:String(m.branches.length),s:(reportRange?"with sales":"with sales today"),b:30},
   {l:"Top Branch",v:m.branches[0].name,s:m.branches[0].n+(m.branches[0].n===1?" package":" packages"),b:21},
   {l:"Top Packages",v:m.tops.slice(0,2).join(" & ")||"—",s:m.topN+(m.topN===1?" sale each":" sales each"),b:21}
  ];
@@ -1171,19 +1398,21 @@ function savePptx(){
 }
 
 /* ---------------- wiring ---------------- */
-$("file").addEventListener("change",function(e){ if(e.target.files[0])handleFile(e.target.files[0]); });
+var addMode=false;
+$("file").addEventListener("change",function(e){ var fs=[].slice.call(e.target.files||[]); e.target.value=""; handleFiles(fs,addMode); addMode=false; });
+$("btnAdd").addEventListener("click",function(){ addMode=true; $("file").click(); });
 document.addEventListener("paste",function(e){
  var dt=e.clipboardData; if(!dt)return;
- var items=dt.items||[],f=null;
- for(var i=0;i<items.length;i++){ if(items[i].kind==="file"){ var g=items[i].getAsFile(); if(g&&/^image\//.test(g.type)){f=g;break;} } }
- if(f){ e.preventDefault(); handleFile(f); return; }
+ var items=dt.items||[],fs=[];
+ for(var i=0;i<items.length;i++){ if(items[i].kind==="file"){ var g=items[i].getAsFile(); if(g&&kindOf(g))fs.push(g); } }
+ if(fs.length){ e.preventDefault(); handleFiles(fs,parts.length>0&&!!model); return; }
  var t=dt.getData("text/plain");
  if(t&&t.trim().length>20&&/[\t,;\n]/.test(t)){ var a=document.activeElement;
   if(a&&(a.tagName==="INPUT"||a.tagName==="TEXTAREA"))return;
   e.preventDefault(); handleText(t); }
 });
 ["dragenter","dragover"].forEach(function(t){document.addEventListener(t,function(e){e.preventDefault();});});
-document.addEventListener("drop",function(e){ e.preventDefault(); var f=e.dataTransfer&&e.dataTransfer.files[0]; if(f)handleFile(f); });
+document.addEventListener("drop",function(e){ e.preventDefault(); var fs=e.dataTransfer&&e.dataTransfer.files; if(fs&&fs.length)handleFiles(fs,parts.length>0&&!!model); });
 $("sheetSel").addEventListener("change",function(e){ useSheet(e.target.value); });
 ["fTitle","fSub","fDate","fNote"].forEach(function(id){ $(id).addEventListener("input",build); });
 $("btnPrint").addEventListener("click",savePdf);
@@ -1226,8 +1455,9 @@ function showImages(list,code){
  $("shPrint").focus();
 }
 function pdfName(){
- var d=reportDate||new Date(),p=function(n){return ("0"+n).slice(-2);};
- return "National_Day_Sales_"+d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+".pdf";
+ var p=function(n){return ("0"+n).slice(-2);},f=function(d){return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate());};
+ if(reportRange)return "National_Day_Sales_"+f(reportRange.from)+"_to_"+f(reportRange.to)+".pdf";
+ return "National_Day_Sales_"+f(reportDate||new Date())+".pdf";
 }
 function savePdf(){
  var btn=$("btnPrint"),old=btn.textContent;
@@ -1271,8 +1501,8 @@ function savePdf(){
  }).then(function(){ btn.disabled=false; btn.textContent=old; });
 }
 $("btnSet").addEventListener("click",function(){ showPanel($("panel").hidden); });
-$("btnReset").addEventListener("click",function(){ namesPrompted=false; raw={headers:[],rows:[]}; map={}; wb=null; sheetDate=null; extracted=false; $("file").value="";
- $("btnPrint").hidden=true; $("btnReset").hidden=true; $("btnPptx").hidden=true; showPanel(false); $("btnSet").hidden=true;
+$("btnReset").addEventListener("click",function(){ namesPrompted=false; raw={headers:[],rows:[]}; map={}; parts=[]; model=null; reportRange=null; extracted=false; $("file").value="";
+ $("btnPrint").hidden=true; $("btnReset").hidden=true; $("btnPptx").hidden=true; showPanel(false); $("btnSet").hidden=true; $("btnAdd").hidden=true;
  $("mapWrap").hidden=true; $("docFields").hidden=true; $("sheetWrap").hidden=true; renderHero(); });
 function setSize(){ $("pageRule").textContent="@page{size:297mm 172mm;margin:0}"; }
 window.addEventListener("resize",fit);
