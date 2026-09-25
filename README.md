@@ -416,13 +416,15 @@ python3 build_pages.py
 
 | الملف | ما يُؤخذ منه |
 |---|---|
-| `Appt slot` | **السعة**: مجموع `Normal` + `Frozen` = إجمالي الـSlots |
+| `Appt_Slot_Count` | **السعة**: مجموع `Normal Slot` + `Freeze Slot` = إجمالي الـSlots (و`Block Slot` لا يدخل) |
 | `Appointment Statistics – Department Wise` | **أرقام الأقسام**: `Scheduled` · `Success` · `Missed` (= No Show) · `Walkin` · `Totalseen` — ومنها بطاقات اليوم وبطاقات الأقسام |
-| `Appointment Statistics – Detailed` | **New Visit وFollow-up** لكل طبيب — من أسطر `Status: Reported` فقط، و`Pending` لا يُحسب |
+| `Appointment Statistics – Detailed` | **New Visit وFollow-up** لكل طبيب — من أسطر `Status: Reported` فقط، و`Pending` لا يُحسب. والـ`Walk-in` يُحسب New |
 | `Appointment Statistics – Doctor Wise` | **Total Seen لكل طبيب** (عمود Seen في الجدول) وعدد أطباء كل قسم |
 | `Service wise Count – Detailed Category Wise` | **Lab وRadiology وProcedure** لكل طبيب — لكل مريض لا لكل فحص — و**Revenue** |
 
 وفي كل الملفات `Scheduled` يعني المواعيد المحجوزة (Booked / Appointments).
+
+**مُتحقَّق منها بملفات يوم حقيقي** (السويدي، 24 سبتمبر ‎2026‎): كل رقم في الورقة — البطاقات الخمس وبطاقات الأقسام الثماني وأعمدة الأطباء التسعة — أُعيد حسابه من الملفات الخمسة حسابًا مستقلًا وطابق الصفحة بلا فرق.
 
 **الأعمدة لا تُثبَّت في الكود**: كل رقم يُرشَّح له عموده من عنوانه (`Totalseen`، `Missed` أو `No Show`، `Walkin` أو `Walk-In` …)، والعمود الذي يُرشَّح لرقم لا بد أن يحمل أرقامًا فعلًا. وتحت الملفات قائمة **«ربط الأعمدة»** لكل من Department Wise وDoctor Wise، تعدّل منها أي ربط، ويُحفظ تعديلك في المتصفح لنفس عناوين الأعمدة. وتحت كل قائمة أول صفّ مقروء بالربط الحالي.
 
@@ -431,16 +433,16 @@ python3 build_pages.py
 
 ## كيف تُحسب الأرقام
 
-- **Total OPD Visits** = مجموع `Totalseen` في أقسام Department Wise غير الطوارئ، وتحته `New / Follow-up` من الكشف المفصّل.
+- **Total OPD Visits** = مجموع `Totalseen` في أقسام Department Wise غير الطوارئ، وتحته `New / Follow-up` من الكشف المفصّل: New = ‏`New` + `Walk-in`، وFollow-up = ‏`Follow-up`، فيصير مجموعهما Totalseen — في ملفات 24 سبتمبر ‎2026‎: ‏‎155‎ New + ‏‎23‎ Walk-in = ‏‎178‎، و‎73‎ Follow-up، والمجموع ‎251‎، كما في القالب.
 - **EMERGENCY** = `Totalseen` لأي قسم فيه كلمة `Emergency`، وتحته New / Follow-up لأطبائه. والطوارئ لا تدخل جدول الأطباء.
 - **Appointments** = مجموع `Scheduled`، وتحته `Seen` = مجموع `Success` (من حضر بموعد) و`Show rate` = ‏Success ÷ Scheduled.
 - **No-Shows** = مجموع `Missed`، و`Rate` = ‏Missed ÷ Scheduled. وإن وُجد عمود `Cancelled` في أحد الكشوف ظهر بجانبه.
-- **Capacity Used** = الزيارات ÷ (Normal + Frozen) من ملف `Appt slot`، أو ÷ السعة المكتوبة في الإعدادات إن لم يُرفع.
+- **Capacity Used** = الزيارات ÷ (Normal Slot + Freeze Slot) من ملف `Appt_Slot_Count`، أو ÷ السعة المكتوبة في الإعدادات إن لم يُرفع — ‏‎251 ÷ 300 = 84%‎.
 - **`Totalseen` يشمل الـWalk-in** كما في تصدير MIS (‏`Totalseen = Success + Walkin`). وإن كان تصديرك يفصلهما فأزل العلامة من الإعدادات.
 - **بطاقات الأقسام** من Department Wise، بأسماء القالب القصيرة: `Obstetrics and Gynaecology` ← `OB-Gyne`، `ENT ( Ear, Nose,Throat )` ← `ENT`، `Mental Health Services` ← `Mental Health`، `Emergency Department` ← `EMERGENCY`. الترتيب ترتيب القالب، وما لا يعرفه يتبع بزياراته، و`EMERGENCY` في الآخر. سطر البطاقة: عدد الأطباء (من Doctor Wise، وللطوارئ من فوتر فيها) · Walk in · No Show.
 - **جدول الأطباء** من Doctor Wise مرتّبًا بالزيارات. `Lab` و`Radiology` و`Procedure` تعدّ **المرضى لا الفحوصات**: رقم الملف (`MRNO`) مرة واحدة عند الطبيب في كل عمود في اليوم — المريض الذي طُلب له عشرة تحاليل تحليلٌ واحد. والفئات: `Laboratory` ← Lab · `Radiology` ← Radiology · `Other Clinical Procedures` ← Procedure. و`Revenue` صافي الدخل (`Net Amount`) بكل فئاته بما فيها الكشف، بصيغة القالب (`700` · `6K` · `16K`)، و`Rev/Visit` = الدخل ÷ الزيارات. ومن فوتر في تصدير الخدمات بلا صفّ في Doctor Wise يُضاف للجدول، إلا حسابات النظام (`Registration`).
 - **مطابقة الأسماء** بين الملفات: الاسم المطابق أولًا، ثم الاسم المختصر — «Maha Alessa» في Doctor Wise هي «Maha Saud Alessa» في تصدير الخدمات: كلمات القصير بترتيبها داخل الطويل، بنفس الاسم الأول والأخير — ثم التهجئة القريبة، وما طوبق بالتهجئة القريبة يظهر في تنبيه.
-- **الكشف المفصّل**: إن لم يكن فيه `Status: Reported` أصلًا حُسب كل ما عدا Pending والملغى وعدم الحضور، مع تنبيه.
+- **الكشف المفصّل** في تصدير MIS يضع الأطباء **داخل** الحالات: `Status: Pending` ثم أطباؤها، ثم `Status: Reported` ثم أطباؤها — والعكس يُقرأ كذلك. سطر الموعد يُعرف برقم الملف (`MRNO`)، فسطر الطباعة أسفل الجدول لا يُعدّ. وإن لم يكن فيه `Status: Reported` أصلًا حُسب كل ما عدا Pending والملغى وعدم الحضور، مع تنبيه.
 - الرقم الذي لا مصدر له في الملفات يخرج شرطة `–` لا صفرًا، مع تنبيه يذكر الملف أو العمود الناقص.
 
 ## القالب
