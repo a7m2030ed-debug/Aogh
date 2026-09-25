@@ -1287,7 +1287,9 @@ function deptGrid(data) {
     const c = el("div", "dept");
     c.append(el("div", "l fit", d.name));
     c.append(el("div", "v fit" + (d.visits == null ? " nil" : ""), d.visits == null ? DASH : nf(d.visits)));
-    const parts = data.known.doctors ? [d.doctors + (d.doctors === 1 ? " Doctor" : " Doctors")] : [];
+    /* a card with no named doctor (an emergency room seen only through its
+       registration account) leaves the count out rather than print "0 Doctors" */
+    const parts = data.known.doctors && d.doctors ? [d.doctors + (d.doctors === 1 ? " Doctor" : " Doctors")] : [];
     if (data.known.walkin) parts.push("Walk in " + nf(d.walkin || 0));
     /* the emergency room books nothing, so it has no no-shows to report */
     if (data.known.noshow && !d.er) parts.push("No Show " + nf(d.noshow || 0));
