@@ -1,0 +1,1752 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تقرير مدير الفرع اليومي — إكسل إلى PDF</title>
+<style>
+/* ═══════════════ page shell (the Arabic UI around the report) ═══════════════ */
+:root{
+  color-scheme: light;
+  --paper:#EFEFF6; --card:#FFFFFF; --sunk:#F6F5FB;
+  --ink:#16142B; --ink-2:#4B4966; --ink-3:#7D7A98;
+  --line:#DEDCEB; --line-2:#EBEAF3;
+  --brand:#6D45E8; --brand-2:#8B5CFB; --brand-ink:#4E2DBF; --brand-soft:#EEE8FE; --on-brand:#FFFFFF;
+  --good:#1C7A55; --good-soft:#DFF1E9;
+  --warn:#8E640F; --warn-soft:#F7EBD3;
+  --crit:#A82838; --crit-soft:#FAE1E4;
+  --shadow:0 1px 2px rgba(22,20,43,.05), 0 10px 26px -14px rgba(22,20,43,.20);
+  --shadow-lg:0 2px 6px rgba(22,20,43,.08), 0 28px 60px -20px rgba(22,20,43,.32);
+  --radius:10px;
+  --f-display:"Noto Kufi Arabic","Sakkal Majalla","Segoe UI",Tahoma,sans-serif;
+  --f-body:"Noto Sans Arabic","Segoe UI",Tahoma,Arial,sans-serif;
+  --f-mono:ui-monospace,"Cascadia Mono","SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --paper:#0D0C18; --card:#16152A; --sunk:#111024;
+    --ink:#ECEAF7; --ink-2:#B0ADCC; --ink-3:#7F7CA0;
+    --line:#29273F; --line-2:#1E1C33;
+    --brand:#9B7BFF; --brand-2:#B49CFF; --brand-ink:#C6B5FF; --brand-soft:#221C45; --on-brand:#0D0C18;
+    --good:#4FBE8E; --good-soft:#13291F;
+    --warn:#D8AC4A; --warn-soft:#2A2313;
+    --crit:#E8697C; --crit-soft:#2E1520;
+    --shadow:0 1px 2px rgba(0,0,0,.45), 0 10px 26px -14px rgba(0,0,0,.7);
+    --shadow-lg:0 2px 6px rgba(0,0,0,.5), 0 28px 60px -20px rgba(0,0,0,.75);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --paper:#0D0C18; --card:#16152A; --sunk:#111024;
+  --ink:#ECEAF7; --ink-2:#B0ADCC; --ink-3:#7F7CA0;
+  --line:#29273F; --line-2:#1E1C33;
+  --brand:#9B7BFF; --brand-2:#B49CFF; --brand-ink:#C6B5FF; --brand-soft:#221C45; --on-brand:#0D0C18;
+  --good:#4FBE8E; --good-soft:#13291F;
+  --warn:#D8AC4A; --warn-soft:#2A2313;
+  --crit:#E8697C; --crit-soft:#2E1520;
+  --shadow:0 1px 2px rgba(0,0,0,.45), 0 10px 26px -14px rgba(0,0,0,.7);
+  --shadow-lg:0 2px 6px rgba(0,0,0,.5), 0 28px 60px -20px rgba(0,0,0,.75);
+}
+
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+/* the Arabic shell reads right to left; the report sheet inside it is a
+   Latin document and stays left to right whatever wraps the page */
+html{direction:rtl}
+#doc{direction:ltr}
+body{margin:0; background:var(--paper); color:var(--ink); font-family:var(--f-body); font-size:15px; line-height:1.65; -webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--f-display); font-weight:700; margin:0; line-height:1.35; text-wrap:balance}
+button,input,select{font:inherit; color:inherit}
+:focus-visible{outline:2px solid var(--brand); outline-offset:2px; border-radius:4px}
+
+.bar{
+  position:sticky; top:0; z-index:40; display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  padding:12px 20px; background:color-mix(in srgb, var(--card) 88%, transparent);
+  backdrop-filter:blur(10px); border-bottom:1px solid var(--line);
+}
+.brand{display:flex; align-items:center; gap:10px; margin-inline-end:auto}
+.seal{width:34px; height:34px; flex:none; border-radius:9px; background:var(--brand); color:var(--on-brand); display:grid; place-items:center}
+.seal svg{width:20px; height:20px}
+.brand h1{font-size:17px; letter-spacing:-.01em}
+.brand p{margin:0; font-size:12px; color:var(--ink-3)}
+
+.btn{
+  display:inline-flex; align-items:center; gap:7px; padding:8px 15px; border-radius:8px; cursor:pointer;
+  border:1px solid var(--line); background:var(--card); color:var(--ink);
+  font-size:14px; font-weight:600; white-space:nowrap; transition:background .15s, border-color .15s, transform .08s;
+}
+.btn:hover:not([disabled]){border-color:color-mix(in srgb, var(--brand) 45%, var(--line))}
+.btn:active:not([disabled]){transform:translateY(1px)}
+.btn[disabled]{opacity:.42; cursor:not-allowed}
+.btn-main{background:var(--brand); border-color:var(--brand); color:var(--on-brand)}
+.btn-main:hover:not([disabled]){background:var(--brand-ink); border-color:var(--brand-ink)}
+.btn svg{width:15px; height:15px; flex:none}
+.btn-sm{padding:5px 11px; font-size:13px}
+
+.shell{max-width:1240px; margin:0 auto; padding:22px 20px 60px; display:flex; flex-direction:column; gap:16px}
+.step{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden}
+.step > header{
+  display:flex; align-items:center; gap:11px; padding:12px 16px; border-bottom:1px solid var(--line-2);
+  background:linear-gradient(to bottom, color-mix(in srgb, var(--brand-soft) 55%, var(--card)), var(--card));
+}
+.step > header .n{width:23px; height:23px; flex:none; border-radius:6px; display:grid; place-items:center; background:var(--brand); color:var(--on-brand); font-size:12px; font-weight:700; font-family:var(--f-display)}
+.step.done > header .n{background:var(--good)}
+.step > header h2{font-size:14.5px}
+.step > header .state{margin-inline-start:auto; font-size:12.5px; color:var(--ink-3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:60%}
+.step .body{padding:16px; display:flex; flex-direction:column; gap:14px}
+
+.drop{
+  border:1.5px dashed color-mix(in srgb, var(--brand) 40%, var(--line)); border-radius:9px; background:var(--sunk);
+  padding:22px 16px; text-align:center; cursor:pointer; display:flex; flex-direction:column; gap:4px;
+  transition:background .15s, border-color .15s;
+}
+.drop:hover,.drop.hot{background:var(--brand-soft); border-color:var(--brand)}
+.drop strong{font-size:14px; font-weight:600}
+.drop span{font-size:12px; color:var(--ink-3); font-family:var(--f-mono)}
+
+.row{display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end}
+label.fld{display:flex; flex-direction:column; gap:5px; font-size:11.5px; color:var(--ink-3)}
+label.fld input,label.fld select{padding:7px 10px; border:1px solid var(--line); border-radius:7px; background:var(--card); font-size:14px; min-width:150px}
+label.fld input:focus,label.fld select:focus{border-color:var(--brand)}
+label.check{display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--ink-2); padding-bottom:8px}
+
+.note{display:flex; gap:8px; align-items:flex-start; font-size:12.5px; color:var(--ink-2); background:var(--sunk); border:1px solid var(--line-2); border-radius:8px; padding:9px 11px}
+.note.warn{background:var(--warn-soft); border-color:color-mix(in srgb, var(--warn) 32%, transparent); color:var(--ink)}
+.note.bad{background:var(--crit-soft); border-color:color-mix(in srgb, var(--crit) 32%, transparent); color:var(--ink)}
+.note b{font-weight:600}
+.note .m{flex:none; width:6px; height:6px; margin-top:7px; border-radius:50%; background:var(--brand)}
+.note.warn .m{background:var(--warn)} .note.bad .m{background:var(--crit)}
+.note ul{margin:4px 0 0; padding-inline-start:18px}
+.empty{margin:0; color:var(--ink-3); font-size:13.5px}
+
+.chips{display:flex; flex-wrap:wrap; gap:7px}
+.chip{display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:4px 10px; border-radius:99px; background:var(--sunk); border:1px solid var(--line-2); color:var(--ink-2)}
+.chip b{font-weight:600; color:var(--ink)}
+.chip.ok{background:var(--good-soft); border-color:color-mix(in srgb, var(--good) 30%, transparent)}
+
+details.map{border:1px solid var(--line-2); border-radius:9px; background:var(--sunk)}
+details.map > summary{cursor:pointer; padding:9px 12px; font-size:13px; font-weight:600; color:var(--ink-2)}
+details.map > div{padding:4px 12px 12px; display:flex; flex-direction:column; gap:10px}
+.mapgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:10px}
+.mapgrid label.fld select{min-width:0; width:100%}
+.sample{margin:0; font-size:12px; color:var(--ink-3); font-family:var(--f-mono); direction:ltr; text-align:left; overflow-wrap:anywhere}
+
+.tiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px}
+.tile{background:var(--sunk); border:1px solid var(--line-2); border-radius:9px; padding:10px 12px}
+.tile span{display:block; font-size:11.5px; color:var(--ink-3)}
+.tile b{display:block; font-size:19px; font-weight:700; font-family:var(--f-display); letter-spacing:-.01em}
+
+#toasts{position:fixed; inset-block-end:18px; inset-inline-start:18px; z-index:90; display:flex; flex-direction:column; gap:8px}
+.toast{background:var(--card); border:1px solid var(--line); border-inline-start:3px solid var(--brand); border-radius:8px; box-shadow:var(--shadow-lg); padding:10px 14px; font-size:13.5px; max-width:min(420px,86vw)}
+.toast.bad{border-inline-start-color:var(--crit)}
+.toast.ok{border-inline-start-color:var(--good)}
+
+/* the rendered report is scaled down to fit the preview column */
+#stage{background:var(--sunk); border:1px solid var(--line-2); border-radius:9px; padding:14px; overflow:hidden}
+/* left to right, or the RTL shell anchors the wide sheet on the right and the
+   scale pulls it out of view */
+#stageBox{position:relative; margin:0 auto; direction:ltr}
+#doc{transform-origin:top left; width:210mm}
+#doc .page{box-shadow:var(--shadow-lg); margin-bottom:14pt}
+
+/* ═══════════════ the report itself — a rebuild of the PowerPoint template ═══════════════
+   Every colour, size and offset below is read off the supplied
+   Branch_Manager_Daily_Report_Alsuwaidi deck (A4 portrait, 210 × 297 mm), so
+   the sheet keeps the template's design whatever the files hold. Offsets are
+   in millimetres because that is how the slide measures. */
+#doc{
+  --pur:#8B5CFB;        /* header rule, section ticks, department cards      */
+  --nav:#262238;        /* titles, table head, footer band                   */
+  --ink-d:#0F1724;      /* figures and table body                            */
+  --mut:#66738C;        /* labels and notes                                  */
+  --bg:#F8F9FB;         /* the sheet                                         */
+  --rule:#E6E7EC;       /* section hairline                                  */
+  --edge:#E1E1E6;       /* KPI card edge                                     */
+  --soft:#F7F4FF;       /* department card                                   */
+  --stripe:#F5F6F9;     /* every other table row                             */
+  --amber:#F59E0B;      /* no-show rate and cancellations                    */
+  --gold:#FCD85E;       /* the thin line over the footer                     */
+  --foot:#9999BF;       /* footer text                                       */
+  --dash:#A3A9BA;       /* the "–" that stands for a missing figure          */
+  --fs:Arial,"Liberation Sans",Helvetica,sans-serif;
+  --fr:"Times New Roman","Liberation Serif",Times,serif;
+}
+.page{
+  position:relative; width:210mm; height:297mm; background:var(--bg); color:var(--ink-d); overflow:hidden;
+  font-family:var(--fs); direction:ltr; text-align:left; unicode-bidi:isolate;
+}
+.page,.page *{-webkit-print-color-adjust:exact !important; color-adjust:exact !important; print-color-adjust:exact !important}
+
+.hd-logo{position:absolute; left:10.7mm; top:3.8mm; width:41.9mm; height:12.2mm}
+.hd-logo img{display:block; width:100%; height:100%; object-fit:contain}
+.hd-kind{position:absolute; left:11.2mm; top:16.8mm; width:63.5mm; height:3.6mm; font:400 7pt/3.6mm var(--fs); color:var(--nav); white-space:nowrap}
+.hd-who{position:absolute; right:11.4mm; top:7.1mm; width:110mm; text-align:right}
+.hd-who h1{height:5.6mm; margin:0; font:700 13pt/5.6mm var(--fs); color:var(--nav); white-space:nowrap; overflow:hidden}
+.hd-who p{height:4.1mm; margin:.3mm 0 0; font:400 8pt/4.1mm var(--fs); color:var(--mut); white-space:nowrap; overflow:hidden}
+.hd-bar{position:absolute; left:0; right:0; top:24.1mm; height:.8mm; background:var(--pur)}
+
+.main{position:absolute; left:11.2mm; top:27.9mm; width:187.5mm}
+.sec{position:relative; height:4.1mm; padding-left:2.8mm; font:700 8pt/4.1mm var(--fs); color:var(--nav); white-space:nowrap}
+.sec .tick{position:absolute; left:0; top:0; width:1mm; height:4.1mm; background:var(--pur)}
+.sec .cont{font-weight:400; color:var(--mut)}
+.rule{height:.2mm; margin:1mm 0 2.1mm; background:var(--rule)}
+
+.grid6{display:grid; grid-template-columns:repeat(6,30mm); column-gap:1.5mm}
+.kpis{margin-bottom:3.8mm}
+.kpi{position:relative; height:16mm; background:#fff; border:.75pt solid var(--edge)}
+.kpi .l{position:absolute; left:3mm; top:1.3mm; width:24.9mm; height:3.3mm; font:400 7pt/3.3mm var(--fs); color:var(--mut); white-space:nowrap; overflow:hidden}
+.kpi .v{position:absolute; left:3mm; top:4.9mm; width:24.9mm; height:5.6mm; font:700 13pt/5.6mm var(--fs); color:var(--ink-d); white-space:nowrap; overflow:hidden}
+.kpi .s{position:absolute; left:3mm; top:11.2mm; width:25.9mm; height:3mm; font:400 5.5pt/3mm var(--fs); color:var(--mut); white-space:nowrap; overflow:hidden}
+.kpi .s .hot{color:var(--amber)}
+.kpi .nil{color:var(--dash)}
+
+.depts{row-gap:2.1mm; margin-bottom:3.8mm}
+.dept{position:relative; height:18.3mm; background:var(--soft); border:1pt solid var(--pur)}
+.dept .l{position:absolute; left:1mm; right:1mm; top:1.5mm; height:4.1mm; font:700 6.5pt/4.1mm var(--fs); color:var(--nav); text-align:center; white-space:nowrap; overflow:hidden}
+.dept .v{position:absolute; left:1mm; right:1mm; top:5.8mm; height:7.1mm; font:700 16pt/7.1mm var(--fs); color:var(--pur); text-align:center; white-space:nowrap; overflow:hidden}
+.dept .v.nil{color:var(--dash)}
+.dept .s{position:absolute; left:1mm; right:1mm; top:13.2mm; height:2.8mm; display:flex; justify-content:space-between; gap:1.2mm;
+         font:400 5.2pt/2.8mm var(--fr); color:var(--mut); white-space:nowrap; overflow:hidden}
+.dept .s.one{justify-content:center}
+
+.tbl{width:187.5mm; border-collapse:collapse; table-layout:fixed}
+.tbl th,.tbl td{height:5mm; padding:0 1.524mm; font:400 7pt/1 var(--fs); white-space:nowrap; overflow:hidden; text-align:right; vertical-align:middle}
+/* the fill sits on the row, not the cells, so the PDF draws one band per row
+   with no hairline seams between neighbouring cells */
+.tbl thead tr{background:var(--nav)}
+.tbl th{color:#fff; font-weight:700}
+.tbl tbody tr{background:#fff}
+.tbl tbody tr.alt{background:var(--stripe)}
+.tbl td{color:var(--ink-d)}
+.tbl .l{text-align:left}
+.tbl .nil{color:var(--dash)}
+.tbl td.none{text-align:center; color:var(--mut)}
+
+.ft-line{position:absolute; left:0; right:0; top:288.8mm; height:.4mm; background:var(--gold)}
+.ft{position:absolute; left:0; right:0; top:289.2mm; bottom:0; background:var(--nav); padding:0 11.4mm 0 11.2mm;
+    display:flex; align-items:center; justify-content:space-between; font:400 6pt/1 var(--fs); color:var(--foot); white-space:pre}
+
+@page{size:A4 portrait; margin:0}
+@media print{
+  .bar, #toasts, #s1, #s2, #s3 > header, #notices, #tiles, #noPreview{display:none !important}
+  html,body{background:#fff}
+  .shell{display:block; max-width:none; margin:0; padding:0; gap:0}
+  #s3{border:0; border-radius:0; box-shadow:none; background:none; overflow:visible}
+  #s3 .body{display:block; padding:0; gap:0}
+  #stage{padding:0; border:0; background:none; overflow:visible}
+  #stageBox{height:auto !important}
+  #doc{transform:none !important}
+  #doc .page{box-shadow:none; margin:0; break-after:page; page-break-after:always}
+  #doc .page:last-child{break-after:auto; page-break-after:auto}
+}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="brand">
+    <div class="seal">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 20V10m6 10V4m6 16v-7m4 7H3"/>
+      </svg>
+    </div>
+    <div>
+      <h1>تقرير مدير الفرع اليومي</h1>
+      <p>ملفات الإكسل ← قالب Branch Manager Daily Report بصيغة PDF</p>
+    </div>
+  </div>
+  <button class="btn" id="bClear" disabled>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M9 7V5h6v2m-8 0 1 13h8l1-13"/></svg>
+    مسح والبدء من جديد
+  </button>
+  <button class="btn" id="bSave" disabled>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 19h16"/></svg>
+    حفظ الملف
+  </button>
+  <button class="btn btn-main" id="bPdf" disabled>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3h-7v18h13V9zm0 0v6h6M9.5 13.5h5M9.5 17h3"/></svg>
+    فتح الـPDF
+  </button>
+</div>
+
+<div class="shell">
+
+  <section class="step" id="s1">
+    <header><span class="n">١</span><h2>ملفات الإكسل</h2><span class="state" id="st1">لم تُرفع بعد</span></header>
+    <div class="body">
+      <div class="drop" id="dropX" tabindex="0" role="button">
+        <strong>اسحب ملفات الإكسل هنا — أو انقر لاختيارها</strong>
+        <span>xlsx · xlsm · csv — ملف واحد أو عدة ملفات معًا</span>
+      </div>
+      <input type="file" id="fileX" accept=".xlsx,.xlsm,.csv" multiple hidden>
+      <div class="note">
+        <span class="m"></span>
+        <span>ارفع تصديرات MIS كما تنزل من النظام — كل ورقة تُعرف بعناوين أعمدتها لا باسمها، فلا يهم ترتيبها ولا هل هي في مصنّف واحد أو في عدة ملفات:
+          <ul>
+            <li><b>Appointment Statistics – Doctor Wise</b> — الزيارات والمواعيد وعدم الحضور والإلغاء والـWalk-in والسعة، وبطاقات الأقسام.</li>
+            <li><b>Service wise Count – Detailed Category Wise</b> — أعمدة Lab وRadiology وProcedure وRevenue.</li>
+            <li><b>Appointment Statistics – Detailed</b> (اختياري) — New Visit وFollow-up لكل طبيب.</li>
+          </ul>
+        </span>
+      </div>
+      <div id="fileInfo"></div>
+      <details class="map" id="mapBox" hidden>
+        <summary>ربط أعمدة كشف المواعيد — يُرشَّح تلقائيًا، وتعديلك يُحفظ لنفس عناوين الأعمدة</summary>
+        <div>
+          <div class="mapgrid" id="mapGrid"></div>
+          <p class="sample" id="mapSample"></p>
+          <div><button type="button" class="btn btn-sm" id="bMapReset">إرجاع الربط التلقائي</button></div>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <section class="step" id="s2">
+    <header><span class="n">٢</span><h2>إعدادات التقرير</h2></header>
+    <div class="body">
+      <div class="row">
+        <label class="fld" style="flex:1 1 220px"><span>اسم الفرع كما يظهر في الترويسة</span><input type="text" id="inBranch" placeholder="Meena Center Alsuwaidi"></label>
+        <label class="fld"><span>التاريخ — من</span><input type="date" id="inFrom"></label>
+        <label class="fld"><span>إلى (لمدة أكثر من يوم)</span><input type="date" id="inTo"></label>
+        <label class="fld"><span>السعة اليومية — Capacity</span><input type="number" id="inCap" min="0" step="1" placeholder="من عمود Slot"></label>
+      </div>
+      <div class="row">
+        <label class="fld"><span>حسابات النظام تُعرَف بكلمة — مفصولة بفاصلة</span><input type="text" id="inSys" value="Registration"></label>
+        <label class="fld" style="flex:1 1 260px"><span>اسم ملف الـPDF</span><input type="text" id="inName" placeholder="Branch_Manager_Daily_Report_Alsuwaidi_20260924"></label>
+        <label class="check"><input type="checkbox" id="chkWalk" checked> عمود Total Seen يشمل مراجعي الـWalk-in</label>
+      </div>
+      <div class="note"><span class="m"></span><span>تُملأ هذه الخانات من الملفات تلقائيًا، وما تكتبه هنا يبقى مقدَّمًا عليها.</span></div>
+    </div>
+  </section>
+
+  <section class="step" id="s3">
+    <header><span class="n">٣</span><h2>المعاينة</h2><span class="state" id="st3"></span></header>
+    <div class="body">
+      <div id="notices"></div>
+      <div id="tiles" class="tiles"></div>
+      <div id="stage" hidden><div id="stageBox"><div id="doc"></div></div></div>
+      <p class="empty" id="noPreview">ارفع ملفات الإكسل وتظهر الصفحة هنا مباشرة.</p>
+    </div>
+  </section>
+</div>
+
+<div id="toasts" aria-live="polite"></div>
+
+<script>
+(() => {
+"use strict";
+
+/* ═════════════════ helpers ═════════════════ */
+const $ = (s, r = document) => r.querySelector(s);
+const el = (tag, cls, txt) => { const n = document.createElement(tag); if (cls) n.className = cls; if (txt != null) n.textContent = txt; return n; };
+function toast(msg, kind = "") {
+  const t = el("div", "toast " + kind, msg);
+  $("#toasts").append(t);
+  setTimeout(() => { t.style.opacity = 0; t.style.transition = "opacity .3s"; setTimeout(() => t.remove(), 320); }, 5200);
+}
+const pipe = (u8, tr) => new Response(new Blob([u8]).stream().pipeThrough(tr)).arrayBuffer().then(b => new Uint8Array(b));
+
+/* ═════════════════ workbook reader ═════════════════
+   The in-browser zip reader the other pages use: every sheet comes back as a
+   grid of strings, whatever the export called it. */
+async function zipRead(ab) {
+  const u8 = new Uint8Array(ab), dv = new DataView(ab);
+  let e = -1;
+  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 66000); i--) if (dv.getUint32(i, true) === 0x06054b50) { e = i; break; }
+  if (e < 0) throw new Error("الملف ليس حزمة ZIP صالحة");
+  const count = dv.getUint16(e + 10, true);
+  let off = dv.getUint32(e + 16, true);
+  const dec = new TextDecoder(), map = new Map();
+  for (let n = 0; n < count; n++) {
+    if (dv.getUint32(off, true) !== 0x02014b50) break;
+    const method = dv.getUint16(off + 10, true), csize = dv.getUint32(off + 20, true);
+    const nl = dv.getUint16(off + 28, true), xl = dv.getUint16(off + 30, true), cl = dv.getUint16(off + 32, true);
+    const lho = dv.getUint32(off + 42, true);
+    const name = dec.decode(u8.subarray(off + 46, off + 46 + nl));
+    if (!name.endsWith("/")) map.set(name, { method, csize, lho });
+    off += 46 + nl + xl + cl;
+  }
+  const out = new Map();
+  for (const [name, it] of map) {
+    const nl = dv.getUint16(it.lho + 26, true), xl = dv.getUint16(it.lho + 28, true);
+    const raw = u8.subarray(it.lho + 30 + nl + xl, it.lho + 30 + nl + xl + it.csize);
+    if (it.method === 0) out.set(name, raw);
+    else if (it.method === 8) out.set(name, await pipe(raw, new DecompressionStream("deflate-raw")));
+    else throw new Error("ضغط غير مدعوم داخل الملف");
+  }
+  return out;
+}
+
+const colIdx = ref => { let n = 0; for (const ch of ref) { const c = ch.charCodeAt(0); if (c >= 65 && c <= 90) n = n * 26 + (c - 64); else break; } return n - 1; };
+const RT = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+
+function parseCsv(txt) {
+  if (txt.charCodeAt(0) === 0xFEFF) txt = txt.slice(1);
+  const grid = []; let row = [], cell = "", q = false;
+  for (let i = 0; i < txt.length; i++) {
+    const ch = txt[i];
+    if (q) { if (ch === '"') { if (txt[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === ",") { row.push(cell); cell = ""; }
+    else if (ch === "\n") { row.push(cell); grid.push(row); row = []; cell = ""; }
+    else if (ch !== "\r") cell += ch;
+  }
+  if (cell !== "" || row.length) { row.push(cell); grid.push(row); }
+  return grid.map(r => r.map(c => c.trim()));
+}
+
+async function readWorkbook(file) {
+  if (/\.csv$/i.test(file.name)) return [{ name: file.name.replace(/\.csv$/i, ""), grid: parseCsv(await file.text()) }];
+  if (/\.xls$/i.test(file.name)) throw new Error("صيغة xls القديمة غير مدعومة — افتح الملف في Excel واحفظه بصيغة xlsx");
+  const parts = await zipRead(await file.arrayBuffer());
+  const dec = new TextDecoder();
+  const doc = n => { const b = parts.get(n); return b ? new DOMParser().parseFromString(dec.decode(b), "application/xml") : null; };
+  const shared = [];
+  const ss = doc("xl/sharedStrings.xml");
+  if (ss) for (const si of ss.getElementsByTagName("si")) {
+    let s = "";
+    for (const t of si.getElementsByTagName("t")) if (t.parentNode.nodeName !== "rPh") s += t.textContent;
+    shared.push(s);
+  }
+  const wb = doc("xl/workbook.xml"), rels = doc("xl/_rels/workbook.xml.rels");
+  const target = new Map();
+  if (rels) for (const r of rels.getElementsByTagName("Relationship"))
+    target.set(r.getAttribute("Id"), "xl/" + r.getAttribute("Target").replace(/^\/?xl\//, "").replace(/^\//, ""));
+  const sheets = [];
+  if (wb) for (const sh of wb.getElementsByTagName("sheet")) {
+    const rid = sh.getAttribute("r:id") || sh.getAttributeNS(RT, "id");
+    const path = target.get(rid);
+    if (path && parts.has(path)) sheets.push({ name: sh.getAttribute("name") || "", path });
+  }
+  if (!sheets.length) for (const n of parts.keys())
+    if (/^xl\/worksheets\/[^/]+\.xml$/.test(n)) sheets.push({ name: n.split("/").pop().replace(/\.xml$/, ""), path: n });
+  if (!sheets.length) throw new Error("لا توجد ورقة عمل داخل الملف");
+
+  return sheets.map(s => {
+    const ws = doc(s.path), grid = [];
+    for (const row of ws.getElementsByTagName("row")) {
+      const cells = [];
+      for (const c of row.getElementsByTagName("c")) {
+        const r = c.getAttribute("r"), i = r ? colIdx(r) : cells.length, t = c.getAttribute("t");
+        let v = "";
+        if (t === "inlineStr") v = [...c.getElementsByTagName("t")].map(x => x.textContent).join("");
+        else { const vn = c.getElementsByTagName("v")[0], raw = vn ? vn.textContent : ""; v = t === "s" ? (shared[+raw] ?? "") : raw; }
+        cells[i] = String(v).trim();
+      }
+      for (let i = 0; i < cells.length; i++) if (cells[i] == null) cells[i] = "";
+      /* rows can skip numbers; keep each at its own index so a title block
+         above the header stays where the export put it */
+      const rn = parseInt(row.getAttribute("r"), 10);
+      if (rn > grid.length + 1) while (grid.length < rn - 1) grid.push([]);
+      grid.push(cells);
+    }
+    return { name: s.name, grid };
+  });
+}
+
+/* ═════════════════ sheet shapes ═════════════════
+   Sheets are told apart by their header row, never by name. */
+const norm = s => String(s ?? "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+const num = v => { const n = parseFloat(String(v ?? "").replace(/[^\d.eE+-]/g, "")); return isFinite(n) ? n : 0; };
+const isNum = v => v !== "" && v != null && isFinite(parseFloat(String(v).replace(/[^\d.eE+-]/g, "")));
+/* the appointment figures are read strictly: a date or a code in a numeric
+   column is not a count */
+const strictNum = v => { const t = String(v ?? "").trim().replace(/,/g, ""); return /^-?\d+(\.\d+)?$/.test(t) ? parseFloat(t) : null; };
+const str = (row, i) => i >= 0 ? String(row?.[i] ?? "").trim() : "";
+const clean = s => String(s ?? "").replace(/\s+/g, " ").trim();
+
+function findHeader(grid, want) {
+  for (let i = 0; i < Math.min(grid.length, 40); i++) {
+    const cells = (grid[i] || []).map(norm);
+    if (want.every(w => cells.some(c => w.test(c)))) return i;
+  }
+  return -1;
+}
+const pick = (header, re) => header.findIndex(h => re.test(norm(h)));
+
+/* "Service wise Count – Detailed Category Wise": the revenue and the
+   lab / radiology / procedure orders */
+const SVC_WANT = [/^provider$/, /^department$/, /^count$/];
+function shapeSvc(sheet) {
+  const h = findHeader(sheet.grid, SVC_WANT);
+  if (h < 0) return null;
+  const head = sheet.grid[h];
+  return {
+    sheet, headerRow: h,
+    col: {
+      sub: pick(head, /^subcategory$/), name: pick(head, /^test procedurename$|^test procedure name$|^service$/),
+      mrno: pick(head, /^mrno$|^mrn$|^mr no$|^patient no$|^patient id$|^file no$/),
+      provider: pick(head, /^provider$/), dept: pick(head, /^department$/),
+      count: pick(head, /^count$/), net: pick(head, /^net amount$/),
+    },
+  };
+}
+
+/* "Appointment Statistics – Detailed": a line per appointment, blocked under
+   "Doctor Name:" headings (and "Status:" headings inside them), each line
+   carrying the visit's own type — New or Follow-up. */
+const DET_WANT = [/^mrno$|^mrn$/, /^type$/, /^date of visit$|^appt time$|^appt$/];
+function shapeDetail(sheet) {
+  const h = findHeader(sheet.grid, DET_WANT);
+  if (h < 0) return null;
+  if (!sheet.grid.some(r => /^doctor\s*name\s*:/i.test(String(r?.[0] ?? "")))) return null;
+  const head = sheet.grid[h];
+  return { sheet, headerRow: h, col: { type: pick(head, /^type$/), mrno: pick(head, /^mrno$|^mrn$/) } };
+}
+
+/* "Appointment Statistics – Doctor Wise": a row per doctor. Its columns are
+   not fixed in code — each report figure is guessed from the header text, and
+   the guess can be corrected in the page and is remembered per header. */
+const APPT_FIELDS = [
+  { key: "dept",   label: "القسم · Department",      hints: ["departmentname", "department", "dept", "specialty", "speciality", "clinicname", "clinic"] },
+  { key: "doctor", label: "الطبيب · Doctor",         hints: ["resourcename", "doctorname", "doctor", "resource", "physicianname", "physician", "providername", "provider", "consultant", "staffname"] },
+  { key: "slot",   label: "السعة · Slots",           hints: ["totalslots", "totalslot", "slots", "slot", "availableslots", "capacity"], num: true },
+  { key: "sched",  label: "المواعيد · Scheduled",    hints: ["scheduled", "totalscheduled", "booked", "totalbooked", "totalappointments", "appointments", "appointment", "appts"], num: true },
+  { key: "seen",   label: "المشاهَد · Total Seen",   hints: ["totalseen", "seen", "totalattended", "attended", "arrived", "visited", "checkedout"], num: true },
+  { key: "walkin", label: "بلا موعد · Walk-in",      hints: ["walkin", "walkins", "totalwalkin", "totalwalkins", "walkinpatients", "walkinvisits", "walkinvisit"], num: true },
+  { key: "noshow", label: "عدم الحضور · No Show",    hints: ["noshow", "noshows", "totalnoshow", "missed", "dna", "didnotattend", "notattended", "notarrived", "absent"], num: true },
+  { key: "cancel", label: "الملغاة · Cancelled",     hints: ["cancelled", "canceled", "totalcancelled", "totalcanceled", "cancel", "cancellation", "cancellations"], num: true },
+  { key: "newv",   label: "زيارة جديدة · New Visit", hints: ["totalnewvisit", "totalnewvisits", "newvisit", "newvisits", "totalnewpatientvisits", "newpatientvisits", "newpatients", "newpatient", "new"], num: true },
+  { key: "follow", label: "متابعة · Follow-up",      hints: ["totalfollowup", "totalfollowupvisit", "totalfollowupvisits", "followup", "followups", "followupvisit", "followupvisits", "revisit", "revisits", "oldvisit", "oldvisits"], num: true },
+];
+const NUM_KEYS = APPT_FIELDS.filter(f => f.num).map(f => f.key);
+const hk = h => norm(h).replace(/ /g, "");
+
+/* how much of a column below the header holds plain numbers */
+function numericShare(grid, headerRow, ci) {
+  let n = 0, hit = 0;
+  for (let i = headerRow + 1; i < Math.min(grid.length, headerRow + 40); i++) {
+    const v = str(grid[i], ci);
+    if (!v) continue;
+    n++; if (strictNum(v) != null) hit++;
+  }
+  return n ? hit / n : null;
+}
+function autoMap(grid, headerRow) {
+  const head = grid[headerRow] || [];
+  const share = head.map((_, ci) => numericShare(grid, headerRow, ci));
+  const cand = [];
+  APPT_FIELDS.forEach(f => head.forEach((h, ci) => {
+    const k = hk(h);
+    if (!k) return;
+    /* a count column holds numbers, a name column does not */
+    if (share[ci] != null && (f.num ? share[ci] < 0.5 : share[ci] > 0.5)) return;
+    f.hints.forEach((hint, i) => {
+      const w = f.hints.length - i;
+      let s = 0;
+      if (k === hint) s = 100 + w;
+      else if (hint.length >= 4 && k.includes(hint)) s = 40 + w;
+      if (s) cand.push({ f: f.key, ci, s });
+    });
+  }));
+  cand.sort((a, b) => b.s - a.s);
+  const map = {}, used = new Set();
+  APPT_FIELDS.forEach(f => map[f.key] = -1);
+  for (const c of cand) {
+    if (map[c.f] >= 0 || used.has(c.ci)) continue;
+    map[c.f] = c.ci; used.add(c.ci);
+  }
+  return map;
+}
+function shapeAppt(sheet) {
+  for (let h = 0; h < Math.min(sheet.grid.length, 40); h++) {
+    const row = sheet.grid[h] || [];
+    if (row.filter(c => String(c).trim()).length < 2) continue;
+    const map = autoMap(sheet.grid, h);
+    if (map.doctor >= 0 && (map.seen >= 0 || map.sched >= 0))
+      return { sheet, headerRow: h, auto: map, sig: row.map(hk).join("|") };
+  }
+  return null;
+}
+
+/* ═════════════════ remembered column choices ═════════════════ */
+const MAP_KEY = "aogh_manager_map";
+const mapStore = {
+  all() { try { return JSON.parse(localStorage.getItem(MAP_KEY) || "{}") || {}; } catch { return {}; } },
+  get(sig) { return this.all()[sig] || null; },
+  set(sig, v) {
+    try {
+      const all = this.all();
+      if (v && Object.keys(v).length) all[sig] = v; else delete all[sig];
+      localStorage.setItem(MAP_KEY, JSON.stringify(all));
+    } catch {}
+  },
+};
+const mapFor = a => Object.assign({}, a.auto, mapStore.get(a.sig) || {});
+
+/* ═════════════════ dates ═════════════════ */
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const MON3 = MONTHS.map(m => m.slice(0, 3));
+const WEEKDAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+function parseDate(s) {
+  const t = String(s ?? "").trim();
+  let m = /^(\d{1,2})[-/\s]([A-Za-z]{3,})[-/\s,]*(\d{4})/.exec(t);
+  if (m) { const mon = m[2].slice(0, 3).toLowerCase(); const mi = MON3.findIndex(x => x.toLowerCase() === mon); if (mi >= 0) return new Date(Date.UTC(+m[3], mi, +m[1])); }
+  m = /^(\d{4})-(\d{2})-(\d{2})/.exec(t);
+  if (m) return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+  m = /^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/.exec(t);
+  if (m) return new Date(Date.UTC(+m[3], +m[2] - 1, +m[1]));
+  return null;
+}
+const iso = d => d ? d.toISOString().slice(0, 10) : "";
+const D = d => d.getUTCDate(), M = d => d.getUTCMonth(), Y = d => d.getUTCFullYear();
+const spanDays = (a, b) => (a && b) ? Math.round((b - a) / 864e5) + 1 : 0;
+
+/* "Thursday, September 24, 2026" for a day — the template's own wording —
+   widened to a span when the files cover more than one */
+function longDate(a, b) {
+  if (!a && !b) return "";
+  if (!a) a = b; if (!b) b = a;
+  if (+a === +b) return WEEKDAYS[a.getUTCDay()] + ", " + MONTHS[M(a)] + " " + D(a) + ", " + Y(a);
+  if (Y(a) === Y(b) && M(a) === M(b)) return MONTHS[M(a)] + " " + D(a) + " – " + D(b) + ", " + Y(a);
+  if (Y(a) === Y(b)) return MONTHS[M(a)] + " " + D(a) + " – " + MONTHS[M(b)] + " " + D(b) + ", " + Y(b);
+  return MONTHS[M(a)] + " " + D(a) + ", " + Y(a) + " – " + MONTHS[M(b)] + " " + D(b) + ", " + Y(b);
+}
+
+function periodOf(sheet) {
+  for (const row of sheet.grid.slice(0, 10)) {
+    const t = (row || []).join(" ");
+    const m = /from(?:\s*date)?\s*:?\s*([0-9]{1,2}[-/][A-Za-z0-9]{2,}[-/][0-9]{4})[^,]*?,?\s*to(?:\s*date)?\s*:?\s*([0-9]{1,2}[-/][A-Za-z0-9]{2,}[-/][0-9]{4})/i.exec(t);
+    if (m) { const a = parseDate(m[1]), b = parseDate(m[2]); if (a && b) return { from: a, to: b }; }
+  }
+  return null;
+}
+/* a daily export is often saved as "Alsuwaidi 24-09-2026.xlsx" */
+function dateFromName(name) {
+  const s = String(name || "");
+  let m = /(?:^|\D)(\d{1,2})[-_.](\d{1,2})[-_.](\d{4})(?:\D|$)/.exec(s);
+  if (m && +m[2] <= 12) return new Date(Date.UTC(+m[3], +m[2] - 1, +m[1]));
+  m = /(?:^|\D)(20\d{2})[-_.]?(\d{2})[-_.]?(\d{2})(?:\D|$)/.exec(s);
+  if (m && +m[2] <= 12 && +m[3] <= 31) return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+  return null;
+}
+const spanOf = list => {
+  const ok = list.filter(Boolean);
+  if (!ok.length) return null;
+  return { from: new Date(Math.min(...ok.map(p => +p.from))), to: new Date(Math.max(...ok.map(p => +p.to))) };
+};
+
+/* ═════════════════ the branch, from the title block ═════════════════ */
+const titleCase = s => s === s.toUpperCase() ? s.toLowerCase().replace(/\b[a-z]/g, c => c.toUpperCase()) : s;
+function branchFrom(sheets) {
+  for (const s of sheets) {
+    for (const row of s.grid.slice(0, 6)) {
+      for (const c of (row || []).slice(0, 3)) {
+        const t = clean(c);
+        if (/^meena\b/i.test(t) && t.length <= 60) return titleCase(t);
+        const m = /^(?:center|centre|branch|hospital)\s*[-:]\s*(.{2,50})$/i.exec(t);
+        if (m) return titleCase(clean(m[1]));
+      }
+    }
+  }
+  return "";
+}
+/* "Meena Center Alsuwaidi" → "Alsuwaidi", for the file name */
+const branchShort = b => clean(String(b || "").replace(/\b(meena|center|centre|phc|primary|health|care|branch|clinic|medical|polyclinic)\b/gi, " "))
+  .replace(/[^\w-]+/g, "_").replace(/^_+|_+$/g, "") || "Branch";
+
+/* ═════════════════ names ═════════════════ */
+const nameKey = s => norm(s);
+const bigrams = s => { const g = []; for (let i = 0; i < s.length - 1; i++) g.push(s.slice(i, i + 2)); return g; };
+function similarity(a, b) {
+  a = nameKey(a); b = nameKey(b);
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  const A = bigrams(a), B = bigrams(b);
+  if (!A.length || !B.length) return 0;
+  const pool = [...B]; let hit = 0;
+  for (const g of A) { const i = pool.indexOf(g); if (i >= 0) { pool.splice(i, 1); hit++; } }
+  return (2 * hit) / (A.length + B.length);
+}
+/* Lines each name of a second export up with a doctor: exact names are all
+   claimed first, then "Abdulaziz Omar" finds "Abdulaziz Omar Jubair" (two
+   words or more, opening exactly one name), then a near spelling. No doctor
+   is claimed twice by the same export. */
+function linkNames(srcKeys, targetKeys) {
+  const free = new Set(targetKeys), out = new Map(), rest = [];
+  for (const k of srcKeys) { if (free.has(k)) { free.delete(k); out.set(k, { to: k, fuzzy: false }); } else rest.push(k); }
+  for (const k of rest) {
+    const words = k.split(" ").length;
+    const opens = [...free].filter(ok => words > 1 && ok.split(" ").length > 1 && (ok.startsWith(k + " ") || k.startsWith(ok + " ")));
+    if (opens.length === 1) { free.delete(opens[0]); out.set(k, { to: opens[0], fuzzy: true }); continue; }
+    let best = null, score = 0;
+    for (const ok of free) { const s = similarity(k, ok); if (s > score) { score = s; best = ok; } }
+    if (best && score >= 0.82) { free.delete(best); out.set(k, { to: best, fuzzy: true }); }
+  }
+  return out;
+}
+
+/* ═════════════════ departments ═════════════════
+   The template names its cards short — "OB-Gyne", "ENT", "Mental Health" —
+   while MIS writes "OBSTETRICS AND GYNECOLOGY" or "ENT ( Ear, Nose,Throat )".
+   Every spelling of one department lands on one card. */
+const DEPT_ALIAS = [
+  [/emergenc|(^| )er( |$)|casualty|urgent care/, "EMERGENCY"],
+  [/dental|dentist|orthodon|endodon|periodon|prosthodon|oral/, "Dental"],
+  [/family|general practi|(^| )gp( |$)/, "Family Medicine"],
+  [/pediat|paediat|child/, "Pediatric"],
+  [/obst|gyn|women/, "OB-Gyne"],
+  [/physio|rehab|physical therap/, "Physiotherapy"],
+  [/cardio|heart/, "Cardiology"],
+  [/sport/, "Sport Medicine"],
+  [/(^| )ent( |$)|(^| )ear( |$)|otolaryng/, "ENT"],
+  [/ophthal|(^| )eye|optom/, "Ophthalmology"],
+  [/diabet|endocrin/, "Diabetes"],
+  [/mental|psych/, "Mental Health"],
+  [/dermat|skin/, "Dermatology"],
+  [/orthop/, "Orthopedics"],
+  [/internal/, "Internal Medicine"],
+  [/nutri|diet/, "Nutrition"],
+  [/urolog/, "Urology"],
+  [/neuro/, "Neurology"],
+];
+/* the order the template lays its cards out in; departments it does not
+   name follow by visits, and the emergency card closes the grid */
+const DEPT_ORDER = ["Family Medicine", "Pediatric", "OB-Gyne", "Dental", "Physiotherapy", "Cardiology",
+                    "Sport Medicine", "ENT", "Ophthalmology", "Diabetes", "Mental Health"];
+const shortDept = raw => {
+  const n = norm(raw);
+  const hit = DEPT_ALIAS.find(([re]) => re.test(n));
+  return hit ? hit[1] : titleCase(clean(raw)) || "Other";
+};
+const isER = raw => /emergenc|(^| )er( |$)|casualty|urgent care/.test(norm(raw));
+
+/* ═════════════════ reading each export ═════════════════ */
+function readAppt(a, map) {
+  const g = a.sheet.grid, rows = [];
+  let dept = "";
+  for (let i = a.headerRow + 1; i < g.length; i++) {
+    const r = g[i] || [], first = clean(r[0]);
+    const block = /^department(?:\s*name)?\s*:\s*(.+)$/i.exec(first);
+    if (block) { dept = clean(block[1]); continue; }
+    const d = clean(str(r, map.dept));
+    if (d && !/^(grand\s*)?(sub\s*)?total\b/i.test(d)) dept = d;   // merged department cells run down the block
+    const doctor = clean(str(r, map.doctor));
+    if (!doctor || /^(grand\s*)?(sub\s*)?total\b/i.test(doctor) || /^(grand\s*)?total\b/i.test(d)) continue;
+    const v = {}; let any = false;
+    for (const k of NUM_KEYS) {
+      if (map[k] < 0) continue;
+      const x = strictNum(str(r, map[k]));
+      if (x != null) { v[k] = x; any = true; }
+    }
+    if (any) rows.push({ dept: dept || "—", doctor, v });
+  }
+  return rows;
+}
+
+/* the fee lines are the visit itself, not an order */
+const FEE_CAT = /doctor fee|physician fee|consultation|^cons\b/;
+const CATS = [
+  { key: "lab",   test: /laborator|^lab\b/ },
+  { key: "rad",   test: /radiolog|imaging/ },
+  { key: "proc",  test: /procedure/ },
+  { key: "dent",  test: /dental|dentistry/ },
+  { key: "phys",  test: /physio|rehab/ },
+  { key: "home",  test: /home/ },
+  { key: "other", test: /^other/ },
+];
+const PACK_CAT = /package|بكج/;
+const bucketOf = name => { const hit = CATS.find(c => c.test.test(norm(name))); return hit ? hit.key : null; };
+const catOf = (cat, dept) => {
+  const n = norm(cat);
+  if (FEE_CAT.test(n)) return { key: "fee", pack: false };
+  const pack = PACK_CAT.test(n);
+  const hit = pack ? null : bucketOf(n);
+  if (hit) return { key: hit, pack: false };
+  return { key: bucketOf(dept) || "other", pack };
+};
+
+/* The order columns count VISITS, not billed items — as on the Physician
+   Detail page: a twelve-test panel for one patient on one day is one lab
+   visit. The file number is keyed with the bill date, so a patient who comes
+   back another day counts again. Revenue is every net amount, fees included. */
+function readServices(list) {
+  const by = new Map(), dates = [];
+  let byMrn = false, tests = 0, cats = 0;
+  for (const s of list) {
+    const g = s.sheet.grid, c = s.col;
+    let cat = null, billDate = "";
+    for (let i = s.headerRow + 1; i < g.length; i++) {
+      const row = g[i] || [], first = clean(row[0]);
+      if (/^bill\s*date\s*:/i.test(first)) {
+        billDate = first.split(":").slice(1).join(":").trim();
+        const d = parseDate(billDate); if (d) dates.push(+d);
+        cat = null; continue;
+      }
+      if (/^category\s*:/i.test(first)) { cat = first.split(":").slice(1).join(":").trim(); cats++; continue; }
+      const provider = clean(str(row, c.provider)), dept = clean(str(row, c.dept));
+      if (!isNum(row[c.count]) || !provider || !dept) continue;
+      const k = nameKey(provider);
+      let p = by.get(k);
+      if (!p) { p = { name: provider, dept, net: 0, cnt: {}, mrn: {} }; by.set(k, p); }
+      const cnt = Math.round(num(row[c.count])), net = c.net >= 0 ? num(row[c.net]) : 0;
+      p.net += net;
+      const placed = cat == null ? { key: bucketOf(dept) || "other", pack: false } : catOf(cat, dept);
+      if (placed.key === "fee") continue;
+      tests += cnt;
+      const file = str(row, c.mrno);
+      if (file) { byMrn = true; (p.mrn[placed.key] || (p.mrn[placed.key] = new Set())).add(file + "\u0000" + billDate); }
+      else {
+        const pack = placed.pack || (placed.key === "phys" && cnt > 1);
+        p.cnt[placed.key] = (p.cnt[placed.key] || 0) + (pack ? 1 : cnt);
+      }
+    }
+  }
+  for (const p of by.values()) for (const k in p.mrn) p.cnt[k] = (p.cnt[k] || 0) + p.mrn[k].size;
+  return { by, dates, byMrn, tests, cats };
+}
+
+/* New and follow-up visits, counted line by line under each doctor. A line
+   filed under a cancelled or no-show status is an appointment that never
+   became a visit, so it is counted there instead. */
+const TYPE_NEW = /^new\b/i;
+const TYPE_FOLLOW = /follow|revisit|re-visit|review|return|existing|repeat|^old\b/i;
+const ST_CANCEL = /cancel/i;
+const ST_NOSHOW = /no\s*-?\s*show|missed|absent|not\s*arrived|did\s*not|\bdna\b/i;
+function readDetails(list) {
+  const by = new Map();
+  let lines = 0, hasFollow = false, hasStatus = false, skipped = 0;
+  for (const nv of list) {
+    const g = nv.sheet.grid;
+    let doc = null, status = "";
+    for (let i = nv.headerRow + 1; i < g.length; i++) {
+      const r = g[i] || [], first = clean(r[0]);
+      if (/^doctor\s*name\s*:/i.test(first)) { doc = clean(first.split(":").slice(1).join(":")); status = ""; continue; }
+      if (/^status\s*:/i.test(first)) { status = clean(first.split(":").slice(1).join(":")); hasStatus = true; continue; }
+      if (!first || !doc) continue;
+      if (nv.col.mrno > 0 && !str(r, nv.col.mrno)) continue;      // a subtotal line, not an appointment
+      const k = nameKey(doc);
+      let p = by.get(k);
+      if (!p) { p = { raw: doc, newv: 0, follow: 0, noshow: 0, cancel: 0 }; by.set(k, p); }
+      if (ST_CANCEL.test(status)) { p.cancel++; skipped++; continue; }
+      if (ST_NOSHOW.test(status)) { p.noshow++; skipped++; continue; }
+      const type = str(r, nv.col.type);
+      lines++;
+      if (TYPE_NEW.test(type)) p.newv++;
+      else if (TYPE_FOLLOW.test(type)) { p.follow++; hasFollow = true; }
+    }
+  }
+  return { by, lines, hasFollow, hasStatus, skipped };
+}
+
+/* ═════════════════ the report's arithmetic ═════════════════ */
+const add = (a, b) => b == null ? a : (a ?? 0) + b;
+function aggregate(opts) {
+  const notices = [];
+  const walkIncl = opts.walkIncl;
+  const sysWords = (opts.sysWords || "").split(/[,،]/).map(s => s.trim()).filter(Boolean);
+  const isSystem = n => sysWords.some(w => norm(n).includes(norm(w)));
+
+  /* 1 — the doctor rows, from the appointments export */
+  const docs = new Map();            // doctor + department → figures
+  const has = {};                    // which figures any appointment sheet carries
+  for (const a of state.appts) {
+    const map = mapFor(a);
+    NUM_KEYS.forEach(k => { if (map[k] >= 0) has[k] = true; });
+    for (const r of readAppt(a, map)) {
+      const key = nameKey(r.doctor) + "|" + nameKey(r.dept);
+      let d = docs.get(key);
+      if (!d) { d = { name: r.doctor, dept: r.dept, appt: true, net: null, cnt: null }; docs.set(key, d); }
+      NUM_KEYS.forEach(k => { if (r.v[k] != null) d[k] = add(d[k], r.v[k]); });
+    }
+  }
+
+  /* a doctor listed under two departments takes the other exports' figures
+     on the row where they saw the most */
+  const primary = () => {
+    const m = new Map();
+    for (const d of docs.values()) {
+      const k = nameKey(d.name), cur = m.get(k);
+      if (!cur || (d.seen || 0) > (cur.seen || 0)) m.set(k, d);
+    }
+    return m;
+  };
+
+  /* 2 — revenue and orders, from the services export */
+  const svc = state.svcs.length ? readServices(state.svcs) : null;
+  const fuzzy = [], added = [], systems = [];
+  if (svc) {
+    const prim = primary();
+    const links = linkNames([...svc.by.keys()], [...prim.keys()]);
+    for (const [k, p] of svc.by) {
+      const hit = links.get(k);
+      let d = hit ? prim.get(hit.to) : null;
+      if (hit && hit.fuzzy) fuzzy.push(p.name + " ← " + d.name);
+      if (!d) {
+        if (isSystem(p.name)) { systems.push(p.name); continue; }
+        /* a provider who billed but kept no appointment book still worked today */
+        d = { name: p.name, dept: p.dept, appt: false, net: null, cnt: null };
+        docs.set(k + "|" + nameKey(p.dept) + "|svc", d);
+        if (!isER(p.dept)) added.push(p.name);
+      }
+      d.net = add(d.net, p.net);
+      d.cnt = d.cnt || {};
+      for (const c in p.cnt) d.cnt[c] = (d.cnt[c] || 0) + p.cnt[c];
+    }
+    for (const d of docs.values()) if (d.net == null) { d.net = 0; d.cnt = {}; }
+  }
+
+  /* 3 — new and follow-up visits, from the detailed export */
+  const det = state.dets.length ? readDetails(state.dets) : null;
+  const detMiss = [];
+  if (det) {
+    const prim = primary();
+    const links = linkNames([...det.by.keys()], [...prim.keys()]);
+    for (const [k, p] of det.by) {
+      const hit = links.get(k);
+      if (!hit) { detMiss.push(p.raw); continue; }
+      const d = prim.get(hit.to);
+      if (hit.fuzzy) fuzzy.push(p.raw + " ← " + d.name);
+      d.dNew = p.newv; d.dFollow = p.follow; d.dNoshow = p.noshow; d.dCancel = p.cancel;
+    }
+  }
+  /* the line-by-line count beats a column of totals when both are there;
+     no-shows and cancellations come from it only when the columns are missing */
+  const useDetNew = !!det;
+  const useDetFollow = !!det && det.hasFollow;
+  const useDetStatus = !!det && det.hasStatus;
+  for (const d of docs.values()) {
+    /* a doctor the detailed export leaves out keeps the column's own figure */
+    if (useDetNew) d.newv = d.dNew ?? d.newv ?? (d.appt ? 0 : null);
+    if (useDetFollow) d.follow = d.dFollow ?? d.follow ?? (d.appt ? 0 : null);
+    if (useDetStatus && !has.noshow) d.noshow = d.dNoshow ?? 0;
+    if (useDetStatus && !has.cancel) d.cancel = d.dCancel ?? 0;
+    /* what the table calls Seen is every visit the doctor had */
+    d.visits = d.seen == null ? null : d.seen + (walkIncl ? 0 : (d.walkin || 0));
+  }
+  const known = {
+    seen: !!has.seen, sched: !!has.sched, slot: !!has.slot, walkin: !!has.walkin,
+    noshow: !!has.noshow || useDetStatus, cancel: !!has.cancel || useDetStatus,
+    newv: !!has.newv || useDetNew, follow: !!has.follow || useDetFollow,
+  };
+
+  /* 4 — outpatient against emergency */
+  const all = [...docs.values()].filter(d => !isSystem(d.name) || d.appt);
+  const opd = all.filter(d => !isER(d.dept)), er = all.filter(d => isER(d.dept));
+  const sum = (list, k) => list.reduce((n, d) => add(n, d[k]), null);
+  const side = list => {
+    const visits = sum(list, "visits"), newv = sum(list, "newv"), follow = sum(list, "follow");
+    return {
+      visits, newv,
+      follow: known.follow ? follow : (visits != null && newv != null ? Math.max(0, visits - newv) : null),
+      sched: sum(list, "sched"), walkin: sum(list, "walkin"), noshow: sum(list, "noshow"),
+      cancel: sum(list, "cancel"), slot: sum(list, "slot"),
+    };
+  };
+  const O = side(opd), E = side(er);
+  const apptSeen = O.visits == null ? null : O.visits - (O.walkin || 0);
+  const cap = opts.cap > 0 ? opts.cap : (O.slot || null);
+
+  /* 5 — department cards */
+  const byDept = new Map();
+  for (const d of all) {
+    const name = shortDept(d.dept);
+    if (!byDept.has(name)) byDept.set(name, []);
+    byDept.get(name).push(d);
+  }
+  const depts = [...byDept.entries()].map(([name, list]) => {
+    const active = list.filter(d => (d.visits || 0) > 0 || (d.sched || 0) > 0 || (d.net || 0) > 0);
+    return {
+      name, er: name === "EMERGENCY",
+      visits: sum(list, "visits"), walkin: sum(list, "walkin"), noshow: sum(list, "noshow"),
+      doctors: new Set((active.length ? active : list).map(d => nameKey(d.name))).size,
+      rank: DEPT_ORDER.indexOf(name),
+    };
+  }).sort((a, b) => (a.er - b.er)
+      || ((a.rank < 0) - (b.rank < 0)) || (a.rank - b.rank)
+      || ((b.visits || 0) - (a.visits || 0)) || a.name.localeCompare(b.name));
+
+  /* 6 — the doctors table: the outpatient doctors, busiest first */
+  const table = opd.filter(d => !isSystem(d.name)).map(d => ({
+    name: d.name, spec: d.dept === "—" ? "" : d.dept,
+    seen: d.visits, newv: d.newv ?? null,
+    lab: d.cnt ? (d.cnt.lab || 0) : null, rad: d.cnt ? (d.cnt.rad || 0) : null, proc: d.cnt ? (d.cnt.proc || 0) : null,
+    net: d.net, rpv: d.net != null && d.visits > 0 ? d.net / d.visits : null,
+  })).sort((a, b) => (b.seen ?? -1) - (a.seen ?? -1) || (b.net || 0) - (a.net || 0) || a.name.localeCompare(b.name));
+
+  /* what the page should say about how it read the files */
+  if (!state.appts.length) notices.push({ kind: "warn", text: "لا يوجد كشف «Appointment Statistics – Doctor Wise» — بطاقات الزيارات والمواعيد والأقسام تخرج شرطات." });
+  else {
+    const miss = [];
+    if (!known.seen) miss.push("Total Seen");
+    if (!known.sched) miss.push("Scheduled");
+    if (!known.walkin) miss.push("Walk-in");
+    if (!known.noshow) miss.push("No Show");
+    if (!known.cancel) miss.push("Cancelled");
+    if (!known.slot && !(opts.cap > 0)) miss.push("Slot");
+    if (miss.length) notices.push({ kind: "warn", text: "لم يُعثر في كشف المواعيد على عمود: " + miss.join(" · ")
+      + " — ما يعتمد عليه يخرج شرطة. إن كان العمود موجودًا باسم آخر فاربطه من «ربط أعمدة كشف المواعيد»." });
+  }
+  if (!svc) notices.push({ kind: "warn", text: "لا يوجد تصدير «Service wise Count – Detailed Category Wise» — أعمدة Lab وRadiology وProcedure وRevenue تخرج شرطات." });
+  else {
+    if (!svc.cats) notices.push({ kind: "warn", text: "تصدير الخدمات بلا أسطر «Category:» — وُزِّعت الطلبات بحسب قسم كل صف." });
+    notices.push({ kind: "", text: svc.byMrn
+      ? "أعمدة Lab وRadiology وProcedure تعدّ الزيارات لا الفحوصات: كل رقم ملف يُحسب مرة واحدة عند الطبيب في اليوم الواحد — من " + nf(svc.tests) + " بندًا مفوترًا."
+      : "لا يوجد عمود MRNO في تصدير الخدمات، فأعمدة الطلبات تعدّ البنود المفوترة." });
+  }
+  if (!known.newv) notices.push({ kind: "warn", text: "لا يوجد عمود New Visit ولا كشف «Appointment Statistics – Detailed» — عمود New Visit وتقسيم New / Follow-up يخرجان شرطات." });
+  if (det) notices.push({ kind: "", text: "من الكشف المفصّل: " + nf(det.lines) + " زيارة لـ" + det.by.size + " طبيبًا"
+      + (det.skipped ? "، واستُبعد " + nf(det.skipped) + " موعدًا ملغًى أو لم يحضر صاحبه" : "") + "." });
+  if (detMiss.length) notices.push({ kind: "warn", text: "أطباء في الكشف المفصّل بلا صفّ في كشف المواعيد: " + detMiss.join("، ") });
+  if (fuzzy.length) notices.push({ kind: "warn", text: "أسماء طوبقت بالتقريب بين الملفات: " + fuzzy.join("، ") });
+  if (added.length) notices.push({ kind: "", text: "أُضيف للجدول من تصدير الخدمات من لا صفّ له في كشف المواعيد: " + added.join("، ") });
+  if (systems.length) notices.push({ kind: "", text: "حسابات النظام لا تظهر في جدول الأطباء: " + systems.join("، ") });
+  if (O.walkin != null && walkIncl && O.walkin > (O.visits || 0))
+    notices.push({ kind: "warn", text: "مراجعو الـWalk-in أكثر من Total Seen — يبدو أن Total Seen لا يشملهم؛ أزل العلامة عن «عمود Total Seen يشمل مراجعي الـWalk-in» في الإعدادات." });
+  if (!er.length) notices.push({ kind: "", text: "لا يوجد قسم طوارئ في الملفات — بطاقة EMERGENCY تخرج «Not reported»." });
+
+  return { O, E, er: er.length > 0, apptSeen, cap, known, depts, table, notices, svc, det,
+           billSpan: svc && svc.dates.length ? { from: new Date(Math.min(...svc.dates)), to: new Date(Math.max(...svc.dates)) } : null };
+}
+
+/* ═════════════════ the template, as markup ═════════════════ */
+const DASH = "–";
+const nf = n => Math.round(n).toLocaleString("en-US");
+const pct = (a, b) => b > 0 ? Math.round(a / b * 100) + "%" : DASH;
+/* revenue the way the template prints it: 700, 6K, 16K */
+const kFmt = n => n == null ? DASH : Math.abs(n) >= 1000 ? nf(n / 1000) + "K" : nf(n);
+
+const LOGO = "data:image/png;base64,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";
+
+function section(title, cont) {
+  const frag = document.createDocumentFragment();
+  const s = el("div", "sec");
+  s.append(el("i", "tick"), document.createTextNode(title));
+  if (cont) s.append(el("span", "cont", "  ·  continued"));
+  frag.append(s, el("div", "rule"));
+  return frag;
+}
+function header(page, meta) {
+  const logo = el("div", "hd-logo"), img = el("img");
+  img.src = LOGO; img.alt = "";
+  logo.append(img);
+  const who = el("div", "hd-who");
+  who.append(el("h1", "fit", meta.branch), el("p", "fit", meta.dateLong));
+  page.append(logo, el("div", "hd-kind", meta.days > 1 ? "Branch Manager Report" : "Branch Manager Daily Report"),
+              who, el("div", "hd-bar"));
+}
+function footer(page, meta, pageNo, pages) {
+  const ft = el("div", "ft");
+  ft.append(el("span", null, "Meena Health Business Intelligence   |   Generated " + meta.generated));
+  ft.append(el("span", null, pages > 1 ? "Page " + pageNo + " of " + pages : ""));
+  page.append(el("div", "ft-line"), ft);
+}
+
+function kpi(label, value, sub) {
+  const c = el("div", "kpi");
+  c.append(el("div", "l fit", label));
+  c.append(el("div", "v fit" + (value === DASH ? " nil" : ""), value));
+  const s = el("div", "s fit");
+  (sub || []).forEach(p => s.append(typeof p === "string" ? document.createTextNode(p) : el("span", p.cls, p.t)));
+  c.append(s);
+  return c;
+}
+function glance(data) {
+  const { O, E, known, apptSeen, cap } = data;
+  const v = x => x == null ? DASH : nf(x);
+  const split = S => S.newv == null ? [] : ["New " + nf(S.newv) + " / Follow-up " + (S.follow == null ? DASH : nf(S.follow))];
+  const box = el("div", "grid6 kpis");
+  box.append(kpi("Total OPD Visits", v(O.visits), split(O)));
+  box.append(kpi("EMERGENCY", data.er ? v(E.visits) : DASH, data.er ? split(E) : ["Not reported"]));
+  box.append(kpi("Appointments", v(O.sched),
+    apptSeen == null ? [] : ["Seen " + nf(apptSeen) + (known.sched ? "  ·  Show rate " + pct(apptSeen, O.sched) : "")]));
+  const ns = [];
+  if (known.noshow && known.sched) ns.push({ cls: "hot", t: "Rate " + pct(O.noshow || 0, O.sched) });
+  if (known.cancel) { if (ns.length) ns.push(" · "); ns.push({ cls: "hot", t: "Cancelled " + nf(O.cancel || 0) }); }
+  box.append(kpi("No-Shows", known.noshow ? v(O.noshow || 0) : DASH, ns));
+  const used = cap && O.visits != null ? pct(O.visits, cap) : DASH;
+  box.append(kpi("Capacity Used", used,
+    O.visits == null || !cap ? [] :
+    known.walkin ? [nf(apptSeen) + " seen + " + nf(O.walkin || 0) + " walk-in / " + nf(cap)]
+                 : [nf(O.visits) + " visits / " + nf(cap)]));
+  return box;
+}
+function deptGrid(data) {
+  const box = el("div", "grid6 depts");
+  data.depts.forEach(d => {
+    const c = el("div", "dept");
+    c.append(el("div", "l fit", d.name));
+    c.append(el("div", "v fit" + (d.visits == null ? " nil" : ""), d.visits == null ? DASH : nf(d.visits)));
+    const parts = [d.doctors + (d.doctors === 1 ? " Doctor" : " Doctors")];
+    if (data.known.walkin) parts.push("Walk in " + nf(d.walkin || 0));
+    if (data.known.noshow) parts.push("No Show " + nf(d.noshow || 0));
+    const s = el("div", "s fit" + (parts.length === 1 ? " one" : ""));
+    parts.forEach(p => s.append(el("span", null, p)));
+    c.append(s);
+    box.append(c);
+  });
+  return box;
+}
+
+/* column widths are the template's own, in millimetres */
+const COLS = [
+  { key: "name", head: "Doctor",    w: 35.6, left: true },
+  { key: "spec", head: "Specialty", w: 37.1, left: true },
+  { key: "seen", head: "Seen",      w: 11.2 },
+  { key: "newv", head: "New Visit", w: 14.2 },
+  { key: "lab",  head: "Lab",       w: 14.7 },
+  { key: "rad",  head: "Radiology", w: 21.8 },
+  { key: "proc", head: "Procedure", w: 17.8 },
+  { key: "net",  head: "Revenue",   w: 17.3 },
+  { key: "rpv",  head: "Rev/Visit", w: 17.8 },
+];
+function doctorTable(rows) {
+  const t = el("table", "tbl");
+  const cg = el("colgroup");
+  COLS.forEach(c => { const col = el("col"); col.style.width = c.w + "mm"; cg.append(col); });
+  const thead = el("thead"), htr = el("tr");
+  COLS.forEach(c => htr.append(el("th", c.left ? "l" : null, c.head)));
+  thead.append(htr);
+  const tb = el("tbody");
+  rows.forEach((r, i) => {
+    const tr = el("tr", i % 2 ? "alt" : null);
+    COLS.forEach(c => {
+      const v = r[c.key];
+      if (c.left) { tr.append(el("td", "l clip", v || "")); return; }
+      const txt = v == null ? DASH : c.key === "net" ? kFmt(v) : nf(v);
+      const td = el("td");
+      if (v == null) td.append(el("span", "nil", DASH)); else td.textContent = txt;
+      tr.append(td);
+    });
+    tb.append(tr);
+  });
+  if (!rows.length) {
+    const tr = el("tr"), td = el("td", "none", "No doctor rows in the uploaded files");
+    td.colSpan = COLS.length; tr.append(td); tb.append(tr);
+  }
+  t.append(cg, thead, tb);
+  return t;
+}
+
+function buildPage({ meta, data, first, rows, pageNo, pages }) {
+  const page = el("section", "page");
+  header(page, meta);
+  const main = el("div", "main");
+  const T = meta.days > 1 ? { g: "PERIOD AT A GLANCE", d: "DEPARTMENTS THIS PERIOD", r: "DOCTORS THIS PERIOD" }
+                          : { g: "TODAY AT A GLANCE", d: "DEPARTMENT TODAY", r: "DOCTORS TODAY" };
+  if (first) {
+    main.append(section(T.g), glance(data));
+    if (data.depts.length) main.append(section(T.d), deptGrid(data));
+  }
+  main.append(section(T.r, !first), doctorTable(rows));
+  page.append(main);
+  footer(page, meta, pageNo, pages);
+  return page;
+}
+
+/* a label longer than its box shrinks until it fits; a table cell is cut
+   short with "..." the way the template cuts "OBSTETRICS AND GY..." */
+function fitTexts(page) {
+  page.querySelectorAll(".fit").forEach(n => {
+    let size = parseFloat(getComputedStyle(n).fontSize);
+    const min = size * 0.6;
+    while (n.scrollWidth > n.clientWidth + 0.5 && size > min) { size -= 0.25; n.style.fontSize = size + "px"; }
+  });
+  page.querySelectorAll("td.clip").forEach(td => {
+    if (td.scrollWidth <= td.clientWidth + 0.5) return;
+    const full = td.textContent;
+    let lo = 0, hi = full.length;
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1;
+      td.textContent = full.slice(0, mid).trimEnd() + "...";
+      if (td.scrollWidth <= td.clientWidth + 0.5) lo = mid; else hi = mid - 1;
+    }
+    td.textContent = full.slice(0, lo).trimEnd() + "...";
+    td.title = full;
+  });
+}
+
+/* ═════════════════ pagination ═════════════════
+   Rows are a fixed 5 mm, so each page takes as many as fit between the table
+   head and the footer; the first page fits fewer, under the cards. */
+const MM = 96 / 25.4;
+function rowsThatFit(page) {
+  const box = page.getBoundingClientRect();
+  const tbl = page.querySelector("table.tbl");
+  const top = tbl.getBoundingClientRect().top - box.top;
+  const headH = tbl.tHead.getBoundingClientRect().height;
+  const body = tbl.tBodies[0].rows[0];
+  const rowH = body ? body.getBoundingClientRect().height : 5 * MM;
+  const limit = page.querySelector(".ft-line").getBoundingClientRect().top - box.top - 3 * MM;
+  return Math.max(1, Math.floor((limit - top - headH + 0.5) / rowH));
+}
+function probe(host, opts) {
+  const p = buildPage(opts);
+  p.style.visibility = "hidden"; p.style.position = "absolute";
+  host.append(p);
+  const n = rowsThatFit(p);
+  p.remove();
+  return n;
+}
+function renderDoc(data, meta) {
+  const host = $("#doc");
+  host.textContent = "";
+  host.style.transform = "none";        // measure at 1:1, scale to the column after
+  const rows = data.table;
+  const cap1 = probe(host, { meta, data, first: true, rows: rows.slice(0, 1), pageNo: 1, pages: 1 });
+  const chunks = [rows.slice(0, cap1)];
+  if (rows.length > cap1) {
+    const capN = probe(host, { meta, data, first: false, rows: rows.slice(cap1, cap1 + 1), pageNo: 2, pages: 2 });
+    for (let i = cap1; i < rows.length; i += capN) chunks.push(rows.slice(i, i + capN));
+  }
+  chunks.forEach((part, k) => {
+    const page = buildPage({ meta, data, first: k === 0, rows: part, pageNo: k + 1, pages: chunks.length });
+    host.append(page);
+    fitTexts(page);
+  });
+  fitStage();
+  return chunks.length;
+}
+
+/* the sheet is 210 mm wide; the preview column rarely is, so scale it down */
+function fitStage() {
+  const host = $("#doc"), stage = $("#stage"), box = $("#stageBox");
+  const page = host.firstElementChild;
+  if (!page) return;
+  host.style.transform = "none";
+  const w = page.getBoundingClientRect().width;
+  const avail = stage.clientWidth - 28;
+  const k = Math.min(1, avail / w);
+  host.style.transform = "scale(" + k + ")";
+  /* the box takes the scaled sheet's size, so the sheet sits centred */
+  box.style.width = w * k + "px";
+  box.style.height = host.getBoundingClientRect().height + "px";
+}
+
+/* ═════════════════ PDF writer ═════════════════
+   The pages are already laid out on screen, so the PDF is drawn from that
+   layout: every box, edge and line of text is read back off the rendered DOM
+   and written as PDF operators — the preview is the file. Text uses the
+   base-14 faces, which carry Arial's and Times New Roman's widths. */
+const latin1 = s => { const u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i) & 255; return u; };
+const WINANSI = { 0x2013: 0x96, 0x2014: 0x97, 0x2018: 0x91, 0x2019: 0x92, 0x201C: 0x93, 0x201D: 0x94,
+                  0x2022: 0x95, 0x2026: 0x85, 0x00B7: 0xB7, 0x2039: 0x8B, 0x203A: 0x9B, 0x00A0: 0x20 };
+function pdfText(t) {
+  let out = "";
+  for (const ch of t) {
+    let c = ch.codePointAt(0);
+    if (c > 255) c = WINANSI[c] ?? 0x3F;
+    if (c === 40 || c === 41 || c === 92) out += "\\";
+    out += String.fromCharCode(c);
+  }
+  return out;
+}
+const f2 = n => String(Math.round(n * 100) / 100);
+function rgbOf(css) {
+  const m = /rgba?\(([^)]+)\)/.exec(css || "");
+  if (!m) return null;
+  const p = m[1].split(",").map(parseFloat);
+  if (p.length > 3 && !(p[3] > 0.02)) return null;
+  return [p[0] / 255, p[1] / 255, p[2] / 255];
+}
+const fillOp = c => `${f2(c[0])} ${f2(c[1])} ${f2(c[2])} rg\n`;
+const boxOp = (x, y, w, h) => `${f2(x)} ${f2(y)} ${f2(w)} ${f2(h)} re f\n`;
+
+/* Adobe's widths for the base-14 faces, in WinAnsi order from 0x20 up */
+const W32 = {
+  F1: "278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584,350,556,350,222,556,333,1000,556,556,333,1000,667,333,1000,350,611,350,350,222,222,333,333,350,556,1000,333,1000,500,333,944,350,500,667,278,333,556,556,556,556,260,556,333,737,370,556,584,333,737,333,400,584,333,333,333,556,537,278,333,333,365,556,834,834,834,611,667,667,667,667,667,667,1000,722,667,667,667,667,278,278,278,278,722,722,778,778,778,778,778,584,778,722,722,722,722,667,667,611,556,556,556,556,556,556,889,500,556,556,556,556,278,278,278,278,556,556,556,556,556,556,556,584,611,556,556,556,556,500,556,500"
+    .split(",").map(Number),
+  F2: "278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,389,280,389,584,350,556,350,278,556,500,1000,556,556,333,1000,667,333,1000,350,611,350,350,278,278,500,500,350,556,1000,333,1000,556,333,944,350,500,667,278,333,556,556,556,556,280,556,333,737,370,556,584,333,737,333,400,584,333,333,333,611,556,278,333,333,365,556,834,834,834,611,722,722,722,722,722,722,1000,722,667,667,667,667,278,278,278,278,722,722,778,778,778,778,778,584,778,722,722,722,722,667,667,611,556,556,556,556,556,556,889,556,556,556,556,556,278,278,278,278,611,611,611,611,611,611,611,584,611,611,611,611,611,556,611,556"
+    .split(",").map(Number),
+  F4: "250,333,408,500,500,833,778,180,333,333,500,564,250,333,250,278,500,500,500,500,500,500,500,500,500,500,278,278,564,564,564,444,921,722,667,667,722,611,556,722,722,333,389,722,611,889,722,722,556,722,667,556,611,722,722,944,722,722,611,333,278,333,469,500,333,444,500,444,500,444,333,500,500,278,278,500,278,778,500,500,500,500,333,389,278,500,500,722,500,500,444,480,200,480,541,350,500,350,333,500,444,1000,500,500,333,1000,556,333,889,350,611,350,350,333,333,444,444,350,500,1000,333,980,389,333,722,350,444,722,250,333,500,500,500,500,200,500,333,760,276,500,564,333,760,333,400,564,300,300,333,500,453,250,333,300,310,500,750,750,750,444,722,722,722,722,722,722,889,667,611,611,611,611,333,333,333,333,722,722,722,722,722,722,722,564,722,722,722,722,722,722,556,500,444,444,444,444,444,444,667,444,444,444,444,444,278,278,278,278,500,500,500,500,500,500,500,564,500,500,500,500,500,500,500,500"
+    .split(",").map(Number),
+  F5: "250,333,555,500,500,1000,833,278,333,333,500,570,250,333,250,278,500,500,500,500,500,500,500,500,500,500,333,333,570,570,570,500,930,722,667,722,722,667,611,778,778,389,500,778,667,944,722,778,611,778,722,556,667,722,722,1000,722,722,667,333,278,333,581,500,333,500,556,444,556,444,333,500,556,278,333,556,278,833,556,500,556,556,444,389,333,556,500,722,500,500,444,394,220,394,520,350,500,350,333,500,500,1000,500,500,333,1000,556,333,1000,350,667,350,350,333,333,500,500,350,500,1000,333,1000,389,333,722,350,444,722,250,333,500,500,500,500,220,500,333,747,300,500,570,333,747,333,400,570,300,300,333,556,540,250,333,300,330,500,750,750,750,500,722,722,722,722,722,722,1000,722,667,667,667,667,389,389,389,389,722,722,778,778,778,778,778,570,778,722,722,722,722,722,611,556,500,500,500,500,500,500,722,444,444,444,444,444,278,278,278,278,500,556,500,500,500,500,500,570,500,556,556,556,556,500,556,500"
+    .split(",").map(Number),
+};
+const FACE = {
+  sans:  { asc: 0.905, desc: 0.212, plain: "F1", bold: "F2" },
+  serif: { asc: 0.891, desc: 0.216, plain: "F4", bold: "F5" },
+};
+function runWidth(s, font, size, track) {
+  let units = 0;
+  for (const ch of s) {
+    let c = ch.codePointAt(0);
+    if (c > 255) c = WINANSI[c] ?? 0x3F;
+    units += c >= 32 ? (W32[font][c - 32] ?? 500) : 0;
+  }
+  return units / 1000 * size + track * s.length;
+}
+
+function drawText(node, ops, ox, oy, H) {
+  const raw = node.nodeValue;
+  if (!raw || !raw.trim()) return;
+  const parent = node.parentElement;
+  if (!parent) return;
+  const cs = getComputedStyle(parent);
+  const col = rgbOf(cs.color) || [0, 0, 0];
+  const size = parseFloat(cs.fontSize) * 0.75;
+  const fam = cs.fontFamily.toLowerCase();
+  const face = FACE[/serif|times/.test(fam) && !/sans/.test(fam) ? "serif" : "sans"];
+  const bold = (parseInt(cs.fontWeight, 10) || 400) >= 600;
+  const font = bold ? face.bold : face.plain;
+  const track = parseFloat(cs.letterSpacing) * 0.75 || 0;
+  const pre = /^(pre|pre-wrap|break-spaces)$/.test(cs.whiteSpace);
+  const text = pre ? raw.replace(/^\s+/, "") : raw.replace(/\s+/g, " ").replace(/^ +/, "");
+  if (!text) return;
+
+  const range = document.createRange();
+  const from = raw.search(/\S/), to = raw.search(/\s*$/);
+  range.setStart(node, Math.max(0, from));
+  range.setEnd(node, Math.max(0, to));
+  const rects = [...range.getClientRects()].filter(r => r.width > 0.05 && r.height > 0.05);
+  if (!rects.length) return;
+
+  const put = (s, rect) => {
+    s = s.replace(/\s+$/, "");
+    if (!s) return;
+    const base = rect.top + rect.height * face.asc / (face.asc + face.desc);
+    const natural = runWidth(s, font, size, track);
+    const want = rect.width * 0.75;
+    /* the browser may have set this in a face other than the one the PDF
+       carries; stretch the run to the width it actually occupies */
+    const scale = natural > 0.1 ? Math.min(2, Math.max(0.5, want / natural)) : 1;
+    ops.push("BT\n" + fillOp(col) + `/${font} ${f2(size)} Tf\n`
+      + `${f2(track)} Tc\n${f2(scale * 100)} Tz\n`
+      + `${f2((rect.left - ox) * 0.75)} ${f2(H - (base - oy) * 0.75)} Td\n`
+      + `(${pdfText(s)}) Tj\nET\n`);
+  };
+  if (rects.length === 1) { put(text, rects[0]); return; }
+  const lines = [];
+  for (let i = 0; i < raw.length; i++) {
+    range.setStart(node, i); range.setEnd(node, i + 1);
+    const r = range.getBoundingClientRect();
+    if (!r.width) continue;
+    const line = lines.find(l => Math.abs(l.top - r.top) < 0.6);
+    if (line) { line.text += raw[i]; line.left = Math.min(line.left, r.left); line.right = Math.max(line.right, r.right); }
+    else lines.push({ text: raw[i], top: r.top, height: r.height, left: r.left, right: r.right });
+  }
+  lines.forEach(l => put(l.text, { top: l.top, height: l.height, left: l.left, width: l.right - l.left }));
+}
+
+/* the cards are boxed on all four sides, so every edge is drawn */
+function drawBox(elm, ops, ox, oy, H, images) {
+  const cs = getComputedStyle(elm);
+  if (cs.display === "none" || cs.visibility === "hidden") return false;
+  const r = elm.getBoundingClientRect();
+  if (r.width <= 0 || r.height <= 0) return true;
+  const X = (r.left - ox) * 0.75, Y = H - (r.bottom - oy) * 0.75;
+  const W = r.width * 0.75, Hh = r.height * 0.75;
+  const bg = rgbOf(cs.backgroundColor);
+  if (bg) ops.push(fillOp(bg) + boxOp(X, Y, W, Hh));
+  for (const side of ["Top", "Bottom", "Left", "Right"]) {
+    const w = (parseFloat(cs[`border${side}Width`]) || 0) * 0.75;
+    if (!w || cs[`border${side}Style`] === "none") continue;
+    const c = rgbOf(cs[`border${side}Color`]);
+    if (!c) continue;
+    ops.push(fillOp(c) + (side === "Top" ? boxOp(X, Y + Hh - w, W, w)
+                        : side === "Bottom" ? boxOp(X, Y, W, w)
+                        : side === "Left" ? boxOp(X, Y, w, Hh) : boxOp(X + W - w, Y, w, Hh)));
+  }
+  if (elm.tagName === "IMG" && elm.currentSrc) images.push({ src: elm.currentSrc, X, Y, W, H: Hh });
+  return true;
+}
+function walkSheet(node, ops, ox, oy, H, images) {
+  if (node.nodeType === 3) { drawText(node, ops, ox, oy, H); return; }
+  if (node.nodeType !== 1) return;
+  if (!drawBox(node, ops, ox, oy, H, images)) return;
+  for (const child of node.childNodes) walkSheet(child, ops, ox, oy, H, images);
+}
+
+/* the logo is drawn into a canvas at four times its printed size, over the
+   sheet's own colour, and carried as one JPEG shared by every page */
+async function rasterize(src, wPt, hPt, bg) {
+  const img = new Image();
+  await new Promise((ok, fail) => { img.onload = ok; img.onerror = fail; img.src = src; });
+  const iw = img.naturalWidth || 300, ih = img.naturalHeight || 100;
+  const cw = Math.max(1, Math.round(wPt * 4)), ch = Math.max(1, Math.round(hPt * 4));
+  const cv = document.createElement("canvas");
+  cv.width = cw; cv.height = ch;
+  const cx = cv.getContext("2d");
+  cx.fillStyle = bg || "#fff"; cx.fillRect(0, 0, cw, ch);
+  const s = Math.min(cw / iw, ch / ih), dw = iw * s, dh = ih * s;
+  cx.drawImage(img, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
+  const url = cv.toDataURL("image/jpeg", 0.95), bin = atob(url.slice(url.indexOf(",") + 1));
+  const u8 = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  return { bytes: u8, w: cw, h: ch };
+}
+
+const FONTS = [["F1", "Helvetica"], ["F2", "Helvetica-Bold"], ["F4", "Times-Roman"], ["F5", "Times-Bold"]];
+
+async function makePdf(title) {
+  const host = $("#doc"), keep = host.style.transform;
+  host.style.transform = "none";                     // measure the sheets at 1:1
+  const sheets = [];
+  let paper = "#fff";
+  try {
+    for (const page of host.querySelectorAll(".page")) {
+      paper = getComputedStyle(page).backgroundColor || paper;
+      const box = page.getBoundingClientRect();
+      const W = box.width * 0.75, H = box.height * 0.75;
+      const ops = [], images = [];
+      walkSheet(page, ops, box.left, box.top, H, images);
+      sheets.push({ W, H, ops, images });
+    }
+  } finally { host.style.transform = keep; }
+  for (const s of sheets) for (const im of s.images) {
+    try { im.data = await rasterize(im.src, im.W, im.H, paper); } catch { im.data = null; }
+  }
+  const pool = new Map();
+  sheets.forEach(s => s.images.forEach(im => {
+    if (!im.data) return;
+    const key = im.src + "|" + im.data.w + "x" + im.data.h;
+    if (!pool.has(key)) pool.set(key, im.data);
+    im.key = key;
+  }));
+
+  const chunks = [];
+  let len = 0;
+  const push = d => { const u = typeof d === "string" ? latin1(d) : d; chunks.push(u); len += u.length; };
+  const offsets = [];
+  let next = 1;
+  const reserve = () => next++;
+  const open = n => { offsets[n] = len; push(`${n} 0 obj\n`); };
+  const close = () => push("\nendobj\n");
+
+  const catalogId = reserve(), pagesId = reserve(), infoId = reserve();
+  const fontIds = FONTS.map(() => reserve());
+  const imgIds = new Map([...pool.keys()].map(k => [k, reserve()]));
+  const pageIds = sheets.map(() => ({ page: reserve(), body: reserve() }));
+
+  push("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n");
+  open(catalogId); push(`<< /Type /Catalog /Pages ${pagesId} 0 R >>`); close();
+  open(pagesId);
+  push(`<< /Type /Pages /Count ${sheets.length} /Kids [ ${pageIds.map(p => p.page + " 0 R").join(" ")} ] >>`);
+  close();
+  open(infoId);
+  push(`<< /Title (${pdfText(title)}) /Producer (Meena Health Business Intelligence) /Creator (Branch Manager Daily Report page) >>`);
+  close();
+  FONTS.forEach(([, name], i) => {
+    open(fontIds[i]);
+    push(`<< /Type /Font /Subtype /Type1 /BaseFont /${name} /Encoding /WinAnsiEncoding >>`);
+    close();
+  });
+  for (const [key, id] of imgIds) {
+    const im = pool.get(key);
+    open(id);
+    push(`<< /Type /XObject /Subtype /Image /Width ${im.w} /Height ${im.h} /ColorSpace /DeviceRGB `
+       + `/BitsPerComponent 8 /Filter /DCTDecode /Length ${im.bytes.length} >>\nstream\n`);
+    push(im.bytes);
+    push("\nendstream");
+    close();
+  }
+  sheets.forEach((s, i) => {
+    let body = s.ops.join("");
+    s.images.forEach(im => {
+      const id = im.key && imgIds.get(im.key);
+      if (id) body += `q\n${f2(im.W)} 0 0 ${f2(im.H)} ${f2(im.X)} ${f2(im.Y)} cm\n/X${id} Do\nQ\n`;
+    });
+    const used = [...new Set(s.images.map(im => im.key && imgIds.get(im.key)).filter(Boolean))];
+    open(pageIds[i].body);
+    push(`<< /Length ${latin1(body).length} >>\nstream\n`);
+    push(body);
+    push("\nendstream");
+    close();
+    open(pageIds[i].page);
+    push(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${f2(s.W)} ${f2(s.H)}] `
+       + `/Resources << /Font << ${FONTS.map(([n], k) => `/${n} ${fontIds[k]} 0 R`).join(" ")} >>`
+       + (used.length ? ` /XObject << ${used.map(id => `/X${id} ${id} 0 R`).join(" ")} >>` : "")
+       + ` >> /Contents ${pageIds[i].body} 0 R >>`);
+    close();
+  });
+
+  const xref = len, count = next;
+  let table = `xref\n0 ${count}\n0000000000 65535 f \n`;
+  for (let i = 1; i < count; i++) table += String(offsets[i] ?? 0).padStart(10, "0") + " 00000 n \n";
+  push(table);
+  push(`trailer\n<< /Size ${count} /Root ${catalogId} 0 R /Info ${infoId} 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+
+  const out = new Uint8Array(len);
+  let at = 0;
+  for (const c of chunks) { out.set(c, at); at += c.length; }
+  return new Blob([out], { type: "application/pdf" });
+}
+window.__makePdf = makePdf;       // the repo's browser checks build a file without clicking
+
+/* ═════════════════ state and wiring ═════════════════ */
+const state = { files: [], sheets: [], sigs: new Set(), appts: [], svcs: [], dets: [], err: null,
+                data: null, touched: {}, pages: 0, wbBranch: "", wbFrom: null, wbTo: null, detSpan: null };
+
+const val = id => $(id).value.trim();
+const pad = n => String(n).padStart(2, "0");
+function meta() {
+  const branch = state.touched.branch ? val("#inBranch") : state.wbBranch;
+  const from = state.touched.from ? parseDate(val("#inFrom")) : state.wbFrom;
+  let to = state.touched.to ? parseDate(val("#inTo")) : state.wbTo;
+  if (from && (!to || to < from)) to = from;
+  const now = new Date();
+  return {
+    branch: branch || "Meena Center", from, to,
+    dateLong: longDate(from, to), days: spanDays(from, to),
+    generated: now.getFullYear() + "-" + pad(now.getMonth() + 1) + "-" + pad(now.getDate()) + " " + pad(now.getHours()) + ":" + pad(now.getMinutes()),
+  };
+}
+function fileName(m) {
+  if (state.touched.name && val("#inName")) return val("#inName").replace(/[\\/:*?"<>|]/g, "");
+  const ymd = d => d ? iso(d).replace(/-/g, "") : "";
+  const tag = m.from ? ymd(m.from) + (m.days > 1 ? "-" + ymd(m.to) : "") : "";
+  return ["Branch_Manager_" + (m.days > 1 ? "" : "Daily_") + "Report", branchShort(m.branch), tag].filter(Boolean).join("_");
+}
+
+const arabicCount = (n, one, two, few, many) => n === 1 ? one : n === 2 ? two : n <= 10 ? n + " " + few : n + " " + many;
+const LTR_RUN = /[A-Za-z0-9][A-Za-z0-9 ,.:;()[\]'’\-–—/&%+“”"«»←]*[A-Za-z0-9%)\]”"»]|[A-Za-z0-9]/g;
+function bidiText(text) {
+  const frag = document.createDocumentFragment();
+  let at = 0;
+  for (const m of String(text).matchAll(LTR_RUN)) {
+    if (m.index > at) frag.append(document.createTextNode(text.slice(at, m.index)));
+    frag.append(el("bdi", null, m[0]));
+    at = m.index + m[0].length;
+  }
+  if (at < text.length) frag.append(document.createTextNode(text.slice(at)));
+  return frag;
+}
+function noticeBox(kind, text) {
+  const n = el("div", "note" + (kind === "bad" ? " bad" : kind === "warn" ? " warn" : ""));
+  const body = el("span");
+  body.append(bidiText(text));
+  n.append(el("span", "m"), body);
+  return n;
+}
+function tile(label, value) {
+  const t = el("div", "tile");
+  const b = el("b");
+  b.append(el("bdi", null, value));
+  t.append(el("span", null, label), b);
+  return t;
+}
+
+/* the column picker for the appointments export: one list per report figure,
+   pre-set from the header text; a change is kept for that exact header */
+function paintMap() {
+  const a = state.appts[0];
+  $("#mapBox").hidden = !a;
+  if (!a) return;
+  const grid = $("#mapGrid");
+  grid.textContent = "";
+  const head = a.sheet.grid[a.headerRow] || [];
+  const map = mapFor(a);
+  APPT_FIELDS.forEach(f => {
+    const lab = el("label", "fld");
+    lab.append(el("span", null, f.label));
+    const sel = el("select");
+    sel.append(new Option("— غير موجود —", "-1"));
+    head.forEach((h, i) => { if (String(h).trim()) sel.append(new Option(String(h), String(i))); });
+    sel.value = String(map[f.key]);
+    sel.onchange = () => {
+      const o = mapStore.get(a.sig) || {};
+      o[f.key] = +sel.value;
+      if (o[f.key] === a.auto[f.key]) delete o[f.key];
+      mapStore.set(a.sig, o);
+      paintMap(); refresh();
+    };
+    lab.append(sel);
+    grid.append(lab);
+  });
+  const first = readAppt(a, map)[0];
+  $("#mapSample").textContent = first
+    ? "First row → " + first.doctor + " · " + first.dept + " · "
+      + NUM_KEYS.filter(k => first.v[k] != null).map(k => k + " " + first.v[k]).join(" · ")
+    : "No doctor rows read with this mapping.";
+}
+$("#bMapReset").onclick = () => { const a = state.appts[0]; if (a) { mapStore.set(a.sig, null); paintMap(); refresh(); } };
+
+function refresh() {
+  const host = $("#notices"), tiles = $("#tiles");
+  host.textContent = ""; tiles.textContent = "";
+  if (state.err) host.append(noticeBox("bad", state.err));
+  const any = state.appts.length || state.svcs.length;
+  if (!any) {
+    $("#stage").hidden = true; $("#noPreview").hidden = false;
+    $("#bPdf").disabled = true; $("#bSave").disabled = true; $("#bClear").disabled = !state.files.length;
+    $("#st3").textContent = "";
+    state.data = null;
+    return;
+  }
+  const d = state.data = aggregate({ sysWords: val("#inSys"), walkIncl: $("#chkWalk").checked, cap: parseFloat(val("#inCap")) || 0 });
+  if (!state.wbFrom && d.billSpan) { state.wbFrom = d.billSpan.from; state.wbTo = d.billSpan.to; }
+  const m = meta();
+
+  if (!state.touched.branch) $("#inBranch").value = state.wbBranch || "";
+  if (!state.touched.from) $("#inFrom").value = iso(state.wbFrom);
+  if (!state.touched.to) $("#inTo").value = state.wbTo && state.wbFrom && +state.wbTo !== +state.wbFrom ? iso(state.wbTo) : "";
+  if (!state.touched.name) $("#inName").value = fileName(m);
+  $("#inCap").placeholder = d.O.slot ? String(d.O.slot) + " — من عمود Slot" : "اكتب السعة";
+
+  if (m.from) host.append(noticeBox("", "التاريخ: " + m.dateLong + (m.days > 1 ? " · " + arabicCount(m.days, "يوم واحد", "يومان", "أيام", "يومًا") : "")));
+  else host.append(noticeBox("warn", "لم يُعرف التاريخ من الملفات — اكتبه في خانة «التاريخ»."));
+  if (!state.wbBranch && !state.touched.branch) host.append(noticeBox("warn", "لم يُعرف اسم الفرع من الملفات — اكتبه في الإعدادات."));
+  if (state.detSpan && m.from && (+state.detSpan.from !== +m.from || +state.detSpan.to !== +m.to))
+    host.append(noticeBox("warn", "الكشف المفصّل لمدة أخرى: " + longDate(state.detSpan.from, state.detSpan.to)
+      + " — أرقام New / Follow-up لتلك المدة لا لهذه."));
+  if (!d.cap && d.O.visits != null) host.append(noticeBox("warn", "لا يوجد عمود Slot — اكتب السعة اليومية في الإعدادات لتظهر بطاقة Capacity Used."));
+  d.notices.forEach(n => host.append(noticeBox(n.kind, n.text)));
+
+  $("#stage").hidden = false; $("#noPreview").hidden = true;
+  state.pages = renderDoc(d, m);
+  $("#bPdf").disabled = false; $("#bSave").disabled = false; $("#bClear").disabled = false;
+  $("#st3").textContent = state.pages + (state.pages === 1 ? " صفحة" : " صفحات");
+
+  tiles.append(
+    tile("الأطباء في الجدول", String(d.table.length)),
+    tile("الأقسام", String(d.depts.length)),
+    tile("زيارات العيادات", d.O.visits == null ? DASH : nf(d.O.visits)),
+    tile("الطوارئ", d.er && d.E.visits != null ? nf(d.E.visits) : DASH),
+    tile("المواعيد", d.O.sched == null ? DASH : nf(d.O.sched)),
+    tile("دخل العيادات — SAR", d.svc ? nf(d.table.reduce((n, r) => n + (r.net || 0), 0)) : DASH),
+    tile("صفحات الـPDF", String(state.pages)),
+  );
+}
+
+/* identical sheets — the same file dropped twice — are read once */
+const sigOf = s => s.grid.length + "|" + JSON.stringify(s.grid.slice(0, 12)) + "|" + JSON.stringify(s.grid.slice(-3));
+
+async function takeFiles(files) {
+  const fresh = [];
+  for (const f of files) {
+    try {
+      const got = await readWorkbook(f);
+      got.forEach(s => {
+        const sig = sigOf(s);
+        if (state.sigs.has(sig)) return;
+        state.sigs.add(sig);
+        fresh.push(Object.assign(s, { file: f.name }));
+      });
+    } catch (e) { toast(f.name + " — " + e.message, "bad"); }
+  }
+  state.files = [...state.files, ...files];
+  if (!fresh.length) { refresh(); return; }
+  state.sheets = [...state.sheets, ...fresh];
+
+  for (const s of fresh) {
+    let shaped;
+    if ((shaped = shapeSvc(s))) { s.role = "svc"; state.svcs.push(shaped); }
+    else if ((shaped = shapeDetail(s))) { s.role = "det"; state.dets.push(shaped); }
+    else if ((shaped = shapeAppt(s))) { s.role = "appt"; state.appts.push(shaped); }
+    else s.role = null;
+  }
+  state.err = state.appts.length || state.svcs.length ? null
+    : "لم تُعرف أي ورقة: لا كشف مواعيد بعمودَي الطبيب والمشاهَد، ولا تصدير خدمات بأعمدة Provider وDepartment وCount. "
+      + "الأوراق المقروءة: " + state.sheets.map(x => x.name || x.file).join("، ");
+
+  /* the branch and the date, read off the title blocks */
+  const main = state.sheets.filter(s => s.role === "appt" || s.role === "svc");
+  state.wbBranch = branchFrom(main.length ? main : state.sheets) || branchFrom(state.sheets) || state.wbBranch;
+  const span = spanOf(state.appts.map(a => periodOf(a.sheet))) || spanOf(state.svcs.map(x => periodOf(x.sheet)))
+            || spanOf(state.sheets.filter(s => s.role === "appt" || s.role === "svc").map(s => { const d = dateFromName(s.file); return d && { from: d, to: d }; }));
+  state.detSpan = spanOf(state.dets.map(x => periodOf(x.sheet)));
+  if (span) { state.wbFrom = span.from; state.wbTo = span.to; }
+  else if (state.detSpan && !state.wbFrom) { state.wbFrom = state.detSpan.from; state.wbTo = state.detSpan.to; }
+
+  const ROLE = { appt: "المواعيد — Doctor Wise", svc: "الخدمات والدخل", det: "المواعيد المفصّلة — New / Follow-up" };
+  const chips = el("div", "chips");
+  state.sheets.forEach(s => {
+    const c = el("span", "chip" + (s.role ? " ok" : ""));
+    c.append(el("b", null, s.name || s.file), document.createTextNode(" · " + (ROLE[s.role] || "غير مستخدمة")));
+    chips.append(c);
+  });
+  $("#fileInfo").textContent = "";
+  $("#fileInfo").append(chips);
+  $("#st1").textContent = [...new Set(state.files.map(f => f.name))].join(" · ");
+  $("#s1").classList.toggle("done", !state.err);
+
+  paintMap();
+  const had = !!state.data;
+  refresh();
+  if (state.data) {
+    toast("جاهز: " + state.data.table.length + " طبيبًا في " + state.data.depts.length + " أقسام — اضغط «فتح الـPDF».", "ok");
+    if (!had) $("#s3").scrollIntoView({ behavior: "smooth", block: "start" });
+  } else toast("لم تُعرف أوراق الملف — راجع التنبيه في المعاينة.", "bad");
+}
+
+function hookDrop(zone, input, handler) {
+  zone.onclick = () => input.click();
+  zone.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); input.click(); } };
+  input.onchange = () => { if (input.files.length) handler([...input.files]); input.value = ""; };
+  for (const ev of ["dragenter", "dragover"]) zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.add("hot"); });
+  for (const ev of ["dragleave", "drop"]) zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.remove("hot"); });
+  zone.addEventListener("drop", e => { const f = [...(e.dataTransfer?.files || [])]; if (f.length) handler(f); });
+}
+hookDrop($("#dropX"), $("#fileX"), takeFiles);
+/* a file dropped anywhere on the page counts too, not just on the zone */
+addEventListener("dragover", e => e.preventDefault());
+addEventListener("drop", e => {
+  if (e.target.closest && e.target.closest("#dropX")) return;
+  e.preventDefault();
+  const f = [...(e.dataTransfer?.files || [])];
+  if (f.length) takeFiles(f);
+});
+
+const FIELDS = { "#inBranch": "branch", "#inFrom": "from", "#inTo": "to", "#inCap": "cap", "#inSys": "sys", "#inName": "name" };
+Object.entries(FIELDS).forEach(([id, key]) => {
+  $(id).addEventListener("input", () => { state.touched[key] = true; if (key !== "name") refresh(); });
+});
+$("#chkWalk").addEventListener("change", refresh);
+
+$("#bClear").onclick = () => {
+  Object.assign(state, { files: [], sheets: [], sigs: new Set(), appts: [], svcs: [], dets: [], err: null, data: null,
+                         touched: {}, pages: 0, wbBranch: "", wbFrom: null, wbTo: null, detSpan: null });
+  ["#inBranch", "#inFrom", "#inTo", "#inCap", "#inName"].forEach(id => $(id).value = "");
+  $("#fileInfo").textContent = ""; $("#doc").textContent = "";
+  $("#st1").textContent = "لم تُرفع بعد"; $("#s1").classList.remove("done");
+  paintMap();
+  refresh();
+};
+
+/* Published inside a claude.ai artifact the page runs in a frame that may not
+   open tabs or start downloads itself, so there the file is handed to the
+   host instead. Served from its own address, the ordinary path runs. */
+const framed = () => typeof window.claude?.use === "function";
+async function hostSave(name, blob) {
+  const downloads = await window.claude.use("downloads").catch(() => null);
+  if (!downloads) return false;
+  try { await downloads.save({ filename: name, data: blob }); }
+  catch (e) {
+    toast(e?.code === "declined" ? "أُلغي الحفظ."
+        : "لا يمكن تسليم الملف من هذه النسخة — افتح الصفحة من رابطها المنشور.", "bad");
+  }
+  return true;
+}
+
+/* The file opens in a tab of its own, where the browser's PDF viewer offers
+   share, save and print — no print dialog in the way. */
+async function deliverPdf(save) {
+  if (!state.data) return;
+  const name = fileName(meta());
+  /* the tab is opened inside the click, before any await, or it is blocked */
+  const tab = save || framed() ? null : window.open("", "_blank");
+  const btn = save ? $("#bSave") : $("#bPdf");
+  const label = btn.lastChild.textContent;
+  btn.lastChild.textContent = " يُبنى الملف… ";
+  btn.disabled = true;
+  try {
+    const blob = await makePdf(name);
+    if (framed() && await hostSave(name + ".pdf", blob)) return;
+    const url = URL.createObjectURL(blob);
+    if (!save && tab) tab.location = url;
+    else {
+      const a = document.createElement("a");
+      a.href = url; a.download = name + ".pdf"; a.style.display = "none";
+      document.body.append(a); a.click(); a.remove();
+      if (!save) toast("المتصفح منع فتح تبويب جديد — نُزِّل الملف بدلًا من ذلك.", "");
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 120000);
+  } catch (e) {
+    if (tab) tab.close();
+    toast("تعذّر بناء الـPDF: " + e.message, "bad");
+  } finally {
+    btn.lastChild.textContent = label;
+    btn.disabled = false;
+  }
+}
+$("#bPdf").onclick = () => deliverPdf(false);
+$("#bSave").onclick = () => deliverPdf(true);
+
+addEventListener("resize", () => { if (state.data) fitStage(); });
+refresh();
+})();
+</script>
+
+</body>
+</html>
