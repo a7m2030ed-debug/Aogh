@@ -212,6 +212,9 @@ details.map > div{padding:4px 12px 12px; display:flex; flex-direction:column; ga
 .dept .l{position:absolute; left:1mm; right:1mm; top:1.5mm; height:4.1mm; font:700 6.5pt/4.1mm var(--fs); color:var(--nav); text-align:center; white-space:nowrap; overflow:hidden}
 .dept .v{position:absolute; left:1mm; right:1mm; top:5.8mm; height:7.1mm; font:700 16pt/7.1mm var(--fs); color:var(--pur); text-align:center; white-space:nowrap; overflow:hidden}
 .dept .v.nil{color:var(--dash)}
+/* the department's slots beside its visits — small and pale, so the visits
+   stay the figure the eye lands on */
+.dept .v .cap{margin-left:1mm; font:400 7pt/1 var(--fs); color:#BCA3FC}
 .dept .s{position:absolute; left:1mm; right:1mm; top:13.2mm; height:2.8mm; display:flex; justify-content:space-between; gap:1.2mm;
          font:400 5.2pt/2.8mm var(--fr); color:var(--mut); white-space:nowrap; overflow:hidden}
 .dept .s.one{justify-content:center; gap:3mm}
@@ -576,12 +579,14 @@ function shapeCounts(sheet) {
    together. Read as two columns, or as a column that says which kind each
    slot line is. */
 const SLOT_NORMAL = /normal/, SLOT_FROZEN = /froz|freez/;
+const SLOT_DEPT = /^(dept|department|departmentname|specialty|speciality|clinic|clinicname)$/;
 function shapeSlots(sheet) {
   const g = sheet.grid;
   for (let h = 0; h < Math.min(g.length, 40); h++) {
     const keys = (g[h] || []).map(hk);
     const normal = keys.findIndex(k => SLOT_NORMAL.test(k)), frozen = keys.findIndex(k => SLOT_FROZEN.test(k));
-    if (normal >= 0 && frozen >= 0 && normal !== frozen) return { sheet, headerRow: h, mode: "cols", col: { normal, frozen } };
+    if (normal >= 0 && frozen >= 0 && normal !== frozen)
+      return { sheet, headerRow: h, mode: "cols", col: { normal, frozen, dept: keys.findIndex(k => SLOT_DEPT.test(k)) } };
   }
   for (let h = 0; h < Math.min(g.length, 40); h++) {
     const head = g[h] || [];
@@ -589,7 +594,7 @@ function shapeSlots(sheet) {
     for (let ci = 0; ci < head.length; ci++) {
       const vals = g.slice(h + 1).map(r => clean(str(r, ci)).toLowerCase());
       if (vals.some(v => /^normal\b/.test(v)) && vals.some(v => /^(froz|freez)/.test(v)))
-        return { sheet, headerRow: h, mode: "type", col: { type: ci } };
+        return { sheet, headerRow: h, mode: "type", col: { type: ci, dept: head.map(hk).findIndex(k => SLOT_DEPT.test(k)) } };
     }
   }
   return null;
@@ -599,6 +604,8 @@ const TOTAL_ROW = /^(grand\s*)?(sub\s*)?total\b/i;
 const labelled = row => row.some(c => { const t = clean(c); return t && strictNum(t) == null && !TOTAL_ROW.test(t); });
 function readSlots(list) {
   let normal = 0, frozen = 0, rows = 0;
+  const byDept = new Map();          // department as the file writes it → its slots
+  const put = (r, s, n) => { const d = clean(str(r, s.col.dept)); if (d) byDept.set(d, (byDept.get(d) || 0) + n); };
   for (const s of list) {
     const g = s.sheet.grid;
     for (let i = s.headerRow + 1; i < g.length; i++) {
@@ -608,14 +615,15 @@ function readSlots(list) {
         if (n == null && f == null) continue;
         if (!labelled(r.filter((_, ci) => ci !== s.col.normal && ci !== s.col.frozen))) continue;
         normal += n || 0; frozen += f || 0; rows++;
+        put(r, s, (n || 0) + (f || 0));
       } else {
         const t = clean(str(r, s.col.type)).toLowerCase();
-        if (/^normal\b/.test(t)) { normal++; rows++; }
-        else if (/^(froz|freez)/.test(t)) { frozen++; rows++; }
+        if (/^normal\b/.test(t)) { normal++; rows++; put(r, s, 1); }
+        else if (/^(froz|freez)/.test(t)) { frozen++; rows++; put(r, s, 1); }
       }
     }
   }
-  return { normal, frozen, total: normal + frozen, rows };
+  return { normal, frozen, total: normal + frozen, rows, byDept };
 }
 
 /* ═════════════════ remembered column choices ═════════════════ */
@@ -1105,12 +1113,19 @@ function aggregate(opts) {
      they hold; the doctors behind each card are counted from the doctor rows */
   const cards = new Map();
   const card = name => {
-    if (!cards.has(name)) cards.set(name, { name, visits: null, walkin: null, noshow: null, booked: new Set(), active: new Set(), any: new Set() });
+    if (!cards.has(name)) cards.set(name, { name, visits: null, walkin: null, noshow: null, slots: null, booked: new Set(), active: new Set(), any: new Set() });
     return cards.get(name);
   };
   for (const f of depFig.values()) {
     const c = card(shortDept(f.raw));
     c.visits = add(c.visits, f.visits); c.walkin = add(c.walkin, f.walkin); c.noshow = add(c.noshow, f.noshow);
+    if (!(slots && slots.byDept.size)) c.slots = add(c.slots, f.slot);
+  }
+  /* each card's slots — Normal + Freeze of every doctor in the department */
+  const slotsByCard = slots && slots.byDept.size;
+  if (slotsByCard) for (const [raw, n] of slots.byDept) {
+    const name = shortDept(raw);
+    if (!byDeptSheet || cards.has(name)) card(name).slots = add(card(name).slots, n);
   }
   for (const d of all) {
     if (d.dept === "—") continue;
@@ -1118,6 +1133,7 @@ function aggregate(opts) {
     if (byDeptSheet && !cards.has(name)) continue;
     const c = card(name);
     if (!byDeptSheet) { c.visits = add(c.visits, d.visits); c.walkin = add(c.walkin, d.walkin); c.noshow = add(c.noshow, d.noshow); }
+    if (!slotsByCard && !byDeptSheet) c.slots = add(c.slots, d.slot);
     if (isSystem(d.name)) continue;
     c.any.add(nameKey(d.name));
     if ((d.visits || 0) > 0 || (d.sched || 0) > 0 || (d.net || 0) > 0 || (d.newv || 0) > 0) {
@@ -1127,7 +1143,7 @@ function aggregate(opts) {
   }
   const depts = [...cards.values()].map(c => ({
     name: c.name, er: c.name === "EMERGENCY",
-    visits: c.visits, walkin: c.walkin, noshow: c.noshow,
+    visits: c.visits, walkin: c.walkin, noshow: c.noshow, slots: c.slots,
     /* the doctors on the appointment roster; a card with none there (the
        emergency room books under a registration account) counts who billed */
     doctors: c.booked.size || c.active.size || c.any.size, rank: DEPT_ORDER.indexOf(c.name),
@@ -1286,7 +1302,9 @@ function deptGrid(data) {
   data.depts.forEach(d => {
     const c = el("div", "dept");
     c.append(el("div", "l fit", d.name));
-    c.append(el("div", "v fit" + (d.visits == null ? " nil" : ""), d.visits == null ? DASH : nf(d.visits)));
+    const v = el("div", "v fit" + (d.visits == null ? " nil" : ""), d.visits == null ? DASH : nf(d.visits));
+    if (d.slots) v.append(el("span", "cap", "/ " + nf(d.slots)));
+    c.append(v);
     /* a card with no named doctor (an emergency room seen only through its
        registration account) leaves the count out rather than print "0 Doctors" */
     const parts = data.known.doctors && d.doctors ? [d.doctors + (d.doctors === 1 ? " Doctor" : " Doctors")] : [];
