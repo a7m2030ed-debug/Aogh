@@ -817,7 +817,9 @@ const CATS = [
   { key: "lab",   test: /laborator|^lab\b/ },
   { key: "rad",   test: /radiolog|imaging/ },
   { key: "proc",  test: /procedure/ },
-  { key: "dent",  test: /dental|dentistry/ },
+  /* the dental department's own work — fillings, scaling, extractions, its
+     X-rays — is the dentist's Procedure, credited to the dentist who did it */
+  { key: "proc",  test: /dental|dentistry/ },
   { key: "phys",  test: /physio|rehab/ },
   { key: "home",  test: /home/ },
   { key: "other", test: /^other/ },
@@ -860,7 +862,10 @@ function readServices(list) {
       if (!p) { p = { name: provider, dept, net: 0, cnt: {}, mrn: {} }; by.set(k, p); }
       const cnt = Math.round(num(row[c.count])), net = c.net >= 0 ? num(row[c.net]) : 0;
       p.net += net;
-      const placed = cat == null ? { key: bucketOf(dept) || "other", pack: false } : catOf(cat, dept);
+      let placed = cat == null ? { key: bucketOf(dept) || "other", pack: false } : catOf(cat, dept);
+      /* a consultation is the visit itself wherever it is filed — "Dental
+         consultation" sits in the Dental category — so never an order */
+      if (/consult/i.test(str(row, c.name))) placed = { key: "fee", pack: false };
       if (placed.key === "fee") continue;
       if (ORDER_KEYS.includes(placed.key)) tests += cnt;
       const file = str(row, c.mrno);
@@ -1147,6 +1152,7 @@ function aggregate(opts) {
     if (!svc.cats) notices.push({ kind: "warn", text: "تصدير الخدمات بلا أسطر «Category:» — وُزِّعت الطلبات بحسب قسم كل صف." });
     notices.push({ kind: "", text: svc.byMrn
       ? "Lab وRadiology وProcedure تُعدّ لكل مريض لا لكل فحص: المريض الذي طُلب له عشرة تحاليل يُحسب تحليلًا واحدًا — " + nf(svc.orders) + " طلبًا من " + nf(svc.tests) + " بندًا مفوترًا."
+        + " وإجراءات الأسنان (فئة Dental) تُحسب Procedure لطبيب الأسنان نفسه، والكشف لا يُحسب."
       : "لا يوجد عمود MRNO في تصدير الخدمات، فأعمدة الطلبات تعدّ البنود المفوترة لا المرضى." });
   }
   if (!known.newv) notices.push({ kind: "warn", text: "لا يوجد «Appointment Statistics – Detailed» — عمود New Visit وتقسيم New / Follow-up يخرجان شرطات." });
