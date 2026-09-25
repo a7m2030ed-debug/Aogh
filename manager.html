@@ -213,7 +213,7 @@ details.map > div{padding:4px 12px 12px; display:flex; flex-direction:column; ga
 .dept .v.nil{color:var(--dash)}
 .dept .s{position:absolute; left:1mm; right:1mm; top:13.2mm; height:2.8mm; display:flex; justify-content:space-between; gap:1.2mm;
          font:400 5.2pt/2.8mm var(--fr); color:var(--mut); white-space:nowrap; overflow:hidden}
-.dept .s.one{justify-content:center}
+.dept .s.one{justify-content:center; gap:3mm}
 
 .tbl{width:187.5mm; border-collapse:collapse; table-layout:fixed}
 .tbl th,.tbl td{height:5mm; padding:0 1.524mm; font:400 7pt/1 var(--fs); white-space:nowrap; overflow:hidden; text-align:right; vertical-align:middle}
@@ -1282,7 +1282,8 @@ function deptGrid(data) {
     c.append(el("div", "v fit" + (d.visits == null ? " nil" : ""), d.visits == null ? DASH : nf(d.visits)));
     const parts = data.known.doctors ? [d.doctors + (d.doctors === 1 ? " Doctor" : " Doctors")] : [];
     if (data.known.walkin) parts.push("Walk in " + nf(d.walkin || 0));
-    if (data.known.noshow) parts.push("No Show " + nf(d.noshow || 0));
+    /* the emergency room books nothing, so it has no no-shows to report */
+    if (data.known.noshow && !d.er) parts.push("No Show " + nf(d.noshow || 0));
     const s = el("div", "s fit" + (parts.length < 3 ? " one" : ""));
     parts.forEach(p => s.append(el("span", null, p)));
     c.append(s);
