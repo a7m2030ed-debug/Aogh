@@ -225,6 +225,7 @@ details.map > div{padding:4px 12px 12px; display:flex; flex-direction:column; ga
 .tbl tbody tr.alt{background:var(--stripe)}
 .tbl td{color:var(--ink-d)}
 .tbl .l{text-align:left}
+.tbl tr.er td{font-weight:700}
 .tbl .nil{color:var(--dash)}
 .tbl td.none{text-align:center; color:var(--mut)}
 
@@ -984,7 +985,7 @@ function aggregate(opts) {
 
   /* 2 — revenue and orders, from Service wise Count */
   const svc = state.svcs.length ? readServices(state.svcs) : null;
-  const fuzzy = [], added = [], systems = [];
+  const fuzzy = [], systems = [];
   if (svc) {
     const prim = primary();
     const links = linkNames([...svc.by.keys()], [...prim.keys()]);
@@ -994,14 +995,17 @@ function aggregate(opts) {
       if (hit && hit.fuzzy) fuzzy.push(p.name + " ← " + d.name);
       if (!d) {
         if (isSystem(p.name)) { systems.push(p.name); continue; }
-        /* a provider who billed but kept no appointment book still worked today */
+        /* a provider who billed but kept no appointment book: no row in the
+           table, but an emergency doctor's orders and income join the
+           emergency row */
         d = { name: p.name, dept: p.dept, appt: false, net: null, cnt: null };
         docs.set(k + "|" + nameKey(p.dept) + "|svc", d);
-        if (docSheets.length && !isER(p.dept)) added.push(p.name);
       }
       d.net = add(d.net, p.net);
       d.cnt = d.cnt || {};
       for (const c in p.cnt) d.cnt[c] = (d.cnt[c] || 0) + p.cnt[c];
+      d.mrn = d.mrn || {};
+      for (const c in p.mrn) { d.mrn[c] = d.mrn[c] || new Set(); p.mrn[c].forEach(x => d.mrn[c].add(x)); }
     }
     for (const d of docs.values()) if (d.net == null) { d.net = 0; d.cnt = {}; }
   }
@@ -1085,6 +1089,10 @@ function aggregate(opts) {
   const slots = state.slots.length ? readSlots(state.slots) : null;
   const cap = opts.cap > 0 ? opts.cap : (slots && slots.total) || O.slot || null;
 
+  /* a doctor counts as working the book only with appointments booked in
+     Doctor Wise — slots alone, or billing alone, are not enough */
+  const booked = d => d.appt && (has.sched ? (d.sched || 0) > 0 : true);
+
   /* 6 — department cards: Department Wise decides which cards exist and what
      they hold; the doctors behind each card are counted from the doctor rows */
   const cards = new Map();
@@ -1106,7 +1114,7 @@ function aggregate(opts) {
     c.any.add(nameKey(d.name));
     if ((d.visits || 0) > 0 || (d.sched || 0) > 0 || (d.net || 0) > 0 || (d.newv || 0) > 0) {
       c.active.add(nameKey(d.name));
-      if (d.appt) c.booked.add(nameKey(d.name));
+      if (booked(d)) c.booked.add(nameKey(d.name));
     }
   }
   const depts = [...cards.values()].map(c => ({
@@ -1119,13 +1127,38 @@ function aggregate(opts) {
       || ((a.rank < 0) - (b.rank < 0)) || (a.rank - b.rank)
       || ((b.visits || 0) - (a.visits || 0)) || a.name.localeCompare(b.name));
 
-  /* 7 — the doctors table: the outpatient doctors, busiest first */
-  const table = all.filter(d => !isSystem(d.name) && !(d.dept !== "—" && isER(d.dept))).map(d => ({
+  /* 7 — the doctors table: the outpatient doctors with bookings, busiest
+     first. Whoever only billed, or only had slots, has no row. */
+  const isErDoc = d => d.dept !== "—" && isER(d.dept);
+  const listed = all.filter(d => !isErDoc(d) && !isSystem(d.name) && booked(d));
+  const unbooked = all.filter(d => !isErDoc(d) && !isSystem(d.name) && d.appt && !booked(d)).map(d => d.name);
+  const unlisted = all.filter(d => !isErDoc(d) && !isSystem(d.name) && !d.appt).map(d => d.name);
+  const table = listed.map(d => ({
     name: d.name, spec: d.dept === "—" ? "" : d.dept,
     seen: d.visits, newv: d.newv ?? null,
     lab: d.cnt ? (d.cnt.lab || 0) : null, rad: d.cnt ? (d.cnt.rad || 0) : null, proc: d.cnt ? (d.cnt.proc || 0) : null,
     net: d.net, rpv: d.net != null && d.visits > 0 ? d.net / d.visits : null,
   })).sort((a, b) => (b.seen ?? -1) - (a.seen ?? -1) || (b.net || 0) - (a.net || 0) || a.name.localeCompare(b.name));
+
+  /* The emergency room closes the table as one row: its visits are booked
+     under the registration account, and every doctor who billed under it is
+     added in — their orders counted once per patient across all of them,
+     their income in full. */
+  const erDocs = all.filter(isErDoc);
+  const erNames = [...new Set(erDocs.filter(d => !isSystem(d.name) && ((d.net || 0) > 0 || (d.visits || 0) > 0)).map(d => d.name))];
+  if (erDocs.length && (E.visits != null || erDocs.some(d => d.net))) {
+    const sets = {};
+    erDocs.forEach(d => { for (const k in (d.mrn || {})) { sets[k] = sets[k] || new Set(); d.mrn[k].forEach(x => sets[k].add(x)); } });
+    const byMrn = Object.keys(sets).length > 0;
+    const orders = k => !svc ? null : byMrn ? (sets[k] ? sets[k].size : 0) : erDocs.reduce((n, d) => n + ((d.cnt && d.cnt[k]) || 0), 0);
+    const net = svc ? erDocs.reduce((n, d) => n + (d.net || 0), 0) : null;
+    table.push({
+      name: "Emergency" + (erNames.length ? " — " + erNames.length + (erNames.length === 1 ? " doctor" : " doctors") : ""),
+      spec: erDocs.find(d => d.appt)?.dept || erDocs[0].dept, er: true,
+      seen: E.visits, newv: E.newv, lab: orders("lab"), rad: orders("rad"), proc: orders("proc"),
+      net, rpv: net != null && E.visits > 0 ? net / E.visits : null,
+    });
+  }
 
   /* what the page should say about how it read the files */
   if (!state.counts.length)
@@ -1142,7 +1175,7 @@ function aggregate(opts) {
   if (!byDeptSheet && docSheets.length)
     notices.push({ kind: "", text: "لا يوجد «Department Wise» — أرقام الأقسام والبطاقات مجموع أطباء «Doctor Wise»." });
   if (!docSheets.length && state.counts.length)
-    notices.push({ kind: "warn", text: "لا يوجد «Appointment Statistics – Doctor Wise» — عمود Seen في جدول الأطباء يخرج شرطات، وأطباء الجدول من تصدير الخدمات." });
+    notices.push({ kind: "warn", text: "لا يوجد «Appointment Statistics – Doctor Wise» — جدول الأطباء يُبنى منه، فلا يظهر فيه إلا صف الطوارئ." });
   if (slots) notices.push({ kind: "", text: "السعة من «Appt slot»: Normal " + nf(slots.normal) + " + Frozen " + nf(slots.frozen) + " = " + nf(slots.total) + " موعدًا"
       + (opts.cap > 0 ? " — والمكتوب في الإعدادات مقدَّم عليه." : ".") });
   else if (!(opts.cap > 0) && !O.slot && O.visits != null)
@@ -1167,13 +1200,15 @@ function aggregate(opts) {
     notices.push({ kind: "warn", text: "الكشف المفصّل بلا حالة «Reported» — حُسبت كل الحالات ما عدا Pending والملغاة وعدم الحضور." });
   if (detMiss.length) notices.push({ kind: "warn", text: "في الكشف المفصّل أطباء بلا صفّ في كشف المواعيد: " + detMiss.join("، ") });
   if (fuzzy.length) notices.push({ kind: "warn", text: "أسماء طوبقت بالتقريب بين الملفات: " + fuzzy.join("، ") });
-  if (added.length) notices.push({ kind: "", text: "أُضيف للجدول من تصدير الخدمات من لا صفّ له في «Doctor Wise»: " + added.join("، ") });
+  if (unlisted.length) notices.push({ kind: "", text: "لا يظهر في جدول الأطباء من لا مواعيد له في «Doctor Wise»: " + unlisted.join("، ") });
+  if (unbooked.length) notices.push({ kind: "", text: "لا يظهر في جدول الأطباء من لا مواعيد محجوزة له (Scheduled = 0) ولو كانت له Slots: " + unbooked.join("، ") });
+  if (erNames.length) notices.push({ kind: "", text: "صف Emergency في آخر الجدول يجمع أطباء الطوارئ: " + erNames.join("، ") + " — طلباتهم لكل مريض ودخلهم كاملًا." });
   if (systems.length) notices.push({ kind: "", text: "حسابات النظام لا تظهر في جدول الأطباء: " + systems.join("، ") });
   if (O.walkin != null && walkIncl && O.walkin > (O.visits || 0))
     notices.push({ kind: "warn", text: "مراجعو الـWalk-in أكثر من Total Seen — يبدو أن Total Seen لا يشملهم؛ أزل العلامة عن «عمود Total Seen يشمل مراجعي الـWalk-in» في الإعدادات." });
   if (!E.present && state.counts.length) notices.push({ kind: "", text: "لا يوجد قسم طوارئ في الملفات — بطاقة EMERGENCY تخرج «Not reported»." });
 
-  return { O, E, er: E.present, apptSeen, cap, slots, known, depts, table, notices, svc, det,
+  return { O, E, er: E.present, apptSeen, cap, slots, known, depts, table, listed: listed.length, notices, svc, det,
            billSpan: svc && svc.dates.length ? { from: new Date(Math.min(...svc.dates)), to: new Date(Math.max(...svc.dates)) } : null };
 }
 
@@ -1277,7 +1312,7 @@ function doctorTable(rows) {
   thead.append(htr);
   const tb = el("tbody");
   rows.forEach((r, i) => {
-    const tr = el("tr", i % 2 ? "alt" : null);
+    const tr = el("tr", [i % 2 ? "alt" : "", r.er ? "er" : ""].join(" ").trim() || null);
     COLS.forEach(c => {
       const v = r[c.key];
       if (c.left) { tr.append(el("td", "l clip", v || "")); return; }
@@ -1795,12 +1830,12 @@ function refresh() {
   $("#st3").textContent = state.pages + (state.pages === 1 ? " صفحة" : " صفحات");
 
   tiles.append(
-    tile("الأطباء في الجدول", String(d.table.length)),
+    tile("الأطباء في الجدول", String(d.listed)),
     tile("الأقسام", String(d.depts.length)),
     tile("زيارات العيادات", d.O.visits == null ? DASH : nf(d.O.visits)),
     tile("الطوارئ", d.er && d.E.visits != null ? nf(d.E.visits) : DASH),
     tile("المواعيد", d.O.sched == null ? DASH : nf(d.O.sched)),
-    tile("دخل العيادات — SAR", d.svc ? nf(d.table.reduce((n, r) => n + (r.net || 0), 0)) : DASH),
+    tile("دخل العيادات — SAR", d.svc ? nf(d.table.filter(r => !r.er).reduce((n, r) => n + (r.net || 0), 0)) : DASH),
     tile("صفحات الـPDF", String(state.pages)),
   );
 }
@@ -1866,7 +1901,7 @@ async function takeFiles(files) {
   refresh();
   if (state.data) {
     const missing = DAILY.filter(x => !x.has()).length;
-    toast("جاهز: " + state.data.table.length + " طبيبًا في " + state.data.depts.length + " أقسام"
+    toast("جاهز: " + state.data.listed + " طبيبًا في " + state.data.depts.length + " أقسام"
       + (missing ? " — ينقص " + missing + " من الملفات الخمسة" : "") + " — اضغط «فتح الـPDF».", missing ? "" : "ok");
     if (!had) $("#s3").scrollIntoView({ behavior: "smooth", block: "start" });
   } else toast("لم تُعرف أوراق الملف — راجع التنبيه في المعاينة.", "bad");
