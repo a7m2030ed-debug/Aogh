@@ -124,10 +124,15 @@ label.check{display:flex; align-items:center; gap:8px; font-size:13.5px; color:v
 .chip{display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:4px 10px; border-radius:99px; background:var(--sunk); border:1px solid var(--line-2); color:var(--ink-2)}
 .chip b{font-weight:600; color:var(--ink)}
 .chip.ok{background:var(--good-soft); border-color:color-mix(in srgb, var(--good) 30%, transparent)}
+.chip.miss{background:var(--warn-soft); border-color:color-mix(in srgb, var(--warn) 30%, transparent)}
 
 details.map{border:1px solid var(--line-2); border-radius:9px; background:var(--sunk)}
 details.map > summary{cursor:pointer; padding:9px 12px; font-size:13px; font-weight:600; color:var(--ink-2)}
 details.map > div{padding:4px 12px 12px; display:flex; flex-direction:column; gap:10px}
+.mapblock{display:flex; flex-direction:column; gap:8px; padding-top:6px}
+.mapblock + .mapblock{border-top:1px solid var(--line); margin-top:4px; padding-top:12px}
+.mapblock h3{font-size:12.5px; color:var(--ink-2); direction:ltr; text-align:right}
+.mapblock .btn{align-self:flex-start}
 .mapgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:10px}
 .mapgrid label.fld select{min-width:0; width:100%}
 .sample{margin:0; font-size:12px; color:var(--ink-3); font-family:var(--f-mono); direction:ltr; text-align:left; overflow-wrap:anywhere}
@@ -282,22 +287,21 @@ details.map > div{padding:4px 12px 12px; display:flex; flex-direction:column; ga
       <input type="file" id="fileX" accept=".xlsx,.xlsm,.csv" multiple hidden>
       <div class="note">
         <span class="m"></span>
-        <span>ارفع تصديرات MIS كما تنزل من النظام — كل ورقة تُعرف بعناوين أعمدتها لا باسمها، فلا يهم ترتيبها ولا هل هي في مصنّف واحد أو في عدة ملفات:
+        <span>ارفع ملفات MIS الخمسة كما تنزل من النظام — كل ورقة تُعرف بعناوين أعمدتها لا باسمها، فلا يهم ترتيبها:
           <ul>
-            <li><b>Appointment Statistics – Doctor Wise</b> — الزيارات والمواعيد وعدم الحضور والإلغاء والـWalk-in والسعة، وبطاقات الأقسام.</li>
-            <li><b>Service wise Count – Detailed Category Wise</b> — أعمدة Lab وRadiology وProcedure وRevenue.</li>
-            <li><b>Appointment Statistics – Detailed</b> (اختياري) — New Visit وFollow-up لكل طبيب.</li>
+            <li><b>Appt slot</b> — السعة: Normal + Frozen = مجموع الـSlots.</li>
+            <li><b>Appointment Statistics – Department Wise</b> — أرقام الأقسام: Scheduled وSuccess وWalkin وTotalseen، وMissed هو الـNo Show.</li>
+            <li><b>Appointment Statistics – Detailed</b> — New Visit وFollow-up، من <b>Status: Reported</b> فقط (Pending لا يُحسب).</li>
+            <li><b>Appointment Statistics – Doctor Wise</b> — Total Seen لكل طبيب.</li>
+            <li><b>Service wise Count – Detailed Category Wise</b> — Lab وRadiology وProcedure لكل مريض لا لكل فحص، والـRevenue.</li>
           </ul>
-        </span>
+          وفي كل الملفات <b>Scheduled</b> يعني المواعيد المحجوزة (Booked / Appointments).</span>
       </div>
+      <div class="chips" id="daily"></div>
       <div id="fileInfo"></div>
       <details class="map" id="mapBox" hidden>
-        <summary>ربط أعمدة كشف المواعيد — يُرشَّح تلقائيًا، وتعديلك يُحفظ لنفس عناوين الأعمدة</summary>
-        <div>
-          <div class="mapgrid" id="mapGrid"></div>
-          <p class="sample" id="mapSample"></p>
-          <div><button type="button" class="btn btn-sm" id="bMapReset">إرجاع الربط التلقائي</button></div>
-        </div>
+        <summary>ربط الأعمدة — يُرشَّح تلقائيًا، وتعديلك يُحفظ لنفس عناوين الأعمدة</summary>
+        <div id="mapGrid"></div>
       </details>
     </div>
   </section>
@@ -503,6 +507,7 @@ const APPT_FIELDS = [
   { key: "doctor", label: "الطبيب · Doctor",         hints: ["resourcename", "doctorname", "doctor", "resource", "physicianname", "physician", "providername", "provider", "consultant", "staffname"] },
   { key: "slot",   label: "السعة · Slots",           hints: ["totalslots", "totalslot", "slots", "slot", "availableslots", "capacity"], num: true },
   { key: "sched",  label: "المواعيد · Scheduled",    hints: ["scheduled", "totalscheduled", "booked", "totalbooked", "totalappointments", "appointments", "appointment", "appts"], num: true },
+  { key: "success",label: "حضروا بموعد · Success",   hints: ["success", "totalsuccess", "successful", "attendedappointments"], num: true },
   { key: "seen",   label: "المشاهَد · Total Seen",   hints: ["totalseen", "seen", "totalattended", "attended", "arrived", "visited", "checkedout"], num: true },
   { key: "walkin", label: "بلا موعد · Walk-in",      hints: ["walkin", "walkins", "totalwalkin", "totalwalkins", "walkinpatients", "walkinvisits", "walkinvisit"], num: true },
   { key: "noshow", label: "عدم الحضور · No Show",    hints: ["noshow", "noshows", "totalnoshow", "missed", "dna", "didnotattend", "notattended", "notarrived", "absent"], num: true },
@@ -549,15 +554,65 @@ function autoMap(grid, headerRow) {
   }
   return map;
 }
-function shapeAppt(sheet) {
+/* "Appointment Statistics – Doctor Wise" has a doctor column; "Appointment
+   Statistics – Department Wise" has the same figures a row per department.
+   Both are read by the same column guesses, told apart by that one column. */
+function shapeCounts(sheet) {
   for (let h = 0; h < Math.min(sheet.grid.length, 40); h++) {
     const row = sheet.grid[h] || [];
     if (row.filter(c => String(c).trim()).length < 2) continue;
     const map = autoMap(sheet.grid, h);
-    if (map.doctor >= 0 && (map.seen >= 0 || map.sched >= 0))
-      return { sheet, headerRow: h, auto: map, sig: row.map(hk).join("|") };
+    if (!(map.seen >= 0 || map.sched >= 0)) continue;
+    const level = map.doctor >= 0 ? "doctor" : map.dept >= 0 ? "dept" : null;
+    if (level) return { sheet, headerRow: h, auto: map, sig: level + ":" + row.map(hk).join("|"), level };
   }
   return null;
+}
+
+/* "Appt slot": the day's capacity is its Normal slots and its Frozen slots
+   together. Read as two columns, or as a column that says which kind each
+   slot line is. */
+const SLOT_NORMAL = /normal/, SLOT_FROZEN = /froz|freez/;
+function shapeSlots(sheet) {
+  const g = sheet.grid;
+  for (let h = 0; h < Math.min(g.length, 40); h++) {
+    const keys = (g[h] || []).map(hk);
+    const normal = keys.findIndex(k => SLOT_NORMAL.test(k)), frozen = keys.findIndex(k => SLOT_FROZEN.test(k));
+    if (normal >= 0 && frozen >= 0 && normal !== frozen) return { sheet, headerRow: h, mode: "cols", col: { normal, frozen } };
+  }
+  for (let h = 0; h < Math.min(g.length, 40); h++) {
+    const head = g[h] || [];
+    if (head.filter(c => String(c).trim()).length < 3) continue;
+    for (let ci = 0; ci < head.length; ci++) {
+      const vals = g.slice(h + 1).map(r => clean(str(r, ci)).toLowerCase());
+      if (vals.some(v => /^normal\b/.test(v)) && vals.some(v => /^(froz|freez)/.test(v)))
+        return { sheet, headerRow: h, mode: "type", col: { type: ci } };
+    }
+  }
+  return null;
+}
+const TOTAL_ROW = /^(grand\s*)?(sub\s*)?total\b/i;
+/* a line with figures but no label at all is the export's own total */
+const labelled = row => row.some(c => { const t = clean(c); return t && strictNum(t) == null && !TOTAL_ROW.test(t); });
+function readSlots(list) {
+  let normal = 0, frozen = 0, rows = 0;
+  for (const s of list) {
+    const g = s.sheet.grid;
+    for (let i = s.headerRow + 1; i < g.length; i++) {
+      const r = g[i] || [];
+      if (s.mode === "cols") {
+        const n = strictNum(str(r, s.col.normal)), f = strictNum(str(r, s.col.frozen));
+        if (n == null && f == null) continue;
+        if (!labelled(r.filter((_, ci) => ci !== s.col.normal && ci !== s.col.frozen))) continue;
+        normal += n || 0; frozen += f || 0; rows++;
+      } else {
+        const t = clean(str(r, s.col.type)).toLowerCase();
+        if (/^normal\b/.test(t)) { normal++; rows++; }
+        else if (/^(froz|freez)/.test(t)) { frozen++; rows++; }
+      }
+    }
+  }
+  return { normal, frozen, total: normal + frozen, rows };
 }
 
 /* ═════════════════ remembered column choices ═════════════════ */
@@ -663,13 +718,31 @@ function similarity(a, b) {
    claimed first, then "Abdulaziz Omar" finds "Abdulaziz Omar Jubair" (two
    words or more, opening exactly one name), then a near spelling. No doctor
    is claimed twice by the same export. */
+/* "Maha Alessa" in one export is "Maha Saud Alessa" in another: the short
+   name's words sit in order inside the long one, first and last name alike */
+function within(short, long) {
+  const a = short.split(" "), b = long.split(" ");
+  if (a.length < 2 || a.length >= b.length) return false;
+  if (a[0] !== b[0] || a[a.length - 1] !== b[b.length - 1]) return false;
+  let j = 0;
+  for (const t of b) if (t === a[j]) j++;
+  return j === a.length;
+}
 function linkNames(srcKeys, targetKeys) {
   const free = new Set(targetKeys), out = new Map(), rest = [];
   for (const k of srcKeys) { if (free.has(k)) { free.delete(k); out.set(k, { to: k, fuzzy: false }); } else rest.push(k); }
+  /* the sure steps first — a name that opens another, or sits inside it — so
+     the loose spelling match below never takes a name one of them owns */
+  const left = [];
   for (const k of rest) {
     const words = k.split(" ").length;
     const opens = [...free].filter(ok => words > 1 && ok.split(" ").length > 1 && (ok.startsWith(k + " ") || k.startsWith(ok + " ")));
-    if (opens.length === 1) { free.delete(opens[0]); out.set(k, { to: opens[0], fuzzy: true }); continue; }
+    if (opens.length === 1) { free.delete(opens[0]); out.set(k, { to: opens[0], fuzzy: false }); continue; }
+    const inside = [...free].filter(ok => within(k, ok) || within(ok, k));
+    if (inside.length === 1) { free.delete(inside[0]); out.set(k, { to: inside[0], fuzzy: false }); continue; }
+    left.push(k);
+  }
+  for (const k of left) {
     let best = null, score = 0;
     for (const ok of free) { const s = similarity(k, ok); if (s > score) { score = s; best = ok; } }
     if (best && score >= 0.82) { free.delete(best); out.set(k, { to: best, fuzzy: true }); }
@@ -713,17 +786,20 @@ const shortDept = raw => {
 const isER = raw => /emergenc|(^| )er( |$)|casualty|urgent care/.test(norm(raw));
 
 /* ═════════════════ reading each export ═════════════════ */
-function readAppt(a, map) {
-  const g = a.sheet.grid, rows = [];
+function readRows(a, map) {
+  const g = a.sheet.grid, rows = [], byDoc = a.level === "doctor";
   let dept = "";
   for (let i = a.headerRow + 1; i < g.length; i++) {
     const r = g[i] || [], first = clean(r[0]);
     const block = /^department(?:\s*name)?\s*:\s*(.+)$/i.exec(first);
     if (block) { dept = clean(block[1]); continue; }
     const d = clean(str(r, map.dept));
-    if (d && !/^(grand\s*)?(sub\s*)?total\b/i.test(d)) dept = d;   // merged department cells run down the block
-    const doctor = clean(str(r, map.doctor));
-    if (!doctor || /^(grand\s*)?(sub\s*)?total\b/i.test(doctor) || /^(grand\s*)?total\b/i.test(d)) continue;
+    if (TOTAL_ROW.test(d)) continue;
+    if (d) dept = d;                    // merged department cells run down the block
+    const doctor = byDoc ? clean(str(r, map.doctor)) : "";
+    /* a doctor line needs its doctor, a department line its department —
+       the export's closing total has neither */
+    if (byDoc ? (!doctor || TOTAL_ROW.test(doctor)) : !d) continue;
     const v = {}; let any = false;
     for (const k of NUM_KEYS) {
       if (map[k] < 0) continue;
@@ -761,6 +837,8 @@ const catOf = (cat, dept) => {
    Detail page: a twelve-test panel for one patient on one day is one lab
    visit. The file number is keyed with the bill date, so a patient who comes
    back another day counts again. Revenue is every net amount, fees included. */
+/* the three order columns the template prints */
+const ORDER_KEYS = ["lab", "rad", "proc"];
 function readServices(list) {
   const by = new Map(), dates = [];
   let byMrn = false, tests = 0, cats = 0;
@@ -784,7 +862,7 @@ function readServices(list) {
       p.net += net;
       const placed = cat == null ? { key: bucketOf(dept) || "other", pack: false } : catOf(cat, dept);
       if (placed.key === "fee") continue;
-      tests += cnt;
+      if (ORDER_KEYS.includes(placed.key)) tests += cnt;
       const file = str(row, c.mrno);
       if (file) { byMrn = true; (p.mrn[placed.key] || (p.mrn[placed.key] = new Set())).add(file + "\u0000" + billDate); }
       else {
@@ -793,22 +871,31 @@ function readServices(list) {
       }
     }
   }
-  for (const p of by.values()) for (const k in p.mrn) p.cnt[k] = (p.cnt[k] || 0) + p.mrn[k].size;
-  return { by, dates, byMrn, tests, cats };
+  let orders = 0;
+  for (const p of by.values()) for (const k in p.mrn) {
+    p.cnt[k] = (p.cnt[k] || 0) + p.mrn[k].size;
+    if (ORDER_KEYS.includes(k)) orders += p.mrn[k].size;
+  }
+  return { by, dates, byMrn, tests, cats, orders };
 }
 
-/* New and follow-up visits, counted line by line under each doctor. A line
-   filed under a cancelled or no-show status is an appointment that never
-   became a visit, so it is counted there instead. */
+/* New and follow-up visits, counted line by line under each doctor — only
+   the lines filed under "Status: Reported". A Pending line is an appointment
+   nobody has reported yet, so it is left out. An export with no status
+   headings at all has every line counted, and one whose statuses never say
+   Reported leaves out only what is plainly not a visit. */
 const TYPE_NEW = /^new\b/i;
 const TYPE_FOLLOW = /follow|revisit|re-visit|review|return|existing|repeat|^old\b/i;
+const ST_COUNT = /^reported?\b/i;          // "Not Reported" is not Reported
+const ST_SKIP = /pending|cancel|no\s*-?\s*show|missed|absent|not\s*arrived|did\s*not|\bdna\b/i;
 const ST_CANCEL = /cancel/i;
 const ST_NOSHOW = /no\s*-?\s*show|missed|absent|not\s*arrived|did\s*not|\bdna\b/i;
 function readDetails(list) {
-  const by = new Map();
-  let lines = 0, hasFollow = false, hasStatus = false, skipped = 0;
+  const by = new Map(), left = new Map();
+  let lines = 0, hasFollow = false, hasStatus = false, noshowSeen = false, cancelSeen = false;
   for (const nv of list) {
     const g = nv.sheet.grid;
+    const strict = g.some(r => /^status\s*:\s*reported?\b/i.test(clean(r?.[0])));
     let doc = null, status = "";
     for (let i = nv.headerRow + 1; i < g.length; i++) {
       const r = g[i] || [], first = clean(r[0]);
@@ -819,15 +906,20 @@ function readDetails(list) {
       const k = nameKey(doc);
       let p = by.get(k);
       if (!p) { p = { raw: doc, newv: 0, follow: 0, noshow: 0, cancel: 0 }; by.set(k, p); }
-      if (ST_CANCEL.test(status)) { p.cancel++; skipped++; continue; }
-      if (ST_NOSHOW.test(status)) { p.noshow++; skipped++; continue; }
+      if (status && (strict ? !ST_COUNT.test(status) : ST_SKIP.test(status))) {
+        left.set(status, (left.get(status) || 0) + 1);
+        if (ST_CANCEL.test(status)) { p.cancel++; cancelSeen = true; }
+        else if (ST_NOSHOW.test(status)) { p.noshow++; noshowSeen = true; }
+        continue;
+      }
       const type = str(r, nv.col.type);
       lines++;
       if (TYPE_NEW.test(type)) p.newv++;
       else if (TYPE_FOLLOW.test(type)) { p.follow++; hasFollow = true; }
     }
   }
-  return { by, lines, hasFollow, hasStatus, skipped };
+  const strict = list.some(nv => nv.sheet.grid.some(r => /^status\s*:\s*reported?\b/i.test(clean(r?.[0]))));
+  return { by, lines, hasFollow, hasStatus, strict, left, noshowSeen, cancelSeen };
 }
 
 /* ═════════════════ the report's arithmetic ═════════════════ */
@@ -837,14 +929,17 @@ function aggregate(opts) {
   const walkIncl = opts.walkIncl;
   const sysWords = (opts.sysWords || "").split(/[,،]/).map(s => s.trim()).filter(Boolean);
   const isSystem = n => sysWords.some(w => norm(n).includes(norm(w)));
+  const docSheets = state.counts.filter(a => a.level === "doctor");
+  const deptSheets = state.counts.filter(a => a.level === "dept");
+  const visitsOf = x => x.seen == null ? null : x.seen + (walkIncl ? 0 : (x.walkin || 0));
 
-  /* 1 — the doctor rows, from the appointments export */
+  /* 1 — the doctor rows, from Doctor Wise */
   const docs = new Map();            // doctor + department → figures
-  const has = {};                    // which figures any appointment sheet carries
-  for (const a of state.appts) {
+  const has = {};                    // which figures any Doctor Wise sheet carries
+  for (const a of docSheets) {
     const map = mapFor(a);
     NUM_KEYS.forEach(k => { if (map[k] >= 0) has[k] = true; });
-    for (const r of readAppt(a, map)) {
+    for (const r of readRows(a, map)) {
       const key = nameKey(r.doctor) + "|" + nameKey(r.dept);
       let d = docs.get(key);
       if (!d) { d = { name: r.doctor, dept: r.dept, appt: true, net: null, cnt: null }; docs.set(key, d); }
@@ -863,7 +958,7 @@ function aggregate(opts) {
     return m;
   };
 
-  /* 2 — revenue and orders, from the services export */
+  /* 2 — revenue and orders, from Service wise Count */
   const svc = state.svcs.length ? readServices(state.svcs) : null;
   const fuzzy = [], added = [], systems = [];
   if (svc) {
@@ -878,7 +973,7 @@ function aggregate(opts) {
         /* a provider who billed but kept no appointment book still worked today */
         d = { name: p.name, dept: p.dept, appt: false, net: null, cnt: null };
         docs.set(k + "|" + nameKey(p.dept) + "|svc", d);
-        if (!isER(p.dept)) added.push(p.name);
+        if (docSheets.length && !isER(p.dept)) added.push(p.name);
       }
       d.net = add(d.net, p.net);
       d.cnt = d.cnt || {};
@@ -887,7 +982,7 @@ function aggregate(opts) {
     for (const d of docs.values()) if (d.net == null) { d.net = 0; d.cnt = {}; }
   }
 
-  /* 3 — new and follow-up visits, from the detailed export */
+  /* 3 — new and follow-up visits, from the Detailed export */
   const det = state.dets.length ? readDetails(state.dets) : null;
   const detMiss = [];
   if (det) {
@@ -895,70 +990,113 @@ function aggregate(opts) {
     const links = linkNames([...det.by.keys()], [...prim.keys()]);
     for (const [k, p] of det.by) {
       const hit = links.get(k);
-      if (!hit) { detMiss.push(p.raw); continue; }
-      const d = prim.get(hit.to);
-      if (hit.fuzzy) fuzzy.push(p.raw + " ← " + d.name);
+      let d = hit ? prim.get(hit.to) : null;
+      if (hit && hit.fuzzy) fuzzy.push(p.raw + " ← " + d.name);
+      if (!d) {
+        /* a name only the detailed export knows still counts towards its side
+           of the house — outpatient or emergency — placed by the department
+           it billed under */
+        const billed = svc && svc.by.get(k);
+        d = { name: p.raw, dept: billed ? billed.dept : "—", appt: false, net: svc ? 0 : null, cnt: svc ? {} : null };
+        docs.set(k + "||det", d);
+        if (!isSystem(p.raw) && (p.newv || p.follow)) detMiss.push(p.raw);
+      }
       d.dNew = p.newv; d.dFollow = p.follow; d.dNoshow = p.noshow; d.dCancel = p.cancel;
     }
   }
-  /* the line-by-line count beats a column of totals when both are there;
-     no-shows and cancellations come from it only when the columns are missing */
-  const useDetNew = !!det;
-  const useDetFollow = !!det && det.hasFollow;
-  const useDetStatus = !!det && det.hasStatus;
+  /* the line-by-line count beats a column of totals when both are there */
   for (const d of docs.values()) {
     /* a doctor the detailed export leaves out keeps the column's own figure */
-    if (useDetNew) d.newv = d.dNew ?? d.newv ?? (d.appt ? 0 : null);
-    if (useDetFollow) d.follow = d.dFollow ?? d.follow ?? (d.appt ? 0 : null);
-    if (useDetStatus && !has.noshow) d.noshow = d.dNoshow ?? 0;
-    if (useDetStatus && !has.cancel) d.cancel = d.dCancel ?? 0;
-    /* what the table calls Seen is every visit the doctor had */
-    d.visits = d.seen == null ? null : d.seen + (walkIncl ? 0 : (d.walkin || 0));
+    if (det) d.newv = d.dNew ?? d.newv ?? (d.appt ? 0 : null);
+    if (det && det.hasFollow) d.follow = d.dFollow ?? d.follow ?? (d.appt ? 0 : null);
+    if (det && det.noshowSeen && !has.noshow) d.noshow = d.dNoshow ?? 0;
+    if (det && det.cancelSeen && !has.cancel) d.cancel = d.dCancel ?? 0;
+    d.visits = visitsOf(d);
   }
+
+  /* 4 — the department figures, from Department Wise */
+  const depFig = new Map(), hasD = {};
+  for (const a of deptSheets) {
+    const map = mapFor(a);
+    NUM_KEYS.forEach(k => { if (map[k] >= 0) hasD[k] = true; });
+    for (const r of readRows(a, map)) {
+      const key = nameKey(r.dept);
+      let f = depFig.get(key);
+      if (!f) { f = { raw: r.dept }; depFig.set(key, f); }
+      NUM_KEYS.forEach(k => { if (r.v[k] != null) f[k] = add(f[k], r.v[k]); });
+    }
+  }
+  for (const f of depFig.values()) f.visits = visitsOf(f);
+  const byDeptSheet = depFig.size > 0;
+
+  const all = [...docs.values()];
   const known = {
-    seen: !!has.seen, sched: !!has.sched, slot: !!has.slot, walkin: !!has.walkin,
-    noshow: !!has.noshow || useDetStatus, cancel: !!has.cancel || useDetStatus,
-    newv: !!has.newv || useDetNew, follow: !!has.follow || useDetFollow,
+    seen: !!(hasD.seen || has.seen), sched: !!(hasD.sched || has.sched), success: !!(hasD.success || has.success),
+    walkin: !!(hasD.walkin || has.walkin), slot: !!(hasD.slot || has.slot),
+    noshow: !!(hasD.noshow || has.noshow || (det && det.noshowSeen)),
+    cancel: !!(hasD.cancel || has.cancel || (det && det.cancelSeen)),
+    newv: !!has.newv || !!det, follow: !!has.follow || !!(det && det.hasFollow),
+    doctors: all.some(d => !isSystem(d.name)),
   };
 
-  /* 4 — outpatient against emergency */
-  const all = [...docs.values()].filter(d => !isSystem(d.name) || d.appt);
-  const opd = all.filter(d => !isER(d.dept)), er = all.filter(d => isER(d.dept));
+  /* 5 — outpatient against emergency: every figure the department sheet
+     carries is taken from it, anything else is summed over the doctors */
   const sum = (list, k) => list.reduce((n, d) => add(n, d[k]), null);
-  const side = list => {
-    const visits = sum(list, "visits"), newv = sum(list, "newv"), follow = sum(list, "follow");
+  const side = er => {
+    const dl = [...depFig.values()].filter(f => isER(f.raw) === er);
+    const docl = all.filter(d => d.dept !== "—" ? isER(d.dept) === er : !er);
+    const pickK = k => hasD[k] ? sum(dl, k) : sum(docl, k);
+    const visits = hasD.seen ? sum(dl, "visits") : sum(docl, "visits");
+    const newv = sum(docl, "newv"), follow = sum(docl, "follow");
     return {
       visits, newv,
       follow: known.follow ? follow : (visits != null && newv != null ? Math.max(0, visits - newv) : null),
-      sched: sum(list, "sched"), walkin: sum(list, "walkin"), noshow: sum(list, "noshow"),
-      cancel: sum(list, "cancel"), slot: sum(list, "slot"),
+      sched: pickK("sched"), success: pickK("success"), walkin: pickK("walkin"),
+      noshow: pickK("noshow"), cancel: pickK("cancel"), slot: pickK("slot"),
+      present: dl.length > 0 || docl.some(d => d.visits != null || d.appt),
     };
   };
-  const O = side(opd), E = side(er);
-  const apptSeen = O.visits == null ? null : O.visits - (O.walkin || 0);
-  const cap = opts.cap > 0 ? opts.cap : (O.slot || null);
+  const O = side(false), E = side(true);
+  const apptSeen = O.success != null ? O.success : O.visits == null ? null : O.visits - (O.walkin || 0);
+  const slots = state.slots.length ? readSlots(state.slots) : null;
+  const cap = opts.cap > 0 ? opts.cap : (slots && slots.total) || O.slot || null;
 
-  /* 5 — department cards */
-  const byDept = new Map();
-  for (const d of all) {
-    const name = shortDept(d.dept);
-    if (!byDept.has(name)) byDept.set(name, []);
-    byDept.get(name).push(d);
+  /* 6 — department cards: Department Wise decides which cards exist and what
+     they hold; the doctors behind each card are counted from the doctor rows */
+  const cards = new Map();
+  const card = name => {
+    if (!cards.has(name)) cards.set(name, { name, visits: null, walkin: null, noshow: null, booked: new Set(), active: new Set(), any: new Set() });
+    return cards.get(name);
+  };
+  for (const f of depFig.values()) {
+    const c = card(shortDept(f.raw));
+    c.visits = add(c.visits, f.visits); c.walkin = add(c.walkin, f.walkin); c.noshow = add(c.noshow, f.noshow);
   }
-  const depts = [...byDept.entries()].map(([name, list]) => {
-    const active = list.filter(d => (d.visits || 0) > 0 || (d.sched || 0) > 0 || (d.net || 0) > 0);
-    return {
-      name, er: name === "EMERGENCY",
-      visits: sum(list, "visits"), walkin: sum(list, "walkin"), noshow: sum(list, "noshow"),
-      doctors: new Set((active.length ? active : list).map(d => nameKey(d.name))).size,
-      rank: DEPT_ORDER.indexOf(name),
-    };
-  }).sort((a, b) => (a.er - b.er)
+  for (const d of all) {
+    if (d.dept === "—") continue;
+    const name = shortDept(d.dept);
+    if (byDeptSheet && !cards.has(name)) continue;
+    const c = card(name);
+    if (!byDeptSheet) { c.visits = add(c.visits, d.visits); c.walkin = add(c.walkin, d.walkin); c.noshow = add(c.noshow, d.noshow); }
+    if (isSystem(d.name)) continue;
+    c.any.add(nameKey(d.name));
+    if ((d.visits || 0) > 0 || (d.sched || 0) > 0 || (d.net || 0) > 0 || (d.newv || 0) > 0) {
+      c.active.add(nameKey(d.name));
+      if (d.appt) c.booked.add(nameKey(d.name));
+    }
+  }
+  const depts = [...cards.values()].map(c => ({
+    name: c.name, er: c.name === "EMERGENCY",
+    visits: c.visits, walkin: c.walkin, noshow: c.noshow,
+    /* the doctors on the appointment roster; a card with none there (the
+       emergency room books under a registration account) counts who billed */
+    doctors: c.booked.size || c.active.size || c.any.size, rank: DEPT_ORDER.indexOf(c.name),
+  })).sort((a, b) => (a.er - b.er)
       || ((a.rank < 0) - (b.rank < 0)) || (a.rank - b.rank)
       || ((b.visits || 0) - (a.visits || 0)) || a.name.localeCompare(b.name));
 
-  /* 6 — the doctors table: the outpatient doctors, busiest first */
-  const table = opd.filter(d => !isSystem(d.name)).map(d => ({
+  /* 7 — the doctors table: the outpatient doctors, busiest first */
+  const table = all.filter(d => !isSystem(d.name) && !(d.dept !== "—" && isER(d.dept))).map(d => ({
     name: d.name, spec: d.dept === "—" ? "" : d.dept,
     seen: d.visits, newv: d.newv ?? null,
     lab: d.cnt ? (d.cnt.lab || 0) : null, rad: d.cnt ? (d.cnt.rad || 0) : null, proc: d.cnt ? (d.cnt.proc || 0) : null,
@@ -966,37 +1104,50 @@ function aggregate(opts) {
   })).sort((a, b) => (b.seen ?? -1) - (a.seen ?? -1) || (b.net || 0) - (a.net || 0) || a.name.localeCompare(b.name));
 
   /* what the page should say about how it read the files */
-  if (!state.appts.length) notices.push({ kind: "warn", text: "لا يوجد كشف «Appointment Statistics – Doctor Wise» — بطاقات الزيارات والمواعيد والأقسام تخرج شرطات." });
+  if (!state.counts.length)
+    notices.push({ kind: "warn", text: "لا يوجد «Appointment Statistics – Department Wise» ولا «Doctor Wise» — بطاقات الزيارات والمواعيد والأقسام تخرج شرطات." });
   else {
     const miss = [];
-    if (!known.seen) miss.push("Total Seen");
+    if (!known.seen) miss.push("Totalseen");
     if (!known.sched) miss.push("Scheduled");
-    if (!known.walkin) miss.push("Walk-in");
-    if (!known.noshow) miss.push("No Show");
-    if (!known.cancel) miss.push("Cancelled");
-    if (!known.slot && !(opts.cap > 0)) miss.push("Slot");
-    if (miss.length) notices.push({ kind: "warn", text: "لم يُعثر في كشف المواعيد على عمود: " + miss.join(" · ")
-      + " — ما يعتمد عليه يخرج شرطة. إن كان العمود موجودًا باسم آخر فاربطه من «ربط أعمدة كشف المواعيد»." });
+    if (!known.walkin) miss.push("Walkin");
+    if (!known.noshow) miss.push("Missed / No Show");
+    if (miss.length) notices.push({ kind: "warn", text: "لم يُعثر في كشوف المواعيد على عمود: " + miss.join(" · ")
+      + " — ما يعتمد عليه يخرج شرطة. إن كان العمود موجودًا باسم آخر فاربطه من «ربط الأعمدة»." });
   }
-  if (!svc) notices.push({ kind: "warn", text: "لا يوجد تصدير «Service wise Count – Detailed Category Wise» — أعمدة Lab وRadiology وProcedure وRevenue تخرج شرطات." });
+  if (!byDeptSheet && docSheets.length)
+    notices.push({ kind: "", text: "لا يوجد «Department Wise» — أرقام الأقسام والبطاقات مجموع أطباء «Doctor Wise»." });
+  if (!docSheets.length && state.counts.length)
+    notices.push({ kind: "warn", text: "لا يوجد «Appointment Statistics – Doctor Wise» — عمود Seen في جدول الأطباء يخرج شرطات، وأطباء الجدول من تصدير الخدمات." });
+  if (slots) notices.push({ kind: "", text: "السعة من «Appt slot»: Normal " + nf(slots.normal) + " + Frozen " + nf(slots.frozen) + " = " + nf(slots.total) + " موعدًا"
+      + (opts.cap > 0 ? " — والمكتوب في الإعدادات مقدَّم عليه." : ".") });
+  else if (!(opts.cap > 0) && !O.slot && O.visits != null)
+    notices.push({ kind: "warn", text: "لا يوجد ملف «Appt slot» — ارفعه، أو اكتب السعة اليومية في الإعدادات، لتظهر بطاقة Capacity Used." });
+  if (!svc) notices.push({ kind: "warn", text: "لا يوجد «Service wise Count – Detailed Category Wise» — أعمدة Lab وRadiology وProcedure وRevenue تخرج شرطات." });
   else {
     if (!svc.cats) notices.push({ kind: "warn", text: "تصدير الخدمات بلا أسطر «Category:» — وُزِّعت الطلبات بحسب قسم كل صف." });
     notices.push({ kind: "", text: svc.byMrn
-      ? "أعمدة Lab وRadiology وProcedure تعدّ الزيارات لا الفحوصات: كل رقم ملف يُحسب مرة واحدة عند الطبيب في اليوم الواحد — من " + nf(svc.tests) + " بندًا مفوترًا."
-      : "لا يوجد عمود MRNO في تصدير الخدمات، فأعمدة الطلبات تعدّ البنود المفوترة." });
+      ? "Lab وRadiology وProcedure تُعدّ لكل مريض لا لكل فحص: المريض الذي طُلب له عشرة تحاليل يُحسب تحليلًا واحدًا — " + nf(svc.orders) + " طلبًا من " + nf(svc.tests) + " بندًا مفوترًا."
+      : "لا يوجد عمود MRNO في تصدير الخدمات، فأعمدة الطلبات تعدّ البنود المفوترة لا المرضى." });
   }
-  if (!known.newv) notices.push({ kind: "warn", text: "لا يوجد عمود New Visit ولا كشف «Appointment Statistics – Detailed» — عمود New Visit وتقسيم New / Follow-up يخرجان شرطات." });
-  if (det) notices.push({ kind: "", text: "من الكشف المفصّل: " + nf(det.lines) + " زيارة لـ" + det.by.size + " طبيبًا"
-      + (det.skipped ? "، واستُبعد " + nf(det.skipped) + " موعدًا ملغًى أو لم يحضر صاحبه" : "") + "." });
-  if (detMiss.length) notices.push({ kind: "warn", text: "أطباء في الكشف المفصّل بلا صفّ في كشف المواعيد: " + detMiss.join("، ") });
+  if (!known.newv) notices.push({ kind: "warn", text: "لا يوجد «Appointment Statistics – Detailed» — عمود New Visit وتقسيم New / Follow-up يخرجان شرطات." });
+  if (det) {
+    const left = [...det.left].map(([s, n]) => nf(n) + " بحالة " + s).join("، ");
+    notices.push({ kind: "", text: "New / Follow-up من الكشف المفصّل: " + nf(det.lines) + " موعدًا"
+      + (det.strict ? " بحالة Reported" : "") + " لـ" + det.by.size + " طبيبًا"
+      + (left ? "، ولم يُحسب " + left : "") + "." });
+  }
+  if (det && det.hasStatus && !det.strict)
+    notices.push({ kind: "warn", text: "الكشف المفصّل بلا حالة «Reported» — حُسبت كل الحالات ما عدا Pending والملغاة وعدم الحضور." });
+  if (detMiss.length) notices.push({ kind: "warn", text: "في الكشف المفصّل أطباء بلا صفّ في كشف المواعيد: " + detMiss.join("، ") });
   if (fuzzy.length) notices.push({ kind: "warn", text: "أسماء طوبقت بالتقريب بين الملفات: " + fuzzy.join("، ") });
-  if (added.length) notices.push({ kind: "", text: "أُضيف للجدول من تصدير الخدمات من لا صفّ له في كشف المواعيد: " + added.join("، ") });
+  if (added.length) notices.push({ kind: "", text: "أُضيف للجدول من تصدير الخدمات من لا صفّ له في «Doctor Wise»: " + added.join("، ") });
   if (systems.length) notices.push({ kind: "", text: "حسابات النظام لا تظهر في جدول الأطباء: " + systems.join("، ") });
   if (O.walkin != null && walkIncl && O.walkin > (O.visits || 0))
     notices.push({ kind: "warn", text: "مراجعو الـWalk-in أكثر من Total Seen — يبدو أن Total Seen لا يشملهم؛ أزل العلامة عن «عمود Total Seen يشمل مراجعي الـWalk-in» في الإعدادات." });
-  if (!er.length) notices.push({ kind: "", text: "لا يوجد قسم طوارئ في الملفات — بطاقة EMERGENCY تخرج «Not reported»." });
+  if (!E.present && state.counts.length) notices.push({ kind: "", text: "لا يوجد قسم طوارئ في الملفات — بطاقة EMERGENCY تخرج «Not reported»." });
 
-  return { O, E, er: er.length > 0, apptSeen, cap, known, depts, table, notices, svc, det,
+  return { O, E, er: E.present, apptSeen, cap, slots, known, depts, table, notices, svc, det,
            billSpan: svc && svc.dates.length ? { from: new Date(Math.min(...svc.dates)), to: new Date(Math.max(...svc.dates)) } : null };
 }
 
@@ -1068,10 +1219,10 @@ function deptGrid(data) {
     const c = el("div", "dept");
     c.append(el("div", "l fit", d.name));
     c.append(el("div", "v fit" + (d.visits == null ? " nil" : ""), d.visits == null ? DASH : nf(d.visits)));
-    const parts = [d.doctors + (d.doctors === 1 ? " Doctor" : " Doctors")];
+    const parts = data.known.doctors ? [d.doctors + (d.doctors === 1 ? " Doctor" : " Doctors")] : [];
     if (data.known.walkin) parts.push("Walk in " + nf(d.walkin || 0));
     if (data.known.noshow) parts.push("No Show " + nf(d.noshow || 0));
-    const s = el("div", "s fit" + (parts.length === 1 ? " one" : ""));
+    const s = el("div", "s fit" + (parts.length < 3 ? " one" : ""));
     parts.forEach(p => s.append(el("span", null, p)));
     c.append(s);
     box.append(c);
@@ -1465,7 +1616,7 @@ async function makePdf(title) {
 window.__makePdf = makePdf;       // the repo's browser checks build a file without clicking
 
 /* ═════════════════ state and wiring ═════════════════ */
-const state = { files: [], sheets: [], sigs: new Set(), appts: [], svcs: [], dets: [], err: null,
+const state = { files: [], sheets: [], sigs: new Set(), counts: [], slots: [], svcs: [], dets: [], err: null,
                 data: null, touched: {}, pages: 0, wbBranch: "", wbFrom: null, wbTo: null, detSpan: null };
 
 const val = id => $(id).value.trim();
@@ -1517,46 +1668,76 @@ function tile(label, value) {
   return t;
 }
 
-/* the column picker for the appointments export: one list per report figure,
-   pre-set from the header text; a change is kept for that exact header */
+/* the column picker for the appointment sheets — Doctor Wise and Department
+   Wise each get their own: one list per report figure, pre-set from the header
+   text; a change is kept for that exact header */
+const LEVEL_NAME = { doctor: "Appointment Statistics – Doctor Wise", dept: "Appointment Statistics – Department Wise" };
 function paintMap() {
-  const a = state.appts[0];
-  $("#mapBox").hidden = !a;
-  if (!a) return;
-  const grid = $("#mapGrid");
-  grid.textContent = "";
-  const head = a.sheet.grid[a.headerRow] || [];
-  const map = mapFor(a);
-  APPT_FIELDS.forEach(f => {
-    const lab = el("label", "fld");
-    lab.append(el("span", null, f.label));
-    const sel = el("select");
-    sel.append(new Option("— غير موجود —", "-1"));
-    head.forEach((h, i) => { if (String(h).trim()) sel.append(new Option(String(h), String(i))); });
-    sel.value = String(map[f.key]);
-    sel.onchange = () => {
-      const o = mapStore.get(a.sig) || {};
-      o[f.key] = +sel.value;
-      if (o[f.key] === a.auto[f.key]) delete o[f.key];
-      mapStore.set(a.sig, o);
-      paintMap(); refresh();
-    };
-    lab.append(sel);
-    grid.append(lab);
+  const box = $("#mapGrid");
+  box.textContent = "";
+  const seen = new Set(), list = state.counts.filter(a => !seen.has(a.sig) && seen.add(a.sig));
+  $("#mapBox").hidden = !list.length;
+  list.forEach(a => {
+    const block = el("div", "mapblock");
+    block.append(el("h3", null, LEVEL_NAME[a.level] + " — " + (a.sheet.file || a.sheet.name)));
+    const grid = el("div", "mapgrid");
+    const head = a.sheet.grid[a.headerRow] || [];
+    const map = mapFor(a);
+    APPT_FIELDS.filter(f => a.level === "doctor" || f.key !== "doctor").forEach(f => {
+      const lab = el("label", "fld");
+      lab.append(el("span", null, f.label));
+      const sel = el("select");
+      sel.append(new Option("— غير موجود —", "-1"));
+      head.forEach((h, i) => { if (String(h).trim()) sel.append(new Option(String(h), String(i))); });
+      sel.value = String(map[f.key]);
+      sel.onchange = () => {
+        const o = mapStore.get(a.sig) || {};
+        o[f.key] = +sel.value;
+        if (o[f.key] === a.auto[f.key]) delete o[f.key];
+        mapStore.set(a.sig, o);
+        paintMap(); refresh();
+      };
+      lab.append(sel);
+      grid.append(lab);
+    });
+    const first = readRows(a, map)[0];
+    const sample = el("p", "sample", first
+      ? "First row → " + (first.doctor ? first.doctor + " · " : "") + first.dept + " · "
+        + NUM_KEYS.filter(k => first.v[k] != null).map(k => k + " " + first.v[k]).join(" · ")
+      : "No rows read with this mapping.");
+    const reset = el("button", "btn btn-sm", "إرجاع الربط التلقائي");
+    reset.type = "button";
+    reset.onclick = () => { mapStore.set(a.sig, null); paintMap(); refresh(); };
+    block.append(grid, sample, reset);
+    box.append(block);
   });
-  const first = readAppt(a, map)[0];
-  $("#mapSample").textContent = first
-    ? "First row → " + first.doctor + " · " + first.dept + " · "
-      + NUM_KEYS.filter(k => first.v[k] != null).map(k => k + " " + first.v[k]).join(" · ")
-    : "No doctor rows read with this mapping.";
 }
-$("#bMapReset").onclick = () => { const a = state.appts[0]; if (a) { mapStore.set(a.sig, null); paintMap(); refresh(); } };
+
+/* the five daily exports, and which of them the page has */
+const DAILY = [
+  { key: "slot",   name: "Appt slot",                                   has: () => state.slots.length > 0 },
+  { key: "dept",   name: "Appointment Statistics – Department Wise",    has: () => state.counts.some(a => a.level === "dept") },
+  { key: "det",    name: "Appointment Statistics – Detailed",           has: () => state.dets.length > 0 },
+  { key: "doctor", name: "Appointment Statistics – Doctor Wise",        has: () => state.counts.some(a => a.level === "doctor") },
+  { key: "svc",    name: "Service wise Count – Detailed Category Wise", has: () => state.svcs.length > 0 },
+];
+function paintDaily() {
+  const box = $("#daily");
+  box.textContent = "";
+  if (!state.sheets.length) return;
+  DAILY.forEach(d => {
+    const ok = d.has();
+    const c = el("span", "chip" + (ok ? " ok" : " miss"));
+    c.append(el("b", null, ok ? "✓" : "✗"), document.createTextNode(" " + d.name));
+    box.append(c);
+  });
+}
 
 function refresh() {
   const host = $("#notices"), tiles = $("#tiles");
   host.textContent = ""; tiles.textContent = "";
   if (state.err) host.append(noticeBox("bad", state.err));
-  const any = state.appts.length || state.svcs.length;
+  const any = state.counts.length || state.svcs.length || state.dets.length || state.slots.length;
   if (!any) {
     $("#stage").hidden = true; $("#noPreview").hidden = false;
     $("#bPdf").disabled = true; $("#bSave").disabled = true; $("#bClear").disabled = !state.files.length;
@@ -1572,7 +1753,7 @@ function refresh() {
   if (!state.touched.from) $("#inFrom").value = iso(state.wbFrom);
   if (!state.touched.to) $("#inTo").value = state.wbTo && state.wbFrom && +state.wbTo !== +state.wbFrom ? iso(state.wbTo) : "";
   if (!state.touched.name) $("#inName").value = fileName(m);
-  $("#inCap").placeholder = d.O.slot ? String(d.O.slot) + " — من عمود Slot" : "اكتب السعة";
+  $("#inCap").placeholder = d.slots ? nf(d.slots.total) + " — من Appt slot" : d.O.slot ? nf(d.O.slot) + " — من عمود Slot" : "اكتب السعة";
 
   if (m.from) host.append(noticeBox("", "التاريخ: " + m.dateLong + (m.days > 1 ? " · " + arabicCount(m.days, "يوم واحد", "يومان", "أيام", "يومًا") : "")));
   else host.append(noticeBox("warn", "لم يُعرف التاريخ من الملفات — اكتبه في خانة «التاريخ»."));
@@ -1580,7 +1761,6 @@ function refresh() {
   if (state.detSpan && m.from && (+state.detSpan.from !== +m.from || +state.detSpan.to !== +m.to))
     host.append(noticeBox("warn", "الكشف المفصّل لمدة أخرى: " + longDate(state.detSpan.from, state.detSpan.to)
       + " — أرقام New / Follow-up لتلك المدة لا لهذه."));
-  if (!d.cap && d.O.visits != null) host.append(noticeBox("warn", "لا يوجد عمود Slot — اكتب السعة اليومية في الإعدادات لتظهر بطاقة Capacity Used."));
   d.notices.forEach(n => host.append(noticeBox(n.kind, n.text)));
 
   $("#stage").hidden = false; $("#noPreview").hidden = true;
@@ -1623,23 +1803,27 @@ async function takeFiles(files) {
     let shaped;
     if ((shaped = shapeSvc(s))) { s.role = "svc"; state.svcs.push(shaped); }
     else if ((shaped = shapeDetail(s))) { s.role = "det"; state.dets.push(shaped); }
-    else if ((shaped = shapeAppt(s))) { s.role = "appt"; state.appts.push(shaped); }
+    else if ((shaped = shapeSlots(s))) { s.role = "slot"; state.slots.push(shaped); }
+    else if ((shaped = shapeCounts(s))) { s.role = shaped.level; state.counts.push(shaped); }
     else s.role = null;
   }
-  state.err = state.appts.length || state.svcs.length ? null
-    : "لم تُعرف أي ورقة: لا كشف مواعيد بعمودَي الطبيب والمشاهَد، ولا تصدير خدمات بأعمدة Provider وDepartment وCount. "
+  state.err = state.counts.length || state.svcs.length || state.dets.length || state.slots.length ? null
+    : "لم تُعرف أي ورقة: لا كشف مواعيد بعمود Totalseen أو Scheduled، ولا تصدير خدمات بأعمدة Provider وDepartment وCount، ولا Appt slot بعمودَي Normal وFrozen. "
       + "الأوراق المقروءة: " + state.sheets.map(x => x.name || x.file).join("، ");
 
   /* the branch and the date, read off the title blocks */
-  const main = state.sheets.filter(s => s.role === "appt" || s.role === "svc");
+  const MAIN = new Set(["doctor", "dept", "svc", "slot"]);
+  const main = state.sheets.filter(s => MAIN.has(s.role));
   state.wbBranch = branchFrom(main.length ? main : state.sheets) || branchFrom(state.sheets) || state.wbBranch;
-  const span = spanOf(state.appts.map(a => periodOf(a.sheet))) || spanOf(state.svcs.map(x => periodOf(x.sheet)))
-            || spanOf(state.sheets.filter(s => s.role === "appt" || s.role === "svc").map(s => { const d = dateFromName(s.file); return d && { from: d, to: d }; }));
+  const span = spanOf(state.counts.map(a => periodOf(a.sheet))) || spanOf(state.svcs.map(x => periodOf(x.sheet)))
+            || spanOf(state.slots.map(x => periodOf(x.sheet)))
+            || spanOf(main.map(s => { const d = dateFromName(s.file); return d && { from: d, to: d }; }));
   state.detSpan = spanOf(state.dets.map(x => periodOf(x.sheet)));
   if (span) { state.wbFrom = span.from; state.wbTo = span.to; }
   else if (state.detSpan && !state.wbFrom) { state.wbFrom = state.detSpan.from; state.wbTo = state.detSpan.to; }
 
-  const ROLE = { appt: "المواعيد — Doctor Wise", svc: "الخدمات والدخل", det: "المواعيد المفصّلة — New / Follow-up" };
+  const ROLE = { doctor: "Doctor Wise — أرقام الأطباء", dept: "Department Wise — أرقام الأقسام", slot: "Appt slot — السعة",
+                 svc: "Service wise — الطلبات والدخل", det: "Detailed — New / Follow-up" };
   const chips = el("div", "chips");
   state.sheets.forEach(s => {
     const c = el("span", "chip" + (s.role ? " ok" : ""));
@@ -1651,11 +1835,13 @@ async function takeFiles(files) {
   $("#st1").textContent = [...new Set(state.files.map(f => f.name))].join(" · ");
   $("#s1").classList.toggle("done", !state.err);
 
-  paintMap();
+  paintMap(); paintDaily();
   const had = !!state.data;
   refresh();
   if (state.data) {
-    toast("جاهز: " + state.data.table.length + " طبيبًا في " + state.data.depts.length + " أقسام — اضغط «فتح الـPDF».", "ok");
+    const missing = DAILY.filter(x => !x.has()).length;
+    toast("جاهز: " + state.data.table.length + " طبيبًا في " + state.data.depts.length + " أقسام"
+      + (missing ? " — ينقص " + missing + " من الملفات الخمسة" : "") + " — اضغط «فتح الـPDF».", missing ? "" : "ok");
     if (!had) $("#s3").scrollIntoView({ behavior: "smooth", block: "start" });
   } else toast("لم تُعرف أوراق الملف — راجع التنبيه في المعاينة.", "bad");
 }
@@ -1685,12 +1871,12 @@ Object.entries(FIELDS).forEach(([id, key]) => {
 $("#chkWalk").addEventListener("change", refresh);
 
 $("#bClear").onclick = () => {
-  Object.assign(state, { files: [], sheets: [], sigs: new Set(), appts: [], svcs: [], dets: [], err: null, data: null,
+  Object.assign(state, { files: [], sheets: [], sigs: new Set(), counts: [], slots: [], svcs: [], dets: [], err: null, data: null,
                          touched: {}, pages: 0, wbBranch: "", wbFrom: null, wbTo: null, detSpan: null });
   ["#inBranch", "#inFrom", "#inTo", "#inCap", "#inName"].forEach(id => $(id).value = "");
   $("#fileInfo").textContent = ""; $("#doc").textContent = "";
   $("#st1").textContent = "لم تُرفع بعد"; $("#s1").classList.remove("done");
-  paintMap();
+  paintMap(); paintDaily();
   refresh();
 };
 
