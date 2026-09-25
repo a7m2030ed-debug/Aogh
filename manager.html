@@ -225,7 +225,7 @@ details.map > div{padding:4px 12px 12px; display:flex; flex-direction:column; ga
 .tbl tbody tr.alt{background:var(--stripe)}
 .tbl td{color:var(--ink-d)}
 .tbl .l{text-align:left}
-.tbl tr.er td{font-weight:700}
+.tbl tr.er-first td{border-top:.6pt solid var(--pur)}
 .tbl .nil{color:var(--dash)}
 .tbl td.none{text-align:center; color:var(--mut)}
 
@@ -482,6 +482,7 @@ function shapeSvc(sheet) {
     col: {
       sub: pick(head, /^subcategory$/), name: pick(head, /^test procedurename$|^test procedure name$|^service$/),
       mrno: pick(head, /^mrno$|^mrn$|^mr no$|^patient no$|^patient id$|^file no$/),
+      patient: pick(head, /^name$|^patient name$|^patient$/),
       provider: pick(head, /^provider$/), dept: pick(head, /^department$/),
       count: pick(head, /^count$/), net: pick(head, /^net amount$/),
     },
@@ -860,9 +861,13 @@ function readServices(list) {
       if (!isNum(row[c.count]) || !provider || !dept) continue;
       const k = nameKey(provider);
       let p = by.get(k);
-      if (!p) { p = { name: provider, dept, net: 0, cnt: {}, mrn: {} }; by.set(k, p); }
+      if (!p) { p = { name: provider, dept, net: 0, cnt: {}, mrn: {}, pts: new Set() }; by.set(k, p); }
       const cnt = Math.round(num(row[c.count])), net = c.net >= 0 ? num(row[c.net]) : 0;
       p.net += net;
+      /* the patients a provider billed for — by file number, or by the
+         patient's name when there is none — each once a day */
+      const who = str(row, c.mrno) || norm(str(row, c.patient));
+      if (who) p.pts.add(who + "\u0000" + billDate);
       let placed = cat == null ? { key: bucketOf(dept) || "other", pack: false } : catOf(cat, dept);
       /* a consultation is the visit itself wherever it is filed — "Dental
          consultation" sits in the Dental category — so never an order */
@@ -1006,6 +1011,8 @@ function aggregate(opts) {
       for (const c in p.cnt) d.cnt[c] = (d.cnt[c] || 0) + p.cnt[c];
       d.mrn = d.mrn || {};
       for (const c in p.mrn) { d.mrn[c] = d.mrn[c] || new Set(); p.mrn[c].forEach(x => d.mrn[c].add(x)); }
+      d.pts = d.pts || new Set();
+      p.pts.forEach(x => d.pts.add(x));
     }
     for (const d of docs.values()) if (d.net == null) { d.net = 0; d.cnt = {}; }
   }
@@ -1140,25 +1147,23 @@ function aggregate(opts) {
     net: d.net, rpv: d.net != null && d.visits > 0 ? d.net / d.visits : null,
   })).sort((a, b) => (b.seen ?? -1) - (a.seen ?? -1) || (b.net || 0) - (a.net || 0) || a.name.localeCompare(b.name));
 
-  /* The emergency room closes the table as one row: its visits are booked
-     under the registration account, and every doctor who billed under it is
-     added in — their orders counted once per patient across all of them,
-     their income in full. */
+  /* The emergency room books its visits under the registration account, so
+     each doctor who worked under it is read off the services export and
+     closes the table: Seen is the patients they billed for, each file number
+     once; the orders are counted per patient like everyone's, and the income
+     is theirs in full. The registration account itself is no doctor. */
   const erDocs = all.filter(isErDoc);
-  const erNames = [...new Set(erDocs.filter(d => !isSystem(d.name) && ((d.net || 0) > 0 || (d.visits || 0) > 0)).map(d => d.name))];
-  if (erDocs.length && (E.visits != null || erDocs.some(d => d.net))) {
-    const sets = {};
-    erDocs.forEach(d => { for (const k in (d.mrn || {})) { sets[k] = sets[k] || new Set(); d.mrn[k].forEach(x => sets[k].add(x)); } });
-    const byMrn = Object.keys(sets).length > 0;
-    const orders = k => !svc ? null : byMrn ? (sets[k] ? sets[k].size : 0) : erDocs.reduce((n, d) => n + ((d.cnt && d.cnt[k]) || 0), 0);
-    const net = svc ? erDocs.reduce((n, d) => n + (d.net || 0), 0) : null;
-    table.push({
-      name: "Emergency" + (erNames.length ? " — " + erNames.length + (erNames.length === 1 ? " doctor" : " doctors") : ""),
-      spec: erDocs.find(d => d.appt)?.dept || erDocs[0].dept, er: true,
-      seen: E.visits, newv: E.newv, lab: orders("lab"), rad: orders("rad"), proc: orders("proc"),
-      net, rpv: net != null && E.visits > 0 ? net / E.visits : null,
-    });
-  }
+  const erRows = erDocs.filter(d => !isSystem(d.name) && d.cnt).map(d => {
+    const seen = d.pts && d.pts.size ? d.pts.size : null;
+    return {
+      name: d.name, spec: d.dept, er: true, seen, newv: null,
+      lab: d.cnt.lab || 0, rad: d.cnt.rad || 0, proc: d.cnt.proc || 0,
+      net: d.net, rpv: d.net != null && seen > 0 ? d.net / seen : null,
+    };
+  }).filter(r => (r.seen || 0) > 0 || (r.net || 0) > 0)
+    .sort((a, b) => (b.seen ?? -1) - (a.seen ?? -1) || (b.net || 0) - (a.net || 0) || a.name.localeCompare(b.name));
+  if (erRows.length) { erRows[0].erFirst = true; table.push(...erRows); }
+  const erDesk = erDocs.filter(d => isSystem(d.name) && d.pts && d.pts.size);
 
   /* what the page should say about how it read the files */
   if (!state.counts.length)
@@ -1202,13 +1207,14 @@ function aggregate(opts) {
   if (fuzzy.length) notices.push({ kind: "warn", text: "أسماء طوبقت بالتقريب بين الملفات: " + fuzzy.join("، ") });
   if (unlisted.length) notices.push({ kind: "", text: "لا يظهر في جدول الأطباء من لا مواعيد له في «Doctor Wise»: " + unlisted.join("، ") });
   if (unbooked.length) notices.push({ kind: "", text: "لا يظهر في جدول الأطباء من لا مواعيد محجوزة له (Scheduled = 0) ولو كانت له Slots: " + unbooked.join("، ") });
-  if (erNames.length) notices.push({ kind: "", text: "صف Emergency في آخر الجدول يجمع أطباء الطوارئ: " + erNames.join("، ") + " — طلباتهم لكل مريض ودخلهم كاملًا." });
+  if (erRows.length) notices.push({ kind: "", text: "أطباء الطوارئ في آخر الجدول من تصدير الخدمات: Seen عدد مرضى كل طبيب بلا تكرار (برقم الملف)، وطلباتهم لكل مريض، ودخلهم كاملًا"
+      + (erDesk.length ? ". وحساب التسجيل (" + erDesk.map(d => d.name + " — " + nf(d.pts.size) + " مريضًا، " + nf(d.net || 0) + " ريالًا").join("، ") + ") لا يُنسب لطبيب فلا صفّ له" : "") + "." });
   if (systems.length) notices.push({ kind: "", text: "حسابات النظام لا تظهر في جدول الأطباء: " + systems.join("، ") });
   if (O.walkin != null && walkIncl && O.walkin > (O.visits || 0))
     notices.push({ kind: "warn", text: "مراجعو الـWalk-in أكثر من Total Seen — يبدو أن Total Seen لا يشملهم؛ أزل العلامة عن «عمود Total Seen يشمل مراجعي الـWalk-in» في الإعدادات." });
   if (!E.present && state.counts.length) notices.push({ kind: "", text: "لا يوجد قسم طوارئ في الملفات — بطاقة EMERGENCY تخرج «Not reported»." });
 
-  return { O, E, er: E.present, apptSeen, cap, slots, known, depts, table, listed: listed.length, notices, svc, det,
+  return { O, E, er: E.present, apptSeen, cap, slots, known, depts, table, listed: table.length, notices, svc, det,
            billSpan: svc && svc.dates.length ? { from: new Date(Math.min(...svc.dates)), to: new Date(Math.max(...svc.dates)) } : null };
 }
 
@@ -1313,7 +1319,7 @@ function doctorTable(rows) {
   thead.append(htr);
   const tb = el("tbody");
   rows.forEach((r, i) => {
-    const tr = el("tr", [i % 2 ? "alt" : "", r.er ? "er" : ""].join(" ").trim() || null);
+    const tr = el("tr", [i % 2 ? "alt" : "", r.erFirst ? "er-first" : ""].join(" ").trim() || null);
     COLS.forEach(c => {
       const v = r[c.key];
       if (c.left) { tr.append(el("td", "l clip", v || "")); return; }
