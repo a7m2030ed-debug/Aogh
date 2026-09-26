@@ -127,6 +127,8 @@ label.check{display:flex; align-items:center; gap:8px; font-size:13.5px; color:v
 .chip{display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:4px 10px; border-radius:99px; background:var(--sunk); border:1px solid var(--line-2); color:var(--ink-2)}
 .chip b{font-weight:600; color:var(--ink)}
 .chip.ok{background:var(--good-soft); border-color:color-mix(in srgb, var(--good) 30%, transparent)}
+.chip .x{border:0; background:none; padding:0 0 0 2px; margin-inline-start:2px; cursor:pointer; color:var(--ink-3); font-size:16px; line-height:1}
+.chip .x:hover{color:var(--crit)}
 .chip.miss{background:var(--warn-soft); border-color:color-mix(in srgb, var(--warn) 30%, transparent)}
 
 details.map{border:1px solid var(--line-2); border-radius:9px; background:var(--sunk)}
@@ -206,6 +208,10 @@ details.map > div{padding:4px 12px 12px; display:flex; flex-direction:column; ga
 .bars span{font:600 6.3pt/1.25 var(--fs); color:var(--nav); white-space:nowrap; max-width:24mm; overflow:hidden; text-overflow:ellipsis}
 .bars .t{height:1.5mm; border-radius:1mm; background:#EEECF6; overflow:hidden}
 .bars .t div{height:100%; border-radius:1mm}
+.bars.tight{margin-top:.5mm; row-gap:0}
+.kpi.br.tight{padding-top:2.5mm}
+.bars.tight span,.bars.tight em{font-size:5.3pt; line-height:1.12}
+.bars.tight .t{height:1.2mm}
 .bars em{font:700 6.3pt/1.25 var(--fs); font-style:normal; color:var(--nav); text-align:right; min-width:4mm}
 
 .tw{position:absolute; left:9mm; right:9mm; top:49.2mm; background:#fff; border-radius:3mm; overflow:hidden; box-shadow:0 .3mm 1.4mm rgba(45,36,96,.08)}
@@ -291,13 +297,13 @@ details.map > div{padding:4px 12px 12px; display:flex; flex-direction:column; ga
 <div class="shell">
 
   <section class="step" id="s1">
-    <header><span class="n">١</span><h2>ملف الإكسل</h2><span class="state" id="st1">لم يُرفع بعد</span></header>
+    <header><span class="n">١</span><h2>ملفات الإكسل</h2><span class="state" id="st1">لم يُرفع بعد</span></header>
     <div class="body">
       <div class="drop" id="dropX" tabindex="0" role="button">
-        <strong>اسحب ملف الإكسل هنا — أو انقر لاختياره</strong>
-        <span>xlsx · xls · xlsm · csv</span>
+        <strong>اسحب ملفات الإكسل هنا — أو انقر لاختيارها</strong>
+        <span>xlsx · xls · xlsm · csv — ملف واحد أو عدة ملفات، وكل ملف تضيفه يُدمج مع ما قبله</span>
       </div>
-      <input type="file" id="fileX" accept=".xlsx,.xls,.xlsm,.csv" hidden>
+      <input type="file" id="fileX" accept=".xlsx,.xls,.xlsm,.csv" multiple hidden>
       <div class="note">
         <span class="m"></span>
         <span>صف واحد لكل مريض، والأعمدة تُعرف من عناوينها بالعربي أو الإنجليزي — لا يهم ترتيبها:
@@ -305,7 +311,9 @@ details.map > div{padding:4px 12px 12px; display:flex; flex-direction:column; ga
             <li><b>Patient Name / الاسم</b> · <b>File No. / رقم الملف</b> · <b>Package / نوع البكج</b> · <b>Branch / الفرع</b></li>
             <li><b>Patient Feedback / تجربة المريض</b> — نص الملاحظة كما قالها المريض.</li>
             <li><b>Status / الحالة</b> — Positive · No Answer · Negative · Neutral (أو إيجابي · لم يتم الرد · سلبي · محايد).
-              إن لم يوجد العمود: من له ملاحظة يُحسب Positive، ومن ملاحظته فارغة يُحسب No Answer.</li>
+              إن لم يوجد العمود: من ملاحظته «No answer» أو فارغة يُحسب لم يرد، ومن له ملاحظة يُحسب Positive.</li>
+            <li>أسماء الفروع تُختصر كما في الـPDF («Meena Center- Al Rawdah» ← Al Rawdah)، والأسماء تُكتب بحرف كبير أول كل كلمة.</li>
+            <li>المريض المكرر في أكثر من ملف (نفس رقم الملف) يظهر مرة واحدة: الرد يتقدم على «No Answer»، وإلا فالملف الأحدث.</li>
           </ul>
         </span>
       </div>
@@ -498,8 +506,34 @@ function pkgColors(list) {
 /* by size: largest branch darkest, as the PDF ranks them */
 const BRANCH_C = ["#2D2460", "#6F62B8", "#A89BE8", "#C8862A", "#1E9E73", "#B3261E", "#1D5FA8", "#B0306A", "#8A85A8"];
 
+/* ═════════════════ names ═════════════════ */
+/* exports mix "HADLA TAJER ALENEZI" and "asmaa ibrahim"; the sheet prints
+   every Latin name the same way */
+const titleCase = s => clean(s).toLowerCase().replace(/(^|[\s\-'’.(])([a-z])/g, (m, a, b) => a + b.toUpperCase());
+
+/* "Meena Center- Al Rawdah", "Meena Center Alsuwaidi" and "الروضة" are all
+   one branch; the sheet prints the short name the PDF uses */
+const BRANCHES = [
+  [/rawd|روضه/, "Al Rawdah"], [/wor[o]*d|wurud|ورود/, "Al Worood"], [/suw?aid|swaidi|سويدي/, "Al Suwaidi"],
+  [/khobar|خبر/, "Khobar"], [/abh[ou]*r|obh[ou]*r|ابحر/, "Abhour"], [/malqa|ملقا/, "Al Malqa"],
+  [/dammam|دمام/, "Dammam"], [/hitt?[ei]n|حطين/, "Hittin"], [/qairaw|qirawan|قيروان/, "Al Qairawan"],
+  [/sulai?man|سليماني/, "Al Sulaimaniyah"], [/naseem|nasim|نسيم/, "Al Naseem"], [/narjis|نرجس/, "Al Narjis"],
+];
+function branchName(raw) {
+  const s = clean(raw);
+  if (!s) return "";
+  const n = norm(s);
+  const hit = BRANCHES.find(([rx]) => rx.test(n));
+  if (hit) return hit[1];
+  /* unknown branch: drop the company prefix and tidy the rest */
+  const rest = s.replace(/^(meena\s*(medical\s*)?(cent(er|re)|clinic|polyclinic)?|مركز\s*مينا|مجمع\s*مينا|مينا)\s*[-–—:|/]*\s*/i, "").trim() || s;
+  return /[a-z]/i.test(rest) ? titleCase(rest).replace(/^Al([a-z]{3,})/, (m, r) => "Al " + r[0].toUpperCase() + r.slice(1)) : rest;
+}
+
 /* ═════════════════ state ═════════════════ */
-const state = { file: null, sheets: [], header: [], map: null, rows: [] };
+/* files: every workbook added so far, in the order it was added
+   over:  the columns picked by hand, as header text (null = no such column) */
+const state = { files: [], sheets: [], primary: null, over: {}, rows: [], dupes: 0 };
 
 async function readFile(file) {
   if (typeof XLSX === "undefined") throw new Error("تعذّر تحميل قارئ الإكسل — تأكد من اتصال الإنترنت ثم حدّث الصفحة");
@@ -515,34 +549,40 @@ async function readFile(file) {
   return out;
 }
 
-/* Every sheet whose header carries the same columns is read; a workbook
-   with one sheet per branch comes out as one list. */
-function prepare(sheets) {
-  const found = sheets.map(s => ({ ...s, ...findHeader(s.grid) }));
-  const best = found.reduce((a, b) => (b.hits > a.hits ? b : a));
-  if (best.hits < 2) {
-    /* no recognisable header: first row is taken as one and the user maps it */
-    best.row = 0;
+/* Every sheet of every file whose header names at least two of the columns
+   is read, each with its own column positions, so files saved on different
+   days need not keep the same order. */
+function collect() {
+  const sheets = [];
+  state.files.forEach((f, fi) => {
+    for (const s of f.sheets) {
+      const { row, hits } = findHeader(s.grid);
+      if (hits >= 2) sheets.push({ ...s, fi, file: f.file, many: f.sheets.length > 1, row, hits, map: autoMap(s.grid[row] || []) });
+    }
+  });
+  if (!sheets.length && state.files.length) {
+    /* no recognisable header anywhere: the first row is taken as one and the user maps it */
+    const f = state.files[0], s = f.sheets[0];
+    sheets.push({ ...s, fi: 0, file: f.file, many: f.sheets.length > 1, row: 0, hits: 0, map: autoMap(s.grid[0] || []) });
   }
-  const header = (best.grid[best.row] || []).map((h, i) => h || `عمود ${i + 1}`);
-  const use = found.filter(s => s === best || (s.hits >= Math.max(2, best.hits - 1) && s.row >= 0));
-  return { header, sheets: use, primary: best };
+  state.sheets = sheets;
+  state.primary = sheets.reduce((a, b) => (b.hits > a.hits ? b : a), sheets[0]);
+}
+const headerOf = s => (s.grid[s.row] || []).map((h, i) => h || `عمود ${i + 1}`);
+function colOf(s, k) {
+  if (k in state.over) {
+    if (state.over[k] === null) return -1;
+    const i = (s.grid[s.row] || []).findIndex(c => norm(c) === state.over[k]);
+    if (i >= 0) return i;
+  }
+  return s.map[k];
 }
 
 function extract() {
-  const { header, map } = state;
   const rows = [];
-  const multi = state.sheets.length > 1;
   for (const s of state.sheets) {
-    const h = s.grid[s.row] || [];
-    /* the chosen column is found in each sheet by its header text */
     const idx = {};
-    for (const f of FIELDS) {
-      const want = map[f.k] >= 0 ? norm(header[map[f.k]]) : null;
-      let i = want == null ? -1 : h.findIndex(c => norm(c) === want);
-      if (i < 0 && s === state.primary) i = map[f.k];
-      idx[f.k] = i;
-    }
+    for (const f of FIELDS) idx[f.k] = colOf(s, f.k);
     for (let r = s.row + 1; r < s.grid.length; r++) {
       const row = s.grid[r] || [];
       const g = k => (idx[k] >= 0 ? clean(row[idx[k]]) : "");
@@ -554,14 +594,31 @@ function extract() {
       const fb = g("fb");
       const st = statusOf(g("status"), fb);
       rows.push({
-        name, file, pkg: g("pkg"),
-        branch: g("branch") || (multi ? s.name : ""),
+        name: titleCase(name), file, pkg: g("pkg"),
+        branch: branchName(g("branch")) || (s.many ? s.name : ""),
         fb: st === "na" && (!fb || RX_NA.test(norm(fb))) ? NA_TEXT : fb,
-        st,
+        st, fi: s.fi, when: s.file.lastModified || 0,
       });
     }
   }
-  return rows;
+  /* A patient in two files (yesterday's list carried into today's) is shown
+     once, where they first appear: an answered call beats "No Answer", and
+     otherwise the newer file wins. */
+  const seen = new Map(), out = [];
+  let dupes = 0;
+  for (const r of rows) {
+    const key = r.file.replace(/\D/g, "") || "n:" + norm(r.name);
+    const at = seen.get(key);
+    if (at == null) { seen.set(key, out.length); out.push(r); continue; }
+    dupes++;
+    const old = out[at];
+    const better = (old.st === "na") !== (r.st === "na") ? r.st !== "na"
+                 : r.when !== old.when ? r.when > old.when : r.fi >= old.fi;
+    if (better) out[at] = r;
+  }
+  state.dupes = dupes;
+  state.perFile = rows.reduce((m, r) => (m[r.fi] = (m[r.fi] || 0) + 1, m), {});
+  return out;
 }
 
 /* ═════════════════ figures ═════════════════ */
@@ -619,10 +676,11 @@ function kpis(F, bColors) {
   br.append(el("div", "l", "Patients by Branch"));
   const bars = el("div", "bars");
   let list = F.branches.slice();
-  if (list.length > 5) {
-    const rest = list.slice(4).reduce((a, b) => a + b.n, 0);
-    list = list.slice(0, 4).concat([{ label: "Others", n: rest, other: true }]);
+  if (list.length > 7) {
+    const rest = list.slice(6).reduce((a, b) => a + b.n, 0);
+    list = list.slice(0, 6).concat([{ label: "Others", n: rest, other: true }]);
   }
+  if (list.length > 5) { bars.classList.add("tight"); br.classList.add("tight"); }
   const max = Math.max(1, ...list.map(b => b.n));
   list.forEach((b, i) => {
     const t = el("div", "t"), fill = el("div");
@@ -686,6 +744,8 @@ function render() {
 
   /* rows are laid page by page and measured, so a long comment that wraps
      pushes the rows after it onto the next sheet instead of off the paper */
+  $("#stage").hidden = false;
+  $("#noPreview").hidden = true;
   const pages = [];
   let i = 0;
   do {
@@ -707,8 +767,6 @@ function render() {
   } while (i < rows.length);
   pages.forEach((pg, k) => pg.append(footer(F, k + 1, pages.length)));
 
-  $("#stage").hidden = false;
-  $("#noPreview").hidden = true;
   fitStage();
 
   const tiles = $("#tiles");
@@ -737,28 +795,46 @@ function fitStage() {
 function paintMap() {
   const grid = $("#mapGrid");
   grid.textContent = "";
+  const p = state.primary;
+  if (!p) { $("#mapBox").hidden = true; return; }
+  const head = headerOf(p);
   for (const f of FIELDS) {
     const lab = el("label", "fld"), sel = el("select");
     lab.append(el("span", "", f.label), sel);
     sel.append(new Option("— غير موجود —", "-1"));
-    state.header.forEach((h, i) => sel.append(new Option(h, String(i))));
-    sel.value = String(state.map[f.k]);
-    sel.onchange = () => { state.map[f.k] = +sel.value; rebuild(); };
+    head.forEach((h, i) => sel.append(new Option(h, String(i))));
+    sel.value = String(colOf(p, f.k));
+    sel.onchange = () => { state.over[f.k] = +sel.value < 0 ? null : norm((p.grid[p.row] || [])[+sel.value] || ""); rebuild(); };
     grid.append(lab);
   }
+  if (state.files.length > 1) grid.append(el("p", "sample", "يُطبَّق الربط على كل الملفات بعنوان العمود نفسه."));
   $("#mapBox").hidden = false;
 }
 function paintInfo() {
   const box = $("#fileInfo"); box.textContent = "";
-  const miss = FIELDS.filter(f => state.map[f.k] < 0 && f.k !== "status").map(f => f.label);
+  if (!state.files.length) return;
+  const chips = el("div", "chips");
+  state.files.forEach((f, i) => {
+    const n = state.perFile?.[i] || 0;
+    const used = state.sheets.some(s => s.fi === i);
+    const c = el("span", "chip " + (used ? "ok" : "miss"));
+    c.append(el("b", "", f.file.name), document.createTextNode(used ? ` · ${n} صف` : " · لا جدول مرضى فيه"));
+    const x = el("button", "x", "×"); x.title = "إزالة هذا الملف"; x.type = "button";
+    x.onclick = () => { state.files.splice(i, 1); refresh(); };
+    c.append(x); chips.append(c);
+  });
+  box.append(chips);
+
+  const p = state.primary;
+  const miss = p ? FIELDS.filter(f => f.k !== "status" && colOf(p, f.k) < 0).map(f => f.label) : [];
   const n = el("div", "note" + (miss.length ? " warn" : ""));
   n.append(el("span", "m"));
-  const s = el("span");
-  s.textContent = `${state.file.name} — ${state.rows.length} مريض` +
-    (state.sheets.length > 1 ? ` من ${state.sheets.length} أوراق` : ` من ورقة «${state.primary.name}»`) +
-    (miss.length ? ` · لم يُعثر على عمود: ${miss.join("، ")} — اختره من «ربط الأعمدة»` : "") +
-    (state.map.status < 0 ? " · لا يوجد عمود Status، فالحالة مستنتجة من الملاحظة" : "");
-  n.append(s); box.append(n);
+  const parts = [`${state.rows.length} مريض` + (state.files.length > 1 ? ` من ${state.files.length} ملفات` : "")];
+  if (state.dupes) parts.push(`حُذف ${state.dupes} مكرر (نفس رقم الملف في أكثر من صف)`);
+  if (miss.length) parts.push(`لم يُعثر على عمود: ${miss.join("، ")} — اختره من «ربط الأعمدة»`);
+  if (p && colOf(p, "status") < 0) parts.push("لا يوجد عمود Status، فالحالة من الملاحظة: «No answer» أو فارغة = لم يرد، وغيرها = Positive");
+  n.append(el("span", "", parts.join(" · ")));
+  box.append(n);
   if (miss.length) $("#mapBox").open = true;
 }
 
@@ -767,44 +843,57 @@ function rebuild() {
   paintInfo();
   if (!state.rows.length) {
     $("#stage").hidden = true; $("#noPreview").hidden = false;
-    $("#noPreview").textContent = "لا توجد صفوف مرضى — تأكد من ربط عمود الاسم أو رقم الملف.";
-    $("#tiles").textContent = "";
+    $("#noPreview").textContent = state.files.length ? "لا توجد صفوف مرضى — تأكد من ربط عمود الاسم أو رقم الملف."
+                                                     : "ارفع ملف الإكسل وتظهر الصفحة هنا مباشرة بنفس تصميم الـPDF.";
+    $("#tiles").textContent = ""; $("#doc").textContent = ""; $("#st3").textContent = "";
     setButtons(false);
     return;
   }
   render();
   setButtons(true);
 }
-function setButtons(on) { for (const id of ["#bPdf", "#bPng", "#bPrint"]) $(id).disabled = !on; $("#bClear").disabled = !state.file; }
+function refresh() {
+  collect();
+  const has = state.files.length > 0;
+  $("#st1").textContent = has ? (state.files.length === 1 ? state.files[0].file.name : `${state.files.length} ملفات`) : "لم يُرفع بعد";
+  $("#s1").classList.toggle("done", has);
+  paintMap();
+  rebuild();
+}
+function setButtons(on) { for (const id of ["#bPdf", "#bPng", "#bPrint"]) $(id).disabled = !on; $("#bClear").disabled = !state.files.length; }
 
-async function takeFile(file) {
-  if (!file) return;
-  try {
-    const sheets = await readFile(file);
-    const { header, sheets: use, primary } = prepare(sheets);
-    Object.assign(state, { file, header, sheets: use, primary, map: autoMap(primary.grid[primary.row] || []) });
-    $("#st1").textContent = file.name;
-    $("#s1").classList.add("done");
-    paintMap();
-    rebuild();
-    if (state.rows.length) toast(`تم — ${state.rows.length} مريض`, "ok");
-  } catch (e) {
-    console.error(e);
-    toast("تعذّرت قراءة الملف: " + e.message, "bad");
+/* files are added to the ones already there; the same file dropped twice
+   replaces its earlier copy */
+async function takeFiles(list) {
+  const files = [...(list || [])].filter(f => /\.(xlsx|xlsm|xls|csv)$/i.test(f.name));
+  if (!files.length) { if (list && list.length) toast("ارفع ملفات إكسل (xlsx · xls · csv)", "bad"); return; }
+  const before = state.rows.length;
+  let bad = 0;
+  for (const file of files) {
+    try {
+      const sheets = await readFile(file);
+      const same = state.files.findIndex(f => f.file.name === file.name && f.file.size === file.size && f.file.lastModified === file.lastModified);
+      if (same >= 0) state.files[same] = { file, sheets }; else state.files.push({ file, sheets });
+    } catch (e) {
+      bad++; console.error(e);
+      toast(`تعذّرت قراءة ${file.name}: ${e.message}`, "bad");
+    }
   }
+  refresh();
+  if (files.length > bad && state.rows.length) toast(`تم — ${state.rows.length} مريض` + (state.rows.length !== before && before ? ` (كانوا ${before})` : ""), "ok");
 }
 
 function hookDrop(zone, input) {
   zone.onclick = () => input.click();
   zone.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); input.click(); } };
-  input.onchange = () => { takeFile(input.files[0]); input.value = ""; };
+  input.onchange = () => { takeFiles(input.files); input.value = ""; };
   zone.ondragover = e => { e.preventDefault(); zone.classList.add("hot"); };
   zone.ondragleave = () => zone.classList.remove("hot");
-  zone.ondrop = e => { e.preventDefault(); zone.classList.remove("hot"); takeFile(e.dataTransfer.files[0]); };
+  zone.ondrop = e => { e.preventDefault(); zone.classList.remove("hot"); takeFiles(e.dataTransfer.files); };
 }
-/* a file dropped anywhere on the page counts too */
+/* files dropped anywhere on the page count too */
 addEventListener("dragover", e => e.preventDefault());
-addEventListener("drop", e => { if (!e.target.closest("#dropX")) { e.preventDefault(); takeFile(e.dataTransfer?.files?.[0]); } });
+addEventListener("drop", e => { if (!e.target.closest("#dropX")) { e.preventDefault(); takeFiles(e.dataTransfer?.files); } });
 
 /* ═════════════════ output ═════════════════ */
 const fileName = () => (clean(txt("tFile")) || DEFAULTS.tFile).replace(/[\\/:*?"<>|]+/g, "_");
@@ -860,15 +949,7 @@ $("#bPng").onclick = () => busy($("#bPng"), async () => {
   }
 });
 $("#bPrint").onclick = () => window.print();
-$("#bClear").onclick = () => {
-  Object.assign(state, { file: null, sheets: [], header: [], map: null, rows: [], primary: null });
-  $("#doc").textContent = ""; $("#tiles").textContent = ""; $("#fileInfo").textContent = "";
-  $("#stage").hidden = true; $("#noPreview").hidden = false;
-  $("#noPreview").textContent = "ارفع ملف الإكسل وتظهر الصفحة هنا مباشرة بنفس تصميم الـPDF.";
-  $("#mapBox").hidden = true; $("#st1").textContent = "لم يُرفع بعد"; $("#st3").textContent = "";
-  $("#s1").classList.remove("done");
-  setButtons(false);
-};
+$("#bClear").onclick = () => { state.files = []; state.over = {}; $("#mapBox").open = false; refresh(); };
 
 /* ═════════════════ wiring ═════════════════ */
 loadTexts();
