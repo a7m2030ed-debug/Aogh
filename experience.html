@@ -1,0 +1,885 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تجربة المريض — إكسل إلى PDF</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
+<style>
+/* ═══════════════ page shell (the Arabic UI around the report) ═══════════════ */
+:root{
+  color-scheme: light;
+  --paper:#EFEFF6; --card:#FFFFFF; --sunk:#F6F5FB;
+  --ink:#16142B; --ink-2:#4B4966; --ink-3:#7D7A98;
+  --line:#DEDCEB; --line-2:#EBEAF3;
+  --brand:#6D45E8; --brand-2:#8B5CFB; --brand-ink:#4E2DBF; --brand-soft:#EEE8FE; --on-brand:#FFFFFF;
+  --good:#1C7A55; --good-soft:#DFF1E9;
+  --warn:#8E640F; --warn-soft:#F7EBD3;
+  --crit:#A82838; --crit-soft:#FAE1E4;
+  --shadow:0 1px 2px rgba(22,20,43,.05), 0 10px 26px -14px rgba(22,20,43,.20);
+  --shadow-lg:0 2px 6px rgba(22,20,43,.08), 0 28px 60px -20px rgba(22,20,43,.32);
+  --radius:10px;
+  --f-display:"Noto Kufi Arabic","Sakkal Majalla","Segoe UI",Tahoma,sans-serif;
+  --f-body:"Noto Sans Arabic","Segoe UI",Tahoma,Arial,sans-serif;
+  --f-mono:ui-monospace,"Cascadia Mono","SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --paper:#0D0C18; --card:#16152A; --sunk:#111024;
+    --ink:#ECEAF7; --ink-2:#B0ADCC; --ink-3:#7F7CA0;
+    --line:#29273F; --line-2:#1E1C33;
+    --brand:#9B7BFF; --brand-2:#B49CFF; --brand-ink:#C6B5FF; --brand-soft:#221C45; --on-brand:#0D0C18;
+    --good:#4FBE8E; --good-soft:#13291F;
+    --warn:#D8AC4A; --warn-soft:#2A2313;
+    --crit:#E8697C; --crit-soft:#2E1520;
+    --shadow:0 1px 2px rgba(0,0,0,.45), 0 10px 26px -14px rgba(0,0,0,.7);
+    --shadow-lg:0 2px 6px rgba(0,0,0,.5), 0 28px 60px -20px rgba(0,0,0,.75);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --paper:#0D0C18; --card:#16152A; --sunk:#111024;
+  --ink:#ECEAF7; --ink-2:#B0ADCC; --ink-3:#7F7CA0;
+  --line:#29273F; --line-2:#1E1C33;
+  --brand:#9B7BFF; --brand-2:#B49CFF; --brand-ink:#C6B5FF; --brand-soft:#221C45; --on-brand:#0D0C18;
+  --good:#4FBE8E; --good-soft:#13291F;
+  --warn:#D8AC4A; --warn-soft:#2A2313;
+  --crit:#E8697C; --crit-soft:#2E1520;
+  --shadow:0 1px 2px rgba(0,0,0,.45), 0 10px 26px -14px rgba(0,0,0,.7);
+  --shadow-lg:0 2px 6px rgba(0,0,0,.5), 0 28px 60px -20px rgba(0,0,0,.75);
+}
+
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+/* the Arabic shell reads right to left; the report sheet inside it is a
+   Latin document and stays left to right whatever wraps the page */
+html{direction:rtl}
+#doc{direction:ltr}
+body{margin:0; background:var(--paper); color:var(--ink); font-family:var(--f-body); font-size:15px; line-height:1.65; -webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--f-display); font-weight:700; margin:0; line-height:1.35; text-wrap:balance}
+button,input,select{font:inherit; color:inherit}
+:focus-visible{outline:2px solid var(--brand); outline-offset:2px; border-radius:4px}
+
+.bar{
+  position:sticky; top:0; z-index:40; display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  padding:12px 20px; background:color-mix(in srgb, var(--card) 88%, transparent);
+  backdrop-filter:blur(10px); border-bottom:1px solid var(--line);
+}
+.brand{display:flex; align-items:center; gap:10px; margin-inline-end:auto}
+.seal{width:34px; height:34px; flex:none; border-radius:9px; background:var(--brand); color:var(--on-brand); display:grid; place-items:center}
+.seal svg{width:20px; height:20px}
+.brand h1{font-size:17px; letter-spacing:-.01em}
+.brand p{margin:0; font-size:12px; color:var(--ink-3)}
+
+.btn{
+  display:inline-flex; align-items:center; gap:7px; padding:8px 15px; border-radius:8px; cursor:pointer;
+  border:1px solid var(--line); background:var(--card); color:var(--ink);
+  font-size:14px; font-weight:600; white-space:nowrap; transition:background .15s, border-color .15s, transform .08s;
+}
+.btn:hover:not([disabled]){border-color:color-mix(in srgb, var(--brand) 45%, var(--line))}
+.btn:active:not([disabled]){transform:translateY(1px)}
+.btn[disabled]{opacity:.42; cursor:not-allowed}
+.btn-main{background:var(--brand); border-color:var(--brand); color:var(--on-brand)}
+.btn-main:hover:not([disabled]){background:var(--brand-ink); border-color:var(--brand-ink)}
+.btn svg{width:15px; height:15px; flex:none}
+.btn-sm{padding:5px 11px; font-size:13px}
+
+.shell{max-width:1240px; margin:0 auto; padding:22px 20px 60px; display:flex; flex-direction:column; gap:16px}
+.step{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden}
+.step > header{
+  display:flex; align-items:center; gap:11px; padding:12px 16px; border-bottom:1px solid var(--line-2);
+  background:linear-gradient(to bottom, color-mix(in srgb, var(--brand-soft) 55%, var(--card)), var(--card));
+}
+.step > header .n{width:23px; height:23px; flex:none; border-radius:6px; display:grid; place-items:center; background:var(--brand); color:var(--on-brand); font-size:12px; font-weight:700; font-family:var(--f-display)}
+.step.done > header .n{background:var(--good)}
+.step > header h2{font-size:14.5px}
+.step > header .state{margin-inline-start:auto; font-size:12.5px; color:var(--ink-3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:60%}
+.step .body{padding:16px; display:flex; flex-direction:column; gap:14px}
+
+.drop{
+  border:1.5px dashed color-mix(in srgb, var(--brand) 40%, var(--line)); border-radius:9px; background:var(--sunk);
+  padding:22px 16px; text-align:center; cursor:pointer; display:flex; flex-direction:column; gap:4px;
+  transition:background .15s, border-color .15s;
+}
+.drop:hover,.drop.hot{background:var(--brand-soft); border-color:var(--brand)}
+.drop strong{font-size:14px; font-weight:600}
+.drop span{font-size:12px; color:var(--ink-3); font-family:var(--f-mono)}
+
+.row{display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end}
+label.fld{display:flex; flex-direction:column; gap:5px; font-size:11.5px; color:var(--ink-3)}
+label.fld input,label.fld select{padding:7px 10px; border:1px solid var(--line); border-radius:7px; background:var(--card); font-size:14px; min-width:150px}
+label.fld input:focus,label.fld select:focus{border-color:var(--brand)}
+label.check{display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--ink-2); padding-bottom:8px}
+
+.note{display:flex; gap:8px; align-items:flex-start; font-size:12.5px; color:var(--ink-2); background:var(--sunk); border:1px solid var(--line-2); border-radius:8px; padding:9px 11px}
+.note.warn{background:var(--warn-soft); border-color:color-mix(in srgb, var(--warn) 32%, transparent); color:var(--ink)}
+.note.bad{background:var(--crit-soft); border-color:color-mix(in srgb, var(--crit) 32%, transparent); color:var(--ink)}
+.note b{font-weight:600}
+.note .m{flex:none; width:6px; height:6px; margin-top:7px; border-radius:50%; background:var(--brand)}
+.note.warn .m{background:var(--warn)} .note.bad .m{background:var(--crit)}
+.note ul{margin:4px 0 0; padding-inline-start:18px}
+.empty{margin:0; color:var(--ink-3); font-size:13.5px}
+
+.chips{display:flex; flex-wrap:wrap; gap:7px}
+.chip{display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:4px 10px; border-radius:99px; background:var(--sunk); border:1px solid var(--line-2); color:var(--ink-2)}
+.chip b{font-weight:600; color:var(--ink)}
+.chip.ok{background:var(--good-soft); border-color:color-mix(in srgb, var(--good) 30%, transparent)}
+.chip.miss{background:var(--warn-soft); border-color:color-mix(in srgb, var(--warn) 30%, transparent)}
+
+details.map{border:1px solid var(--line-2); border-radius:9px; background:var(--sunk)}
+details.map > summary{cursor:pointer; padding:9px 12px; font-size:13px; font-weight:600; color:var(--ink-2)}
+details.map > div{padding:4px 12px 12px; display:flex; flex-direction:column; gap:10px}
+.mapblock{display:flex; flex-direction:column; gap:8px; padding-top:6px}
+.mapblock + .mapblock{border-top:1px solid var(--line); margin-top:4px; padding-top:12px}
+.mapblock h3{font-size:12.5px; color:var(--ink-2); direction:ltr; text-align:right}
+.mapblock .btn{align-self:flex-start}
+.mapgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:10px}
+.mapgrid label.fld select{min-width:0; width:100%}
+.sample{margin:0; font-size:12px; color:var(--ink-3); font-family:var(--f-mono); direction:ltr; text-align:left; overflow-wrap:anywhere}
+
+.tiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px}
+.tile{background:var(--sunk); border:1px solid var(--line-2); border-radius:9px; padding:10px 12px}
+.tile span{display:block; font-size:11.5px; color:var(--ink-3)}
+.tile b{display:block; font-size:19px; font-weight:700; font-family:var(--f-display); letter-spacing:-.01em}
+
+#toasts{position:fixed; inset-block-end:18px; inset-inline-start:18px; z-index:90; display:flex; flex-direction:column; gap:8px}
+.toast{background:var(--card); border:1px solid var(--line); border-inline-start:3px solid var(--brand); border-radius:8px; box-shadow:var(--shadow-lg); padding:10px 14px; font-size:13.5px; max-width:min(420px,86vw)}
+.toast.bad{border-inline-start-color:var(--crit)}
+.toast.ok{border-inline-start-color:var(--good)}
+
+/* the rendered report is scaled down to fit the preview column */
+#stage{background:var(--sunk); border:1px solid var(--line-2); border-radius:9px; padding:14px; overflow:hidden}
+/* left to right, or the RTL shell anchors the wide sheet on the right and the
+   scale pulls it out of view */
+#stageBox{position:relative; margin:0 auto; direction:ltr}
+#doc{transform-origin:top left; width:297mm}
+#doc .page{box-shadow:var(--shadow-lg); margin-bottom:14pt}
+
+/* ═══════════════ the report itself — a rebuild of Patient_Experience_National_Day_Offers.pdf ═══════════════
+   A4 landscape (297 × 210 mm). Colours, sizes and offsets are read off the
+   supplied PDF so every sheet keeps its design whatever the workbook holds. */
+#doc{
+  --nav:#2D2460;        /* header band, table head, big figures      */
+  --nav-2:#5A4CA3;      /* right end of the header gradient          */
+  --gold:#D9A441;       /* rule under the header                     */
+  --gold-t:#F3D39F;     /* National Day badge                        */
+  --lav:#D9D3F5;        /* header subtitle                           */
+  --lav-2:#C9C1F0;      /* Arabic half of the column titles          */
+  --lbl:#7C76A0;        /* KPI labels                                */
+  --mut:#8A85A8;        /* KPI notes, footer                         */
+  --idx:#A39DC4;        /* row numbers                               */
+  --ink-d:#231F3F;      /* patient names                             */
+  --ink-m:#55507A;      /* file numbers                              */
+  --ink-b:#3A3560;      /* branch names                              */
+  --ink-f:#2F2A52;      /* feedback                                  */
+  --bg:#F6F5FB;         /* the sheet                                 */
+  --stripe:#FAF9FE;     /* every other row                           */
+  --rule:#EEECF6;       /* row hairline                              */
+  --good:#1E8A63; --good-bg:#E3F4EC;
+  --fs:"Plus Jakarta Sans","IBM Plex Sans Arabic",system-ui,sans-serif;
+  --fa:"IBM Plex Sans Arabic","Plus Jakarta Sans",sans-serif;
+}
+.page{position:relative; width:297mm; height:210mm; overflow:hidden; background:var(--bg); color:var(--ink-d); font-family:var(--fs)}
+
+.hd{position:absolute; left:0; top:0; right:0; height:20mm; background:linear-gradient(100deg,var(--nav) 0%,#3A2F7A 55%,var(--nav-2) 100%); overflow:hidden}
+.hd::after{content:""; position:absolute; left:0; right:0; bottom:0; height:.7mm; background:var(--gold)}
+.hd svg.pulse{position:absolute; left:0; top:0; width:297mm; height:20mm}
+.hd .logo{position:absolute; left:9mm; top:4.2mm; width:33.4mm; height:11.6mm; border-radius:2.2mm; background:#fff; display:grid; place-items:center}
+.hd .logo img{width:27.2mm; height:auto; display:block}
+.hd .ttl{position:absolute; left:49.6mm; top:4.1mm; right:80mm; font:700 16pt/1.15 var(--fs); color:#fff; letter-spacing:-.01em; white-space:nowrap}
+.hd .sub{position:absolute; left:49.6mm; top:12mm; right:80mm; font:400 8pt/1.2 var(--fs); color:var(--lav); white-space:nowrap}
+.hd .badge{position:absolute; right:9mm; top:4.4mm; font:700 13pt/1.2 var(--fa); color:var(--gold-t); direction:rtl; white-space:nowrap}
+.hd .badge-sub{position:absolute; right:9mm; top:12.6mm; font:500 6.5pt/1 var(--fs); color:var(--lav); letter-spacing:.32em; margin-right:-.32em; white-space:nowrap}
+
+.kpis{position:absolute; left:9mm; right:9mm; top:24.2mm; height:21.8mm; display:grid; grid-template-columns:repeat(4,1fr); gap:3.3mm}
+.kpi{position:relative; background:#fff; border-radius:3mm; border-top:.75mm solid var(--c); padding:3.3mm 4mm 0; box-shadow:0 .3mm 1.2mm rgba(45,36,96,.07)}
+.kpi .l{font:600 6.5pt/1 var(--fs); letter-spacing:.2em; color:var(--lbl); text-transform:uppercase; white-space:nowrap}
+.kpi .v{margin-top:1.5mm; display:flex; align-items:baseline; gap:2mm; white-space:nowrap}
+.kpi .v b{font:800 18pt/1 var(--fs); color:var(--vc,var(--nav)); letter-spacing:-.01em}
+.kpi .v i{font:600 9pt/1 var(--fs); font-style:normal; color:#7061AB}
+.kpi .s{margin-top:1.6mm; font:400 6.6pt/1.2 var(--fs); color:var(--mut); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.kpi.br{padding-top:3.3mm}
+.bars{margin-top:1.1mm; display:grid; grid-template-columns:auto 1fr auto; column-gap:2.6mm; row-gap:.45mm; align-items:center}
+.bars span{font:600 6.3pt/1.25 var(--fs); color:var(--nav); white-space:nowrap; max-width:24mm; overflow:hidden; text-overflow:ellipsis}
+.bars .t{height:1.5mm; border-radius:1mm; background:#EEECF6; overflow:hidden}
+.bars .t div{height:100%; border-radius:1mm}
+.bars em{font:700 6.3pt/1.25 var(--fs); font-style:normal; color:var(--nav); text-align:right; min-width:4mm}
+
+.tw{position:absolute; left:9mm; right:9mm; top:49.2mm; background:#fff; border-radius:3mm; overflow:hidden; box-shadow:0 .3mm 1.4mm rgba(45,36,96,.08)}
+.page.cont .tw{top:24.2mm}
+.tw table{width:100%; border-collapse:collapse; table-layout:fixed}
+.tw col.c-n{width:9.7mm} .tw col.c-nm{width:55.4mm} .tw col.c-f{width:26.4mm} .tw col.c-p{width:32.9mm}
+.tw col.c-b{width:23.9mm} .tw col.c-s{width:22.9mm}
+.tw thead th{background:var(--nav); color:#fff; height:6.6mm; padding:0 2.2mm; text-align:left; font:700 6.6pt/1 var(--fs); letter-spacing:.14em; white-space:nowrap; vertical-align:middle}
+.tw thead th .ar{font:500 6.9pt/1 var(--fa); color:var(--lav-2); letter-spacing:0; margin-left:1.2mm}
+.tw thead th.n,.tw thead th.st{text-align:center}
+.tw thead th.fb{text-align:right}
+.tw thead th.fb .ar{margin:0 1.2mm 0 0}
+.tw td{height:4.45mm; padding:.35mm 2.2mm; border-top:.2mm solid var(--rule); vertical-align:middle; font:500 7pt/1.25 var(--fs); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.tw tbody tr:first-child td{border-top:0}
+.tw tbody tr:nth-child(even) td{background:var(--stripe)}
+.tw td.n{text-align:center; color:var(--idx); font-weight:500}
+.tw td.nm{color:var(--ink-d); font-weight:600}
+.tw td.f{color:var(--ink-m); font-weight:400; letter-spacing:.02em}
+.tw td.b{color:var(--ink-b); font-weight:600}
+.tw td.b i{display:inline-block; width:1.5mm; height:1.5mm; border-radius:50%; margin-right:1.6mm; vertical-align:.15mm}
+.tw td.fb{white-space:normal; direction:rtl; text-align:right; font:500 7.3pt/1.3 var(--fa); color:var(--ink-f)}
+.tw td.fb.na{color:#B3AEDB}
+.tw td.st{text-align:center; padding:.35mm 1mm}
+.pill{display:inline-block; padding:.45mm 2.1mm; border-radius:2mm; font:600 6.2pt/1.15 var(--fs); white-space:nowrap}
+.pill.pk{max-width:100%; overflow:hidden; text-overflow:ellipsis; vertical-align:middle}
+.stp{display:inline-block; padding:.4mm 2.2mm; border-radius:2mm; font:700 6.1pt/1.15 var(--fs); white-space:nowrap}
+.stp.pos{background:var(--good-bg); color:var(--good)}
+.stp.na{border:.25mm dashed #C5C0DE; color:var(--mut); padding:.2mm 2.2mm; background:#fff}
+.stp.neg{background:#FBE4E2; color:#B3261E}
+.stp.neu{background:#FDF1DC; color:#B26B00}
+
+.ft{position:absolute; left:9mm; right:9mm; top:204.4mm; display:flex; align-items:center; justify-content:space-between; font:400 6.5pt/1 var(--fs); color:var(--mut); white-space:nowrap}
+.ft b{font-weight:600; color:var(--nav)}
+.ft .mid{position:absolute; left:50%; transform:translateX(-50%); font:600 8pt/1 var(--fa); color:#7061AB}
+
+@page{size:A4 landscape; margin:0}
+@media print{
+  .bar, #toasts, #s1, #s2, #s3 > header, #tiles, #noPreview{display:none !important}
+  html,body{background:#fff}
+  .shell{display:block; max-width:none; margin:0; padding:0; gap:0}
+  #s3{border:0; border-radius:0; box-shadow:none; background:none; overflow:visible}
+  #s3 .body{display:block; padding:0; gap:0}
+  #stage{padding:0; border:0; background:none; overflow:visible}
+  #stageBox{height:auto !important; width:auto !important}
+  #doc{transform:none !important}
+  #doc .page{box-shadow:none; margin:0; break-after:page; page-break-after:always; -webkit-print-color-adjust:exact; print-color-adjust:exact}
+  #doc .page:last-child{break-after:auto; page-break-after:auto}
+}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="brand">
+    <div class="seal">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 12h4l2.5-6 4 12 2.5-6h5"/>
+      </svg>
+    </div>
+    <div>
+      <h1>تجربة المريض — عروض اليوم الوطني</h1>
+      <p>ملف الإكسل ← قالب Patient Experience بصيغة PDF</p>
+    </div>
+  </div>
+  <button class="btn" id="bClear" disabled>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M9 7V5h6v2m-8 0 1 13h8l1-13"/></svg>
+    مسح والبدء من جديد
+  </button>
+  <button class="btn" id="bPng" disabled>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m3 16 5-5 4 4 3-3 6 6"/></svg>
+    صورة PNG
+  </button>
+  <button class="btn" id="bPrint" disabled>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z"/></svg>
+    طباعة
+  </button>
+  <button class="btn btn-main" id="bPdf" disabled>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 19h16"/></svg>
+    تنزيل PDF
+  </button>
+</div>
+
+<div class="shell">
+
+  <section class="step" id="s1">
+    <header><span class="n">١</span><h2>ملف الإكسل</h2><span class="state" id="st1">لم يُرفع بعد</span></header>
+    <div class="body">
+      <div class="drop" id="dropX" tabindex="0" role="button">
+        <strong>اسحب ملف الإكسل هنا — أو انقر لاختياره</strong>
+        <span>xlsx · xls · xlsm · csv</span>
+      </div>
+      <input type="file" id="fileX" accept=".xlsx,.xls,.xlsm,.csv" hidden>
+      <div class="note">
+        <span class="m"></span>
+        <span>صف واحد لكل مريض، والأعمدة تُعرف من عناوينها بالعربي أو الإنجليزي — لا يهم ترتيبها:
+          <ul>
+            <li><b>Patient Name / الاسم</b> · <b>File No. / رقم الملف</b> · <b>Package / نوع البكج</b> · <b>Branch / الفرع</b></li>
+            <li><b>Patient Feedback / تجربة المريض</b> — نص الملاحظة كما قالها المريض.</li>
+            <li><b>Status / الحالة</b> — Positive · No Answer · Negative · Neutral (أو إيجابي · لم يتم الرد · سلبي · محايد).
+              إن لم يوجد العمود: من له ملاحظة يُحسب Positive، ومن ملاحظته فارغة يُحسب No Answer.</li>
+          </ul>
+        </span>
+      </div>
+      <div id="fileInfo"></div>
+      <details class="map" id="mapBox" hidden>
+        <summary>ربط الأعمدة — يُرشَّح تلقائيًا، ويمكنك تغييره</summary>
+        <div><div class="mapgrid" id="mapGrid"></div></div>
+      </details>
+    </div>
+  </section>
+
+  <section class="step" id="s2">
+    <header><span class="n">٢</span><h2>نصوص القالب</h2><button class="btn btn-sm" id="bReset" style="margin-inline-start:auto">استعادة نصوص الـPDF الأصلية</button></header>
+    <div class="body">
+      <div class="row">
+        <label class="fld" style="flex:2 1 300px"><span>العنوان</span><input type="text" id="tTitle" dir="ltr"></label>
+        <label class="fld" style="flex:2 1 300px"><span>السطر تحت العنوان</span><input type="text" id="tSub" dir="auto"></label>
+      </div>
+      <div class="row">
+        <label class="fld" style="flex:1 1 180px"><span>الشارة أعلى اليمين</span><input type="text" id="tBadge" dir="rtl"></label>
+        <label class="fld" style="flex:1 1 180px"><span>تحت الشارة</span><input type="text" id="tBadgeSub" dir="ltr"></label>
+        <label class="fld" style="flex:1 1 220px"><span>وصف بطاقة Patients Contacted</span><input type="text" id="tCount" dir="ltr"></label>
+      </div>
+      <div class="row">
+        <label class="fld" style="flex:1 1 220px"><span>التذييل — الجهة</span><input type="text" id="tOrg" dir="ltr"></label>
+        <label class="fld" style="flex:1 1 180px"><span>التذييل — الوحدة</span><input type="text" id="tUnit" dir="ltr"></label>
+        <label class="fld" style="flex:1 1 140px"><span>التذييل — الوسط</span><input type="text" id="tMid" dir="rtl"></label>
+        <label class="fld" style="flex:1 1 220px"><span>اسم الملف</span><input type="text" id="tFile" dir="ltr"></label>
+      </div>
+      <div class="note"><span class="m"></span><span>تُحفظ هذه النصوص في متصفحك، فتبقى كما هي في المرة القادمة.</span></div>
+    </div>
+  </section>
+
+  <section class="step" id="s3">
+    <header><span class="n">٣</span><h2>المعاينة</h2><span class="state" id="st3"></span></header>
+    <div class="body">
+      <div id="tiles" class="tiles"></div>
+      <div id="stage" hidden><div id="stageBox"><div id="doc"></div></div></div>
+      <p class="empty" id="noPreview">ارفع ملف الإكسل وتظهر الصفحة هنا مباشرة بنفس تصميم الـPDF.</p>
+    </div>
+  </section>
+</div>
+
+<div id="toasts" aria-live="polite"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+(() => {
+"use strict";
+
+const LOGO = "data:image/png;base64,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";
+
+/* ═════════════════ helpers ═════════════════ */
+const $ = (s, r = document) => r.querySelector(s);
+const el = (tag, cls, txt) => { const n = document.createElement(tag); if (cls) n.className = cls; if (txt != null) n.textContent = txt; return n; };
+function toast(msg, kind = "") {
+  const t = el("div", "toast " + kind, msg);
+  $("#toasts").append(t);
+  setTimeout(() => { t.style.opacity = 0; t.style.transition = "opacity .3s"; setTimeout(() => t.remove(), 320); }, 5200);
+}
+const clean = s => String(s ?? "").replace(/\s+/g, " ").trim();
+/* one spelling for Arabic and Latin headers alike: no tashkeel or tatweel,
+   one alef, ta marbuta as ha, punctuation as spaces */
+const norm = s => clean(s).toLowerCase()
+  .replace(/[ً-ْـ]/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي")
+  .replace(/[^a-z0-9؀-ۿ]+/g, " ").trim();
+const pad2 = n => String(n).padStart(2, "0");
+
+/* ═════════════════ template texts ═════════════════ */
+const DEFAULTS = {
+  tTitle: "Patient Experience — National Day Offers",
+  tSub: "Post-visit follow-up calls · تجربة المريض – عروض اليوم الوطني",
+  tBadge: "اليوم الوطني 96",
+  tBadgeSub: "SAUDI NATIONAL DAY",
+  tCount: "National Day offer beneficiaries",
+  tOrg: "Meena Primary Health Care Centers",
+  tUnit: "Patient Experience Unit",
+  tMid: "مينا حولك",
+  tFile: "Patient_Experience_National_Day_Offers",
+};
+const STORE = "px-nd-texts-v1";
+function loadTexts() {
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(STORE) || "{}") || {}; } catch (e) {}
+  for (const k in DEFAULTS) $("#" + k).value = saved[k] ?? DEFAULTS[k];
+}
+function saveTexts() {
+  const o = {}; for (const k in DEFAULTS) o[k] = $("#" + k).value;
+  try { localStorage.setItem(STORE, JSON.stringify(o)); } catch (e) {}
+}
+const txt = k => $("#" + k).value;
+
+/* ═════════════════ columns ═════════════════ */
+/* matched in this order, so "Patient Feedback" is taken by the feedback
+   column before the name column can claim it for "patient" */
+const FIELDS = [
+  { k: "file",   label: "رقم الملف",     keys: ["file no", "file number", "file", "mrn", "mr no", "mrno", "medical record", "رقم الملف", "الملف", "رقم ملف"] },
+  { k: "status", label: "الحالة",         keys: ["status", "call status", "result", "outcome", "الحاله", "النتيجه", "حاله الاتصال", "التقييم"] },
+  { k: "fb",     label: "تجربة المريض",   keys: ["patient feedback", "feedback", "comment", "comments", "notes", "note", "remarks", "تجربه المريض", "التجربه", "ملاحظات", "الملاحظات", "الملاحظه", "راي المريض", "التعليق", "الرد"] },
+  { k: "pkg",    label: "نوع البكج",      keys: ["package", "packages", "pkg", "offer", "offers", "service", "نوع البكج", "البكج", "البكيج", "الباقه", "نوع الباقه", "العرض", "الخدمه"] },
+  { k: "branch", label: "الفرع",          keys: ["branch", "branch name", "center", "centre", "clinic", "hospital", "location", "الفرع", "المركز", "العياده"] },
+  { k: "name",   label: "اسم المريض",     keys: ["patient name", "name", "patient", "full name", "الاسم", "اسم المريض", "المريض", "الاسم الكامل"] },
+];
+const NKEYS = FIELDS.map(f => ({ ...f, keys: f.keys.map(norm) }));
+
+function cellScore(cell, keys) {
+  const c = norm(cell);
+  if (!c) return 0;
+  let best = 0;
+  for (const k of keys) {
+    if (c === k) return 3;
+    if (k.length >= 3 && (` ${c} `).includes(` ${k} `)) best = Math.max(best, 2);
+  }
+  return best;
+}
+function autoMap(header) {
+  const map = {}, used = new Set();
+  for (const f of NKEYS) {
+    let bi = -1, bs = 0;
+    header.forEach((h, i) => { if (used.has(i)) return; const s = cellScore(h, f.keys); if (s > bs) { bs = s; bi = i; } });
+    map[f.k] = bi;
+    if (bi >= 0) used.add(bi);
+  }
+  return map;
+}
+function findHeader(grid) {
+  let best = { row: -1, hits: 0 };
+  for (let r = 0; r < Math.min(grid.length, 30); r++) {
+    const m = autoMap(grid[r] || []);
+    const hits = Object.values(m).filter(i => i >= 0).length;
+    if (hits > best.hits) best = { row: r, hits };
+  }
+  return best;
+}
+
+/* ═════════════════ status ═════════════════ */
+const RX_NA  = /no answer|not answer|no response|not respond|unreachable|not reachable|unanswered|لم يتم الرد|لم يرد|لا يرد|ما رد|لم ترد|لا ترد|مغلق|لم يجب/;
+const RX_NEG = /negative|dissatisf|unsatisf|complain|سلبي|غير راض|شكوي|مستاء/;
+const RX_NEU = /neutral|average|محايد|متوسط|عادي/;
+const RX_POS = /positive|satisf|excellent|good|ايجابي|راض|ممتاز|جيد|✓/;
+function statusOf(raw, fb) {
+  const s = norm(raw) + (/✓/.test(raw) ? " ✓" : "");
+  if (s) {
+    if (RX_NA.test(s)) return "na";
+    if (RX_NEG.test(s)) return "neg";
+    if (RX_NEU.test(s)) return "neu";
+    if (RX_POS.test(s)) return "pos";
+  }
+  const f = norm(fb);
+  if (!f || RX_NA.test(f)) return "na";
+  return "pos";
+}
+const STATUS = {
+  pos: { cls: "pos", txt: "✓ Positive" },
+  na:  { cls: "na",  txt: "No Answer" },
+  neg: { cls: "neg", txt: "✕ Negative" },
+  neu: { cls: "neu", txt: "• Neutral" },
+};
+const NA_TEXT = "لم يتم الرد على الاتصال";
+
+/* ═════════════════ colours ═════════════════ */
+const PKG = {
+  green:  ["#E6F4E1", "#3C7A28"], purple: ["#F1E6FA", "#7A3BAF"], blue:  ["#E3EEFA", "#1D5FA8"],
+  pink:   ["#FBE6EF", "#B0306A"], red:    ["#FCE7E5", "#B3261E"], amber: ["#FDF1DC", "#B26B00"],
+  indigo: ["#EAE8F7", "#4B3F9E"], teal:   ["#DFF3EF", "#0F7B6C"], slate: ["#ECEEF3", "#46506A"],
+  brown:  ["#F4ECE4", "#7A4E2A"], olive:  ["#EEF2DC", "#5B6B12"], cyan:  ["#DDF2F7", "#0E6E86"],
+};
+const PKG_RULES = [
+  [/physio|علاج طبيعي|طبيعي/, "green"], [/blood pressure|pressure|ضغط/, "purple"], [/diabet|سكر/, "blue"],
+  [/pregnan|حمل|حوامل/, "pink"], [/heart|cardi|قلب/, "red"], [/child|kid|pediat|طفل|اطفال/, "amber"],
+  [/check ?up|فحص|شامل/, "indigo"], [/dental|teeth|اسنان/, "teal"],
+];
+const PKG_SPARE = ["slate", "cyan", "brown", "olive", "green", "purple", "blue", "pink", "red", "amber", "indigo", "teal"];
+function pkgColors(list) {
+  const out = new Map(), taken = new Set();
+  for (const p of list) {
+    const n = norm(p);
+    const hit = PKG_RULES.find(([rx, c]) => rx.test(n) && !taken.has(c));
+    if (hit) { out.set(p, PKG[hit[1]]); taken.add(hit[1]); }
+  }
+  let s = 0;
+  for (const p of list) if (!out.has(p)) {
+    const free = PKG_SPARE.find(c => !taken.has(c)) || PKG_SPARE[s++ % PKG_SPARE.length];
+    taken.add(free); out.set(p, PKG[free]);
+  }
+  return out;
+}
+/* by size: largest branch darkest, as the PDF ranks them */
+const BRANCH_C = ["#2D2460", "#6F62B8", "#A89BE8", "#C8862A", "#1E9E73", "#B3261E", "#1D5FA8", "#B0306A", "#8A85A8"];
+
+/* ═════════════════ state ═════════════════ */
+const state = { file: null, sheets: [], header: [], map: null, rows: [] };
+
+async function readFile(file) {
+  if (typeof XLSX === "undefined") throw new Error("تعذّر تحميل قارئ الإكسل — تأكد من اتصال الإنترنت ثم حدّث الصفحة");
+  const ab = await file.arrayBuffer();
+  const wb = XLSX.read(ab, { type: "array", cellDates: true, codepage: 65001 });
+  const out = [];
+  for (const name of wb.SheetNames) {
+    const grid = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, defval: "", raw: false, dateNF: "yyyy-mm-dd", blankrows: false })
+      .map(r => r.map(clean));
+    if (grid.some(r => r.some(Boolean))) out.push({ name, grid });
+  }
+  if (!out.length) throw new Error("الملف لا يحتوي على بيانات");
+  return out;
+}
+
+/* Every sheet whose header carries the same columns is read; a workbook
+   with one sheet per branch comes out as one list. */
+function prepare(sheets) {
+  const found = sheets.map(s => ({ ...s, ...findHeader(s.grid) }));
+  const best = found.reduce((a, b) => (b.hits > a.hits ? b : a));
+  if (best.hits < 2) {
+    /* no recognisable header: first row is taken as one and the user maps it */
+    best.row = 0;
+  }
+  const header = (best.grid[best.row] || []).map((h, i) => h || `عمود ${i + 1}`);
+  const use = found.filter(s => s === best || (s.hits >= Math.max(2, best.hits - 1) && s.row >= 0));
+  return { header, sheets: use, primary: best };
+}
+
+function extract() {
+  const { header, map } = state;
+  const rows = [];
+  const multi = state.sheets.length > 1;
+  for (const s of state.sheets) {
+    const h = s.grid[s.row] || [];
+    /* the chosen column is found in each sheet by its header text */
+    const idx = {};
+    for (const f of FIELDS) {
+      const want = map[f.k] >= 0 ? norm(header[map[f.k]]) : null;
+      let i = want == null ? -1 : h.findIndex(c => norm(c) === want);
+      if (i < 0 && s === state.primary) i = map[f.k];
+      idx[f.k] = i;
+    }
+    for (let r = s.row + 1; r < s.grid.length; r++) {
+      const row = s.grid[r] || [];
+      const g = k => (idx[k] >= 0 ? clean(row[idx[k]]) : "");
+      const name = g("name"), file = g("file");
+      if (!name && !file) continue;
+      /* a repeated header or a totals line is not a patient */
+      if (FIELDS.some(f => idx[f.k] >= 0 && cellScore(row[idx[f.k]], NKEYS.find(n => n.k === f.k).keys) === 3)) continue;
+      if (/^(total|المجموع|الاجمالي|الإجمالي)\b/i.test(name)) continue;
+      const fb = g("fb");
+      const st = statusOf(g("status"), fb);
+      rows.push({
+        name, file, pkg: g("pkg"),
+        branch: g("branch") || (multi ? s.name : ""),
+        fb: st === "na" && (!fb || RX_NA.test(norm(fb))) ? NA_TEXT : fb,
+        st,
+      });
+    }
+  }
+  return rows;
+}
+
+/* ═════════════════ figures ═════════════════ */
+function figures(rows) {
+  const n = rows.length;
+  const na = rows.filter(r => r.st === "na").length;
+  const answered = n - na;
+  const pos = rows.filter(r => r.st === "pos").length;
+  const neg = rows.filter(r => r.st === "neg").length;
+  const neu = rows.filter(r => r.st === "neu").length;
+  const byKey = (k) => {
+    const m = new Map();
+    for (const r of rows) {
+      const v = r[k]; if (!v) continue;
+      const key = norm(v);
+      if (!m.has(key)) m.set(key, { label: v, n: 0 });
+      m.get(key).n++;
+    }
+    return [...m.values()];
+  };
+  const branches = byKey("branch").sort((a, b) => b.n - a.n);
+  const pkgs = byKey("pkg");
+  return { n, na, answered, pos, neg, neu, branches, pkgs };
+}
+const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
+
+/* ═════════════════ the sheet ═════════════════ */
+function header() {
+  const hd = el("div", "hd");
+  hd.innerHTML = `<svg class="pulse" viewBox="0 0 297 20" preserveAspectRatio="none" fill="none" stroke="rgba(255,255,255,.16)" stroke-width=".35" stroke-linejoin="round">
+    <path d="M150 11.5H205l2.6-8.5 3.4 16 3.2-18.2 2.8 10.7H244l3.6-5.2 3.6 5.2H297"/></svg>`;
+  const logo = el("div", "logo"); const img = el("img"); img.src = LOGO; img.alt = "meena"; logo.append(img);
+  hd.append(logo, el("div", "ttl", txt("tTitle")), el("div", "sub", txt("tSub")),
+            el("div", "badge", txt("tBadge")), el("div", "badge-sub", txt("tBadgeSub")));
+  return hd;
+}
+function kpi(label, color, big, small, sub, valueColor) {
+  const k = el("div", "kpi"); k.style.setProperty("--c", color);
+  if (valueColor) k.style.setProperty("--vc", valueColor);
+  const v = el("div", "v"); v.append(el("b", "", big)); if (small) v.append(el("i", "", small));
+  k.append(el("div", "l", label), v, el("div", "s", sub));
+  return k;
+}
+function kpis(F, bColors) {
+  const box = el("div", "kpis");
+  box.append(
+    kpi("Patients Contacted", "#6F62B8", String(F.n), "", txt("tCount")),
+    kpi("Response Rate", "#C8862A", pct(F.answered, F.n) + "%", `${F.answered}/${F.n}`,
+        F.na ? `${F.na} patient${F.na > 1 ? "s" : ""} did not answer` : "Every patient answered"),
+    kpi("Positive Feedback", "#1E9E73", pct(F.pos, F.answered) + "%", `${F.pos}/${F.answered}`,
+        F.neg || F.neu ? [F.neg && `${F.neg} negative`, F.neu && `${F.neu} neutral`].filter(Boolean).join(" · ") + " · of all who responded"
+                       : "Of all patients who responded", "#1E9E73"),
+  );
+  const br = el("div", "kpi br"); br.style.setProperty("--c", "#6F62B8");
+  br.append(el("div", "l", "Patients by Branch"));
+  const bars = el("div", "bars");
+  let list = F.branches.slice();
+  if (list.length > 5) {
+    const rest = list.slice(4).reduce((a, b) => a + b.n, 0);
+    list = list.slice(0, 4).concat([{ label: "Others", n: rest, other: true }]);
+  }
+  const max = Math.max(1, ...list.map(b => b.n));
+  list.forEach((b, i) => {
+    const t = el("div", "t"), fill = el("div");
+    fill.style.width = (b.n / max) * 100 + "%";
+    fill.style.background = b.other ? "#C5C0DE" : bColors.get(norm(b.label)) || BRANCH_C[i];
+    t.append(fill);
+    bars.append(el("span", "", b.label), t, el("em", "", String(b.n)));
+  });
+  if (!list.length) bars.append(el("span", "", "—"));
+  br.append(bars);
+  box.append(br);
+  return box;
+}
+function tableShell() {
+  const tw = el("div", "tw"), t = el("table");
+  const cg = el("colgroup");
+  for (const c of ["c-n", "c-nm", "c-f", "c-p", "c-b", "c-fb", "c-s"]) cg.append(el("col", c));
+  const th = (cls, en, ar) => { const h = el("th", cls, en); if (ar) h.append(el("span", "ar", ar)); return h; };
+  const head = el("thead"), tr = el("tr");
+  const fb = el("th", "fb"); fb.append(el("span", "ar", "تجربة المريض"), document.createTextNode("PATIENT FEEDBACK"));
+  tr.append(th("n", "#"), th("", "PATIENT NAME", "الاسم"), th("", "FILE NO.", "رقم الملف"),
+            th("", "PACKAGE", "نوع البكج"), th("", "BRANCH", "الفرع"), fb, th("st", "STATUS"));
+  head.append(tr);
+  const body = el("tbody");
+  t.append(cg, head, body); tw.append(t);
+  return { tw, body };
+}
+function rowEl(r, i, pColors, bColors) {
+  const tr = el("tr");
+  const td = (cls, v) => { const c = el("td", cls, v); tr.append(c); return c; };
+  td("n", pad2(i + 1));
+  td("nm", r.name).title = r.name;
+  td("f", r.file);
+  const p = td("p");
+  if (r.pkg) { const [bg, fg] = pColors.get(r.pkg) || PKG.slate; const s = el("span", "pill pk", r.pkg); s.style.background = bg; s.style.color = fg; p.append(s); }
+  const b = td("b");
+  if (r.branch) { const dot = el("i"); dot.style.background = bColors.get(norm(r.branch)) || "#8A85A8"; b.append(dot, document.createTextNode(r.branch)); }
+  const fb = td("fb" + (r.st === "na" ? " na" : ""), r.fb);
+  fb.dir = "rtl";
+  const s = td("st"); const S = STATUS[r.st]; s.append(el("span", "stp " + S.cls, S.txt));
+  return tr;
+}
+function footer(F, pageNo, pages) {
+  const ft = el("div", "ft");
+  const l = el("div"); l.append(el("b", "", txt("tOrg")));
+  if (txt("tUnit")) l.append(document.createTextNode(" · " + txt("tUnit")));
+  const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
+  const r = el("div", "", [plural(F.n, "patient"), plural(F.pkgs.length, "package"), plural(F.branches.length, "branch").replace("branchs", "branches"), "Confidential"]
+    .concat(pages > 1 ? [`Page ${pageNo}/${pages}`] : []).join(" · "));
+  ft.append(l, el("div", "mid", txt("tMid")), r);
+  return ft;
+}
+
+function render() {
+  const doc = $("#doc");
+  doc.textContent = "";
+  const rows = state.rows;
+  const F = figures(rows);
+  const pColors = pkgColors(F.pkgs.map(p => p.label).concat(rows.map(r => r.pkg)).filter((v, i, a) => v && a.indexOf(v) === i));
+  const bColors = new Map(F.branches.map((b, i) => [norm(b.label), BRANCH_C[i % BRANCH_C.length]]));
+
+  /* rows are laid page by page and measured, so a long comment that wraps
+     pushes the rows after it onto the next sheet instead of off the paper */
+  const pages = [];
+  let i = 0;
+  do {
+    const first = !pages.length;
+    const pg = el("div", "page" + (first ? "" : " cont"));
+    pg.append(header());
+    if (first) pg.append(kpis(F, bColors));
+    const { tw, body } = tableShell();
+    pg.append(tw);
+    doc.append(pg);
+    const limit = pg.clientHeight * (201.8 / 210);
+    while (i < rows.length) {
+      const tr = rowEl(rows[i], i, pColors, bColors);
+      body.append(tr);
+      if (tw.offsetTop + tw.offsetHeight > limit && body.children.length > 1) { tr.remove(); break; }
+      i++;
+    }
+    pages.push(pg);
+  } while (i < rows.length);
+  pages.forEach((pg, k) => pg.append(footer(F, k + 1, pages.length)));
+
+  $("#stage").hidden = false;
+  $("#noPreview").hidden = true;
+  fitStage();
+
+  const tiles = $("#tiles");
+  tiles.textContent = "";
+  const tile = (l, v) => { const t = el("div", "tile"); t.append(el("span", "", l), el("b", "", v)); tiles.append(t); };
+  tile("المرضى", F.n); tile("ردّوا", `${F.answered} · ${pct(F.answered, F.n)}%`); tile("لم يردّوا", F.na);
+  tile("إيجابي", `${F.pos} · ${pct(F.pos, F.answered)}%`);
+  if (F.neg) tile("سلبي", F.neg);
+  if (F.neu) tile("محايد", F.neu);
+  tile("البكجات", F.pkgs.length); tile("الفروع", F.branches.length); tile("الصفحات", pages.length);
+  $("#st3").textContent = `${pages.length} صفحة · A4 عرضي`;
+}
+
+function fitStage() {
+  const doc = $("#doc"), box = $("#stageBox"), stage = $("#stage");
+  if (stage.hidden) return;
+  const w = doc.offsetWidth, h = doc.offsetHeight;
+  const avail = stage.clientWidth - 28;
+  const s = Math.min(1, avail / w);
+  doc.style.transform = `scale(${s})`;
+  box.style.width = w * s + "px";
+  box.style.height = h * s + "px";
+}
+
+/* ═════════════════ mapping UI ═════════════════ */
+function paintMap() {
+  const grid = $("#mapGrid");
+  grid.textContent = "";
+  for (const f of FIELDS) {
+    const lab = el("label", "fld"), sel = el("select");
+    lab.append(el("span", "", f.label), sel);
+    sel.append(new Option("— غير موجود —", "-1"));
+    state.header.forEach((h, i) => sel.append(new Option(h, String(i))));
+    sel.value = String(state.map[f.k]);
+    sel.onchange = () => { state.map[f.k] = +sel.value; rebuild(); };
+    grid.append(lab);
+  }
+  $("#mapBox").hidden = false;
+}
+function paintInfo() {
+  const box = $("#fileInfo"); box.textContent = "";
+  const miss = FIELDS.filter(f => state.map[f.k] < 0 && f.k !== "status").map(f => f.label);
+  const n = el("div", "note" + (miss.length ? " warn" : ""));
+  n.append(el("span", "m"));
+  const s = el("span");
+  s.textContent = `${state.file.name} — ${state.rows.length} مريض` +
+    (state.sheets.length > 1 ? ` من ${state.sheets.length} أوراق` : ` من ورقة «${state.primary.name}»`) +
+    (miss.length ? ` · لم يُعثر على عمود: ${miss.join("، ")} — اختره من «ربط الأعمدة»` : "") +
+    (state.map.status < 0 ? " · لا يوجد عمود Status، فالحالة مستنتجة من الملاحظة" : "");
+  n.append(s); box.append(n);
+  if (miss.length) $("#mapBox").open = true;
+}
+
+function rebuild() {
+  state.rows = extract();
+  paintInfo();
+  if (!state.rows.length) {
+    $("#stage").hidden = true; $("#noPreview").hidden = false;
+    $("#noPreview").textContent = "لا توجد صفوف مرضى — تأكد من ربط عمود الاسم أو رقم الملف.";
+    $("#tiles").textContent = "";
+    setButtons(false);
+    return;
+  }
+  render();
+  setButtons(true);
+}
+function setButtons(on) { for (const id of ["#bPdf", "#bPng", "#bPrint"]) $(id).disabled = !on; $("#bClear").disabled = !state.file; }
+
+async function takeFile(file) {
+  if (!file) return;
+  try {
+    const sheets = await readFile(file);
+    const { header, sheets: use, primary } = prepare(sheets);
+    Object.assign(state, { file, header, sheets: use, primary, map: autoMap(primary.grid[primary.row] || []) });
+    $("#st1").textContent = file.name;
+    $("#s1").classList.add("done");
+    paintMap();
+    rebuild();
+    if (state.rows.length) toast(`تم — ${state.rows.length} مريض`, "ok");
+  } catch (e) {
+    console.error(e);
+    toast("تعذّرت قراءة الملف: " + e.message, "bad");
+  }
+}
+
+function hookDrop(zone, input) {
+  zone.onclick = () => input.click();
+  zone.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); input.click(); } };
+  input.onchange = () => { takeFile(input.files[0]); input.value = ""; };
+  zone.ondragover = e => { e.preventDefault(); zone.classList.add("hot"); };
+  zone.ondragleave = () => zone.classList.remove("hot");
+  zone.ondrop = e => { e.preventDefault(); zone.classList.remove("hot"); takeFile(e.dataTransfer.files[0]); };
+}
+/* a file dropped anywhere on the page counts too */
+addEventListener("dragover", e => e.preventDefault());
+addEventListener("drop", e => { if (!e.target.closest("#dropX")) { e.preventDefault(); takeFile(e.dataTransfer?.files?.[0]); } });
+
+/* ═════════════════ output ═════════════════ */
+const fileName = () => (clean(txt("tFile")) || DEFAULTS.tFile).replace(/[\\/:*?"<>|]+/g, "_");
+const framed = () => typeof window.claude?.use === "function";
+async function hostSave(name, blob) {
+  const downloads = await window.claude.use("downloads").catch(() => null);
+  if (!downloads) return false;
+  try { await downloads.save({ filename: name, data: blob }); }
+  catch (e) { toast(e?.code === "declined" ? "أُلغي الحفظ." : "تعذّر تسليم الملف من هذه النسخة.", "bad"); }
+  return true;
+}
+async function deliver(name, blob) {
+  if (framed() && await hostSave(name, blob)) return;
+  const url = URL.createObjectURL(blob);
+  const a = el("a"); a.href = url; a.download = name; a.style.display = "none";
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 120000);
+}
+async function snap(page) {
+  await document.fonts.ready;
+  /* the preview is scaled; each sheet is drawn at its real size */
+  return html2canvas(page, {
+    scale: 3, backgroundColor: "#F6F5FB", useCORS: true, logging: false,
+    onclone: d => { const c = d.getElementById("doc"); if (c) c.style.transform = "none"; },
+  });
+}
+async function busy(btn, job) {
+  const label = btn.lastChild.textContent;
+  btn.lastChild.textContent = " جارٍ التجهيز… "; btn.disabled = true;
+  try { await job(); }
+  catch (e) { console.error(e); toast("تعذّر إنشاء الملف: " + e.message, "bad"); }
+  finally { btn.lastChild.textContent = label; btn.disabled = false; }
+}
+$("#bPdf").onclick = () => busy($("#bPdf"), async () => {
+  if (!window.jspdf || typeof html2canvas === "undefined") throw new Error("مكتبات الـPDF لم تُحمَّل — استخدم «طباعة» ثم «حفظ كـPDF»");
+  const pdf = new window.jspdf.jsPDF({ orientation: "landscape", unit: "mm", format: "a4", compress: true });
+  const pages = [...document.querySelectorAll("#doc .page")];
+  for (let k = 0; k < pages.length; k++) {
+    const c = await snap(pages[k]);
+    if (k) pdf.addPage("a4", "landscape");
+    pdf.addImage(c.toDataURL("image/jpeg", 0.93), "JPEG", 0, 0, 297, 210, undefined, "FAST");
+  }
+  pdf.setProperties({ title: txt("tTitle") });
+  await deliver(fileName() + ".pdf", pdf.output("blob"));
+});
+$("#bPng").onclick = () => busy($("#bPng"), async () => {
+  if (typeof html2canvas === "undefined") throw new Error("مكتبة الصور لم تُحمَّل");
+  const pages = [...document.querySelectorAll("#doc .page")];
+  for (let k = 0; k < pages.length; k++) {
+    const c = await snap(pages[k]);
+    const blob = await new Promise(r => c.toBlob(r, "image/png"));
+    await deliver(fileName() + (pages.length > 1 ? `_${k + 1}` : "") + ".png", blob);
+  }
+});
+$("#bPrint").onclick = () => window.print();
+$("#bClear").onclick = () => {
+  Object.assign(state, { file: null, sheets: [], header: [], map: null, rows: [], primary: null });
+  $("#doc").textContent = ""; $("#tiles").textContent = ""; $("#fileInfo").textContent = "";
+  $("#stage").hidden = true; $("#noPreview").hidden = false;
+  $("#noPreview").textContent = "ارفع ملف الإكسل وتظهر الصفحة هنا مباشرة بنفس تصميم الـPDF.";
+  $("#mapBox").hidden = true; $("#st1").textContent = "لم يُرفع بعد"; $("#st3").textContent = "";
+  $("#s1").classList.remove("done");
+  setButtons(false);
+};
+
+/* ═════════════════ wiring ═════════════════ */
+loadTexts();
+for (const k in DEFAULTS) $("#" + k).addEventListener("input", () => { saveTexts(); if (state.rows.length) render(); });
+$("#bReset").onclick = () => { for (const k in DEFAULTS) $("#" + k).value = DEFAULTS[k]; saveTexts(); if (state.rows.length) render(); };
+hookDrop($("#dropX"), $("#fileX"));
+addEventListener("resize", fitStage);
+/* the sheet is measured with the web fonts in place */
+document.fonts?.ready.then(() => { if (state.rows.length) render(); });
+})();
+</script>
+
+</body>
+</html>
