@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>تجربة المريض — إكسل إلى PDF</title>
+<title>تجربة المريض — إكسل وPDF والصور إلى PDF</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
@@ -127,6 +127,12 @@ label.check{display:flex; align-items:center; gap:8px; font-size:13.5px; color:v
 .chip{display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:4px 10px; border-radius:99px; background:var(--sunk); border:1px solid var(--line-2); color:var(--ink-2)}
 .chip b{font-weight:600; color:var(--ink)}
 .chip.ok{background:var(--good-soft); border-color:color-mix(in srgb, var(--good) 30%, transparent)}
+#busy{align-items:center}
+.spin{flex:none; width:14px; height:14px; border-radius:50%; border:2px solid color-mix(in srgb, var(--brand) 25%, transparent); border-top-color:var(--brand); animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#doc.editing td[data-k]{outline:.25mm dashed #C5C0DE; outline-offset:-.35mm; cursor:text; white-space:normal; text-overflow:clip}
+#doc.editing td[data-k]:focus{outline:.35mm solid #6F62B8; background:#F4F2FD}
+#doc.editing td.st{cursor:pointer}
 .chip .x{border:0; background:none; padding:0 0 0 2px; margin-inline-start:2px; cursor:pointer; color:var(--ink-3); font-size:16px; line-height:1}
 .chip .x:hover{color:var(--crit)}
 .chip.miss{background:var(--warn-soft); border-color:color-mix(in srgb, var(--warn) 30%, transparent)}
@@ -249,7 +255,7 @@ details.map > div{padding:4px 12px 12px; display:flex; flex-direction:column; ga
 
 @page{size:A4 landscape; margin:0}
 @media print{
-  .bar, #toasts, #s1, #s2, #s3 > header, #tiles, #noPreview{display:none !important}
+  .bar, #toasts, #s1, #s2, #s3 > header, #tiles, #noPreview, #editNote{display:none !important}
   html,body{background:#fff}
   .shell{display:block; max-width:none; margin:0; padding:0; gap:0}
   #s3{border:0; border-radius:0; box-shadow:none; background:none; overflow:visible}
@@ -273,7 +279,7 @@ details.map > div{padding:4px 12px 12px; display:flex; flex-direction:column; ga
     </div>
     <div>
       <h1>تجربة المريض — عروض اليوم الوطني</h1>
-      <p>ملف الإكسل ← قالب Patient Experience بصيغة PDF</p>
+      <p>إكسل أو PDF أو صورة ← قالب Patient Experience بصيغة PDF</p>
     </div>
   </div>
   <button class="btn" id="bClear" disabled>
@@ -297,13 +303,14 @@ details.map > div{padding:4px 12px 12px; display:flex; flex-direction:column; ga
 <div class="shell">
 
   <section class="step" id="s1">
-    <header><span class="n">١</span><h2>ملفات الإكسل</h2><span class="state" id="st1">لم يُرفع بعد</span></header>
+    <header><span class="n">١</span><h2>الملفات</h2><span class="state" id="st1">لم يُرفع بعد</span></header>
     <div class="body">
       <div class="drop" id="dropX" tabindex="0" role="button">
-        <strong>اسحب ملفات الإكسل هنا — أو انقر لاختيارها</strong>
-        <span>xlsx · xls · xlsm · csv — ملف واحد أو عدة ملفات، وكل ملف تضيفه يُدمج مع ما قبله</span>
+        <strong>اسحب ملفات الإكسل أو PDF أو الصور هنا — أو انقر لاختيارها</strong>
+        <span>xlsx · xls · csv · pdf · png · jpg — ملف أو عدة ملفات تُدمج معًا، ويمكن لصق لقطة شاشة بـ Ctrl+V</span>
       </div>
-      <input type="file" id="fileX" accept=".xlsx,.xls,.xlsm,.csv" multiple hidden>
+      <input type="file" id="fileX" accept=".xlsx,.xlsm,.xlsb,.xls,.ods,.csv,.tsv,.pdf,.png,.jpg,.jpeg,.jfif,.webp,.gif,.bmp,image/*,application/pdf" multiple hidden>
+      <div class="note" id="busy" hidden><span class="spin"></span><span id="busyTxt"></span></div>
       <div class="note">
         <span class="m"></span>
         <span>صف واحد لكل مريض، والأعمدة تُعرف من عناوينها بالعربي أو الإنجليزي — لا يهم ترتيبها:
@@ -313,6 +320,7 @@ details.map > div{padding:4px 12px 12px; display:flex; flex-direction:column; ga
             <li><b>Status / الحالة</b> — Positive · No Answer · Negative · Neutral (أو إيجابي · لم يتم الرد · سلبي · محايد).
               إن لم يوجد العمود: من ملاحظته «No answer» أو فارغة يُحسب لم يرد، ومن له ملاحظة يُحسب Positive.</li>
             <li>أسماء الفروع تُختصر كما في الـPDF («Meena Center- Al Rawdah» ← Al Rawdah)، والأسماء تُكتب بحرف كبير أول كل كلمة.</li>
+            <li><b>PDF والصور</b> تُقرأ داخل المتصفح: الـPDF النصي مباشرة، والصور والـPDF الممسوح بقارئ النصوص (يُحمَّل أول مرة). النتيجة قد تحتاج تصحيحًا — من زر «تعديل الجدول».</li>
             <li>المريض المكرر في أكثر من ملف (نفس رقم الملف) يظهر مرة واحدة: الرد يتقدم على «No Answer»، وإلا فالملف الأحدث.</li>
           </ul>
         </span>
@@ -348,8 +356,13 @@ details.map > div{padding:4px 12px 12px; display:flex; flex-direction:column; ga
   </section>
 
   <section class="step" id="s3">
-    <header><span class="n">٣</span><h2>المعاينة</h2><span class="state" id="st3"></span></header>
+    <header><span class="n">٣</span><h2>المعاينة</h2><span class="state" id="st3"></span>
+      <button class="btn btn-sm" id="bEdit" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4"/></svg>
+        تعديل الجدول
+      </button></header>
     <div class="body">
+      <div class="note" id="editNote" hidden><span class="m"></span><span>انقر أي خانة واكتب فوقها · انقر الحالة لتبديلها (Positive ← No Answer ← Negative ← Neutral) · امسح الاسم ورقم الملف معًا لحذف الصف. تُعاد الصفحة وتُحسب الأرقام عند «إنهاء التعديل».</span></div>
       <div id="tiles" class="tiles"></div>
       <div id="stage" hidden><div id="stageBox"><div id="doc"></div></div></div>
       <p class="empty" id="noPreview">ارفع ملف الإكسل وتظهر الصفحة هنا مباشرة بنفس تصميم الـPDF.</p>
@@ -533,9 +546,40 @@ function branchName(raw) {
 /* ═════════════════ state ═════════════════ */
 /* files: every workbook added so far, in the order it was added
    over:  the columns picked by hand, as header text (null = no such column) */
-const state = { files: [], sheets: [], primary: null, over: {}, rows: [], dupes: 0 };
+const state = { files: [], sheets: [], primary: null, over: {}, rows: [], dupes: 0, edits: {}, editing: false };
+let uidSeq = 0;
 
-async function readFile(file) {
+/* ═════════════════ readers ═════════════════
+   Every attachment ends as the same thing an Excel sheet gives: a grid of
+   strings with the header somewhere near the top.
+     sheets  — xlsx · xls · xlsm · xlsb · ods · csv, through SheetJS
+     PDF     — its text layer through pdf.js, words placed under the headers
+     images and scanned PDFs — read in the browser by Tesseract (Arabic + English) */
+const IMG_RE = /\.(png|jpe?g|jfif|webp|gif|bmp)$/i;
+const SHEET_RE = /\.(xlsx|xlsm|xlsb|xls|xltx|ods|fods|csv|tsv|txt)$/i;
+function kindOf(f) {
+  const n = f.name || "", t = f.type || "";
+  if (IMG_RE.test(n) || /^image\//.test(t)) return "image";
+  if (/\.pdf$/i.test(n) || t === "application/pdf") return "pdf";
+  if (SHEET_RE.test(n) || /sheet|excel|csv|opendocument/.test(t)) return "sheet";
+  return "";
+}
+const KIND_AR = { image: "صورة", pdf: "PDF", sheet: "إكسل" };
+const AR = /[؀-ۿ]/;
+/* PDFs often carry Arabic as presentation forms (ﻣﻴﻨﺎ); NFKC turns them back into letters */
+const fixText = s => String(s ?? "").normalize("NFKC").replace(/[‎‏‪-‮⁦-⁩]/g, "");
+
+const loaded = {};
+function loadScript(src) {
+  return loaded[src] ||= new Promise((res, rej) => {
+    const s = document.createElement("script");
+    s.src = src; s.onload = res;
+    s.onerror = () => { delete loaded[src]; rej(new Error("تعذّر تحميل القارئ — تأكد من اتصال الإنترنت")); };
+    document.head.append(s);
+  });
+}
+
+async function readSheet(file) {
   if (typeof XLSX === "undefined") throw new Error("تعذّر تحميل قارئ الإكسل — تأكد من اتصال الإنترنت ثم حدّث الصفحة");
   const ab = await file.arrayBuffer();
   const wb = XLSX.read(ab, { type: "array", cellDates: true, codepage: 65001 });
@@ -545,8 +589,273 @@ async function readFile(file) {
       .map(r => r.map(clean));
     if (grid.some(r => r.some(Boolean))) out.push({ name, grid });
   }
-  if (!out.length) throw new Error("الملف لا يحتوي على بيانات");
   return out;
+}
+
+/* ── words → lines ──
+   words: {x0, x1, yc, h, s, sp}. Words whose middles line up form a line;
+   words close together on a line form a cell. Arabic cells are read right
+   to left. glue > 0 (PDF text): pieces with no real gap between them are
+   one word — PDFs split letter-spaced headings ("P A T I E N T") and set
+   Arabic glyph by glyph. A PDF's own space (sp) parts Latin words however
+   narrow it is; between Arabic glyphs it can be a stray, so there only the
+   gap decides. */
+function toLines(words, gapK, glue = 0) {
+  words = words.filter(w => w.s && (w.sp || w.s.trim()));
+  const real = words.filter(w => !w.sp);
+  if (!real.length) return [];
+  const hs = real.map(w => w.h).sort((a, b) => a - b), h = hs[hs.length >> 1] || 10;
+  const marked = words.some(w => w.sp);
+  words.sort((a, b) => a.yc - b.yc);
+  const lines = [];
+  for (const w of words) {
+    const L = lines[lines.length - 1];
+    if (L && Math.abs(w.yc - L.yc) <= h * 0.55) { L.w.push(w); if (!w.sp) { L.n++; L.yc += (w.yc - L.yc) / L.n; } }
+    else if (!w.sp) lines.push({ yc: w.yc, w: [w], n: 1 });
+  }
+  return lines.map(L => {
+    const cells = [];
+    let cur = null, brk = false;
+    for (const w of L.w.sort((a, b) => a.x0 - b.x0)) {
+      if (w.sp) { brk = true; continue; }
+      /* table rules read as "|" end a cell; they are not text */
+      if (/^[|‖¦\[\]{}]+$/.test(w.s)) { cur = null; brk = false; continue; }
+      w.brk = brk; brk = false;
+      if (cur && w.x0 - cur.x1 < h * gapK) { cur.w.push(w); cur.x1 = Math.max(cur.x1, w.x1); }
+      else { cur = { x0: w.x0, x1: w.x1, w: [w] }; cells.push(cur); }
+    }
+    return {
+      yc: L.yc, h,
+      cells: cells.map(c => {
+        const toks = [];
+        let t = null;
+        for (const w of c.w) {
+          const last = t && t.w[t.w.length - 1];
+          const ar = last && (AR.test(w.s) || AR.test(last.s));
+          /* inside an Arabic word joined glyphs touch, and a letter that does
+             not join the next (ا د ر و ة…) leaves up to ~.14 em; a word space
+             is wider than that */
+          const loose = ar && (NONJOIN.test(w.s.slice(-1)) || NONJOIN.test(w.s[0]));
+          const lim = !glue ? -Infinity : ar ? (w.h || h) * (loose ? 0.157 : 0.1) : w.brk ? -Infinity : h * (marked ? 0.5 : glue);
+          if (t && w.x0 - t.x1 < lim) { t.w.push(w); t.x1 = Math.max(t.x1, w.x1); }
+          else { t = { x1: w.x1, w: [w] }; toks.push(t); }
+        }
+        const word = t => (t.w.some(w => AR.test(w.s)) ? t.w.slice().reverse() : t.w).map(w => w.s).join("");
+        const ar = c.w.filter(w => AR.test(w.s)).length * 2 >= c.w.length;
+        const ws = (ar ? toks.slice().reverse() : toks).map(word);
+        const txt = clean(ws.map(w => w.replace(/^[|‖¦]+|[|‖¦]+$/g, "")).join(" "));
+        const fix = t => (glue ? arFix(t) : t);
+        return { x0: c.x0, x1: c.x1, s: fix(txt), toks: toks.map(t => ({ x0: t.w[0].x0, x1: t.x1, s: fix(word(t)) })) };
+      }).filter(c => c.s && !/^[|‖¦:;.,_\-–—]+$/.test(c.s)),
+    };
+  }).filter(l => l.cells.length);
+}
+/* A PDF maps a ligature glyph to its letters in reading order, and the text
+   reader, turning the glyph run around, turns those letters around too:
+   "سريعة" comes out "رسيعة", "في" as "يف". The usual ones are put back, and
+   a vowel mark that lost its letter joins the word before it or goes. */
+const NONJOIN = /[اأإآءؤدذرزوةى]/;
+const AR_FIX = [[/رسيع/g, "سريع"], [/رسع([ةه])/g, "سرع$1"], [/خترب/g, "ختبر"], [/كرث/g, "كثر"], [/كثري/g, "كثير"],
+                [/كبري/g, "كبير"], [/يشء/g, "شيء"], [/(^|\s)يف(?=\s|$|[.،,])/g, "$1في"]];
+function arFix(s) {
+  s = s.replace(/ى([ء-ي])(?=$|[^ء-يً-ٟ])/g, "$1ى");
+  for (const [rx, to] of AR_FIX) s = s.replace(rx, to);
+  return clean(s.replace(/(\S)\s+([ً-ٰٟ]+)(?=\s|$)/g, (m, a, d) => (/[ء-ي]/.test(a) ? a + d : a))
+                .replace(/(^|\s)[ً-ٰٟ]+(?=\s|$)/g, "$1"));
+}
+
+/* ── lines → grid ──
+   pages: the lines of each page. The header line fixes the columns, and a
+   page that repeats it takes its own positions. Every later cell goes under
+   the header it overlaps most (or the nearest one), so a long comment that
+   runs left of its right-aligned title still lands in its column. A line
+   with nothing under the name and file columns is a wrapped piece of the
+   nearest row — above or below it, as the table centres its cells. */
+function linesToGrid(pages) {
+  const headAt = lines => {
+    let hi = -1, best = 1;
+    lines.forEach((l, i) => {
+      const hits = Object.values(autoMap(l.cells.map(c => c.s))).filter(x => x >= 0).length;
+      if (hits > best) { best = hits; hi = i; }
+    });
+    return hi;
+  };
+  let head = null, hmap = null;
+  const rows = [];
+  pages.forEach((lines, pg) => {
+    const hi = headAt(lines);
+    if (hi >= 0) {
+      const nh = lines[hi].cells.flatMap(splitHead);
+      if (!head) { head = nh; hmap = autoMap(nh.map(c => c.s)); }
+      else if (nh.length === head.length) head = nh;
+    }
+    if (!head) return;
+    for (const l of lines.slice(hi + 1)) {
+      const cols = head.map(() => []);
+      for (const c of l.cells) {
+        /* two columns read as one piece ("26411689 Physiotherapy") are
+           parted word by word under their own headers */
+        const under = head.filter(hc => Math.min(c.x1, hc.x1) - Math.max(c.x0, hc.x0) > (hc.x1 - hc.x0) * 0.3).length;
+        for (const t of under >= 2 && c.toks?.length > 1 ? c.toks : [c]) {
+          let bi = 0, bo = -Infinity;
+          head.forEach((hc, i) => {
+            const ov = Math.min(t.x1, hc.x1) - Math.max(t.x0, hc.x0);   /* < 0 is the gap between them */
+            if (ov > bo) { bo = ov; bi = i; }
+          });
+          cols[bi].push(t);
+        }
+      }
+      const cells = cols.map(cs => {
+        if (!cs.length) return "";
+        const ar = cs.filter(c => AR.test(c.s)).length * 2 >= cs.length;
+        return clean((ar ? cs.sort((a, b) => b.x0 - a.x0) : cs.sort((a, b) => a.x0 - b.x0)).map(c => c.s).join(" "));
+      });
+      if (cells.some(Boolean)) rows.push({ cells, yc: l.yc, h: l.h, pg });
+    }
+  });
+  if (!head) return pages.flat().map(l => l.cells.map(c => c.s));
+
+  const keyCols = [hmap.name, hmap.file].filter(i => i >= 0);
+  const isKey = r => !keyCols.length || keyCols.some(i => r.cells[i]);
+  const keyed = rows.filter(isKey);
+  keyed.forEach(k => { k.parts = [{ yc: k.yc, cells: k.cells }]; });
+  for (const r of rows) {
+    if (isKey(r)) continue;
+    let to = null, d = Infinity;
+    for (const k of keyed) if (k.pg === r.pg && Math.abs(k.yc - r.yc) < d) { d = Math.abs(k.yc - r.yc); to = k; }
+    if (to && d <= r.h * 2.6) to.parts.push({ yc: r.yc, cells: r.cells });
+  }
+  let out = keyed.map(k => head.map((_, i) =>
+    clean(k.parts.sort((a, b) => a.yc - b.yc).map(p => p.cells[i]).filter(Boolean).join(" "))));
+  if (hmap.file >= 0) {
+    out.forEach(c => { if (/^[\d\s]+$/.test(c[hmap.file])) c[hmap.file] = c[hmap.file].replace(/\s+/g, ""); });
+    /* when file numbers are the rule, a line without one is a title or a footer */
+    const has = c => /\d{4,}/.test(c[hmap.file]);
+    if (out.filter(has).length >= Math.max(2, out.length * 0.6)) out = out.filter(has);
+  }
+  return [head.map(c => c.s), ...out];
+}
+
+/* a header piece holding two titles ("نوع البكج رقم الملف") becomes two */
+function splitHead(c) {
+  const t = c.toks || [];
+  const hit = s => NKEYS.find(f => cellScore(s, f.keys) >= 2);
+  for (let k = 1; k < t.length; k++) {
+    const L = t.slice(0, k), R = t.slice(k);
+    const txt = a => (a.some(x => AR.test(x.s)) ? a.slice().reverse() : a).map(x => x.s).join(" ");
+    const a = hit(txt(L)), b = hit(txt(R));
+    if (a && b && a !== b && hit(c.s) !== undefined)
+      return [{ x0: L[0].x0, x1: L[L.length - 1].x1, s: txt(L), toks: L }, { x0: R[0].x0, x1: R[R.length - 1].x1, s: txt(R), toks: R }];
+  }
+  return [c];
+}
+
+/* ── PDF ── */
+const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+async function readPdf(file, progress) {
+  progress("تحميل قارئ الـPDF…");
+  await loadScript(PDFJS + "pdf.min.js");
+  pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + "pdf.worker.min.js";
+  const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+  const n = Math.min(pdf.numPages, 30);
+  const pages = [];
+  for (let p = 1; p <= n; p++) {
+    progress(`قراءة صفحة ${p} من ${n}…`);
+    const page = await pdf.getPage(p);
+    const vp = page.getViewport({ scale: 1 });
+    const tc = await page.getTextContent();
+    const words = tc.items.filter(it => it.str).map(it => {
+      const h = Math.hypot(it.transform[2], it.transform[3]) || it.height || 8;
+      const [x0, yb] = vp.convertToViewportPoint(it.transform[4], it.transform[5]);
+      return { x0, x1: x0 + (it.width || h * it.str.length * 0.5), yc: yb - h * 0.35, h, s: fixText(it.str), sp: !it.str.trim() };
+    });
+    pages.push(toLines(words, 0.9, 0.16));
+  }
+  const text = pages.flat().flatMap(l => l.cells).map(c => c.s).join("");
+  if (text.replace(/[^A-Za-z؀-ۿ0-9]/g, "").length > 40) {
+    const grid = linesToGrid(pages);
+    if (findHeader(grid).hits >= 2) return [{ name: "PDF", grid }];
+  }
+  /* no text layer (a scan or a photo saved as PDF): read the pages as pictures */
+  const cvs = [];
+  for (let p = 1; p <= Math.min(pdf.numPages, 10); p++) {
+    progress(`تحويل صفحة ${p} من الـPDF إلى صورة…`);
+    const page = await pdf.getPage(p);
+    const vp = page.getViewport({ scale: Math.min(3, 2400 / page.getViewport({ scale: 1 }).width) });
+    const cv = document.createElement("canvas");
+    cv.width = vp.width; cv.height = vp.height;
+    const cx = cv.getContext("2d"); cx.fillStyle = "#fff"; cx.fillRect(0, 0, cv.width, cv.height);
+    await page.render({ canvasContext: cx, viewport: vp }).promise;
+    cvs.push(cv);
+  }
+  return ocrPages(cvs, progress);
+}
+
+/* ── images ── */
+const TESS = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/";
+let ocrWorker = null, ocrNote = () => {};
+function getOcr(progress) {
+  ocrNote = progress;
+  return ocrWorker ||= (async () => {
+    progress("تحميل قارئ النصوص من الصور (أول مرة فقط، قد يستغرق دقيقة)…");
+    await loadScript(TESS + "tesseract.min.js");
+    const w = await Tesseract.createWorker(["eng", "ara"], 1, {
+      workerPath: TESS + "worker.min.js",
+      corePath: "https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1",
+      logger: m => { if (m.status === "recognizing text") ocrNote(`قراءة النص… ${Math.round((m.progress || 0) * 100)}%`); },
+    });
+    await w.setParameters({ preserve_interword_spaces: "1" });
+    return w;
+  })().catch(e => { ocrWorker = null; throw e; });
+}
+function toCanvas(img) {
+  return new Promise((res, rej) => {
+    const u = URL.createObjectURL(img), im = new Image();
+    im.onload = () => {
+      /* ~2200px wide: small screenshots are enlarged for the reader, big phone photos shrunk for speed */
+      const k = Math.max(0.5, Math.min(3, 2200 / Math.max(im.width, 1)));
+      const cv = document.createElement("canvas");
+      cv.width = Math.round(im.width * k); cv.height = Math.round(im.height * k);
+      const cx = cv.getContext("2d"); cx.fillStyle = "#fff"; cx.fillRect(0, 0, cv.width, cv.height);
+      cx.imageSmoothingQuality = "high"; cx.drawImage(im, 0, 0, cv.width, cv.height);
+      URL.revokeObjectURL(u); res(cv);
+    };
+    im.onerror = () => { URL.revokeObjectURL(u); rej(new Error("تعذّر فتح الصورة — جرّب PNG أو JPG")); };
+    im.src = u;
+  });
+}
+async function ocrPages(cvs, progress) {
+  const w = await getOcr(progress);
+  /* automatic layout first; if no table header comes out, again word by word */
+  for (const psm of ["3", "11"]) {
+    await w.setParameters({ tessedit_pageseg_mode: psm });
+    const pages = [];
+    for (let i = 0; i < cvs.length; i++) {
+      progress(`قراءة النص${cvs.length > 1 ? ` — صفحة ${i + 1} من ${cvs.length}` : ""}…`);
+      const { data } = await w.recognize(cvs[i]);
+      const words = (data.words || []).filter(x => x.confidence > 15).map(x => ({
+        x0: x.bbox.x0, x1: x.bbox.x1, yc: (x.bbox.y0 + x.bbox.y1) / 2, h: x.bbox.y1 - x.bbox.y0, s: fixText(x.text).trim(),
+      }));
+      pages.push(toLines(words, 0.8));
+    }
+    const grid = linesToGrid(pages);
+    if (findHeader(grid).hits >= 2) return [{ name: "صورة", grid, ocr: true }];
+  }
+  throw new Error("لم يُعثر على جدول بعناوين أعمدة — جرّب صورة أوضح ومستقيمة للجدول");
+}
+async function readImage(file, progress) {
+  return ocrPages([await toCanvas(file)], progress);
+}
+
+async function readFile(file, progress = () => {}) {
+  const k = kindOf(file);
+  const sheets = k === "sheet" ? await readSheet(file)
+               : k === "pdf" ? await readPdf(file, progress)
+               : k === "image" ? await readImage(file, progress)
+               : null;
+  if (!sheets) throw new Error("نوع ملف غير مدعوم");
+  if (!sheets.length) throw new Error("الملف لا يحتوي على بيانات");
+  return sheets;
 }
 
 /* Every sheet of every file whose header names at least two of the columns
@@ -555,19 +864,21 @@ async function readFile(file) {
 function collect() {
   const sheets = [];
   state.files.forEach((f, fi) => {
-    for (const s of f.sheets) {
+    f.sheets.forEach((s, si) => {
       const { row, hits } = findHeader(s.grid);
-      if (hits >= 2) sheets.push({ ...s, fi, file: f.file, many: f.sheets.length > 1, row, hits, map: autoMap(s.grid[row] || []) });
-    }
+      if (hits >= 2) sheets.push({ ...s, fi, si, uid: f.uid, file: f.file, many: f.sheets.length > 1, row, hits, map: autoMap(s.grid[row] || []), rank: rankOf(f.file, s) });
+    });
   });
   if (!sheets.length && state.files.length) {
     /* no recognisable header anywhere: the first row is taken as one and the user maps it */
     const f = state.files[0], s = f.sheets[0];
-    sheets.push({ ...s, fi: 0, file: f.file, many: f.sheets.length > 1, row: 0, hits: 0, map: autoMap(s.grid[0] || []) });
+    sheets.push({ ...s, fi: 0, si: 0, uid: f.uid, file: f.file, many: f.sheets.length > 1, row: 0, hits: 0, map: autoMap(s.grid[0] || []), rank: rankOf(f.file, s) });
   }
   state.sheets = sheets;
   state.primary = sheets.reduce((a, b) => (b.hits > a.hits ? b : a), sheets[0]);
 }
+/* how far a copy can be trusted: a sheet as typed, a PDF's own text, then a picture read by OCR */
+const rankOf = (file, s) => (s.ocr ? 1 : kindOf(file) === "pdf" ? 2 : 3);
 const headerOf = s => (s.grid[s.row] || []).map((h, i) => h || `عمود ${i + 1}`);
 function colOf(s, k) {
   if (k in state.over) {
@@ -592,33 +903,49 @@ function extract() {
       if (FIELDS.some(f => idx[f.k] >= 0 && cellScore(row[idx[f.k]], NKEYS.find(n => n.k === f.k).keys) === 3)) continue;
       if (/^(total|المجموع|الاجمالي|الإجمالي)\b/i.test(name)) continue;
       const fb = g("fb");
-      const st = statusOf(g("status"), fb);
       rows.push({
         name: titleCase(name), file, pkg: g("pkg"),
         branch: branchName(g("branch")) || (s.many ? s.name : ""),
-        fb: st === "na" && (!fb || RX_NA.test(norm(fb))) ? NA_TEXT : fb,
-        st, fi: s.fi, when: s.file.lastModified || 0,
+        fb, st: statusOf(g("status"), fb),
+        key: file.replace(/\D/g, "") || "n:" + norm(name),
+        fi: s.fi, rank: s.rank, when: s.file.lastModified || 0,
       });
     }
   }
   /* A patient in two files (yesterday's list carried into today's) is shown
-     once, where they first appear: an answered call beats "No Answer", and
-     otherwise the newer file wins. */
+     once, where they first appear: an answered call beats "No Answer", then
+     the surer copy (sheet, PDF text, OCR), then the newer file. */
   const seen = new Map(), out = [];
   let dupes = 0;
   for (const r of rows) {
-    const key = r.file.replace(/\D/g, "") || "n:" + norm(r.name);
-    const at = seen.get(key);
-    if (at == null) { seen.set(key, out.length); out.push(r); continue; }
+    const at = seen.get(r.key);
+    if (at == null) { seen.set(r.key, out.length); out.push(r); continue; }
     dupes++;
     const old = out[at];
     const better = (old.st === "na") !== (r.st === "na") ? r.st !== "na"
+                 : r.rank !== old.rank ? r.rank > old.rank
                  : r.when !== old.when ? r.when > old.when : r.fi >= old.fi;
     if (better) out[at] = r;
   }
   state.dupes = dupes;
   state.perFile = rows.reduce((m, r) => (m[r.fi] = (m[r.fi] || 0) + 1, m), {});
-  return out;
+
+  /* What was typed over the sheet belongs to the patient, whichever file's
+     copy is shown; clearing both name and file number drops the row. */
+  return out.map(r => {
+    const e = state.edits[r.key];
+    if (!e) return { ...r, fb: r.st === "na" && (!r.fb || RX_NA.test(norm(r.fb))) ? NA_TEXT : r.fb };
+    const v = k => (k in e ? clean(e[k]) : r[k]);
+    const fb = v("fb");
+    let st = e.st || r.st;
+    /* a comment typed for someone marked "No Answer" means they answered */
+    if (!e.st && "fb" in e && st === "na" && fb && fb !== NA_TEXT && !RX_NA.test(norm(fb))) st = "pos";
+    return {
+      ...r, name: "name" in e ? titleCase(e.name) : r.name, file: v("file"), pkg: v("pkg"),
+      branch: "branch" in e ? branchName(e.branch) : r.branch, st,
+      fb: st === "na" && (!fb || RX_NA.test(norm(fb))) ? NA_TEXT : fb,
+    };
+  }).filter(r => r.name || r.file);
 }
 
 /* ═════════════════ figures ═════════════════ */
@@ -710,17 +1037,28 @@ function tableShell() {
 }
 function rowEl(r, i, pColors, bColors) {
   const tr = el("tr");
+  tr.dataset.id = r.key;
   const td = (cls, v) => { const c = el("td", cls, v); tr.append(c); return c; };
+  /* in edit mode every text cell is plain and typeable */
+  const ed = (c, k) => {
+    if (!state.editing) return c;
+    try { c.contentEditable = "plaintext-only"; } catch (e) { c.contentEditable = "true"; }
+    c.dataset.k = k; c.spellcheck = false;
+    return c;
+  };
   td("n", pad2(i + 1));
-  td("nm", r.name).title = r.name;
-  td("f", r.file);
-  const p = td("p");
-  if (r.pkg) { const [bg, fg] = pColors.get(r.pkg) || PKG.slate; const s = el("span", "pill pk", r.pkg); s.style.background = bg; s.style.color = fg; p.append(s); }
-  const b = td("b");
-  if (r.branch) { const dot = el("i"); dot.style.background = bColors.get(norm(r.branch)) || "#8A85A8"; b.append(dot, document.createTextNode(r.branch)); }
-  const fb = td("fb" + (r.st === "na" ? " na" : ""), r.fb);
+  ed(td("nm", r.name), "name").title = r.name;
+  ed(td("f", r.file), "file");
+  const p = ed(td("p"), "pkg");
+  if (state.editing) p.textContent = r.pkg;
+  else if (r.pkg) { const [bg, fg] = pColors.get(r.pkg) || PKG.slate; const s = el("span", "pill pk", r.pkg); s.style.background = bg; s.style.color = fg; p.append(s); }
+  const b = ed(td("b"), "branch");
+  if (state.editing) b.textContent = r.branch;
+  else if (r.branch) { const dot = el("i"); dot.style.background = bColors.get(norm(r.branch)) || "#8A85A8"; b.append(dot, document.createTextNode(r.branch)); }
+  const fb = ed(td("fb" + (r.st === "na" ? " na" : ""), r.fb), "fb");
   fb.dir = "rtl";
   const s = td("st"); const S = STATUS[r.st]; s.append(el("span", "stp " + S.cls, S.txt));
+  if (state.editing) s.title = "انقر لتغيير الحالة";
   return tr;
 }
 function footer(F, pageNo, pages) {
@@ -818,7 +1156,7 @@ function paintInfo() {
     const n = state.perFile?.[i] || 0;
     const used = state.sheets.some(s => s.fi === i);
     const c = el("span", "chip " + (used ? "ok" : "miss"));
-    c.append(el("b", "", f.file.name), document.createTextNode(used ? ` · ${n} صف` : " · لا جدول مرضى فيه"));
+    c.append(el("b", "", f.file.name), document.createTextNode(` · ${KIND_AR[kindOf(f.file)] || ""}` + (used ? ` · ${n} صف` : " · لا جدول مرضى فيه")));
     const x = el("button", "x", "×"); x.title = "إزالة هذا الملف"; x.type = "button";
     x.onclick = () => { state.files.splice(i, 1); refresh(); };
     c.append(x); chips.append(c);
@@ -860,27 +1198,36 @@ function refresh() {
   paintMap();
   rebuild();
 }
-function setButtons(on) { for (const id of ["#bPdf", "#bPng", "#bPrint"]) $(id).disabled = !on; $("#bClear").disabled = !state.files.length; }
+function setButtons(on) { for (const id of ["#bPdf", "#bPng", "#bPrint", "#bEdit"]) $(id).disabled = !on; $("#bClear").disabled = !state.files.length; }
 
 /* files are added to the ones already there; the same file dropped twice
    replaces its earlier copy */
 async function takeFiles(list) {
-  const files = [...(list || [])].filter(f => /\.(xlsx|xlsm|xls|csv)$/i.test(f.name));
-  if (!files.length) { if (list && list.length) toast("ارفع ملفات إكسل (xlsx · xls · csv)", "bad"); return; }
+  const all = [...(list || [])];
+  const files = all.filter(kindOf);
+  if (all.length > files.length) toast("يُقبل إكسل أو CSV أو PDF أو صورة — تُرك ما سواها", "bad");
+  if (!files.length) return;
   const before = state.rows.length;
+  const busy = $("#busy");
   let bad = 0;
-  for (const file of files) {
+  for (const [n, file] of files.entries()) {
+    const tag = files.length > 1 ? `(${n + 1}/${files.length}) ` : "";
+    const progress = msg => { busy.hidden = false; $("#busyTxt").textContent = `${tag}${file.name} — ${msg}`; };
+    progress("جارٍ القراءة…");
     try {
-      const sheets = await readFile(file);
+      const sheets = await readFile(file, progress);
       const same = state.files.findIndex(f => f.file.name === file.name && f.file.size === file.size && f.file.lastModified === file.lastModified);
-      if (same >= 0) state.files[same] = { file, sheets }; else state.files.push({ file, sheets });
+      const entry = { file, sheets, uid: ++uidSeq };
+      if (same >= 0) state.files[same] = entry; else state.files.push(entry);
     } catch (e) {
       bad++; console.error(e);
-      toast(`تعذّرت قراءة ${file.name}: ${e.message}`, "bad");
+      toast(`تعذّرت قراءة ${file.name}: ${e.message || e}`, "bad");
     }
   }
+  busy.hidden = true;
   refresh();
   if (files.length > bad && state.rows.length) toast(`تم — ${state.rows.length} مريض` + (state.rows.length !== before && before ? ` (كانوا ${before})` : ""), "ok");
+  if (files.some(f => kindOf(f) !== "sheet") && files.length > bad) toast("راجع ما قُرئ من الـPDF أو الصورة، وصحّح أي خانة من «تعديل الجدول»", "");
 }
 
 function hookDrop(zone, input) {
@@ -891,6 +1238,14 @@ function hookDrop(zone, input) {
   zone.ondragleave = () => zone.classList.remove("hot");
   zone.ondrop = e => { e.preventDefault(); zone.classList.remove("hot"); takeFiles(e.dataTransfer.files); };
 }
+/* a screenshot pasted with Ctrl+V is taken like a dropped file */
+addEventListener("paste", e => {
+  const files = [...(e.clipboardData?.files || [])];
+  if (!files.length) return;
+  e.preventDefault();
+  const stamp = new Date().toISOString().slice(0, 19).replace(/[T:]/g, "-");
+  takeFiles(files.map((f, i) => new File([f], f.name && f.name !== "image.png" ? f.name : `لقطة-${stamp}${i ? "-" + i : ""}.png`, { type: f.type, lastModified: Date.now() })));
+});
 /* files dropped anywhere on the page count too */
 addEventListener("dragover", e => e.preventDefault());
 addEventListener("drop", e => { if (!e.target.closest("#dropX")) { e.preventDefault(); takeFiles(e.dataTransfer?.files); } });
@@ -928,6 +1283,7 @@ async function busy(btn, job) {
   finally { btn.lastChild.textContent = label; btn.disabled = false; }
 }
 $("#bPdf").onclick = () => busy($("#bPdf"), async () => {
+  endEdit();
   if (!window.jspdf || typeof html2canvas === "undefined") throw new Error("مكتبات الـPDF لم تُحمَّل — استخدم «طباعة» ثم «حفظ كـPDF»");
   const pdf = new window.jspdf.jsPDF({ orientation: "landscape", unit: "mm", format: "a4", compress: true });
   const pages = [...document.querySelectorAll("#doc .page")];
@@ -940,6 +1296,7 @@ $("#bPdf").onclick = () => busy($("#bPdf"), async () => {
   await deliver(fileName() + ".pdf", pdf.output("blob"));
 });
 $("#bPng").onclick = () => busy($("#bPng"), async () => {
+  endEdit();
   if (typeof html2canvas === "undefined") throw new Error("مكتبة الصور لم تُحمَّل");
   const pages = [...document.querySelectorAll("#doc .page")];
   for (let k = 0; k < pages.length; k++) {
@@ -948,8 +1305,35 @@ $("#bPng").onclick = () => busy($("#bPng"), async () => {
     await deliver(fileName() + (pages.length > 1 ? `_${k + 1}` : "") + ".png", blob);
   }
 });
-$("#bPrint").onclick = () => window.print();
-$("#bClear").onclick = () => { state.files = []; state.over = {}; $("#mapBox").open = false; refresh(); };
+$("#bPrint").onclick = () => { endEdit(); window.print(); };
+$("#bEdit").onclick = () => { state.editing = !state.editing; paintEdit(); rebuild(); };
+function paintEdit() {
+  $("#bEdit").lastChild.textContent = state.editing ? " إنهاء التعديل " : " تعديل الجدول ";
+  $("#bEdit").classList.toggle("btn-main", state.editing);
+  $("#doc").classList.toggle("editing", state.editing);
+  $("#editNote").hidden = !state.editing;
+}
+function endEdit() { if (state.editing) { state.editing = false; paintEdit(); rebuild(); } }
+/* typing is stored as it happens; the sheet is laid out again when editing ends */
+$("#doc").addEventListener("input", e => {
+  const c = e.target.closest("td[data-k]"); if (!c) return;
+  const id = c.parentNode.dataset.id;
+  (state.edits[id] ||= {})[c.dataset.k] = c.textContent;
+});
+$("#doc").addEventListener("keydown", e => {
+  if (e.key === "Enter" && e.target.closest("td[data-k]")) { e.preventDefault(); e.target.blur(); }
+});
+const NEXT_ST = { pos: "na", na: "neg", neg: "neu", neu: "pos" };
+$("#doc").addEventListener("click", e => {
+  if (!state.editing) return;
+  const c = e.target.closest("td.st"); if (!c) return;
+  const id = c.parentNode.dataset.id, r = state.rows.find(x => x.key === id); if (!r) return;
+  const st = NEXT_ST[r.st], ed = (state.edits[id] ||= {});
+  ed.st = st;
+  if (st === "na" && !("fb" in ed)) ed.fb = "";
+  rebuild();
+});
+$("#bClear").onclick = () => { state.files = []; state.over = {}; state.edits = {}; state.editing = false; paintEdit(); $("#mapBox").open = false; refresh(); };
 
 /* ═════════════════ wiring ═════════════════ */
 loadTexts();
