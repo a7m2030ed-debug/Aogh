@@ -218,10 +218,12 @@ details.map > div{padding:4px 12px 12px; display:flex; flex-direction:column; ga
 .dept .v.hi{color:var(--good-d)}      /* 80% of slots and over */
 .dept .v.mid{color:var(--mid-d)}      /* 50–79% */
 .dept .v.lo{color:var(--low-d)}       /* under 50% */
-/* the emergency card is a red card of its own: red edge on a pale red ground,
-   the visits in red, and its name and line in the same inks as every card */
-.dept.er{background:#FDF0EE; border-color:var(--low-d)}
-.dept.er .v{color:var(--low-d)}
+/* the emergency card stands apart in the navy of the header table and the
+   footer: its name in white, its visits in a soft red, its line in lilac */
+.dept.er{background:var(--nav); border-color:var(--nav)}
+.dept.er .l{color:#fff}
+.dept.er .v{color:#FF8A7A}
+.dept.er .s{color:#C9C6E0}
 /* the department's slots beside its visits — small and pale, so the visits
    stay the figure the eye lands on */
 .dept .v .cap{margin-left:1mm; font:400 7pt/1 var(--fs); color:#BCA3FC}
