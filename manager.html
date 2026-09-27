@@ -218,12 +218,10 @@ details.map > div{padding:4px 12px 12px; display:flex; flex-direction:column; ga
 .dept .v.hi{color:var(--good-d)}      /* 80% of slots and over */
 .dept .v.mid{color:var(--mid-d)}      /* 50–79% */
 .dept .v.lo{color:var(--low-d)}       /* under 50% */
-/* the emergency card stands apart in the navy of the header table and the
-   footer: its name in white, its visits in a soft red, its line in lilac */
-.dept.er{background:var(--nav); border-color:var(--nav)}
-.dept.er .l{color:#fff}
-.dept.er .v{color:#FF8A7A}
-.dept.er .s{color:#C9C6E0}
+/* the emergency card is dressed like every other card; its name sits on a
+   red badge and its visits are in red */
+.dept.er .l{left:6mm; right:6mm; border-radius:2mm; background:var(--low-d); color:#fff}
+.dept.er .v{color:var(--low-d)}
 /* the department's slots beside its visits — small and pale, so the visits
    stay the figure the eye lands on */
 .dept .v .cap{margin-left:1mm; font:400 7pt/1 var(--fs); color:#BCA3FC}
@@ -2292,6 +2290,15 @@ function rgbOf(css) {
 }
 const fillOp = c => `${f2(c[0])} ${f2(c[1])} ${f2(c[2])} rg\n`;
 const boxOp = (x, y, w, h) => `${f2(x)} ${f2(y)} ${f2(w)} ${f2(h)} re f\n`;
+function pillOp(x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  const k = r * 0.5523;
+  return `${f2(x + r)} ${f2(y)} m\n`
+    + `${f2(x + w - r)} ${f2(y)} l\n${f2(x + w - r + k)} ${f2(y)} ${f2(x + w)} ${f2(y + r - k)} ${f2(x + w)} ${f2(y + r)} c\n`
+    + `${f2(x + w)} ${f2(y + h - r)} l\n${f2(x + w)} ${f2(y + h - r + k)} ${f2(x + w - r + k)} ${f2(y + h)} ${f2(x + w - r)} ${f2(y + h)} c\n`
+    + `${f2(x + r)} ${f2(y + h)} l\n${f2(x + r - k)} ${f2(y + h)} ${f2(x)} ${f2(y + h - r + k)} ${f2(x)} ${f2(y + h - r)} c\n`
+    + `${f2(x)} ${f2(y + r)} l\n${f2(x)} ${f2(y + r - k)} ${f2(x + r - k)} ${f2(y)} ${f2(x + r)} ${f2(y)} c\nh f\n`;
+}
 
 /* Adobe's widths for the base-14 faces, in WinAnsi order from 0x20 up */
 const W32 = {
@@ -2378,7 +2385,8 @@ function drawBox(elm, ops, ox, oy, H, images) {
   const X = (r.left - ox) * 0.75, Y = H - (r.bottom - oy) * 0.75;
   const W = r.width * 0.75, Hh = r.height * 0.75;
   const bg = rgbOf(cs.backgroundColor);
-  if (bg) ops.push(fillOp(bg) + boxOp(X, Y, W, Hh));
+  const rad = (parseFloat(cs.borderTopLeftRadius) || 0) * 0.75;
+  if (bg) ops.push(fillOp(bg) + (rad > 0.4 ? pillOp(X, Y, W, Hh, rad) : boxOp(X, Y, W, Hh)));
   for (const side of ["Top", "Bottom", "Left", "Right"]) {
     const w = (parseFloat(cs[`border${side}Width`]) || 0) * 0.75;
     if (!w || cs[`border${side}Style`] === "none") continue;
