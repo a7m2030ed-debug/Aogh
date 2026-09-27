@@ -218,6 +218,8 @@ details.map > div{padding:4px 12px 12px; display:flex; flex-direction:column; ga
 .dept .v.hi{color:var(--good-d)}      /* 80% of slots and over */
 .dept .v.mid{color:var(--mid-d)}      /* 50–79% */
 .dept .v.lo{color:var(--low-d)}       /* under 50% */
+/* the emergency card is written in red throughout — name, visits and its line */
+.dept.er .l,.dept.er .v,.dept.er .s{color:var(--low-d)}
 /* the department's slots beside its visits — small and pale, so the visits
    stay the figure the eye lands on */
 .dept .v .cap{margin-left:1mm; font:400 7pt/1 var(--fs); color:#BCA3FC}
@@ -2098,7 +2100,7 @@ function glance(data) {
 function deptGrid(data) {
   const box = el("div", "grid6 depts");
   data.depts.forEach(d => {
-    const c = el("div", "dept");
+    const c = el("div", "dept" + (d.er ? " er" : ""));
     c.append(el("div", "l fit", d.name));
     /* the number takes the colour of how much of the department's capacity
        it used — visits ÷ slots: under 50% red, 50–79% dark orange, 80% and
