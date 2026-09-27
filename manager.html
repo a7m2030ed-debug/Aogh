@@ -174,6 +174,9 @@ details.map > div{padding:4px 12px 12px; display:flex; flex-direction:column; ga
   --gold:#FCD85E;       /* the thin line over the footer                     */
   --foot:#9999BF;       /* footer text                                       */
   --dash:#A3A9BA;       /* the "–" that stands for a missing figure          */
+  --good-d:#1F9254;     /* department at 80% of its slots or more            */
+  --mid-d:#C75A06;      /* 50–79%: dark orange                               */
+  --low-d:#C0392B;      /* under 50%                                         */
   --fs:Arial,"Liberation Sans",Helvetica,sans-serif;
   --fr:"Times New Roman","Liberation Serif",Times,serif;
 }
@@ -212,6 +215,9 @@ details.map > div{padding:4px 12px 12px; display:flex; flex-direction:column; ga
 .dept .l{position:absolute; left:1mm; right:1mm; top:1.5mm; height:4.1mm; font:700 6.5pt/4.1mm var(--fs); color:var(--nav); text-align:center; white-space:nowrap; overflow:hidden}
 .dept .v{position:absolute; left:1mm; right:1mm; top:5.8mm; height:7.1mm; font:700 16pt/7.1mm var(--fs); color:var(--pur); text-align:center; white-space:nowrap; overflow:hidden}
 .dept .v.nil{color:var(--dash)}
+.dept .v.hi{color:var(--good-d)}      /* 80% of slots and over */
+.dept .v.mid{color:var(--mid-d)}      /* 50–79% */
+.dept .v.lo{color:var(--low-d)}       /* under 50% */
 /* the department's slots beside its visits — small and pale, so the visits
    stay the figure the eye lands on */
 .dept .v .cap{margin-left:1mm; font:400 7pt/1 var(--fs); color:#BCA3FC}
@@ -2094,7 +2100,13 @@ function deptGrid(data) {
   data.depts.forEach(d => {
     const c = el("div", "dept");
     c.append(el("div", "l fit", d.name));
-    const v = el("div", "v fit" + (d.visits == null ? " nil" : ""), d.visits == null ? DASH : nf(d.visits));
+    /* the number takes the colour of how much of the department's capacity
+       it used — visits ÷ slots: under 50% red, 50–79% dark orange, 80% and
+       over green. A department without slots keeps the template's purple. */
+    const used = d.visits != null && d.slots ? Math.round(d.visits / d.slots * 100) : null;
+    const band = used == null ? "" : used >= 80 ? " hi" : used >= 50 ? " mid" : " lo";
+    const v = el("div", "v fit" + (d.visits == null ? " nil" : band), d.visits == null ? DASH : nf(d.visits));
+    if (used != null) v.title = used + "% of slots";
     if (d.slots) v.append(el("span", "cap", "/ " + nf(d.slots)));
     c.append(v);
     /* a card with no named doctor (an emergency room seen only through its
