@@ -221,7 +221,7 @@ details.map > div{padding:4px 12px 12px; display:flex; flex-direction:column; ga
 /* the emergency card is dressed like every other card; its name sits on a
    red badge and its visits are in red */
 .dept.er .l{left:6mm; right:6mm; border-radius:2mm; background:var(--low-d); color:#fff}
-.dept.er .v{color:var(--low-d)}
+.dept.er .v{color:#8E1B1B}             /* dark red */
 /* the department's slots beside its visits — small and pale, so the visits
    stay the figure the eye lands on */
 .dept .v .cap{margin-left:1mm; font:400 7pt/1 var(--fs); color:#BCA3FC}
@@ -2116,7 +2116,8 @@ function deptGrid(data) {
     /* a card with no named doctor (an emergency room seen only through its
        registration account) leaves the count out rather than print "0 Doctors" */
     const parts = data.known.doctors && d.doctors ? [d.doctors + (d.doctors === 1 ? " Doctor" : " Doctors")] : [];
-    if (data.known.walkin) parts.push("Walk in " + nf(d.walkin || 0));
+    /* the emergency room is all walk-ins, so its card leaves the line out */
+    if (data.known.walkin && !d.er) parts.push("Walk in " + nf(d.walkin || 0));
     /* the emergency room books nothing, so it has no no-shows to report */
     if (data.known.noshow && !d.er) parts.push("No Show " + nf(d.noshow || 0));
     const s = el("div", "s fit" + (parts.length < 3 ? " one" : ""));
