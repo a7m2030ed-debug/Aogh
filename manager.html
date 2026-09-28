@@ -174,9 +174,11 @@ details.map > div{padding:4px 12px 12px; display:flex; flex-direction:column; ga
   --gold:#FCD85E;       /* the thin line over the footer                     */
   --foot:#9999BF;       /* footer text                                       */
   --dash:#A3A9BA;       /* the "–" that stands for a missing figure          */
-  --good-d:#1F9254;     /* department at 80% of its slots or more            */
-  --mid-d:#C75A06;      /* 50–79%: dark orange                               */
-  --low-d:#C0392B;      /* under 50%                                         */
+  --good-d:#15803D;     /* department at 80% of its slots or more            */
+  --mid-d:#D97706;      /* 50–79%: dark orange                               */
+  --low-d:#B91C1C;      /* under 50% — the three are checked to stay apart,  */
+                        /* colour-blind readers included, with the bar and   */
+                        /* its % as the second cue                           */
   --fs:Arial,"Liberation Sans",Helvetica,sans-serif;
   --fr:"Times New Roman","Liberation Serif",Times,serif;
 }
@@ -211,7 +213,7 @@ details.map > div{padding:4px 12px 12px; display:flex; flex-direction:column; ga
 .kpi .nil{color:var(--dash)}
 
 .depts{row-gap:2.1mm; margin-bottom:8mm}
-.dept{position:relative; height:18.3mm; background:var(--soft); border:1pt solid var(--pur)}
+.dept{position:relative; height:21.3mm; background:var(--soft); border:1pt solid var(--pur)}
 .dept .l{position:absolute; left:1mm; right:1mm; top:1.5mm; height:4.1mm; font:700 6.5pt/4.1mm var(--fs); color:var(--nav); text-align:center; white-space:nowrap; overflow:hidden}
 .dept .v{position:absolute; left:1mm; right:1mm; top:5.8mm; height:7.1mm; font:700 16pt/7.1mm var(--fs); color:var(--pur); text-align:center; white-space:nowrap; overflow:hidden}
 .dept .v.nil{color:var(--dash)}
@@ -222,10 +224,19 @@ details.map > div{padding:4px 12px 12px; display:flex; flex-direction:column; ga
    red badge and its visits are in red */
 .dept.er .l{left:6mm; right:6mm; border-radius:2mm; background:var(--low-d); color:#fff}
 .dept.er .v{color:#8E1B1B}             /* dark red */
+/* how much of its slots the department used: a slim bar in the status colour
+   and the figure beside it in ink — the bar caps at full, the figure does not */
+.dept .meter{position:absolute; left:3mm; right:2.4mm; top:13.4mm; height:2.6mm; display:flex; align-items:center; gap:1.4mm}
+.dept .meter .track{flex:1 1 auto; height:1.3mm; border-radius:.65mm; background:#E2DAFB; overflow:hidden}
+.dept .meter .track i{display:block; height:100%; border-radius:.65mm}
+.dept .meter .track i.hi{background:var(--good-d)}
+.dept .meter .track i.mid{background:var(--mid-d)}
+.dept .meter .track i.lo{background:var(--low-d)}
+.dept .meter .pct{flex:none; min-width:7mm; text-align:right; font:700 6pt/2.6mm var(--fs); color:var(--nav)}
 /* the department's slots beside its visits — small and pale, so the visits
    stay the figure the eye lands on */
 .dept .v .cap{margin-left:1mm; font:400 7pt/1 var(--fs); color:#BCA3FC}
-.dept .s{position:absolute; left:1mm; right:1mm; top:13.2mm; height:2.8mm; display:flex; justify-content:space-between; gap:1.2mm;
+.dept .s{position:absolute; left:1mm; right:1mm; top:17.4mm; height:2.8mm; display:flex; justify-content:space-between; gap:1.2mm;
          font:400 5.2pt/2.8mm var(--fr); color:var(--mut); white-space:nowrap; overflow:hidden}
 .dept .s.one{justify-content:center; gap:3mm}
 
@@ -2111,8 +2122,17 @@ function deptGrid(data) {
     const band = used == null ? "" : used >= 80 ? " hi" : used >= 50 ? " mid" : " lo";
     const v = el("div", "v fit" + (d.visits == null ? " nil" : band), d.visits == null ? DASH : nf(d.visits));
     if (used != null) v.title = used + "% of slots";
+    let meter = null;
+    if (used != null) {
+      meter = el("div", "meter");
+      const track = el("div", "track"), fill = el("i", band.trim());
+      fill.style.width = Math.min(100, Math.max(used, 2)) + "%";
+      track.append(fill);
+      meter.append(track, el("span", "pct", used + "%"));
+    }
     if (d.slots) v.append(el("span", "cap", "/ " + nf(d.slots)));
     c.append(v);
+    if (meter) c.append(meter);
     /* a card with no named doctor (an emergency room seen only through its
        registration account) leaves the count out rather than print "0 Doctors" */
     const parts = data.known.doctors && d.doctors ? [d.doctors + (d.doctors === 1 ? " Doctor" : " Doctors")] : [];
