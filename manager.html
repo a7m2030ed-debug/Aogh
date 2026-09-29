@@ -1729,8 +1729,14 @@ const ST_COUNT = /^reported?\b/i;          // "Not Reported" is not Reported
 const ST_SKIP = /pending|cancel|no\s*-?\s*show|missed|absent|not\s*arrived|did\s*not|\bdna\b/i;
 const ST_CANCEL = /cancel/i;
 const ST_NOSHOW = /no\s*-?\s*show|missed|absent|not\s*arrived|did\s*not|\bdna\b/i;
+/* one file number however an export spells it: "0025099864" and 25099864 */
+const mrnKey = s => clean(s).toUpperCase().replace(/\s+/g, "").replace(/^([A-Z]*)0+(?=\d)/, "$1");
 function readDetails(list) {
   const by = new Map(), left = new Map();
+  /* the file numbers the emergency room registered and saw as new —
+     its doctors' New Visit is read off these */
+  const erNew = new Set();
+  let erLines = 0;
   let lines = 0, walkins = 0, hasFollow = false, hasStatus = false, noshowSeen = false, cancelSeen = false;
   const DOC_LINE = /^doctor\s*name\s*:/i, STATUS_LINE = /^status\s*:/i;
   for (const nv of list) {
@@ -1765,13 +1771,17 @@ function readDetails(list) {
       }
       const type = str(r, nv.col.type);
       lines++;
+      if (nv.col.mrno >= 0 && isER(clean(str(r, nv.col.dept)) || p.dept || doc)) {
+        erLines++;
+        if (TYPE_NEW.test(type) || TYPE_WALKIN.test(type)) erNew.add(mrnKey(str(r, nv.col.mrno)));
+      }
       if (TYPE_NEW.test(type)) p.newv++;
       else if (TYPE_WALKIN.test(type)) { p.newv++; p.walk++; walkins++; }
       else if (TYPE_FOLLOW.test(type)) { p.follow++; hasFollow = true; }
     }
   }
   const strict = list.some(nv => nv.sheet.grid.some(r => /^status\s*:\s*reported?\b/i.test(clean(r?.[0]))));
-  return { by, lines, walkins, hasFollow, hasStatus, strict, left, noshowSeen, cancelSeen };
+  return { by, lines, walkins, hasFollow, hasStatus, strict, left, noshowSeen, cancelSeen, erNew, erLines };
 }
 
 /* ═════════════════ the report's arithmetic ═════════════════ */
@@ -1981,12 +1991,20 @@ function aggregate(opts) {
      each doctor who worked under it is read off the services export and
      closes the table: Seen is the patients they billed for, each file number
      once; the orders are counted per patient like everyone's, and the income
-     is theirs in full. The registration account itself is no doctor. */
+     is theirs in full. The registration account itself is no doctor. New
+     Visit is how many of those patients the detailed export has registered
+     in the emergency room as New or Walk-in, Reported. */
   const erDocs = all.filter(isErDoc);
+  const erNewOf = d => {
+    if (!det || !det.erLines || !d.pts) return null;
+    let n = 0;
+    for (const x of d.pts) if (det.erNew.has(mrnKey(x.split("\u0000")[0]))) n++;
+    return n;
+  };
   const erRows = erDocs.filter(d => !isSystem(d.name) && d.cnt).map(d => {
     const seen = d.pts && d.pts.size ? d.pts.size : null;
     return {
-      name: d.name, spec: d.dept, er: true, seen, newv: null,
+      name: d.name, spec: d.dept, er: true, seen, newv: erNewOf(d),
       lab: d.cnt.lab || 0, rad: d.cnt.rad || 0, proc: d.cnt.proc || 0,
       net: d.net, rpv: d.net != null && seen > 0 ? d.net / seen : null,
     };
@@ -2038,6 +2056,7 @@ function aggregate(opts) {
   if (unlisted.length) notices.push({ kind: "", text: "لا يظهر في جدول الأطباء من لا مواعيد له في «Doctor Wise»: " + unlisted.join("، ") });
   if (unbooked.length) notices.push({ kind: "", text: "لا يظهر في جدول الأطباء من لا مواعيد محجوزة له (Scheduled = 0) ولو كانت له Slots: " + unbooked.join("، ") });
   if (erRows.length) notices.push({ kind: "", text: "أطباء الطوارئ في آخر الجدول من تصدير الخدمات: Seen عدد مرضى كل طبيب بلا تكرار (برقم الملف)، وطلباتهم لكل مريض، ودخلهم كاملًا"
+      + (erRows.some(r => r.newv != null) ? "، وNew Visit من سُجّل منهم في الطوارئ New أو Walk-in بحالة Reported في الكشف المفصّل" : "")
       + (erDesk.length ? ". وحساب التسجيل (" + erDesk.map(d => d.name + " — " + nf(d.pts.size) + " مريضًا، " + nf(d.net || 0) + " ريالًا").join("، ") + ") لا يُنسب لطبيب فلا صفّ له" : "") + "." });
   if (systems.length) notices.push({ kind: "", text: "حسابات النظام لا تظهر في جدول الأطباء: " + systems.join("، ") });
   if (O.walkin != null && walkIncl && O.walkin > (O.visits || 0))
