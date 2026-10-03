@@ -248,8 +248,12 @@ private fun PlayerSurface(
                     this.player = model.viewPlayer
                 }
             },
+            // الشاشة تبقى مضاءة ما دامت الصورة تتحرّك على الجوال. بدونها كان
+            // الجوال يُقفل بعد مهلة السكون (أقل من دقيقة) ويبقى الصوت وحده
+            // في الخلفية. عند الإيقاف أو البثّ إلى التلفاز تعود المهلة.
+            update = { it.keepScreenOn = model.isPlaying && !model.isCasting },
             // فكّ الارتباط عند هدم الشاشة حتى لا يتمسّك المشغّل بسطح ميّت
-            onRelease = { it.player = null },
+            onRelease = { it.keepScreenOn = false; it.player = null },
             modifier = Modifier.fillMaxSize()
         )
 

@@ -170,6 +170,9 @@ class ChannelsViewModel(
         private set
     var errorText by mutableStateOf<String?>(null)
         private set
+    /** الصورة تتحرّك الآن على الجوال — ما يُبقي الشاشة مضاءة. */
+    var isPlaying by mutableStateOf(false)
+        private set
 
     private var loaded = false
 
@@ -212,6 +215,10 @@ class ChannelsViewModel(
                 retries = 0
                 errorText = null
             }
+        }
+
+        override fun onIsPlayingChanged(playing: Boolean) {
+            isPlaying = playing
         }
 
         override fun onPlayerError(error: PlaybackException) = recover(error)
