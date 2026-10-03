@@ -108,6 +108,10 @@
     <string name="pick_channel">Pick a channel from the list</string>
     <string name="minimize">Exit full screen</string>
     <string name="send_to_app">Send to another app</string>
+    <string name="show_on_tv">Show on TV</string>
+    <string name="mirror_screen">Mirror phone screen to TV</string>
+    <string name="mirror_hint">Pick your TV from the list, then come back and tap full screen.</string>
+    <string name="mirror_manual">Swipe down from the top and choose “Smart View”, “Screen mirroring” or “Cast”, then pick your TV.</string>
     <string name="fullscreen">Full screen</string>
     <string name="all_groups">All categories</string>
     <string name="no_channels">No channels</string>

@@ -104,6 +104,10 @@
     <string name="pick_channel">اختر قناة من القائمة</string>
     <string name="minimize">تصغير</string>
     <string name="send_to_app">إرسال إلى تطبيق آخر</string>
+    <string name="show_on_tv">عرض على التلفزيون</string>
+    <string name="mirror_screen">عكس شاشة الجوال على التلفزيون</string>
+    <string name="mirror_hint">اختر التلفزيون من القائمة، ثم ارجع للتطبيق واضغط ملء الشاشة.</string>
+    <string name="mirror_manual">اسحب من أعلى الشاشة واختر «Smart View» أو «عرض الشاشة» أو «Cast»، ثم اختر التلفزيون.</string>
     <string name="fullscreen">ملء الشاشة</string>
     <string name="all_groups">كل الفئات</string>
     <string name="no_channels">لا قنوات</string>

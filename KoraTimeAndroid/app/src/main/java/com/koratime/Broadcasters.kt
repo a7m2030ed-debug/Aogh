@@ -33,6 +33,19 @@ object Broadcasters {
                 "saudi pro league", "saudi professional league", "saudi arabian pro league",
                 "saudi first division", "kings cup", "saudi super cup"
             )
+        ),
+        // روابط بثّ الكأس المفتوحة أُقفلت (Access Denied من كل مكان) فخرجت
+        // من قائمة القنوات؛ المشاهدة المجانية باقية في موقعها الرسمي.
+        Broadcaster(
+            id = "alkass",
+            name = "الكأس شوف",
+            note = "قنوات الكأس القطرية: الدوري القطري وكأس الأمير. المشاهدة مجانية من الموقع الرسمي.",
+            appUrl = "https://shoof.alkass.net/",
+            storeUrl = "https://play.google.com/store/search?q=alkass&c=apps",
+            competitionKeywords = listOf(
+                "دوري نجوم قطر", "الدوري القطري", "كأس الأمير",
+                "qatar stars league", "stars league", "emir cup", "amir cup"
+            )
         )
     )
 

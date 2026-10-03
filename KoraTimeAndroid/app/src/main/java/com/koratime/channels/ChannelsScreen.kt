@@ -2,6 +2,7 @@ package com.koratime.channels
 
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -52,6 +53,7 @@ import com.google.android.gms.cast.framework.CastButtonFactory
 import coil.compose.AsyncImage
 import com.koratime.Broadcasters
 import com.koratime.R
+import com.koratime.cast.ScreenMirroring
 import com.koratime.core.ArabicNames
 import com.koratime.ui.KT
 import com.koratime.ui.KTIcons
@@ -297,16 +299,39 @@ private fun PlayerSurface(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp)
         ) {
-            // مخرج لتلفزيونات لا تتحدّث Cast: نسلّم الرابط لتطبيق يعرفها
-            PlayerCornerButton(
-                icon = KTIcons.SendToScreen,
-                label = stringResource(R.string.send_to_app),
-                onClick = {
-                    model.shareIntent()?.let { intent ->
-                        runCatching { context.startActivity(intent) }
-                    }
+            // عرض على تلفزيون لا يتحدّث Cast (سامسونج، إل جي…): عكس شاشة
+            // الجوال كاملة، أو تسليم الرابط لتطبيق يعرف ذلك التلفزيون.
+            Box {
+                var tvMenuOpen by remember { mutableStateOf(false) }
+                PlayerCornerButton(
+                    icon = KTIcons.SendToScreen,
+                    label = stringResource(R.string.show_on_tv),
+                    onClick = { tvMenuOpen = true }
+                )
+                DropdownMenu(expanded = tvMenuOpen, onDismissRequest = { tvMenuOpen = false }) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.mirror_screen)) },
+                        onClick = {
+                            tvMenuOpen = false
+                            val opened = ScreenMirroring.open(context)
+                            Toast.makeText(
+                                context,
+                                if (opened) R.string.mirror_hint else R.string.mirror_manual,
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.send_to_app)) },
+                        onClick = {
+                            tvMenuOpen = false
+                            model.shareIntent()?.let { intent ->
+                                runCatching { context.startActivity(intent) }
+                            }
+                        }
+                    )
                 }
-            )
+            }
             if (model.canCast) {
                 // زرّ النظام القياسي: يفتح قائمة الأجهزة التي يعرفها أندرويد
                 AndroidView(
