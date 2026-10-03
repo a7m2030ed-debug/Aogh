@@ -33,7 +33,10 @@ USER_AGENT = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1
 GEO_CODES = {401, 403, 451}
 SEGMENT_SAMPLE_BYTES = 900_000
 MIN_HEADROOM = 1.15  # أقل من ذلك يعني تقطّعاً عند أي تذبذب في شبكة الجوال
-GROUP_ORDER = {"رياضة": 0, "إخبارية": 1, "تجريبي": 2}
+GROUP_ORDER = {"رياضة": 0, "رياضة أوروبية": 1, "إخبارية": 2, "تجريبي": 3}
+# المستخدمون في الخليج: قناة أوروبية محجوبة خارج بلدها لن تعمل عندهم أبداً،
+# بخلاف القنوات العربية التي قد يكون حجبها عن خوادم أمريكا وحدها.
+DROP_GEO_GROUPS = {"رياضة أوروبية"}
 
 
 def script_rank(name):
@@ -217,7 +220,7 @@ def main():
     counts = {"ok": 0, "geo": 0, "slow": 0, "dead": 0}
 
     # الفحص متوازٍ: مئة رابط بمهلة ١٥ ثانية لا تُفحص بالتتابع في وقت معقول
-    with concurrent.futures.ThreadPoolExecutor(max_workers=12) as pool:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=24) as pool:
         results = list(pool.map(check, candidates))
 
     survivors = []
@@ -228,6 +231,8 @@ def main():
 
         # البطيء يُستبعد كالميّت: قائمته سليمة لكنه يتقطّع عند كل مشاهد
         if status in ("dead", "slow"):
+            continue
+        if status == "geo" and channel.get("group") in DROP_GEO_GROUPS:
             continue
 
         entry = {key: value for key, value in channel.items() if value is not None}

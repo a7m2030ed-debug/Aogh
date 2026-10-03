@@ -35,6 +35,25 @@ COUNTRIES = {
     "SY": "سوريا", "PS": "فلسطين", "MR": "موريتانيا",
 }
 
+# أوروبا: قنواتها الرياضية المفتوحة في الفهرس تُجمع في فئة مستقلة. الكبرى
+# منها (سكاي، كانال+، DAZN، يوروسبورت) مدفوعة ومشفّرة فلن تظهر أصلاً، وما
+# يصل هو المجاني على الهواء — والفاحص يُسقط منه المحجوب جغرافياً.
+EUROPE = {
+    "GB": "بريطانيا", "IE": "أيرلندا", "FR": "فرنسا", "DE": "ألمانيا",
+    "AT": "النمسا", "CH": "سويسرا", "IT": "إيطاليا", "ES": "إسبانيا",
+    "PT": "البرتغال", "NL": "هولندا", "BE": "بلجيكا", "LU": "لوكسمبورغ",
+    "DK": "الدنمارك", "SE": "السويد", "NO": "النرويج", "FI": "فنلندا",
+    "IS": "آيسلندا", "PL": "بولندا", "CZ": "التشيك", "SK": "سلوفاكيا",
+    "HU": "المجر", "RO": "رومانيا", "BG": "بلغاريا", "GR": "اليونان",
+    "CY": "قبرص", "TR": "تركيا", "HR": "كرواتيا", "RS": "صربيا",
+    "SI": "سلوفينيا", "BA": "البوسنة", "ME": "الجبل الأسود",
+    "MK": "مقدونيا الشمالية", "AL": "ألبانيا", "XK": "كوسوفو",
+    "UA": "أوكرانيا", "MD": "مولدوفا", "LT": "ليتوانيا", "LV": "لاتفيا",
+    "EE": "إستونيا", "MT": "مالطا", "AD": "أندورا", "MC": "موناكو",
+    "SM": "سان مارينو",
+}
+EUROPE_GROUP = "رياضة أوروبية"
+
 # قنوات رياضية عالمية مفتوحة نضيفها ولو كانت خارج الدول أعلاه
 EXTRA_KEYWORDS = ("red bull tv", "sport tv", "eurosport news", "olympic",
                   "thmanyah", "ثمانية")
@@ -108,17 +127,22 @@ def fetch_json(url):
         return json.loads(response.read().decode("utf-8"))
 
 
-def wanted(channel):
-    """هل هذه قناة رياضية تهمّنا؟"""
+def group_for(channel):
+    """فئة القناة في التطبيق إن كانت قناة رياضية تهمّنا، وإلا None."""
     if channel.get("closed") or channel.get("is_nsfw"):
-        return False
+        return None
     categories = channel.get("categories") or []
     if "sports" not in categories:
-        return False
-    if channel.get("country") in COUNTRIES:
-        return True
+        return None
+    country = channel.get("country")
+    if country in COUNTRIES:
+        return "رياضة"
     name = (channel.get("name") or "").lower()
-    return any(keyword in name for keyword in EXTRA_KEYWORDS)
+    if any(keyword in name for keyword in EXTRA_KEYWORDS):
+        return "رياضة"
+    if country in EUROPE:
+        return EUROPE_GROUP
+    return None
 
 
 def main():
@@ -139,7 +163,13 @@ def main():
             json.dump(manual, handle, ensure_ascii=False, indent=2)
         return 0
 
-    by_id = {channel["id"]: channel for channel in channels if wanted(channel)}
+    by_id = {}
+    group_by_id = {}
+    for channel in channels:
+        group = group_for(channel)
+        if group:
+            by_id[channel["id"]] = channel
+            group_by_id[channel["id"]] = group
     print(f"قنوات رياضية مطابقة في الفهرس: {len(by_id)}")
 
     try:
@@ -164,10 +194,11 @@ def main():
             continue
 
         seen_urls.add(url)
-        country = COUNTRIES.get(channel.get("country"), "دولية")
+        code = channel.get("country")
+        country = COUNTRIES.get(code) or EUROPE.get(code) or "دولية"
         entry = {
             "name": arabic_name(channel.get("name") or channel_id),
-            "group": "رياضة",
+            "group": group_by_id[channel_id],
             "url": url,
             "note": f"قناة مفتوحة — {country}",
         }
@@ -191,8 +222,17 @@ def main():
         per_name[entry["name"]] = count + 1
         trimmed.append(entry)
 
+    # السقف لكل فئة على حدة: قنوات أوروبا أكثر عدداً، وسقف مشترك كان
+    # سيُقصي القنوات العربية من القائمة.
     trimmed.sort(key=lambda entry: entry["name"])
-    trimmed = trimmed[:MAX_CHANNELS]
+    capped, per_group = [], {}
+    for entry in trimmed:
+        count = per_group.get(entry["group"], 0)
+        if count >= MAX_CHANNELS:
+            continue
+        per_group[entry["group"]] = count + 1
+        capped.append(entry)
+    trimmed = capped
 
     merged = manual + trimmed
     with open(args.output, "w", encoding="utf-8") as handle:
