@@ -1,0 +1,26 @@
+name: كورة تايم — فحص القنوات اليومي
+
+# مهمّة فحص القنوات تعيش على فرع التطبيق، وGitHub لا يشغّل الجداول الزمنية
+# إلا من الفرع الافتراضي — فكانت جدولتها هناك لا تعمل أبداً. هذا الملف
+# يوقظها يومياً على فرعها، وهي تتولّى الباقي: جلب العناوين، الفحص، حفظ
+# القائمة ونشرها للمستخدمين.
+
+on:
+  schedule:
+    # ٥:٢٣ فجراً بتوقيت الرياض
+    - cron: "23 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+
+jobs:
+  dispatch:
+    name: تشغيل فحص القنوات على فرع التطبيق
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: إطلاق المهمّة
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run channels.yml --repo "${{ github.repository }}" --ref claude/kora-time-ios-app-q9dalt
