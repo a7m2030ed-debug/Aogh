@@ -22,17 +22,20 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,8 +54,10 @@ import androidx.media3.ui.PlayerView
 import androidx.mediarouter.app.MediaRouteButton
 import com.google.android.gms.cast.framework.CastButtonFactory
 import coil.compose.AsyncImage
+import kotlinx.coroutines.launch
 import com.koratime.Broadcasters
 import com.koratime.R
+import com.koratime.cast.Dlna
 import com.koratime.cast.ScreenMirroring
 import com.koratime.core.ArabicNames
 import com.koratime.ui.KT
@@ -233,6 +238,11 @@ private fun PlayerSurface(
     // أزرارنا تتبع ظهور أزرار المشغّل نفسه: لمسة تُظهر الكل ولمسة تُخفيه،
     // بدل أن تبقى أزرارنا معلّقة فوق الصورة دائماً.
     var controlsVisible by remember { mutableStateOf(true) }
+    var dlnaOpen by remember { mutableStateOf(false) }
+
+    if (dlnaOpen && current != null) {
+        DlnaDialog(model = model, channel = current, onDismiss = { dlnaOpen = false })
+    }
 
     Box(modifier = modifier.background(Color.Black), contentAlignment = Alignment.Center) {
         AndroidView(
@@ -322,6 +332,13 @@ private fun PlayerSurface(
                         }
                     )
                     DropdownMenuItem(
+                        text = { Text(stringResource(R.string.dlna_option)) },
+                        onClick = {
+                            tvMenuOpen = false
+                            dlnaOpen = true
+                        }
+                    )
+                    DropdownMenuItem(
                         text = { Text(stringResource(R.string.send_to_app)) },
                         onClick = {
                             tvMenuOpen = false
@@ -350,6 +367,82 @@ private fun PlayerSurface(
             )
         }
     }
+}
+
+/**
+ * البحث عن تلفزيونات DLNA وإرسال القناة إلى المختار منها. الجوال يصمت بعد
+ * الإرسال حتى لا يُسمع الصوت مرتين.
+ */
+@Composable
+private fun DlnaDialog(model: ChannelsViewModel, channel: Channel, onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var searching by remember { mutableStateOf(true) }
+    var sending by remember { mutableStateOf(false) }
+    var renderers by remember { mutableStateOf<List<Dlna.Renderer>>(emptyList()) }
+    var searchRound by remember { mutableStateOf(0) }
+
+    LaunchedEffect(searchRound) {
+        searching = true
+        renderers = Dlna.discover(context)
+        searching = false
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.dlna_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                when {
+                    searching || sending -> Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        CircularProgressIndicator(color = KT.accent, modifier = Modifier.size(22.dp))
+                        Text(stringResource(R.string.dlna_searching), fontSize = 13.sp)
+                    }
+                    renderers.isEmpty() -> Text(stringResource(R.string.dlna_none), fontSize = 13.sp)
+                    else -> renderers.forEach { renderer ->
+                        Text(
+                            renderer.name,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = KT.accent,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .clickable(enabled = !sending) {
+                                    sending = true
+                                    scope.launch {
+                                        val ok = Dlna.play(renderer, channel.url, channel.name)
+                                        sending = false
+                                        if (ok) model.pausePlayback()
+                                        Toast.makeText(
+                                            context,
+                                            context.getString(
+                                                if (ok) R.string.dlna_sent else R.string.dlna_failed,
+                                                renderer.name
+                                            ),
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                        if (ok) onDismiss()
+                                    }
+                                }
+                                .padding(vertical = 10.dp, horizontal = 6.dp)
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) }
+        },
+        dismissButton = {
+            if (!searching && !sending) {
+                TextButton(onClick = { searchRound += 1 }) { Text(stringResource(R.string.search_again)) }
+            }
+        }
+    )
 }
 
 @Composable

@@ -108,6 +108,14 @@
     <string name="mirror_screen">عكس شاشة الجوال على التلفزيون</string>
     <string name="mirror_hint">اختر التلفزيون من القائمة، ثم ارجع للتطبيق واضغط ملء الشاشة.</string>
     <string name="mirror_manual">اسحب من أعلى الشاشة واختر «Smart View» أو «عرض الشاشة» أو «Cast»، ثم اختر التلفزيون.</string>
+    <string name="dlna_option">إرسال القناة إلى التلفزيون (DLNA)</string>
+    <string name="dlna_title">اختر التلفزيون</string>
+    <string name="dlna_searching">جارٍ البحث عن التلفزيونات على شبكتك…</string>
+    <string name="dlna_none">لم يُعثر على تلفزيون. تأكّد أن الجوال والتلفزيون على شبكة الواي فاي نفسها وأن التلفزيون يعمل، ثم أعد البحث.</string>
+    <string name="dlna_sent">أُرسلت القناة إلى %1$s</string>
+    <string name="dlna_failed">رفض %1$s تشغيل القناة. جرّب قناة أخرى أو عكس الشاشة.</string>
+    <string name="search_again">إعادة البحث</string>
+    <string name="close">إغلاق</string>
     <string name="fullscreen">ملء الشاشة</string>
     <string name="all_groups">كل الفئات</string>
     <string name="no_channels">لا قنوات</string>
