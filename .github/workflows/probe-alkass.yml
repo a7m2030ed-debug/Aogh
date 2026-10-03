@@ -1,0 +1,17 @@
+name: فحص قنوات الكأس
+
+on:
+  push:
+    branches: [claude/amazing-bell-08pgw3]
+    paths:
+      - ".github/scripts/probe_alkass.py"
+      - ".github/workflows/probe-alkass.yml"
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 .github/scripts/probe_alkass.py
