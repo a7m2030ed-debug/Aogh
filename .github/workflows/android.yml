@@ -1,0 +1,121 @@
+name: بناء كورة تايم لأندرويد
+
+on:
+  push:
+    branches: [claude/kora-time-ios-app-q9dalt]
+    paths:
+      - "KoraTimeAndroid/**"
+      - "KoraTime/KoraTime/Resources/**"
+      - ".github/workflows/android.yml"
+  pull_request:
+    paths:
+      - "KoraTimeAndroid/**"
+      - "KoraTime/KoraTime/Resources/**"
+      - ".github/workflows/android.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: بناء ملف التثبيت
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.10.2"
+
+      # أخطاء كوتلن تُطبع قبل أثر الاستدعاء الطويل، فتضيع في آخر السجلّ.
+      # نحفظ المخرجات ونعيد طباعة أسطر الأخطاء وحدها في النهاية.
+      - name: بناء APK
+        working-directory: KoraTimeAndroid
+        run: |
+          set -o pipefail
+          gradle assembleDebug --no-daemon 2>&1 | tee "$RUNNER_TEMP/build.log"
+
+      - name: أخطاء الترجمة
+        if: failure()
+        run: |
+          echo "::group::أسطر الأخطاء"
+          grep -E "^e: |^w: .*error|FAILED$" "$RUNNER_TEMP/build.log" | head -60 || echo "لا أسطر أخطاء صريحة"
+          echo "::endgroup::"
+          {
+            echo "### أخطاء الترجمة"
+            echo '```'
+            grep -E "^e: " "$RUNNER_TEMP/build.log" | head -40 || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: تسمية الملف
+        id: apk
+        working-directory: KoraTimeAndroid
+        run: |
+          set -euo pipefail
+          SOURCE=$(find app/build/outputs/apk/debug -name "*.apk" | head -1)
+          if [ -z "$SOURCE" ]; then echo "لم يُنتج أي ملف APK"; exit 1; fi
+          cp "$SOURCE" "$GITHUB_WORKSPACE/KoraTime.apk"
+          ls -lh "$GITHUB_WORKSPACE/KoraTime.apk"
+          echo "path=KoraTime.apk" >> "$GITHUB_OUTPUT"
+
+      # مهمة النسخ سبق أن خرجت NO-SOURCE بصمت فبُني ملف التثبيت على قنوات
+      # قديمة دون أي إنذار. لا نثق بأن النسخ جرى — نثبته من داخل الحزمة.
+      - name: التأكّد أن الحزمة تحمل القنوات الحالية
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, sys, zipfile
+
+          apk = zipfile.ZipFile("KoraTime.apk")
+          failed = False
+          for name in ("channels.json", "ar-names.json"):
+              packed = apk.read(f"assets/{name}")
+              source = open(f"KoraTime/KoraTime/Resources/{name}", "rb").read()
+              same = hashlib.sha256(packed).digest() == hashlib.sha256(source).digest()
+              print(f"{name}: {'مطابق' if same else 'مختلف'} ({len(packed)} بايت)")
+              if not same:
+                  failed = True
+
+          channels = json.loads(apk.read("assets/channels.json"))
+          print(f"القنوات داخل الحزمة: {len(channels)}")
+          if not channels:
+              print("الحزمة بلا قنوات")
+              failed = True
+          sys.exit(1 if failed else 0)
+          PY
+
+      - name: رفع الملف
+        uses: actions/upload-artifact@v4
+        with:
+          name: koratime-apk
+          path: KoraTime.apk
+          retention-days: 30
+
+      # رابط عام يثبّته المستخدم على أي جوال أندرويد بلا حساب ولا دفع
+      - name: نشر الملف برابط مباشر
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="android-build"
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" \
+              --prerelease \
+              --title "كورة تايم لأندرويد" \
+              --notes "ملف تثبيت مباشر، يُحدَّث مع كل تعديل. فعّل «تثبيت من مصادر غير معروفة» ثم افتح الملف."
+          fi
+          gh release upload "$TAG" KoraTime.apk --clobber
+          echo "الرابط: https://github.com/${{ github.repository }}/releases/download/$TAG/KoraTime.apk"
