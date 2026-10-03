@@ -1,10 +1,9 @@
 name: فحص قنوات كورة تايم
 
 on:
+  # يومياً: يطلقها koratime-daily-channels.yml من الفرع الافتراضي، لأن
+  # GitHub لا يشغّل جدولاً زمنياً مكتوباً على فرع غيره.
   workflow_dispatch:
-  schedule:
-    # كل اثنين فجراً: العناوين المفتوحة تتغيّر، فنعيد الجلب والفحص
-    - cron: "0 3 * * 1"
   push:
     branches: [claude/kora-time-ios-app-q9dalt]
     paths:
