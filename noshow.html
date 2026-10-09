@@ -1,0 +1,2357 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تقرير متابعة عدم الحضور — إكسل إلى PDF</title>
+<style>
+/* ═══════════════ page shell (the Arabic UI around the report) ═══════════════ */
+:root{
+  color-scheme: light;
+  --paper:#EFEFF6; --card:#FFFFFF; --sunk:#F6F5FB;
+  --ink:#16142B; --ink-2:#4B4966; --ink-3:#7D7A98;
+  --line:#DEDCEB; --line-2:#EBEAF3;
+  --brand:#6D45E8; --brand-2:#8B5CFB; --brand-ink:#4E2DBF; --brand-soft:#EEE8FE; --on-brand:#FFFFFF;
+  --good:#1C7A55; --good-soft:#DFF1E9;
+  --warn:#8E640F; --warn-soft:#F7EBD3;
+  --crit:#A82838; --crit-soft:#FAE1E4;
+  --shadow:0 1px 2px rgba(22,20,43,.05), 0 10px 26px -14px rgba(22,20,43,.20);
+  --shadow-lg:0 2px 6px rgba(22,20,43,.08), 0 28px 60px -20px rgba(22,20,43,.32);
+  --radius:10px;
+  --f-display:"Noto Kufi Arabic","Sakkal Majalla","Segoe UI",Tahoma,sans-serif;
+  --f-body:"Noto Sans Arabic","Segoe UI",Tahoma,Arial,sans-serif;
+  --f-mono:ui-monospace,"Cascadia Mono","SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --paper:#0D0C18; --card:#16152A; --sunk:#111024;
+    --ink:#ECEAF7; --ink-2:#B0ADCC; --ink-3:#7F7CA0;
+    --line:#29273F; --line-2:#1E1C33;
+    --brand:#9B7BFF; --brand-2:#B49CFF; --brand-ink:#C6B5FF; --brand-soft:#221C45; --on-brand:#0D0C18;
+    --good:#4FBE8E; --good-soft:#13291F;
+    --warn:#D8AC4A; --warn-soft:#2A2313;
+    --crit:#E8697C; --crit-soft:#2E1520;
+    --shadow:0 1px 2px rgba(0,0,0,.45), 0 10px 26px -14px rgba(0,0,0,.7);
+    --shadow-lg:0 2px 6px rgba(0,0,0,.5), 0 28px 60px -20px rgba(0,0,0,.75);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --paper:#0D0C18; --card:#16152A; --sunk:#111024;
+  --ink:#ECEAF7; --ink-2:#B0ADCC; --ink-3:#7F7CA0;
+  --line:#29273F; --line-2:#1E1C33;
+  --brand:#9B7BFF; --brand-2:#B49CFF; --brand-ink:#C6B5FF; --brand-soft:#221C45; --on-brand:#0D0C18;
+  --good:#4FBE8E; --good-soft:#13291F;
+  --warn:#D8AC4A; --warn-soft:#2A2313;
+  --crit:#E8697C; --crit-soft:#2E1520;
+  --shadow:0 1px 2px rgba(0,0,0,.45), 0 10px 26px -14px rgba(0,0,0,.7);
+  --shadow-lg:0 2px 6px rgba(0,0,0,.5), 0 28px 60px -20px rgba(0,0,0,.75);
+}
+
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+/* the Arabic shell reads right to left; the report sheet inside it is a
+   Latin document and stays left to right whatever wraps the page */
+html{direction:rtl}
+#doc{direction:ltr}
+body{margin:0; background:var(--paper); color:var(--ink); font-family:var(--f-body); font-size:15px; line-height:1.65; -webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--f-display); font-weight:700; margin:0; line-height:1.35; text-wrap:balance}
+button,input,select{font:inherit; color:inherit}
+:focus-visible{outline:2px solid var(--brand); outline-offset:2px; border-radius:4px}
+
+.bar{
+  position:sticky; top:0; z-index:40; display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  padding:12px 20px; background:color-mix(in srgb, var(--card) 88%, transparent);
+  backdrop-filter:blur(10px); border-bottom:1px solid var(--line);
+}
+.brand{display:flex; align-items:center; gap:14px; margin-inline-end:auto}
+/* the logo, its off-white lifted out so it sits on the light bar as is;
+   on the dark bar it keeps a small tile of that off-white */
+.logo{height:36px; width:auto; flex:none; display:block}
+.brand .rule{width:1px; height:32px; background:var(--line); flex:none}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .logo{background:#F8F9FB; border-radius:8px; padding:3px 8px; height:34px}
+}
+:root[data-theme="dark"] .logo{background:#F8F9FB; border-radius:8px; padding:3px 8px; height:34px}
+@media (max-width:480px){
+  .logo{height:30px}
+  .brand{gap:10px}
+  .brand p{display:none}
+}
+.brand h1{font-size:17px; letter-spacing:-.01em}
+.brand p{margin:0; font-size:12px; color:var(--ink-3)}
+
+.btn{
+  display:inline-flex; align-items:center; gap:7px; padding:8px 15px; border-radius:8px; cursor:pointer;
+  border:1px solid var(--line); background:var(--card); color:var(--ink);
+  font-size:14px; font-weight:600; white-space:nowrap; transition:background .15s, border-color .15s, transform .08s;
+}
+.btn:hover:not([disabled]){border-color:color-mix(in srgb, var(--brand) 45%, var(--line))}
+.btn:active:not([disabled]){transform:translateY(1px)}
+.btn[disabled]{opacity:.42; cursor:not-allowed}
+.btn-main{background:var(--brand); border-color:var(--brand); color:var(--on-brand)}
+.btn-main:hover:not([disabled]){background:var(--brand-ink); border-color:var(--brand-ink)}
+.btn svg{width:15px; height:15px; flex:none}
+.btn-sm{padding:5px 11px; font-size:13px}
+
+.shell{max-width:1240px; margin:0 auto; padding:22px 20px 60px; display:flex; flex-direction:column; gap:16px}
+.step{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden}
+.step > header{
+  display:flex; align-items:center; gap:11px; padding:12px 16px; border-bottom:1px solid var(--line-2);
+  background:linear-gradient(to bottom, color-mix(in srgb, var(--brand-soft) 55%, var(--card)), var(--card));
+}
+.step > header .n{width:23px; height:23px; flex:none; border-radius:6px; display:grid; place-items:center; background:var(--brand); color:var(--on-brand); font-size:12px; font-weight:700; font-family:var(--f-display)}
+.step.done > header .n{background:var(--good)}
+.step > header h2{font-size:14.5px}
+.step > header .state{margin-inline-start:auto; font-size:12.5px; color:var(--ink-3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:60%}
+.step .body{padding:16px; display:flex; flex-direction:column; gap:14px}
+
+.drop{
+  border:1.5px dashed color-mix(in srgb, var(--brand) 40%, var(--line)); border-radius:9px; background:var(--sunk);
+  padding:22px 16px; text-align:center; cursor:pointer; display:flex; flex-direction:column; gap:4px;
+  transition:background .15s, border-color .15s;
+}
+.drop:hover,.drop.hot{background:var(--brand-soft); border-color:var(--brand)}
+.drop strong{font-size:14px; font-weight:600}
+.drop span{font-size:12px; color:var(--ink-3); font-family:var(--f-mono)}
+
+.row{display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end}
+label.fld{display:flex; flex-direction:column; gap:5px; font-size:11.5px; color:var(--ink-3)}
+label.fld input,label.fld select{padding:7px 10px; border:1px solid var(--line); border-radius:7px; background:var(--card); font-size:14px; min-width:150px}
+label.fld input:focus,label.fld select:focus{border-color:var(--brand)}
+label.check{display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--ink-2); padding-bottom:8px}
+
+.note{display:flex; gap:8px; align-items:flex-start; font-size:12.5px; color:var(--ink-2); background:var(--sunk); border:1px solid var(--line-2); border-radius:8px; padding:9px 11px}
+.note.warn{background:var(--warn-soft); border-color:color-mix(in srgb, var(--warn) 32%, transparent); color:var(--ink)}
+.note.bad{background:var(--crit-soft); border-color:color-mix(in srgb, var(--crit) 32%, transparent); color:var(--ink)}
+.note b{font-weight:600}
+.note .m{flex:none; width:6px; height:6px; margin-top:7px; border-radius:50%; background:var(--brand)}
+.note.warn .m{background:var(--warn)} .note.bad .m{background:var(--crit)}
+.note ul{margin:4px 0 0; padding-inline-start:18px}
+.empty{margin:0; color:var(--ink-3); font-size:13.5px}
+
+.chips{display:flex; flex-wrap:wrap; gap:7px}
+.chip{display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:4px 10px; border-radius:99px; background:var(--sunk); border:1px solid var(--line-2); color:var(--ink-2)}
+.chip b{font-weight:600; color:var(--ink)}
+.chip.ok{background:var(--good-soft); border-color:color-mix(in srgb, var(--good) 30%, transparent)}
+.chip.miss{background:var(--warn-soft); border-color:color-mix(in srgb, var(--warn) 30%, transparent)}
+
+details.map{border:1px solid var(--line-2); border-radius:9px; background:var(--sunk)}
+details.map > summary{cursor:pointer; padding:9px 12px; font-size:13px; font-weight:600; color:var(--ink-2)}
+details.map > div{padding:4px 12px 12px; display:flex; flex-direction:column; gap:10px}
+.mapblock{display:flex; flex-direction:column; gap:8px; padding-top:6px}
+.mapblock + .mapblock{border-top:1px solid var(--line); margin-top:4px; padding-top:12px}
+.mapblock h3{font-size:12.5px; color:var(--ink-2); direction:ltr; text-align:right}
+.mapblock .btn{align-self:flex-start}
+.mapgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:10px}
+.mapgrid label.fld select{min-width:0; width:100%}
+.sample{margin:0; font-size:12px; color:var(--ink-3); font-family:var(--f-mono); direction:ltr; text-align:left; overflow-wrap:anywhere}
+
+.tiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px}
+.tile{background:var(--sunk); border:1px solid var(--line-2); border-radius:9px; padding:10px 12px}
+.tile span{display:block; font-size:11.5px; color:var(--ink-3)}
+.tile b{display:block; font-size:19px; font-weight:700; font-family:var(--f-display); letter-spacing:-.01em}
+
+#toasts{position:fixed; inset-block-end:18px; inset-inline-start:18px; z-index:90; display:flex; flex-direction:column; gap:8px}
+.toast{background:var(--card); border:1px solid var(--line); border-inline-start:3px solid var(--brand); border-radius:8px; box-shadow:var(--shadow-lg); padding:10px 14px; font-size:13.5px; max-width:min(420px,86vw)}
+.toast.bad{border-inline-start-color:var(--crit)}
+.toast.ok{border-inline-start-color:var(--good)}
+
+/* the rendered report is scaled down to fit the preview column */
+#stage{background:var(--sunk); border:1px solid var(--line-2); border-radius:9px; padding:14px; overflow:hidden}
+/* left to right, or the RTL shell anchors the wide sheet on the right and the
+   scale pulls it out of view */
+#stageBox{position:relative; margin:0 auto; direction:ltr}
+#doc{transform-origin:top left; width:297mm}
+#doc .page{box-shadow:var(--shadow-lg); margin-bottom:14pt}
+/* ═══════════════ the report itself — a rebuild of the PowerPoint template ═══════════════
+   Every colour, size and offset below is read off the supplied
+   No_Show_Appointment_Tracking_Template deck (A4 landscape, 297 × 210 mm), so
+   the sheet keeps the template's design whatever the file holds. Offsets are
+   in millimetres because that is how the slide measures. */
+#doc{
+  --pur:#8B5CFB;        /* the rule under the header                         */
+  --tx1:#262238;        /* branch name, subtitle, table text, footer band    */
+  --tx2:#563A7A;        /* title, section headings, table heads              */
+  --stripe:#F3F2F5;     /* every other table row                             */
+  --edge:#D3CFDB;       /* table hairlines                                   */
+  --sep:#9B87B5;        /* hairlines between head cells                      */
+  --num:#6B6574;        /* the row number, the MIS status under "Yes"        */
+  --date:#334059;       /* the date under the branch name                    */
+  --gold:#FCD85E;       /* the thin line over the footer                     */
+  --foot:#9999BF;       /* footer text                                       */
+  --yes:#1C7A55;        /* seen the same day                                 */
+  --fs:Arial,"Liberation Sans",Helvetica,sans-serif;
+  --fr:"Times New Roman","Liberation Serif",Times,serif;
+}
+.page{
+  position:relative; width:297mm; height:210mm; background:#fff; color:var(--tx1); overflow:hidden;
+  font-family:var(--fs); direction:ltr; text-align:left; unicode-bidi:isolate;
+}
+.page,.page *{-webkit-print-color-adjust:exact !important; color-adjust:exact !important; print-color-adjust:exact !important}
+.page .ar{direction:rtl; unicode-bidi:isolate}
+
+.hd-logo{position:absolute; left:12.7mm; top:6.86mm; width:36.83mm; height:9.05mm}
+.hd-logo img{display:block; width:100%; height:100%; object-fit:contain; object-position:left center}
+.hd-who{position:absolute; right:12.77mm; top:5.08mm; width:114.3mm; text-align:right}
+.hd-who h1{height:7.62mm; margin:0; font:700 13pt/7.62mm var(--fs); color:var(--tx1); white-space:nowrap; overflow:hidden}
+.hd-who p{height:5.59mm; margin:0; font:400 9pt/5.59mm var(--fs); color:var(--date); white-space:nowrap; overflow:hidden}
+.hd-bar{position:absolute; left:0; right:0; top:21.49mm; height:.71mm; background:var(--pur)}
+
+.ttl{position:absolute; left:12.7mm; top:25.4mm; width:271.53mm; height:9.14mm; margin:0; font:700 17pt/9.14mm var(--fs); color:var(--tx2); text-align:center; white-space:nowrap}
+.sub{position:absolute; left:12.7mm; top:34.54mm; width:271.53mm; height:5.59mm; margin:0; font:400 9.5pt/5.59mm var(--fs); color:var(--tx1); text-align:center}
+.sec{position:absolute; left:12.75mm; width:271.53mm; height:7.11mm; margin:0; font:700 12pt/7.11mm var(--fs); color:var(--tx2); white-space:nowrap}
+.sec .cont{font-weight:400; font-size:10pt; color:var(--num)}
+.sec.s1{top:40.13mm}
+.sec.s2{top:79.25mm; left:12.8mm}
+.sec.s2c{top:25.4mm; left:12.8mm}
+.box{position:absolute}
+.box.sum{left:12.75mm; top:48.77mm; width:271.58mm}
+.box.d1{left:12.8mm; top:87.88mm; width:271.5mm}
+.box.dc{left:12.8mm; top:34.03mm; width:271.5mm}
+
+/* single hairlines: every cell draws its right and bottom edge, the first
+   column its left one and the head its top — so the PDF, which draws each
+   box's own edges, never doubles a line. The fills sit on the rows. */
+.box table{width:100%; border-collapse:separate; border-spacing:0; table-layout:fixed}
+.box th,.box td{padding:.71mm 1.06mm; vertical-align:middle; overflow:hidden; overflow-wrap:break-word;
+                border-right:.75pt solid var(--edge); border-bottom:.75pt solid var(--edge)}
+.box th:first-child,.box td:first-child{border-left:.75pt solid var(--edge)}
+.box thead tr{background:var(--tx2)}
+.box th{color:#fff; text-align:center; border-color:var(--tx2); border-right-color:var(--sep); border-top:.75pt solid var(--tx2)}
+.box th:first-child{border-left-color:var(--tx2)}
+.box th:last-child{border-right-color:var(--tx2)}
+.box th .en,.box th .ar{display:block}
+.box th .ar{font-weight:400}
+.box tbody tr{background:#fff}
+.box tbody tr.alt{background:var(--stripe)}
+
+.sum th{height:11.68mm; font:700 12pt/1.15 var(--fr)}
+.sum td{height:8.13mm; font:700 12pt/1 var(--fs); color:var(--tx1); text-align:center}
+.sum td.rate{color:var(--tx2)}
+
+.det th{height:14.73mm; font:700 8pt/1.15 var(--fs)}
+/* two lines of 8 pt fit the template's 7.87 mm row */
+.det td{height:7.87mm; font:400 8pt/1.1 var(--fs); color:var(--tx1); text-align:center; overflow-wrap:normal}
+.det td.wrap{overflow-wrap:anywhere}
+.det td.l{text-align:start}
+.det td.n{color:var(--num)}
+.det td.yes{color:var(--yes); font-weight:700}
+.det td .st{display:block; font-size:6.5pt; color:var(--num)}
+.det td.none{color:var(--num); font-style:italic}
+
+.ft{position:absolute; left:0; right:0; top:202.44mm; bottom:0; background:var(--tx1); padding:0 12.77mm 0 12.7mm;
+    display:flex; align-items:center; justify-content:space-between; font:400 7.5pt/1 var(--fs); color:var(--foot); white-space:pre}
+.ft-line{position:absolute; left:0; right:0; top:202.3mm; height:.28mm; background:var(--gold)}
+
+/* the Notes / Reason column can be typed into in the preview */
+#doc td.nt{cursor:text}
+#doc td.nt:hover{outline:1px dashed var(--sep); outline-offset:-2px}
+#doc td.nt:focus{outline:1.5px solid var(--pur); outline-offset:-2px}
+
+@page{size:A4 landscape; margin:0}
+@media print{
+  .bar, #toasts, #s1, #s2, #s3 > header, #notices, #tiles, #noPreview, #editHint{display:none !important}
+  html,body{background:#fff}
+  .shell{display:block; max-width:none; margin:0; padding:0; gap:0}
+  #s3{border:0; border-radius:0; box-shadow:none; background:none; overflow:visible}
+  #s3 .body{display:block; padding:0; gap:0}
+  #stage{padding:0; border:0; background:none; overflow:visible}
+  #stageBox{height:auto !important; width:auto !important}
+  #doc{transform:none !important}
+  #doc .page{box-shadow:none; margin:0; break-after:page; page-break-after:always}
+  #doc .page:last-child{break-after:auto; page-break-after:auto}
+  #doc td.nt{outline:none !important}
+}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="brand">
+    <img class="logo" id="barLogo" alt="Meena — مينا">
+    <span class="rule" aria-hidden="true"></span>
+    <div>
+      <h1>تقرير متابعة عدم الحضور</h1>
+      <p>كشف المواعيد المفصّل ← قالب No-Show Appointment Follow-up بصيغة PDF</p>
+    </div>
+  </div>
+  <button class="btn" id="bClear" disabled>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M9 7V5h6v2m-8 0 1 13h8l1-13"/></svg>
+    مسح والبدء من جديد
+  </button>
+  <button class="btn" id="bSave" disabled>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 19h16"/></svg>
+    حفظ الملف
+  </button>
+  <button class="btn btn-main" id="bPdf" disabled>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3h-7v18h13V9zm0 0v6h6M9.5 13.5h5M9.5 17h3"/></svg>
+    فتح الـPDF
+  </button>
+</div>
+
+<div class="shell">
+
+  <section class="step" id="s1">
+    <header><span class="n">١</span><h2>ملف المواعيد</h2><span class="state" id="st1">لم يُرفع بعد</span></header>
+    <div class="body">
+      <div class="drop" id="dropX" tabindex="0" role="button">
+        <strong>اسحب ملف Appointment Statistics – Detailed هنا — أو انقر لاختياره</strong>
+        <span>xlsx · xlsm · csv · pdf — ملف اليوم، أو عدة أيام معًا</span>
+      </div>
+      <input type="file" id="fileX" accept=".xlsx,.xlsm,.csv,.pdf,application/pdf" multiple hidden>
+      <div class="note">
+        <span class="m"></span>
+        <span>ارفع كشف <b>Appointment Statistics – Detailed</b> كما ينزل من MIS:
+          <ul>
+            <li><b>Booked</b> و<b>Pending</b> = لم يحضر موعده (No-Show)</li>
+            <li><b>Reported</b> = حضر</li>
+            <li>ومن لم يحضر موعده ثم سُجّل <b>Reported</b> في اليوم نفسه وفي القسم نفسه يُحسب «حضر بنفس اليوم» — عند الطبيب نفسه أو طبيب آخر بالقسم</li>
+          </ul></span>
+      </div>
+      <div id="fileInfo"></div>
+    </div>
+  </section>
+
+  <section class="step" id="s2">
+    <header><span class="n">٢</span><h2>إعدادات التقرير</h2></header>
+    <div class="body">
+      <div class="row">
+        <label class="fld" style="flex:1 1 220px"><span>اسم الفرع كما يظهر في الترويسة</span><input type="text" id="inBranch" placeholder="Meena Center Alsuwaidi"></label>
+        <label class="fld"><span>التاريخ — من</span><input type="date" id="inFrom"></label>
+        <label class="fld"><span>إلى (لمدة أكثر من يوم)</span><input type="date" id="inTo"></label>
+        <label class="fld"><span>ترتيب الجدول</span>
+          <select id="inSort">
+            <option value="time">حسب وقت الموعد</option>
+            <option value="doctor">حسب الطبيب</option>
+            <option value="dept">حسب القسم</option>
+            <option value="attend">من حضر بنفس اليوم أولًا</option>
+          </select></label>
+      </div>
+      <div class="row">
+        <label class="fld" style="flex:1 1 260px"><span>اسم ملف الـPDF</span><input type="text" id="inName" placeholder="No_Show_Follow_up_Report_Alsuwaidi_20261008"></label>
+        <label class="check"><input type="checkbox" id="chkAny"> احتساب الزيارة في قسم آخر حضورًا بنفس اليوم</label>
+      </div>
+      <div class="note"><span class="m"></span><span>تُملأ هذه الخانات من الملف تلقائيًا، وما تكتبه هنا يبقى مقدَّمًا عليها.</span></div>
+    </div>
+  </section>
+
+  <section class="step" id="s3">
+    <header><span class="n">٣</span><h2>المعاينة</h2><span class="state" id="st3"></span></header>
+    <div class="body">
+      <div id="notices"></div>
+      <div id="tiles" class="tiles"></div>
+      <div class="note" id="editHint" hidden><span class="m"></span><span>خانة <b>Notes / Reason</b> في الجدول تُكتب فيها مباشرة: انقرها في المعاينة واكتب السبب، ويخرج ما كتبته في الـPDF.</span></div>
+      <div id="stage" hidden><div id="stageBox"><div id="doc"></div></div></div>
+      <p class="empty" id="noPreview">ارفع ملف المواعيد وتظهر الصفحة هنا مباشرة.</p>
+    </div>
+  </section>
+</div>
+
+<div id="toasts" aria-live="polite"></div>
+
+<script>
+(() => {
+"use strict";
+
+/* ═════════════════ helpers ═════════════════ */
+const $ = (s, r = document) => r.querySelector(s);
+const el = (tag, cls, txt) => { const n = document.createElement(tag); if (cls) n.className = cls; if (txt != null) n.textContent = txt; return n; };
+function toast(msg, kind = "") {
+  const t = el("div", "toast " + kind, msg);
+  $("#toasts").append(t);
+  setTimeout(() => { t.style.opacity = 0; t.style.transition = "opacity .3s"; setTimeout(() => t.remove(), 320); }, 5200);
+}
+const pipe = (u8, tr) => new Response(new Blob([u8]).stream().pipeThrough(tr)).arrayBuffer().then(b => new Uint8Array(b));
+
+/* ═════════════════ workbook reader ═════════════════
+   The in-browser zip reader the other pages use: every sheet comes back as a
+   grid of strings, whatever the export called it. */
+async function zipRead(ab) {
+  const u8 = new Uint8Array(ab), dv = new DataView(ab);
+  let e = -1;
+  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 66000); i--) if (dv.getUint32(i, true) === 0x06054b50) { e = i; break; }
+  if (e < 0) throw new Error("الملف ليس حزمة ZIP صالحة");
+  const count = dv.getUint16(e + 10, true);
+  let off = dv.getUint32(e + 16, true);
+  const dec = new TextDecoder(), map = new Map();
+  for (let n = 0; n < count; n++) {
+    if (dv.getUint32(off, true) !== 0x02014b50) break;
+    const method = dv.getUint16(off + 10, true), csize = dv.getUint32(off + 20, true);
+    const nl = dv.getUint16(off + 28, true), xl = dv.getUint16(off + 30, true), cl = dv.getUint16(off + 32, true);
+    const lho = dv.getUint32(off + 42, true);
+    const name = dec.decode(u8.subarray(off + 46, off + 46 + nl));
+    if (!name.endsWith("/")) map.set(name, { method, csize, lho });
+    off += 46 + nl + xl + cl;
+  }
+  const out = new Map();
+  for (const [name, it] of map) {
+    const nl = dv.getUint16(it.lho + 26, true), xl = dv.getUint16(it.lho + 28, true);
+    const raw = u8.subarray(it.lho + 30 + nl + xl, it.lho + 30 + nl + xl + it.csize);
+    if (it.method === 0) out.set(name, raw);
+    else if (it.method === 8) out.set(name, await pipe(raw, new DecompressionStream("deflate-raw")));
+    else throw new Error("ضغط غير مدعوم داخل الملف");
+  }
+  return out;
+}
+
+const colIdx = ref => { let n = 0; for (const ch of ref) { const c = ch.charCodeAt(0); if (c >= 65 && c <= 90) n = n * 26 + (c - 64); else break; } return n - 1; };
+const RT = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+
+function parseCsv(txt) {
+  if (txt.charCodeAt(0) === 0xFEFF) txt = txt.slice(1);
+  const grid = []; let row = [], cell = "", q = false;
+  for (let i = 0; i < txt.length; i++) {
+    const ch = txt[i];
+    if (q) { if (ch === '"') { if (txt[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === ",") { row.push(cell); cell = ""; }
+    else if (ch === "\n") { row.push(cell); grid.push(row); row = []; cell = ""; }
+    else if (ch !== "\r") cell += ch;
+  }
+  if (cell !== "" || row.length) { row.push(cell); grid.push(row); }
+  return grid.map(r => r.map(c => c.trim()));
+}
+
+/* A PDF lays the report's heading lines — "Doctor Name: …", "Status: …",
+   "Category: …", "Bill Date: …" — across the table, so their text can land in
+   whichever column its middle falls in. They are put back in the first column,
+   where the Excel export has them and the readers look for them. */
+const HEADING = /^(doctor\s*name|status|category|bill\s*date|department(\s*name)?)\s*:/i;
+function pdfHeadings(grid) {
+  return grid.map(r => {
+    const k = r.findIndex(c => String(c ?? "").trim() !== "");
+    if (k < 0 || !HEADING.test(String(r[k]).trim())) return r;
+    /* "Doctor Name:" and the name can fall in two cells; the words join into
+       the first column, while a count printed on the line ("Category: Dental
+       39") keeps a column of its own */
+    const out = r.map(() => "");
+    const words = [];
+    r.forEach((c, i) => {
+      const t = String(c ?? "").trim();
+      if (!t) return;
+      if (i > k && strictNum(t) != null) out[i] = t; else words.push(t);
+    });
+    out[0] = words.join(" ").replace(/\s*:\s*/, ": ");
+    return out;
+  });
+}
+
+/* A column heading printed left and its figures printed right can read as
+   two columns side by side, each half empty. Neighbouring columns that no
+   table row ever fills both of are one column. */
+function pdfMergeCols(grid) {
+  const width = Math.max(0, ...grid.map(r => r.length));
+  const has = (r, i) => String(r[i] ?? "").trim() !== "";
+  const table = grid.filter(r => r.filter((_, i) => has(r, i)).length >= 3);
+  if (table.length < 2) return grid;
+  const groups = [];
+  for (let i = 0; i < width; i++) {
+    const last = groups[groups.length - 1];
+    if (last && !table.some(r => last.some(j => has(r, j)) && has(r, i))) last.push(i);
+    else groups.push([i]);
+  }
+  return grid.map(r => groups.map(g => g.filter(i => has(r, i)).map(i => String(r[i]).trim()).join(" ")));
+}
+
+async function readWorkbook(file) {
+  if (/\.csv$/i.test(file.name)) return [{ name: file.name.replace(/\.csv$/i, ""), grid: parseCsv(await file.text()) }];
+  if (/\.pdf$/i.test(file.name) || file.type === "application/pdf")
+    return [{ name: file.name.replace(/\.pdf$/i, ""), grid: pdfMergeCols(pdfHeadings(await readPdf(file))) }];
+  if (/\.xls$/i.test(file.name)) throw new Error("صيغة xls القديمة غير مدعومة — افتح الملف في Excel واحفظه بصيغة xlsx");
+  const parts = await zipRead(await file.arrayBuffer());
+  const dec = new TextDecoder();
+  const doc = n => { const b = parts.get(n); return b ? new DOMParser().parseFromString(dec.decode(b), "application/xml") : null; };
+  const shared = [];
+  const ss = doc("xl/sharedStrings.xml");
+  if (ss) for (const si of ss.getElementsByTagName("si")) {
+    let s = "";
+    for (const t of si.getElementsByTagName("t")) if (t.parentNode.nodeName !== "rPh") s += t.textContent;
+    shared.push(s);
+  }
+  const wb = doc("xl/workbook.xml"), rels = doc("xl/_rels/workbook.xml.rels");
+  const target = new Map();
+  if (rels) for (const r of rels.getElementsByTagName("Relationship"))
+    target.set(r.getAttribute("Id"), "xl/" + r.getAttribute("Target").replace(/^\/?xl\//, "").replace(/^\//, ""));
+  const sheets = [];
+  if (wb) for (const sh of wb.getElementsByTagName("sheet")) {
+    const rid = sh.getAttribute("r:id") || sh.getAttributeNS(RT, "id");
+    const path = target.get(rid);
+    if (path && parts.has(path)) sheets.push({ name: sh.getAttribute("name") || "", path });
+  }
+  if (!sheets.length) for (const n of parts.keys())
+    if (/^xl\/worksheets\/[^/]+\.xml$/.test(n)) sheets.push({ name: n.split("/").pop().replace(/\.xml$/, ""), path: n });
+  if (!sheets.length) throw new Error("لا توجد ورقة عمل داخل الملف");
+
+  return sheets.map(s => {
+    const ws = doc(s.path), grid = [];
+    for (const row of ws.getElementsByTagName("row")) {
+      const cells = [];
+      for (const c of row.getElementsByTagName("c")) {
+        const r = c.getAttribute("r"), i = r ? colIdx(r) : cells.length, t = c.getAttribute("t");
+        let v = "";
+        if (t === "inlineStr") v = [...c.getElementsByTagName("t")].map(x => x.textContent).join("");
+        else { const vn = c.getElementsByTagName("v")[0], raw = vn ? vn.textContent : ""; v = t === "s" ? (shared[+raw] ?? "") : raw; }
+        cells[i] = String(v).trim();
+      }
+      for (let i = 0; i < cells.length; i++) if (cells[i] == null) cells[i] = "";
+      /* rows can skip numbers; keep each at its own index so a title block
+         above the header stays where the export put it */
+      const rn = parseInt(row.getAttribute("r"), 10);
+      if (rn > grid.length + 1) while (grid.length < rn - 1) grid.push([]);
+      grid.push(cells);
+    }
+    return { name: s.name, grid };
+  });
+}
+
+/* ═════════════════ PDF ═════════════════
+   Copied as-is from index.html: MIS reports exported as PDF are read inside
+   the browser — objects, page content, glyph positions, then rows and
+   columns. */
+/* Some branches can only export the daily list as PDF, so the same table is
+   lifted out of the page itself: objects → page content → positioned glyphs →
+   rows and columns. A scanned page holds pictures, not text, and is rejected
+   with a message that says so. */
+
+const L1 = new TextDecoder("latin1");
+const pdfCat = arr => {
+  let n = 0; for (const a of arr) n += a.length;
+  const o = new Uint8Array(n); let p = 0;
+  for (const a of arr) { o.set(a, p); p += a.length; }
+  return o;
+};
+
+/* Trailing bytes after the deflate block are common in the wild, and they make
+   DecompressionStream throw after it already produced the whole object, so what
+   arrived before the error is kept instead of losing the page. */
+async function pdfInflate(u8) {
+  for (const fmt of ["deflate", "deflate-raw"]) {
+    try {
+      const ds = new DecompressionStream(fmt), w = ds.writable.getWriter();
+      w.write(u8).catch(() => {}); w.close().catch(() => {});
+      const rd = ds.readable.getReader(), out = [];
+      let n = 0;
+      try { for (;;) { const r = await rd.read(); if (r.done) break; out.push(r.value); n += r.value.length; } }
+      catch (e) { if (!n) throw e; }
+      if (n) return pdfCat(out);
+    } catch {}
+  }
+  return new Uint8Array(0);
+}
+
+function pdfLzw(u8, early) {
+  const out = [];
+  let dict = [], next = 258, bits = 9, buf = 0, nb = 0, prev = null;
+  const reset = () => { dict = []; for (let i = 0; i < 256; i++) dict[i] = [i]; next = 258; bits = 9; prev = null; };
+  reset();
+  for (let i = 0; i < u8.length; i++) {
+    buf = ((buf << 8) | u8[i]) >>> 0; nb += 8;
+    while (nb >= bits) {
+      const code = (buf >>> (nb - bits)) & ((1 << bits) - 1); nb -= bits;
+      if (code === 256) { reset(); continue; }
+      if (code === 257) return Uint8Array.from(out);
+      let entry = dict[code];
+      if (!entry) { if (!prev) continue; entry = [...prev, prev[0]]; }
+      for (const b of entry) out.push(b);
+      if (prev) dict[next++] = [...prev, entry[0]];
+      prev = entry;
+      if (next + early >= (1 << bits) && bits < 12) bits++;
+    }
+  }
+  return Uint8Array.from(out);
+}
+
+function pdfHex(u8) {
+  const s = L1.decode(u8), h = s.slice(0, s.indexOf(">") < 0 ? s.length : s.indexOf(">")).replace(/[^0-9a-fA-F]/g, "");
+  const o = new Uint8Array(Math.ceil(h.length / 2));
+  for (let i = 0; i < o.length; i++) o[i] = parseInt((h.substr(i * 2, 2) + "0").slice(0, 2), 16);
+  return o;
+}
+
+function pdf85(u8) {
+  const s = L1.decode(u8).replace(/\s/g, "").replace(/^<~/, "");
+  const out = []; let tup = 0, n = 0;
+  for (const ch of s) {
+    if (ch === "~") break;
+    if (ch === "z" && n === 0) { out.push(0, 0, 0, 0); continue; }
+    tup = tup * 85 + (ch.charCodeAt(0) - 33); n++;
+    if (n === 5) { for (let k = 3; k >= 0; k--) out.push((tup >>> (k * 8)) & 255); tup = 0; n = 0; }
+  }
+  if (n) { for (let i = n; i < 5; i++) tup = tup * 85 + 84; for (let k = 3; k >= 4 - (n - 1); k--) out.push((tup >>> (k * 8)) & 255); }
+  return Uint8Array.from(out);
+}
+
+function pdfRL(u8) {
+  const out = [];
+  for (let i = 0; i < u8.length; ) {
+    const l = u8[i++];
+    if (l === 128) break;
+    if (l < 128) { for (let k = 0; k <= l; k++) out.push(u8[i++]); }
+    else { const b = u8[i++]; for (let k = 0; k < 257 - l; k++) out.push(b); }
+  }
+  return Uint8Array.from(out);
+}
+
+/* xref streams and some content are stored as row deltas, exactly like PNG */
+function pdfUnpredict(u8, p, rs) {
+  const pred = +rs(p.Predictor) || 1;
+  if (pred < 2 || !u8.length) return u8;
+  const colors = +rs(p.Colors) || 1, bpc = +rs(p.BitsPerComponent) || 8, cols = +rs(p.Columns) || 1;
+  const bpp = Math.max(1, Math.ceil(colors * bpc / 8)), row = Math.ceil(colors * bpc * cols / 8);
+  if (pred === 2) {
+    if (bpc !== 8) return u8;
+    for (let r = 0; r + row <= u8.length; r += row)
+      for (let i = bpp; i < row; i++) u8[r + i] = (u8[r + i] + u8[r + i - bpp]) & 255;
+    return u8;
+  }
+  const rows = Math.floor(u8.length / (row + 1)), out = new Uint8Array(rows * row);
+  let prev = new Uint8Array(row);
+  for (let r = 0; r < rows; r++) {
+    const ft = u8[r * (row + 1)], cur = out.subarray(r * row, (r + 1) * row);
+    cur.set(u8.subarray(r * (row + 1) + 1, (r + 1) * (row + 1)));
+    for (let i = 0; i < row; i++) {
+      const a = i >= bpp ? cur[i - bpp] : 0, b = prev[i], c = i >= bpp ? prev[i - bpp] : 0;
+      let v = cur[i];
+      if (ft === 1) v += a;
+      else if (ft === 2) v += b;
+      else if (ft === 3) v += (a + b) >> 1;
+      else if (ft === 4) {
+        const q = a + b - c, pa = Math.abs(q - a), pb = Math.abs(q - b), pc = Math.abs(q - c);
+        v += pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
+      }
+      cur[i] = v & 255;
+    }
+    prev = cur;
+  }
+  return out;
+}
+
+/* ---- object syntax ---- */
+const PDF_DELIM = "()<>[]{}/%";
+const pdfIsWs = c => c === 32 || c === 10 || c === 13 || c === 9 || c === 12 || c === 0;
+
+function pdfWs(s, i) {
+  for (;;) {
+    while (i < s.length && pdfIsWs(s.charCodeAt(i))) i++;
+    if (s[i] !== "%") return i;
+    while (i < s.length && s[i] !== "\n" && s[i] !== "\r") i++;
+  }
+}
+
+function pdfName(s, i) {
+  let j = i + 1, out = "";
+  while (j < s.length) {
+    const c = s[j];
+    if (pdfIsWs(c.charCodeAt(0)) || PDF_DELIM.includes(c)) break;
+    if (c === "#" && /^[0-9a-fA-F]{2}$/.test(s.substr(j + 1, 2))) { out += String.fromCharCode(parseInt(s.substr(j + 1, 2), 16)); j += 3; }
+    else { out += c; j++; }
+  }
+  return { v: "/" + out, i: j };
+}
+
+function pdfLit(s, i) {
+  let depth = 1, j = i + 1, out = "";
+  while (j < s.length && depth) {
+    const c = s[j];
+    if (c === "\\") {
+      const n = s[j + 1];
+      if (n === "n") { out += "\n"; j += 2; }
+      else if (n === "r") { out += "\r"; j += 2; }
+      else if (n === "t") { out += "\t"; j += 2; }
+      else if (n === "b") { out += "\b"; j += 2; }
+      else if (n === "f") { out += "\f"; j += 2; }
+      else if (n >= "0" && n <= "7") { const o = /^[0-7]{1,3}/.exec(s.substr(j + 1, 3))[0]; out += String.fromCharCode(parseInt(o, 8) & 255); j += 1 + o.length; }
+      else if (n === "\n") j += 2;
+      else if (n === "\r") { j += 2; if (s[j] === "\n") j++; }
+      else { out += n === undefined ? "" : n; j += 2; }
+    }
+    else if (c === "(") { depth++; out += c; j++; }
+    else if (c === ")") { depth--; if (depth) out += c; j++; }
+    else { out += c; j++; }
+  }
+  return { v: { str: out }, i: j };
+}
+
+/* one value: dict, array, name, string, number, reference, keyword */
+function pdfVal(s, i) {
+  i = pdfWs(s, i);
+  const c = s[i];
+  if (c === undefined) return { v: undefined, i };
+  if (c === "/") return pdfName(s, i);
+  if (c === "(") return pdfLit(s, i);
+  if (c === "[") {
+    const arr = []; let j = i + 1;
+    for (;;) {
+      j = pdfWs(s, j);
+      if (j >= s.length) break;
+      if (s[j] === "]") { j++; break; }
+      const r = pdfVal(s, j);
+      if (r.i <= j) { j++; continue; }
+      j = r.i;
+      if (r.v !== undefined) arr.push(r.v);
+    }
+    return { v: arr, i: j };
+  }
+  if (c === "<") {
+    if (s[i + 1] !== "<") {
+      let j = s.indexOf(">", i + 1); if (j < 0) j = s.length;
+      const h = s.slice(i + 1, j).replace(/[^0-9a-fA-F]/g, "");
+      let out = "";
+      for (let k = 0; k < h.length; k += 2) out += String.fromCharCode(parseInt((h.substr(k, 2) + "0").slice(0, 2), 16));
+      return { v: { str: out }, i: j + 1 };
+    }
+    const d = Object.create(null);
+    let j = i + 2;
+    for (;;) {
+      j = pdfWs(s, j);
+      if (j >= s.length) break;
+      if (s[j] === ">" && s[j + 1] === ">") { j += 2; break; }
+      if (s[j] !== "/") { const r = pdfVal(s, j); j = r.i > j ? r.i : j + 1; continue; }
+      const k = pdfName(s, j);
+      const v = pdfVal(s, k.i);
+      if (v.i <= k.i) { j = k.i + 1; continue; }
+      j = v.i;
+      if (v.v !== undefined) d[k.v.slice(1)] = v.v;
+    }
+    return { v: d, i: j };
+  }
+  if (c === ")" || c === ">" || c === "]" || c === "}" || c === "{") return { v: undefined, i: i + 1 };
+  const n = /^[+-]?(?:\d+\.?\d*|\.\d+)/.exec(s.substr(i, 40));
+  if (n) {
+    const j = i + n[0].length;
+    if (/^\d+$/.test(n[0])) {
+      const r = /^[\s]+(\d+)[\s]+R(?![A-Za-z])/.exec(s.substr(j, 24));
+      if (r) return { v: { ref: true, num: +n[0], gen: +r[1] }, i: j + r[0].length };
+    }
+    return { v: parseFloat(n[0]), i: j };
+  }
+  const w = /^[A-Za-z'"*][A-Za-z0-9'"*]*/.exec(s.substr(i, 32));
+  if (w) {
+    const j = i + w[0].length;
+    if (w[0] === "true") return { v: true, i: j };
+    if (w[0] === "false") return { v: false, i: j };
+    if (w[0] === "null") return { v: null, i: j };
+    return { v: { op: w[0] }, i: j };
+  }
+  return { v: undefined, i: i + 1 };
+}
+
+/* ---- document ---- */
+async function pdfDoc(ab) {
+  const u8 = new Uint8Array(ab), s = L1.decode(u8);
+  if (!s.slice(0, 4096).includes("%PDF-") && !s.includes("obj")) throw new Error("الملف ليس PDF صالحًا");
+
+  /* stream payloads are binary and can imitate "12 0 obj" or "/Encrypt", so
+     their byte ranges are excluded from every scan below */
+  const holes = [];
+  for (let i = s.indexOf("stream"); i >= 0; ) {
+    const e = s.indexOf("endstream", i + 6);
+    if (e < 0) { holes.push([i, s.length]); break; }
+    holes.push([i, e]);
+    i = s.indexOf("stream", e + 9);
+  }
+  const inHole = p => {
+    let lo = 0, hi = holes.length - 1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      if (p < holes[mid][0]) hi = mid - 1;
+      else if (p > holes[mid][1]) lo = mid + 1;
+      else return true;
+    }
+    return false;
+  };
+
+  if (/\/Encrypt[\s/<]/.test(s) && [...s.matchAll(/\/Encrypt[\s/<]/g)].some(m => !inHole(m.index)))
+    throw new Error("ملف PDF محمي بتشفير — أزل الحماية أو صدّر التقرير بصيغة إكسل");
+
+  const offs = new Map(), re = /(\d{1,10})\s+(\d{1,5})\s+obj\b/g;
+  let m;
+  while ((m = re.exec(s))) { if (!inHole(m.index)) offs.set(+m[1], re.lastIndex); }
+  if (!offs.size) throw new Error("لا توجد كائنات داخل ملف الـ PDF");
+
+  const cache = new Map(), extra = new Map();
+  const doc = {};
+  const rs = v => (v && v.ref === true) ? get(v.num) : v;
+
+  const parseAt = i => {
+    const r = pdfVal(s, i);
+    let j = pdfWs(s, r.i);
+    if (!s.startsWith("stream", j) || !r.v || typeof r.v !== "object" || Array.isArray(r.v) || r.v.str) return r.v;
+    j += 6;
+    if (s[j] === "\r") j++;
+    if (s[j] === "\n") j++;
+    const len = rs(r.v.Length);
+    let end = typeof len === "number" && len >= 0 && j + len <= u8.length ? j + len : -1;
+    if (end < 0 || !/^[\s]{0,4}endstream/.test(s.substr(end, 14))) {
+      const e = s.indexOf("endstream", j);
+      end = e < 0 ? u8.length : e;
+      while (end > j && (s[end - 1] === "\n" || s[end - 1] === "\r")) end--;
+    }
+    return { dict: r.v, raw: u8.subarray(j, end) };
+  };
+
+  const get = n => {
+    if (cache.has(n)) return cache.get(n);
+    cache.set(n, null);                       // guards a reference that points at itself
+    const v = offs.has(n) ? parseAt(offs.get(n)) : extra.has(n) ? extra.get(n) : null;
+    cache.set(n, v);
+    return v;
+  };
+
+  const data = async o => {
+    if (!o || !o.raw) return null;
+    let d = o.raw, f = rs(o.dict.Filter);
+    if (!f) return d;
+    const fs = Array.isArray(f) ? f : [f];
+    let pp = rs(o.dict.DecodeParms) ?? rs(o.dict.DP);
+    const ps = Array.isArray(pp) ? pp : [pp];
+    for (let i = 0; i < fs.length; i++) {
+      const name = rs(fs[i]), p = rs(ps[i]) || Object.create(null);
+      if (name === "/FlateDecode" || name === "/Fl") d = pdfUnpredict(await pdfInflate(d), p, rs);
+      else if (name === "/LZWDecode" || name === "/LZW") d = pdfUnpredict(pdfLzw(d, rs(p.EarlyChange) === undefined ? 1 : +rs(p.EarlyChange)), p, rs);
+      else if (name === "/ASCIIHexDecode" || name === "/AHx") d = pdfHex(d);
+      else if (name === "/ASCII85Decode" || name === "/A85") d = pdf85(d);
+      else if (name === "/RunLengthDecode" || name === "/RL") d = pdfRL(d);
+      else if (name === "/Crypt") continue;
+      else return null;                       // an image codec — nothing to read as text
+    }
+    return d;
+  };
+
+  /* modern writers pack the small objects (pages, fonts) into object streams */
+  for (const n of [...offs.keys()]) {
+    const o = get(n);
+    if (!o || !o.raw || o.dict.Type !== "/ObjStm") continue;
+    const d = await data(o);
+    if (!d) continue;
+    const txt = L1.decode(d), count = +rs(o.dict.N) || 0, first = +rs(o.dict.First) || 0;
+    const nums = txt.slice(0, first).trim().split(/\s+/).map(Number);
+    for (let k = 0; k < count; k++) {
+      const on = nums[2 * k], off = nums[2 * k + 1];
+      if (!isFinite(on) || !isFinite(off) || offs.has(on) || extra.has(on)) continue;
+      extra.set(on, pdfVal(txt, first + off).v);
+    }
+  }
+
+  /* the newest /Root wins: an incrementally saved file repeats it */
+  let root = null;
+  for (const r of s.matchAll(/\/Root\s+(\d+)\s+(\d+)\s+R/g)) if (!inHole(r.index)) root = +r[1];
+  const cat = root != null ? get(root) : null;
+
+  const list = [], seen = new Set();
+  const walk = (node, inh, depth) => {
+    const d = node && node.dict ? node.dict : node;
+    if (!d || typeof d !== "object" || Array.isArray(d) || depth > 50 || list.length > 500) return;
+    const next = { Resources: d.Resources ?? inh.Resources, MediaBox: d.MediaBox ?? inh.MediaBox, Rotate: d.Rotate ?? inh.Rotate };
+    const kids = rs(d.Kids);
+    if (Array.isArray(kids) && d.Type !== "/Page") {
+      for (const k of kids) {
+        if (k && k.ref) { if (seen.has(k.num)) continue; seen.add(k.num); }
+        walk(rs(k), next, depth + 1);
+      }
+      return;
+    }
+    if (d.Type === "/Page" || d.Contents) list.push({ d, inh: next });
+  };
+  if (cat) walk(rs(cat.Pages), {}, 0);
+  if (!list.length)                          // a damaged catalog still leaves the pages behind
+    for (const n of [...offs.keys(), ...extra.keys()].sort((a, b) => a - b)) {
+      const o = get(n), d = o && o.dict ? o.dict : o;
+      if (d && typeof d === "object" && d.Type === "/Page") list.push({ d, inh: {} });
+    }
+
+  Object.assign(doc, { rs, get, data, pages: list, fonts: new WeakMap() });
+  return doc;
+}
+
+/* ---- encodings ---- */
+const PDF_WIN = (() => {
+  const a = [];
+  for (let i = 0; i < 256; i++) a[i] = i < 32 ? "" : String.fromCharCode(i);
+  /* WinAnsi spends 0x80-0x9F on typography where Latin-1 keeps control codes */
+  const slot = [0x80, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x89, 0x8A, 0x8B, 0x8C, 0x8E,
+                0x91, 0x92, 0x93, 0x94, 0x95, 0x96, 0x97, 0x98, 0x99, 0x9A, 0x9B, 0x9C, 0x9E, 0x9F];
+  ("20AC 201A 0192 201E 2026 2020 2021 02C6 2030 0160 2039 0152 017D 2018 2019 201C 201D 2022 " +
+   "2013 2014 02DC 2122 0161 203A 0153 017E 0178").split(" ")
+    .forEach((h, i) => a[slot[i]] = String.fromCharCode(parseInt(h, 16)));
+  for (let i = 0x80; i <= 0x9F; i++) if (a[i].charCodeAt(0) < 32) a[i] = "";
+  return a;
+})();
+
+const PDF_GLYPH = (() => {
+  const g = Object.create(null);
+  ("space exclam quotedbl numbersign dollar percent ampersand quotesingle parenleft parenright asterisk plus " +
+   "comma hyphen period slash zero one two three four five six seven eight nine colon semicolon less equal " +
+   "greater question at").split(" ").forEach((n, i) => g[n] = String.fromCharCode(32 + i));
+  for (let c = 65; c <= 90; c++) g[String.fromCharCode(c)] = String.fromCharCode(c);
+  for (let c = 97; c <= 122; c++) g[String.fromCharCode(c)] = String.fromCharCode(c);
+  Object.assign(g, {
+    bracketleft: "[", backslash: "\\", bracketright: "]", asciicircum: "^", underscore: "_", grave: "`",
+    braceleft: "{", bar: "|", braceright: "}", asciitilde: "~", quoteright: "’", quoteleft: "‘",
+    quotedblleft: "“", quotedblright: "”", quotesinglbase: "‚", quotedblbase: "„", endash: "–", emdash: "—",
+    bullet: "•", ellipsis: "…", degree: "°", plusminus: "±", multiply: "×", divide: "÷", minus: "−",
+    periodcentered: "·", section: "§", copyright: "©", registered: "®", trademark: "™", Euro: "€",
+    sterling: "£", yen: "¥", currency: "¤", fraction: "⁄", fi: "fi", fl: "fl", dagger: "†", daggerdbl: "‡",
+    perthousand: "‰", nbspace: " ", uni00A0: " ",
+  });
+  return g;
+})();
+
+function pdfGlyph(n) {
+  if (PDF_GLYPH[n] !== undefined) return PDF_GLYPH[n];
+  const m = /^uni([0-9A-Fa-f]{4})/.exec(n) || /^u([0-9A-Fa-f]{4,6})$/.exec(n);
+  if (m) { try { return String.fromCodePoint(parseInt(m[1], 16)); } catch { return ""; } }
+  return n.length === 1 ? n : "";           // /g37 and friends name a glyph, not a character
+}
+
+function pdfEnc(e, rs) {
+  const t = PDF_WIN.slice();
+  if (!e || typeof e !== "object") return t;
+  const diffs = rs(e.Differences);
+  if (!Array.isArray(diffs)) return t;
+  let code = 0;
+  for (const it0 of diffs) {
+    const it = rs(it0);
+    if (typeof it === "number") code = it | 0;
+    else if (typeof it === "string" && it[0] === "/") { if (code >= 0 && code < 256) t[code] = pdfGlyph(it.slice(1)); code++; }
+  }
+  return t;
+}
+
+/* ToUnicode is what makes a subset-embedded font readable at all */
+function pdfCMap(t) {
+  const map = new Map();
+  const hex = h => {
+    if (h.length <= 2) return h ? String.fromCharCode(parseInt(h, 16)) : "";
+    let o = "";
+    for (let i = 0; i < h.length; i += 4) o += String.fromCharCode(parseInt(h.substr(i, 4).padEnd(4, "0"), 16));
+    return o;
+  };
+  for (const blk of t.match(/beginbfchar([\s\S]*?)endbfchar/g) || []) {
+    const re = /<([0-9A-Fa-f]+)>\s*(?:<([0-9A-Fa-f]*)>|\/([^\s/<>\[\]()]+))/g;
+    let m;
+    while ((m = re.exec(blk))) map.set(parseInt(m[1], 16), m[2] != null ? hex(m[2]) : pdfGlyph(m[3]));
+  }
+  for (const blk of t.match(/beginbfrange([\s\S]*?)endbfrange/g) || []) {
+    const re = /<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>\s*(?:<([0-9A-Fa-f]*)>|\[([\s\S]*?)\])/g;
+    let m;
+    while ((m = re.exec(blk))) {
+      const lo = parseInt(m[1], 16), hi = Math.min(parseInt(m[2], 16), lo + 65535);
+      if (m[3] != null) {
+        const base = hex(m[3]);
+        if (!base) continue;
+        for (let c = lo; c <= hi; c++)
+          map.set(c, base.slice(0, -1) + String.fromCharCode(base.charCodeAt(base.length - 1) + (c - lo)));
+      } else {
+        (m[4].match(/<([0-9A-Fa-f]*)>/g) || []).forEach((h, k) => map.set(lo + k, hex(h.slice(1, -1))));
+      }
+    }
+  }
+  return map;
+}
+
+async function pdfFont(fd, doc) {
+  const rs = doc.rs, f = { two: false, w: new Map(), dw: 500, uni: null, enc: null };
+  if (fd.Subtype === "/Type0") {
+    f.two = true;                             // Identity-H and the CJK CMaps are all two-byte
+    const desc = rs(rs(fd.DescendantFonts)?.[0]) || Object.create(null);
+    f.dw = +rs(desc.DW) || 1000;
+    const W = rs(desc.W);
+    if (Array.isArray(W))
+      for (let i = 0; i < W.length; ) {
+        const a = +rs(W[i]), b = rs(W[i + 1]);
+        if (Array.isArray(b)) { b.forEach((w, k) => f.w.set(a + k, +rs(w) || 0)); i += 2; }
+        else { const end = Math.min(+b, a + 65535), w = +rs(W[i + 2]) || 0; for (let c = a; c <= end; c++) f.w.set(c, w); i += 3; }
+      }
+  } else {
+    const first = +rs(fd.FirstChar) || 0, ws = rs(fd.Widths);
+    if (Array.isArray(ws)) ws.forEach((w, i) => f.w.set(first + i, +rs(w) || 0));
+    const dsc = rs(fd.FontDescriptor) || Object.create(null);
+    f.dw = +rs(dsc.MissingWidth) || (f.w.size ? 0 : 500);
+    f.enc = pdfEnc(rs(fd.Encoding), rs);
+  }
+  const tu = rs(fd.ToUnicode);
+  if (tu && tu.raw) { const d = await doc.data(tu); if (d) f.uni = pdfCMap(L1.decode(d)); }
+  return f;
+}
+
+async function pdfFonts(res, doc) {
+  const out = new Map(), fd = doc.rs(res.Font);
+  if (!fd || typeof fd !== "object") return out;
+  for (const nm of Object.keys(fd)) {
+    const f = doc.rs(fd[nm]);
+    if (!f || typeof f !== "object" || Array.isArray(f) || f.raw) continue;
+    let parsed = doc.fonts.get(f);            // every form re-reading the same font would re-read its CMap
+    if (!parsed) { parsed = await pdfFont(f, doc); doc.fonts.set(f, parsed); }
+    out.set(nm, parsed);
+  }
+  return out;
+}
+
+function pdfDecode(f, bytes) {
+  const out = [], step = f && f.two ? 2 : 1;
+  for (let i = 0; i < bytes.length; i += step) {
+    const code = step === 2 ? (bytes.charCodeAt(i) << 8) | (bytes.charCodeAt(i + 1) || 0) : bytes.charCodeAt(i);
+    let ch = f && f.uni ? f.uni.get(code) : undefined;
+    if (ch === undefined && f && f.enc) ch = f.enc[code];
+    if (ch === undefined) ch = step === 1 ? PDF_WIN[code] ?? "" : "";
+    out.push({ code, ch, w: f && f.w.has(code) ? f.w.get(code) : f ? f.dw : 500 });
+  }
+  return out;
+}
+
+/* ---- page content ---- */
+const pdfMul = (a, b) => [
+  a[0] * b[0] + a[1] * b[2], a[0] * b[1] + a[1] * b[3],
+  a[2] * b[0] + a[3] * b[2], a[2] * b[1] + a[3] * b[3],
+  a[4] * b[0] + a[5] * b[2] + b[4], a[4] * b[1] + a[5] * b[3] + b[5],
+];
+
+/* walks the operators and records where every piece of text landed */
+async function pdfRun(txt, res, doc, ctm, out, depth) {
+  if (depth > 6 || out.length > 200000) return;
+  res = res || Object.create(null);
+  const fonts = await pdfFonts(res, doc), xobj = doc.rs(res.XObject) || Object.create(null);
+  const stack = [];
+  let tm = [1, 0, 0, 1, 0, 0], tlm = tm, font = null, size = 0, tc = 0, tw = 0, th = 1, tl = 0, rise = 0;
+  const args = [];
+  const nums = k => { const a = args.slice(-k); return a.length === k && a.every(v => typeof v === "number") ? a : null; };
+
+  const show = bs => {
+    if (typeof bs !== "string" || !bs.length) return;
+    const start = pdfMul([size * th, 0, 0, size, 0, rise], pdfMul(tm, ctm));
+    let text = "", adv = 0;
+    for (const g of pdfDecode(font, bs)) {
+      text += g.ch;
+      adv += ((g.w / 1000) * size + tc + (g.code === 32 && !(font && font.two) ? tw : 0)) * th;
+    }
+    tm = pdfMul([1, 0, 0, 1, adv, 0], tm);
+    if (!text.trim()) return;
+    const end = pdfMul([size * th, 0, 0, size, 0, rise], pdfMul(tm, ctm));
+    out.push({ x0: start[4], y0: start[5], x1: end[4], y1: end[5], s: text,
+               size: Math.hypot(start[2], start[3]) || Math.abs(size) || 8 });
+  };
+
+  let i = 0;
+  while (i < txt.length) {
+    const r = pdfVal(txt, i);
+    if (r.i <= i) { i++; continue; }
+    i = r.i;
+    const v = r.v;
+    if (v === undefined || v === null || !v.op) { if (v !== undefined) { args.push(v); if (args.length > 80) args.shift(); } continue; }
+    const op = v.op;
+    if (op === "BI") {                        // inline image bytes are not operators
+      let e = txt.indexOf("EI", i);
+      while (e > 0 && !(pdfIsWs(txt.charCodeAt(e - 1)) && (e + 2 >= txt.length || pdfIsWs(txt.charCodeAt(e + 2))))) e = txt.indexOf("EI", e + 2);
+      i = e < 0 ? txt.length : e + 2;
+      args.length = 0;
+      continue;
+    }
+    if (op === "q") stack.push(ctm);
+    else if (op === "Q") ctm = stack.pop() || ctm;
+    else if (op === "cm") { const a = nums(6); if (a) ctm = pdfMul(a, ctm); }
+    else if (op === "BT") tm = tlm = [1, 0, 0, 1, 0, 0];
+    else if (op === "Tf") { const n = args[args.length - 2]; size = +args[args.length - 1] || 0; if (typeof n === "string") font = fonts.get(n.slice(1)) || null; }
+    else if (op === "Td") { const a = nums(2); if (a) tm = tlm = pdfMul([1, 0, 0, 1, a[0], a[1]], tlm); }
+    else if (op === "TD") { const a = nums(2); if (a) { tl = -a[1]; tm = tlm = pdfMul([1, 0, 0, 1, a[0], a[1]], tlm); } }
+    else if (op === "Tm") { const a = nums(6); if (a) tm = tlm = a; }
+    else if (op === "T*") tm = tlm = pdfMul([1, 0, 0, 1, 0, -tl], tlm);
+    else if (op === "TL") { const a = nums(1); if (a) tl = a[0]; }
+    else if (op === "Tc") { const a = nums(1); if (a) tc = a[0]; }
+    else if (op === "Tw") { const a = nums(1); if (a) tw = a[0]; }
+    else if (op === "Tz") { const a = nums(1); if (a) th = a[0] / 100; }
+    else if (op === "Ts") { const a = nums(1); if (a) rise = a[0]; }
+    else if (op === "Tj") { const a = args[args.length - 1]; if (a && a.str != null) show(a.str); }
+    else if (op === "'") { tm = tlm = pdfMul([1, 0, 0, 1, 0, -tl], tlm); const a = args[args.length - 1]; if (a && a.str != null) show(a.str); }
+    else if (op === '"') {
+      const a = args.slice(-3);
+      if (typeof a[0] === "number") tw = a[0];
+      if (typeof a[1] === "number") tc = a[1];
+      tm = tlm = pdfMul([1, 0, 0, 1, 0, -tl], tlm);
+      if (a[2] && a[2].str != null) show(a[2].str);
+    }
+    else if (op === "TJ") {
+      const a = args[args.length - 1];
+      if (Array.isArray(a)) for (const e of a) {
+        if (typeof e === "number") tm = pdfMul([1, 0, 0, 1, (-e / 1000) * size * th, 0], tm);
+        else if (e && e.str != null) show(e.str);
+      }
+    }
+    else if (op === "Do") {
+      const n = args[args.length - 1];
+      if (typeof n === "string") {
+        const o = doc.rs(xobj[n.slice(1)]);
+        if (o && o.raw && o.dict.Subtype === "/Form") {
+          const d = await doc.data(o);
+          if (d) {
+            const mx = doc.rs(o.dict.Matrix);
+            const m = Array.isArray(mx) && mx.length === 6 ? mx.map(Number) : [1, 0, 0, 1, 0, 0];
+            await pdfRun(L1.decode(d), doc.rs(o.dict.Resources) || res, doc, pdfMul(m, ctm), out, depth + 1);
+          }
+        }
+      }
+    }
+    args.length = 0;
+  }
+}
+
+async function pdfPage(pg, doc) {
+  const out = [];
+  const c = doc.rs(pg.d.Contents);
+  const parts = Array.isArray(c) ? c : [c];
+  let buf = "";
+  for (const p of parts) {
+    const o = doc.rs(p);
+    if (o && o.raw) { const d = await doc.data(o); if (d) buf += L1.decode(d) + "\n"; }
+  }
+  if (!buf) return out;
+  await pdfRun(buf, doc.rs(pg.d.Resources ?? pg.inh.Resources), doc, [1, 0, 0, 1, 0, 0], out, 0);
+
+  /* a landscape export usually arrives upright plus /Rotate, so the glyphs are
+     turned into reading orientation before rows are formed */
+  const rot = ((+doc.rs(pg.d.Rotate ?? pg.inh.Rotate) || 0) % 360 + 360) % 360;
+  const turn = (x, y) => rot === 90 ? [y, -x] : rot === 180 ? [-x, -y] : rot === 270 ? [-y, x] : [x, y];
+  return out.map(f => {
+    const [x0, y0] = turn(f.x0, f.y0), [x1, y1] = turn(f.x1, f.y1);
+    return { x: Math.min(x0, x1), y: (y0 + y1) / 2, w: Math.abs(x1 - x0), s: f.s, size: f.size };
+  });
+}
+
+/* ---- layout → grid ---- */
+/* Columns are found once for the whole document from the vertical white gutters
+   the table leaves between its cells, so right-aligned numbers and left-aligned
+   names land in the same column and every page is cut identically. */
+function pdfGrid(perPage) {
+  const lines = [];
+  perPage.forEach((frags, p) => {
+    const sorted = frags.slice().sort((a, b) => b.y - a.y || a.x - b.x);
+    let cur = null;
+    for (const f of sorted) {
+      if (!cur || Math.abs(cur.y - f.y) > Math.max(1.2, (f.size || 8) * 0.45)) { cur = { p, y: f.y, items: [] }; lines.push(cur); }
+      cur.items.push(f);
+    }
+  });
+  for (const l of lines) l.items.sort((a, b) => a.x - b.x);
+  if (!lines.length) return [];
+
+  const sizes = lines.flatMap(l => l.items.map(f => f.size)).sort((a, b) => a - b);
+  const em = sizes[Math.floor(sizes.length / 2)] || 8;
+  /* a title line ("From: … To: …") often arrives as several touching pieces;
+     pieces with no gap between them are one block, and only a line of three
+     separate blocks or more is a table line that may shape the columns */
+  const blocks = l => { let n = 0, end = -Infinity; for (const f of l.items) { if (f.x - end > em * 0.5) n++; end = Math.max(end, f.x + f.w); } return n; };
+  const body = lines.filter(l => blocks(l) >= 3);
+  const use = body.length >= 3 ? body : lines;
+  let minX = Infinity, maxX = -Infinity;
+  for (const l of use) for (const f of l.items) { minX = Math.min(minX, f.x); maxX = Math.max(maxX, f.x + f.w); }
+
+  const cuts = [];
+  if (isFinite(minX) && maxX - minX > 1 && maxX - minX < 20000) {
+    /* each line votes once per column of pixels, so a single overlong name that
+       spills into the next column cannot erase a gutter the other rows agree on */
+    const bins = new Uint16Array(Math.ceil(maxX - minX) + 2), stamp = new Int32Array(bins.length).fill(-1);
+    use.forEach((l, k) => {
+      for (const f of l.items) {
+        const a = Math.max(0, Math.floor(f.x - minX)), b = Math.min(bins.length - 1, Math.ceil(f.x + f.w - minX));
+        for (let i = a; i <= b; i++) if (stamp[i] !== k) { stamp[i] = k; bins[i]++; }
+      }
+    });
+    /* half a character: wider than a word space inside a cell (about a
+       quarter), narrower than the tightest gutter between report columns */
+    const noise = Math.floor(use.length * 0.02), gap = Math.max(3, em * 0.5);
+    /* Within a gutter the cut goes where no line at all has text, not merely
+       in its middle: a long report lets a lone header line pass as noise, and
+       a cut through the middle of the gutter would split "Gross Amount". */
+    const bestCut = (a, b) => {
+      let lo = Infinity;
+      for (let j = a; j < b; j++) lo = Math.min(lo, bins[j]);
+      let at = a, len = 0, s = -1;
+      for (let j = a; j <= b; j++) {
+        if (j < b && bins[j] === lo) { if (s < 0) s = j; }
+        else if (s >= 0) { if (j - s > len) { len = j - s; at = s; } s = -1; }
+      }
+      return at + len / 2;
+    };
+    let run = 0;
+    for (let i = 0; i < bins.length; i++) {
+      if (bins[i] <= noise) { run++; continue; }
+      if (run >= gap && i - run > 0) cuts.push(minX + bestCut(i - run, i));
+      run = 0;
+    }
+  }
+  const colOf = f => {
+    const c = f.x + f.w / 2;
+    let k = 0;
+    while (k < cuts.length && c > cuts[k]) k++;
+    return k;
+  };
+
+  const rows = [], preamble = new Set();
+  const byPage = new Map();
+  for (const l of lines) { if (!byPage.has(l.p)) byPage.set(l.p, []); byPage.get(l.p).push(l); }
+  for (const [p, ls] of [...byPage.entries()].sort((a, b) => a[0] - b[0])) {
+    let started = false;                      // true once this page's table has begun
+    ls.forEach(l => {
+      const cells = [];
+      let prev = null, col = -1;
+      for (const f of l.items) {
+        const c = colOf(f);
+        if (c !== col) { col = c; cells[c] = cells[c] ?? ""; prev = null; }
+        if (prev && f.x - (prev.x + prev.w) > Math.max(0.6, prev.size * 0.2) && !/\s$/.test(cells[c])) cells[c] += " ";
+        cells[c] = (cells[c] ?? "") + f.s;
+        prev = f;
+      }
+      const row = [];
+      for (let i = 0; i < cells.length; i++) row[i] = pdfRtl((cells[i] ?? "").replace(/\s+/g, " ").trim());
+      while (row.length && row[row.length - 1] === "") row.pop();
+      if (!row.length) return;
+      /* Page 2 onwards reprints the title block and the column header. Only what
+         stands above a page's first table-width line can be one of those, so a
+         data row is never mistaken for a repeat. */
+      const wide = row.filter(c => c !== "").length >= 3;
+      if (!started) {
+        const joined = row.join("|");
+        if (p === 0) preamble.add(joined);
+        else if (preamble.has(joined)) { started = wide; return; }
+      }
+      if (wide) started = true;
+      rows.push(row);
+    });
+  }
+  /* "Page 2 of 3" and other furniture printed under the table would otherwise
+     read as a department; once the table has started, a lone cell is not a row */
+  const filled = r => r.filter(c => c !== "").length;
+  const start = rows.findIndex(r => filled(r) >= 3);
+  /* …but the MIS reports' own heading lines ("Doctor Name: …", "Status: …",
+     "Category: …") stand alone on their line and carry the grouping */
+  const heading = r => HEADING.test(r.find(c => c !== "") || "");
+  return start < 0 ? rows : rows.filter((r, i) => i <= start || filled(r) >= 2 || heading(r));
+}
+
+/* Shaped Arabic is stored in the order it is painted, i.e. reversed; the base
+   letters are restored once the run order is put back. Text that never used the
+   presentation forms was written logically and is left alone. */
+function pdfRtl(s) {
+  if (!/[ﭐ-﻿]/.test(s)) return s;
+  const runs = [];
+  for (const ch of s) {
+    const rtl = /[֐-ࣿﭐ-﻿]/.test(ch);
+    if (!runs.length || runs[runs.length - 1].rtl !== rtl) runs.push({ rtl, t: ch });
+    else runs[runs.length - 1].t += ch;
+  }
+  return runs.reverse().map(r => (r.rtl ? [...r.t].reverse().join("") : r.t)).join("").normalize("NFKC").trim();
+}
+
+async function readPdf(file) {
+  const doc = await pdfDoc(await file.arrayBuffer());
+  if (!doc.pages.length) throw new Error("لا توجد صفحات داخل ملف الـ PDF");
+  const perPage = [];
+  for (const pg of doc.pages) perPage.push(await pdfPage(pg, doc));
+  const grid = pdfGrid(perPage);
+  if (!grid.length)
+    throw new Error("لا يوجد نص قابل للقراءة في هذا الـ PDF (يبدو أنه صورة ممسوحة ضوئيًا) — صدّر التقرير بصيغة إكسل");
+  return grid;
+}
+
+/* ═════════════════ sheet shapes ═════════════════
+   Sheets are told apart by their header row, never by name. */
+const norm = s => String(s ?? "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+const num = v => { const n = parseFloat(String(v ?? "").replace(/[^\d.eE+-]/g, "")); return isFinite(n) ? n : 0; };
+const isNum = v => v !== "" && v != null && isFinite(parseFloat(String(v).replace(/[^\d.eE+-]/g, "")));
+/* the appointment figures are read strictly: a date or a code in a numeric
+   column is not a count */
+const strictNum = v => { const t = String(v ?? "").trim().replace(/,/g, ""); return /^-?\d+(\.\d+)?$/.test(t) ? parseFloat(t) : null; };
+const str = (row, i) => i >= 0 ? String(row?.[i] ?? "").trim() : "";
+const clean = s => String(s ?? "").replace(/\s+/g, " ").trim();
+
+function findHeader(grid, want) {
+  for (let i = 0; i < Math.min(grid.length, 40); i++) {
+    const cells = (grid[i] || []).map(norm);
+    if (want.every(w => cells.some(c => w.test(c)))) return i;
+  }
+  return -1;
+}
+const pick = (header, re) => header.findIndex(h => re.test(norm(h)));
+
+/* ═════════════════ dates ═════════════════ */
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const MON3 = MONTHS.map(m => m.slice(0, 3));
+const WEEKDAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+function parseDate(s) {
+  const t = String(s ?? "").trim();
+  let m = /^(\d{1,2})[-/\s]([A-Za-z]{3,})[-/\s,]*(\d{4})/.exec(t);
+  if (m) { const mon = m[2].slice(0, 3).toLowerCase(); const mi = MON3.findIndex(x => x.toLowerCase() === mon); if (mi >= 0) return new Date(Date.UTC(+m[3], mi, +m[1])); }
+  m = /^(\d{4})-(\d{2})-(\d{2})/.exec(t);
+  if (m) return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+  m = /^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/.exec(t);
+  if (m) return new Date(Date.UTC(+m[3], +m[2] - 1, +m[1]));
+  return null;
+}
+const iso = d => d ? d.toISOString().slice(0, 10) : "";
+const D = d => d.getUTCDate(), M = d => d.getUTCMonth(), Y = d => d.getUTCFullYear();
+const spanDays = (a, b) => (a && b) ? Math.round((b - a) / 864e5) + 1 : 0;
+
+/* "Thursday, September 24, 2026" for a day — the template's own wording —
+   widened to a span when the files cover more than one */
+function longDate(a, b) {
+  if (!a && !b) return "";
+  if (!a) a = b; if (!b) b = a;
+  if (+a === +b) return WEEKDAYS[a.getUTCDay()] + ", " + MONTHS[M(a)] + " " + D(a) + ", " + Y(a);
+  if (Y(a) === Y(b) && M(a) === M(b)) return MONTHS[M(a)] + " " + D(a) + " – " + D(b) + ", " + Y(a);
+  if (Y(a) === Y(b)) return MONTHS[M(a)] + " " + D(a) + " – " + MONTHS[M(b)] + " " + D(b) + ", " + Y(b);
+  return MONTHS[M(a)] + " " + D(a) + ", " + Y(a) + " – " + MONTHS[M(b)] + " " + D(b) + ", " + Y(b);
+}
+
+function periodOf(sheet) {
+  for (const row of sheet.grid.slice(0, 10)) {
+    const t = (row || []).join(" ");
+    const m = /from(?:[\s_]*date)?\s*:?\s*([0-9]{1,2}[-/][A-Za-z0-9]{2,}[-/][0-9]{4})[^,]*?,?\s*to(?:[\s_]*date)?\s*:?\s*([0-9]{1,2}[-/][A-Za-z0-9]{2,}[-/][0-9]{4})/i.exec(t);
+    if (m) { const a = parseDate(m[1]), b = parseDate(m[2]); if (a && b) return { from: a, to: b }; }
+  }
+  return null;
+}
+/* a daily export is often saved as "Alsuwaidi 24-09-2026.xlsx" */
+function dateFromName(name) {
+  const s = String(name || "");
+  let m = /(?:^|\D)(\d{1,2})[-_.](\d{1,2})[-_.](\d{4})(?:\D|$)/.exec(s);
+  if (m && +m[2] <= 12) return new Date(Date.UTC(+m[3], +m[2] - 1, +m[1]));
+  m = /(?:^|\D)(20\d{2})[-_.]?(\d{2})[-_.]?(\d{2})(?:\D|$)/.exec(s);
+  if (m && +m[2] <= 12 && +m[3] <= 31) return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+  return null;
+}
+const spanOf = list => {
+  const ok = list.filter(Boolean);
+  if (!ok.length) return null;
+  return { from: new Date(Math.min(...ok.map(p => +p.from))), to: new Date(Math.max(...ok.map(p => +p.to))) };
+};
+
+/* ═════════════════ the branch, from the title block ═════════════════ */
+const titleCase = s => s === s.toUpperCase() ? s.toLowerCase().replace(/\b[a-z]/g, c => c.toUpperCase()) : s;
+function branchFrom(sheets) {
+  for (const s of sheets) {
+    for (const row of s.grid.slice(0, 6)) {
+      /* a PDF can set "Meena Center" and "Alsuwaidi" in two cells */
+      const line = clean((row || []).filter(c => clean(c)).join(" "));
+      if (/^meena\b/i.test(line) && line.length <= 60) return titleCase(line);
+      for (const c of (row || []).slice(0, 3)) {
+        const t = clean(c);
+        if (/^meena\b/i.test(t) && t.length <= 60) return titleCase(t);
+        const m = /^(?:center|centre|branch|hospital)\s*[-:]\s*(.{2,50})$/i.exec(t);
+        if (m) return titleCase(clean(m[1]));
+      }
+    }
+  }
+  return "";
+}
+/* "Meena Center Alsuwaidi" → "Alsuwaidi", for the file name */
+const branchShort = b => clean(String(b || "").replace(/\b(meena|center|centre|phc|primary|health|care|branch|clinic|medical|polyclinic)\b/gi, " "))
+  .replace(/[^\w-]+/g, "_").replace(/^_+|_+$/g, "") || "Branch";
+
+/* ═════════════════ names ═════════════════ */
+const nameKey = s => norm(s);
+
+/* ═════════════════ departments ═════════════════
+   The template names its cards short — "OB-Gyne", "ENT", "Mental Health" —
+   while MIS writes "OBSTETRICS AND GYNECOLOGY" or "ENT ( Ear, Nose,Throat )".
+   Every spelling of one department lands on one card. */
+const DEPT_ALIAS = [
+  [/emergenc|(^| )er( |$)|casualty|urgent care/, "EMERGENCY"],
+  [/dental|dentist|orthodon|endodon|periodon|prosthodon|oral/, "Dental"],
+  [/family|general practi|(^| )gp( |$)/, "Family Medicine"],
+  [/pediat|paediat|child/, "Pediatric"],
+  [/obst|gyn|women/, "OB-Gyne"],
+  [/physio|rehab|physical therap/, "Physiotherapy"],
+  [/cardio|heart/, "Cardiology"],
+  [/sport/, "Sport Medicine"],
+  [/(^| )ent( |$)|(^| )ear( |$)|otolaryng/, "ENT"],
+  [/ophthal|(^| )eye|optom/, "Ophthalmology"],
+  [/diabet|endocrin/, "Diabetes"],
+  [/mental|psych/, "Mental Health"],
+  [/dermat|skin/, "Dermatology"],
+  [/orthop/, "Orthopedics"],
+  [/internal/, "Internal Medicine"],
+  [/nutri|diet/, "Nutrition"],
+  [/urolog/, "Urology"],
+  [/neuro/, "Neurology"],
+];
+const shortDept = raw => {
+  const n = norm(raw);
+  const hit = DEPT_ALIAS.find(([re]) => re.test(n));
+  return hit ? hit[1] : titleCase(clean(raw)) || "Other";
+};
+const isER = raw => /emergenc|(^| )er( |$)|casualty|urgent care/.test(norm(raw));
+
+/* ═════════════════ the detailed export ═════════════════
+   "Appointment Statistics – Detailed": a line per appointment, blocked under
+   "Status:" headings — Booked, Pending, Reported — with "Doctor Name:"
+   headings inside them. The other way round is read too. */
+const DET_WANT = [/^mrno$|^mrn$/, /^type$/, /^date of visit$|^appt time$|^appt$/];
+function shapeDetail(sheet) {
+  const h = findHeader(sheet.grid, DET_WANT);
+  if (h < 0) return null;
+  if (!sheet.grid.some(r => /^doctor\s*name\s*:/i.test(clean(r?.[0])))) return null;
+  const head = sheet.grid[h];
+  return {
+    sheet, headerRow: h,
+    col: {
+      mrno: pick(head, /^mrno$|^mrn$/), name: pick(head, /^name$|^patient name$|^patient$/),
+      token: pick(head, /^token( no)?$/), appt: pick(head, /^appt time$|^appt$|^appointment time$/),
+      visit: pick(head, /^date of visit$|^visit date$/), type: pick(head, /^type$/),
+      dept: pick(head, /^department( name)?$/),
+    },
+  };
+}
+
+/* Booked and Pending are appointments the patient did not come to — the
+   no-shows; Reported is the patient seen. Cancelled is neither and is left out. */
+const ST_SEEN = /^reported?\b/i;          // "Not Reported" is not Reported
+const ST_CANCEL = /cancel/i;
+const ST_MISSED = /book|pend|confirm|schedul|no\s*-?\s*show|missed|absent|not\s*(arrived|reported)|did\s*not|\bdna\b/i;
+const statusKind = s => ST_CANCEL.test(s) ? "cancel" : ST_SEEN.test(s) ? "seen" : ST_MISSED.test(s) ? "missed" : "other";
+const TYPE_WALKIN = /walk/i;
+/* one file number however an export spells it: "0025099864" and 25099864 */
+const mrnKey = s => clean(s).toUpperCase().replace(/\s+/g, "").replace(/^([A-Z]*)0+(?=\d)/, "$1");
+
+const pad = n => String(n).padStart(2, "0");
+/* "16:45:00", "4:45 PM", or the fraction of a day Excel keeps (0.6979) —
+   as minutes after midnight */
+function minutesOf(v) {
+  const t = clean(v);
+  if (!t) return null;
+  if (/^\d*\.\d+$|^0$/.test(t)) return Math.round(parseFloat(t) % 1 * 1440) % 1440;
+  const m = /(\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?\s*([ap])?/i.exec(t);
+  if (!m) return null;
+  let h = +m[1];
+  if (m[3]) h = h % 12 + (/p/i.test(m[3]) ? 12 : 0);
+  return h > 23 || +m[2] > 59 ? null : h * 60 + +m[2];
+}
+const hhmm = n => n == null ? "" : pad(Math.floor(n / 60)) + ":" + pad(n % 60);
+/* "08-Oct-2026 13:31": the day, and the hour a walk-in was registered; an
+   appointment's line carries its day with a bare "00:00" */
+function visitOf(v) {
+  const t = clean(v);
+  if (!t) return { day: null, min: null };
+  if (/^\d{5}(\.\d+)?$/.test(t)) {
+    const n = parseFloat(t);
+    return { day: new Date(Date.UTC(1899, 11, 30) + Math.floor(n) * 864e5), min: Math.round(n % 1 * 1440) % 1440 || null };
+  }
+  return { day: parseDate(t), min: minutesOf(t.replace(/^\S+/, "")) || null };
+}
+const dmy = d => d ? pad(D(d)) + "-" + MON3[M(d)] + "-" + Y(d) : "";
+const sameDay = (a, b) => a && b && +a === +b;
+
+function readAppointments(dets) {
+  const rows = [], seenRow = new Map();
+  let headed = false, noAppt = false;
+  const DOC_LINE = /^doctor\s*name\s*:/i, STATUS_LINE = /^status\s*:/i;
+  dets.forEach((nv, fi) => {
+    const g = nv.sheet.grid, c = nv.col;
+    if (c.appt < 0) noAppt = true;
+    const oneDay = nv.span && sameDay(nv.span.from, nv.span.to) ? nv.span.from : null;
+    /* whichever heading comes first is the outer one, and a new outer
+       heading clears the inner */
+    let outer = "doctor";
+    for (let i = nv.headerRow + 1; i < g.length; i++) {
+      const f = clean(g[i]?.[0]);
+      if (STATUS_LINE.test(f)) { outer = "status"; break; }
+      if (DOC_LINE.test(f)) break;
+    }
+    let doc = null, status = "";
+    for (let i = nv.headerRow + 1; i < g.length; i++) {
+      const r = g[i] || [], first = clean(r[0]);
+      if (DOC_LINE.test(first)) { doc = clean(first.split(":").slice(1).join(":")); if (outer === "doctor") status = ""; continue; }
+      if (STATUS_LINE.test(first)) { status = clean(first.split(":").slice(1).join(":")); headed = true; if (outer === "status") doc = null; continue; }
+      if (!first || !doc) continue;
+      /* an appointment line carries a file number; the print stamp under the
+         table ("09-Oct-2026 23:46  00101122") does not */
+      const mrn = str(r, c.mrno);
+      if (c.mrno >= 0 && !/^[A-Za-z]{0,3}\d{3,}$/.test(mrn)) continue;
+      const v = visitOf(str(r, c.visit)), dept = clean(str(r, c.dept));
+      const row = {
+        status: status || "—", kind: status ? statusKind(status) : "other",
+        doc, docKey: nameKey(doc), mrn, key: mrnKey(mrn), name: clean(str(r, c.name)), token: clean(str(r, c.token)),
+        appt: minutesOf(str(r, c.appt)) || null, visitMin: v.min, day: v.day || oneDay, type: clean(str(r, c.type)),
+        dept: deptName(dept), deptKey: dept ? shortDept(dept) : "",
+      };
+      /* the same day uploaded twice is read once: a line already read, word
+         for word, from another file is passed over — never one of the same
+         file, where a patient can have two visits alike */
+      const sig = [row.day ? +row.day : "", status, doc, r.map(clean).join("|")].join("|");
+      if (seenRow.has(sig) && seenRow.get(sig) !== fi) continue;
+      seenRow.set(sig, fi);
+      rows.push(row);
+    }
+  });
+  return { rows, headed, noAppt };
+}
+/* the department as the table names it: the template's short names, and
+   "Emergency" rather than the card's capitals */
+const deptName = raw => { if (!raw) return ""; const s = shortDept(raw); return s === "EMERGENCY" ? "Emergency" : s; };
+
+/* For every appointment the patient missed: was the patient seen later that
+   day? The same file number under Reported, on the same day and in the same
+   department — with the same doctor, or another doctor of that department. */
+const seenAt = s => s.visitMin ?? s.appt;
+const byTime = (a, b) => (a.day ? +a.day : 0) - (b.day ? +b.day : 0) || (a.appt ?? 1e4) - (b.appt ?? 1e4) || a.name.localeCompare(b.name);
+const SORTS = {
+  time: byTime,
+  doctor: (a, b) => a.doc.localeCompare(b.doc) || byTime(a, b),
+  dept: (a, b) => a.dept.localeCompare(b.dept) || a.doc.localeCompare(b.doc) || byTime(a, b),
+  attend: (a, b) => (b.hit ? 1 : 0) - (a.hit ? 1 : 0) || (a.cat === "same" ? 0 : 1) - (b.cat === "same" ? 0 : 1) || byTime(a, b),
+};
+function analyse(read, opts) {
+  const dayKey = r => r.day ? iso(r.day) : "";
+  const seen = new Map();
+  for (const r of read.rows) if (r.kind === "seen") {
+    const k = r.key;
+    if (!seen.has(k)) seen.set(k, []);
+    seen.get(k).push(r);
+  }
+  const list = [];
+  for (const r of read.rows) {
+    if (r.kind !== "missed") continue;
+    const same = (seen.get(r.key) || []).filter(s => !r.day || !s.day || dayKey(s) === dayKey(r));
+    const inDept = same.filter(s => s.deptKey === r.deptKey);
+    const pool = inDept.length ? inDept : opts.anyDept ? same : [];
+    const byDoc = pool.filter(s => s.docKey === r.docKey);
+    const from = (byDoc.length ? byDoc : pool).slice().sort((a, b) => (seenAt(a) ?? 1e4) - (seenAt(b) ?? 1e4));
+    /* the first visit at or after the missed hour, or else the last before it */
+    const hit = from.find(s => r.appt == null || seenAt(s) == null || seenAt(s) >= r.appt) || from[from.length - 1] || null;
+    let note = "";
+    if (hit) note = TYPE_WALKIN.test(hit.type) ? "Walk-in"
+                  : r.appt != null && seenAt(hit) != null && seenAt(hit) < r.appt ? "Seen earlier" : "Re-booked";
+    else if (same.length) {
+      const o = same.slice().sort((a, b) => (seenAt(a) ?? 1e4) - (seenAt(b) ?? 1e4))[0];
+      note = "Seen in " + (o.dept || "another clinic") + (seenAt(o) != null ? " " + hhmm(seenAt(o)) : "");
+    }
+    list.push(Object.assign({}, r, {
+      hit, note, elsewhere: !hit && same.length > 0,
+      cat: hit ? (byDoc.length ? "same" : "other") : "none",
+      id: [dayKey(r), r.key, r.docKey, r.appt ?? "", r.token].join("|"),
+    }));
+  }
+  list.sort(SORTS[opts.sort] || byTime);
+  const missedBy = new Map(), other = new Map();
+  let cancelled = 0, seenN = 0;
+  for (const r of read.rows) {
+    if (r.kind === "missed") missedBy.set(r.status, (missedBy.get(r.status) || 0) + 1);
+    else if (r.kind === "other") other.set(r.status, (other.get(r.status) || 0) + 1);
+    else if (r.kind === "cancel") cancelled++;
+    else seenN++;
+  }
+  const total = list.length, attended = list.filter(x => x.hit).length;
+  return {
+    list, total, attended, same: list.filter(x => x.cat === "same").length, other: list.filter(x => x.cat === "other").length,
+    rate: total ? attended / total : null, elsewhere: list.filter(x => x.elsewhere).length,
+    missedBy, otherBy: other, cancelled, seen: seenN, headed: read.headed, noAppt: read.noAppt,
+  };
+}
+
+/* ═════════════════ the template, as markup ═════════════════ */
+const DASH = "–";
+const nf = n => Number(n).toLocaleString("en-US");
+const pct = r => r == null ? DASH : String(Math.round(r * 1000) / 10) + "%";
+const LOGO = "data:image/png;base64,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";
+$("#barLogo").src = LOGO;
+
+const SUM_HEAD = [
+  ["Total No-Show", "إجمالي عدم الحضور"], ["Attended Same Day", "حضر في نفس اليوم"], ["Same Doctor", "نفس الطبيب"],
+  ["Different Doctor", "طبيب آخر بالقسم"], ["Not Attended Same Day", "لم يحضر بنفس اليوم"], ["Same-Day Attendance Rate", "نسبة الحضور بنفس اليوم"],
+];
+const SUM_COLS = [45.26, 45.26, 43.09, 42.07, 47.89, 48.0];
+const DET_HEAD = [
+  ["No.", "م"], ["Appointment Date", "تاريخ الموعد"], ["Patient MRN", "رقم الملف"], ["Patient Name", "اسم المريض"],
+  ["Appt. Time", "وقت الموعد"], ["Original Doctor", "الطبيب الأصلي"], ["Department", "القسم"],
+  ["No-Show Confirmed?", "تأكيد عدم الحضور"], ["Attended Same Day?", "حضر بنفس اليوم"], ["Attendance Category", "تصنيف الحضور"],
+  ["Visit Time", "وقت الزيارة"], ["Doctor Seen", "الطبيب الذي استقبله"], ["Notes / Reason", "ملاحظات"],
+];
+const DET_COLS = [9.22, 20.62, 19.0, 26.62, 15.75, 24.43, 20.09, 22.81, 20.62, 26.62, 15.75, 25.53, 24.43];
+const CATEGORY = { same: "Same Doctor", other: "Different Doctor", none: "Not Attended" };
+
+function colgroup(widths) {
+  const cg = el("colgroup");
+  widths.forEach(w => { const c = el("col"); c.style.width = w + "mm"; cg.append(c); });
+  return cg;
+}
+function headRow(cols) {
+  const thead = el("thead"), tr = el("tr");
+  cols.forEach(([en, ar]) => {
+    const th = el("th"), a = el("span", "ar", ar);
+    a.lang = "ar"; a.dir = "rtl";
+    th.append(el("span", "en", en), a);
+    tr.append(th);
+  });
+  thead.append(tr);
+  return thead;
+}
+function header(page, m) {
+  const logo = el("div", "hd-logo"), img = el("img");
+  img.src = LOGO; img.alt = "";
+  logo.append(img);
+  const who = el("div", "hd-who");
+  who.append(el("h1", null, m.branch), el("p", null, m.dateLong));
+  page.append(logo, who, el("div", "hd-bar"));
+}
+function footer(page, pageNo, pages) {
+  const ft = el("div", "ft");
+  ft.append(el("span", null, "Meena Health Business Intelligence | No-Show Follow-up Report | Internal Use"));
+  ft.append(el("span", null, pages > 1 ? "Page " + pageNo + " of " + pages : "Page " + pageNo));
+  page.append(ft, el("div", "ft-line"));
+}
+function summary(d) {
+  const t = el("table", "sum"), tb = el("tbody"), tr = el("tr");
+  [nf(d.total), nf(d.attended), nf(d.same), nf(d.other), nf(d.total - d.attended), pct(d.rate)]
+    .forEach((v, i) => tr.append(el("td", i === 5 ? "rate" : null, v)));
+  tb.append(tr);
+  t.append(colgroup(SUM_COLS), headRow(SUM_HEAD), tb);
+  return t;
+}
+function cell(cls, text, auto) {
+  const td = el("td", cls, text);
+  if (auto) td.dir = "auto";
+  return td;
+}
+function noteCell(x) {
+  const td = cell("l nt", state.notes.has(x.id) ? state.notes.get(x.id) : x.note, true);
+  td.dataset.id = x.id;
+  try { td.contentEditable = "plaintext-only"; } catch {}
+  if (td.contentEditable !== "plaintext-only") td.contentEditable = "true";
+  td.spellcheck = false;
+  return td;
+}
+function detailTable(rows, startNo, m) {
+  const t = el("table", "det"), tb = el("tbody");
+  if (!rows.length) {
+    const tr = el("tr"), td = cell("none", "No no-show appointments in this file.");
+    td.colSpan = DET_HEAD.length;
+    tr.append(td); tb.append(tr);
+  }
+  rows.forEach((x, i) => {
+    const n = startNo + i, tr = el("tr", n % 2 === 0 ? "alt" : null);
+    const day = x.day || (m.days === 1 ? m.from : null);
+    const conf = cell("", "Yes");
+    conf.append(el("span", "st", x.status));
+    const at = x.hit ? seenAt(x.hit) : null;
+    tr.append(
+      cell("n", String(n)),
+      cell("", day ? dmy(day) : DASH),
+      cell("", x.mrn),
+      cell("l", x.name, true),
+      cell("", x.appt != null ? hhmm(x.appt) : DASH),
+      cell("l", x.doc, true),
+      cell("l", x.dept || DASH),
+      conf,
+      cell(x.hit ? "yes" : "", x.hit ? "Yes" : "No"),
+      cell("l", CATEGORY[x.cat]),
+      cell("", at != null ? hhmm(at) : DASH),
+      cell("l", x.hit ? x.hit.doc : DASH, true),
+      noteCell(x),
+    );
+    [...tr.cells].forEach((td, c) => { td.dataset.k = n + ":" + c; });
+    tb.append(tr);
+  });
+  t.append(colgroup(DET_COLS), headRow(DET_HEAD), tb);
+  return t;
+}
+function buildPage({ m, d, first, rows, startNo, pageNo, pages }) {
+  const page = el("section", "page");
+  header(page, m);
+  if (first) {
+    const sub = el("p", "sub ar", "تقرير متابعة المواعيد التي لم يتم الحضور لها");
+    sub.lang = "ar"; sub.dir = "rtl";
+    const box = el("div", "box sum");
+    box.append(summary(d));
+    page.append(el("h2", "ttl", "No-Show Appointment Follow-up Report"), sub, el("h3", "sec s1", "1. Summary"), box);
+  }
+  const sec = el("h3", "sec " + (first ? "s2" : "s2c"), "2. Detailed Appointment Tracking");
+  if (!first) sec.append(el("span", "cont", "  ·  continued"));
+  const box = el("div", "box " + (first ? "d1" : "dc"));
+  box.append(detailTable(rows, startNo, m));
+  page.append(sec, box);
+  footer(page, pageNo, pages);
+  return page;
+}
+
+/* ═════════════════ pagination ═════════════════
+   Each page takes the rows that end above the footer; a long name that wraps
+   makes its row taller, so the rows are measured, not counted. */
+const MM = 96 / 25.4;
+/* a cell keeps to the template's two lines: a long name, or a word wider
+   than its column ("Physiotherapy"), is set a little smaller rather than
+   stretch the row or break in the middle. Sizes are kept per cell, so each
+   cell is measured once however many times the pages are laid out. */
+function fitCells(page, sizes) {
+  const range = document.createRange();
+  for (const td of page.querySelectorAll("table.det tbody td[data-k]")) {
+    const k = td.dataset.k;
+    if (sizes.has(k)) { const v = sizes.get(k); if (v.pt) td.style.fontSize = v.pt + "pt"; if (v.wrap) td.classList.add("wrap"); continue; }
+    let pt = 8;
+    const fits = () => {
+      if (td.scrollWidth > td.clientWidth + 0.5) return false;
+      range.selectNodeContents(td);
+      return range.getBoundingClientRect().height <= 2 * pt * 1.1 * 96 / 72 + 0.5;
+    };
+    while (!fits() && pt > 6) { pt -= 0.25; td.style.fontSize = pt + "pt"; }
+    const wrap = td.scrollWidth > td.clientWidth + 0.5;
+    if (wrap) td.classList.add("wrap");
+    sizes.set(k, { pt: pt < 8 ? pt : 0, wrap });
+  }
+}
+function rowsThatFit(page) {
+  const top = page.getBoundingClientRect().top;
+  const limit = page.querySelector(".ft-line").getBoundingClientRect().top - top - 4 * MM;
+  let n = 0;
+  for (const tr of page.querySelector("table.det").tBodies[0].rows) {
+    if (tr.getBoundingClientRect().bottom - top > limit + 0.5) break;
+    n++;
+  }
+  return n;
+}
+function renderDoc(d, m) {
+  const host = $("#doc");
+  host.textContent = "";
+  host.style.transform = "none";        // measure at 1:1, scale to the column after
+  const chunks = [], sizes = new Map();
+  let at = 0;
+  do {
+    const probe = buildPage({ m, d, first: !chunks.length, rows: d.list.slice(at), startNo: at + 1, pageNo: 1, pages: 1 });
+    probe.style.visibility = "hidden"; probe.style.position = "absolute";
+    host.append(probe);
+    fitCells(probe, sizes);
+    const n = d.list.length ? Math.max(1, rowsThatFit(probe)) : 0;
+    probe.remove();
+    chunks.push([at, at + n]);
+    at += n;
+  } while (at < d.list.length);
+  chunks.forEach(([a, b], k) => {
+    const page = buildPage({ m, d, first: k === 0, rows: d.list.slice(a, b), startNo: a + 1, pageNo: k + 1, pages: chunks.length });
+    host.append(page);
+    fitCells(page, sizes);
+  });
+  fitStage();
+  return chunks.length;
+}
+
+/* the sheet is 297 mm wide; the preview column rarely is, so scale it down */
+function fitStage() {
+  const host = $("#doc"), stage = $("#stage"), box = $("#stageBox");
+  const page = host.firstElementChild;
+  if (!page) return;
+  host.style.transform = "none";
+  const w = page.getBoundingClientRect().width;
+  const avail = stage.clientWidth - 28;
+  const k = Math.min(1, avail / w);
+  host.style.transform = "scale(" + k + ")";
+  /* the box takes the scaled sheet's size, so the sheet sits centred */
+  box.style.width = w * k + "px";
+  box.style.height = host.getBoundingClientRect().height + "px";
+}
+
+
+/* ═════════════════ PDF writer ═════════════════
+   The pages are already laid out on screen, so the PDF is drawn from that
+   layout: every box, edge and line of text is read back off the rendered DOM
+   and written as PDF operators — the preview is the file. Text uses the
+   base-14 faces, which carry Arial's and Times New Roman's widths. */
+const latin1 = s => { const u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i) & 255; return u; };
+const WINANSI = { 0x2013: 0x96, 0x2014: 0x97, 0x2018: 0x91, 0x2019: 0x92, 0x201C: 0x93, 0x201D: 0x94,
+                  0x2022: 0x95, 0x2026: 0x85, 0x00B7: 0xB7, 0x2039: 0x8B, 0x203A: 0x9B, 0x00A0: 0x20 };
+function pdfText(t) {
+  let out = "";
+  for (const ch of t) {
+    let c = ch.codePointAt(0);
+    if (c > 255) c = WINANSI[c] ?? 0x3F;
+    if (c === 40 || c === 41 || c === 92) out += "\\";
+    out += String.fromCharCode(c);
+  }
+  return out;
+}
+const f2 = n => String(Math.round(n * 100) / 100);
+function rgbOf(css) {
+  const m = /rgba?\(([^)]+)\)/.exec(css || "");
+  if (!m) return null;
+  const p = m[1].split(",").map(parseFloat);
+  if (p.length > 3 && !(p[3] > 0.02)) return null;
+  return [p[0] / 255, p[1] / 255, p[2] / 255];
+}
+const fillOp = c => `${f2(c[0])} ${f2(c[1])} ${f2(c[2])} rg\n`;
+const boxOp = (x, y, w, h) => `${f2(x)} ${f2(y)} ${f2(w)} ${f2(h)} re f\n`;
+function pillOp(x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  const k = r * 0.5523;
+  return `${f2(x + r)} ${f2(y)} m\n`
+    + `${f2(x + w - r)} ${f2(y)} l\n${f2(x + w - r + k)} ${f2(y)} ${f2(x + w)} ${f2(y + r - k)} ${f2(x + w)} ${f2(y + r)} c\n`
+    + `${f2(x + w)} ${f2(y + h - r)} l\n${f2(x + w)} ${f2(y + h - r + k)} ${f2(x + w - r + k)} ${f2(y + h)} ${f2(x + w - r)} ${f2(y + h)} c\n`
+    + `${f2(x + r)} ${f2(y + h)} l\n${f2(x + r - k)} ${f2(y + h)} ${f2(x)} ${f2(y + h - r + k)} ${f2(x)} ${f2(y + h - r)} c\n`
+    + `${f2(x)} ${f2(y + r)} l\n${f2(x)} ${f2(y + r - k)} ${f2(x + r - k)} ${f2(y)} ${f2(x + r)} ${f2(y)} c\nh f\n`;
+}
+
+/* Adobe's widths for the base-14 faces, in WinAnsi order from 0x20 up */
+const W32 = {
+  F1: "278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584,350,556,350,222,556,333,1000,556,556,333,1000,667,333,1000,350,611,350,350,222,222,333,333,350,556,1000,333,1000,500,333,944,350,500,667,278,333,556,556,556,556,260,556,333,737,370,556,584,333,737,333,400,584,333,333,333,556,537,278,333,333,365,556,834,834,834,611,667,667,667,667,667,667,1000,722,667,667,667,667,278,278,278,278,722,722,778,778,778,778,778,584,778,722,722,722,722,667,667,611,556,556,556,556,556,556,889,500,556,556,556,556,278,278,278,278,556,556,556,556,556,556,556,584,611,556,556,556,556,500,556,500"
+    .split(",").map(Number),
+  F2: "278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,389,280,389,584,350,556,350,278,556,500,1000,556,556,333,1000,667,333,1000,350,611,350,350,278,278,500,500,350,556,1000,333,1000,556,333,944,350,500,667,278,333,556,556,556,556,280,556,333,737,370,556,584,333,737,333,400,584,333,333,333,611,556,278,333,333,365,556,834,834,834,611,722,722,722,722,722,722,1000,722,667,667,667,667,278,278,278,278,722,722,778,778,778,778,778,584,778,722,722,722,722,667,667,611,556,556,556,556,556,556,889,556,556,556,556,556,278,278,278,278,611,611,611,611,611,611,611,584,611,611,611,611,611,556,611,556"
+    .split(",").map(Number),
+  F4: "250,333,408,500,500,833,778,180,333,333,500,564,250,333,250,278,500,500,500,500,500,500,500,500,500,500,278,278,564,564,564,444,921,722,667,667,722,611,556,722,722,333,389,722,611,889,722,722,556,722,667,556,611,722,722,944,722,722,611,333,278,333,469,500,333,444,500,444,500,444,333,500,500,278,278,500,278,778,500,500,500,500,333,389,278,500,500,722,500,500,444,480,200,480,541,350,500,350,333,500,444,1000,500,500,333,1000,556,333,889,350,611,350,350,333,333,444,444,350,500,1000,333,980,389,333,722,350,444,722,250,333,500,500,500,500,200,500,333,760,276,500,564,333,760,333,400,564,300,300,333,500,453,250,333,300,310,500,750,750,750,444,722,722,722,722,722,722,889,667,611,611,611,611,333,333,333,333,722,722,722,722,722,722,722,564,722,722,722,722,722,722,556,500,444,444,444,444,444,444,667,444,444,444,444,444,278,278,278,278,500,500,500,500,500,500,500,564,500,500,500,500,500,500,500,500"
+    .split(",").map(Number),
+  F5: "250,333,555,500,500,1000,833,278,333,333,500,570,250,333,250,278,500,500,500,500,500,500,500,500,500,500,333,333,570,570,570,500,930,722,667,722,722,667,611,778,778,389,500,778,667,944,722,778,611,778,722,556,667,722,722,1000,722,722,667,333,278,333,581,500,333,500,556,444,556,444,333,500,556,278,333,556,278,833,556,500,556,556,444,389,333,556,500,722,500,500,444,394,220,394,520,350,500,350,333,500,500,1000,500,500,333,1000,556,333,1000,350,667,350,350,333,333,500,500,350,500,1000,333,1000,389,333,722,350,444,722,250,333,500,500,500,500,220,500,333,747,300,500,570,333,747,333,400,570,300,300,333,556,540,250,333,300,330,500,750,750,750,500,722,722,722,722,722,722,1000,722,667,667,667,667,389,389,389,389,722,722,778,778,778,778,778,570,778,722,722,722,722,722,611,556,500,500,500,500,500,500,722,444,444,444,444,444,278,278,278,278,500,556,500,500,500,500,500,570,500,556,556,556,556,500,556,500"
+    .split(",").map(Number),
+};
+const FACE = {
+  sans:  { asc: 0.905, desc: 0.212, plain: "F1", bold: "F2" },
+  serif: { asc: 0.891, desc: 0.216, plain: "F4", bold: "F5" },
+};
+function runWidth(s, font, size, track) {
+  let units = 0;
+  for (const ch of s) {
+    let c = ch.codePointAt(0);
+    if (c > 255) c = WINANSI[c] ?? 0x3F;
+    units += c >= 32 ? (W32[font][c - 32] ?? 500) : 0;
+  }
+  return units / 1000 * size + track * s.length;
+}
+
+/* text the base-14 faces cannot carry — the Arabic labels, an Arabic name —
+   is drawn by the browser into a canvas, with its own shaping, and goes into
+   the file as an image: a block of the text's colour, masked by the glyphs */
+const ENCODABLE = /^[\x20-\x7E\xA0-\xFF–—‘’“”•…‹›]*$/;
+
+function drawText(node, ops, ox, oy, H, glyphs) {
+  const raw = node.nodeValue;
+  if (!raw || !raw.trim()) return;
+  const parent = node.parentElement;
+  if (!parent) return;
+  const cs = getComputedStyle(parent);
+  const col = rgbOf(cs.color) || [0, 0, 0];
+  const size = parseFloat(cs.fontSize) * 0.75;
+  const fam = cs.fontFamily.toLowerCase();
+  const face = FACE[/serif|times/.test(fam) && !/sans/.test(fam) ? "serif" : "sans"];
+  const bold = (parseInt(cs.fontWeight, 10) || 400) >= 600;
+  const font = bold ? face.bold : face.plain;
+  const track = parseFloat(cs.letterSpacing) * 0.75 || 0;
+  const pre = /^(pre|pre-wrap|break-spaces)$/.test(cs.whiteSpace);
+  const text = pre ? raw.replace(/^\s+/, "") : raw.replace(/\s+/g, " ").replace(/^ +/, "");
+  if (!text) return;
+  if (!ENCODABLE.test(text)) { glyphRuns(node, raw, cs, col, ox, oy, glyphs); return; }
+
+  const range = document.createRange();
+  const from = raw.search(/\S/), to = raw.search(/\s*$/);
+  range.setStart(node, Math.max(0, from));
+  range.setEnd(node, Math.max(0, to));
+  const rects = [...range.getClientRects()].filter(r => r.width > 0.05 && r.height > 0.05);
+  if (!rects.length) return;
+
+  const put = (s, rect) => {
+    s = s.replace(/\s+$/, "");
+    if (!s) return;
+    const base = rect.top + rect.height * face.asc / (face.asc + face.desc);
+    const natural = runWidth(s, font, size, track);
+    const want = rect.width * 0.75;
+    /* the browser may have set this in a face other than the one the PDF
+       carries; stretch the run to the width it actually occupies */
+    const scale = natural > 0.1 ? Math.min(2, Math.max(0.5, want / natural)) : 1;
+    ops.push("BT\n" + fillOp(col) + `/${font} ${f2(size)} Tf\n`
+      + `${f2(track)} Tc\n${f2(scale * 100)} Tz\n`
+      + `${f2((rect.left - ox) * 0.75)} ${f2(H - (base - oy) * 0.75)} Td\n`
+      + `(${pdfText(s)}) Tj\nET\n`);
+  };
+  if (rects.length === 1) { put(text, rects[0]); return; }
+  const lines = [];
+  for (let i = 0; i < raw.length; i++) {
+    range.setStart(node, i); range.setEnd(node, i + 1);
+    const r = range.getBoundingClientRect();
+    if (!r.width) continue;
+    const line = lines.find(l => Math.abs(l.top - r.top) < 0.6);
+    if (line) { line.text += raw[i]; line.left = Math.min(line.left, r.left); line.right = Math.max(line.right, r.right); }
+    else lines.push({ text: raw[i], top: r.top, height: r.height, left: r.left, right: r.right });
+  }
+  lines.forEach(l => put(l.text, { top: l.top, height: l.height, left: l.left, width: l.right - l.left }));
+}
+
+/* one run per line the text wraps to. A joined pair such as لا can leave a
+   letter with no width of its own; it stays with the line before it. */
+function glyphRuns(node, raw, cs, col, ox, oy, glyphs) {
+  const range = document.createRange(), lines = [];
+  let cur = null, lead = "";
+  for (let i = 0; i < raw.length; i++) {
+    range.setStart(node, i); range.setEnd(node, i + 1);
+    const r = range.getBoundingClientRect();
+    if (r.width > 0.05 && r.height > 0.05) {
+      const mid = (r.top + r.bottom) / 2;
+      cur = lines.find(l => Math.abs(mid - (l.top + l.bottom) / 2) < (l.bottom - l.top) / 2) || null;
+      if (cur) { cur.left = Math.min(cur.left, r.left); cur.right = Math.max(cur.right, r.right); }
+      else { cur = { text: lead, top: r.top, bottom: r.bottom, left: r.left, right: r.right }; lines.push(cur); lead = ""; }
+    }
+    if (cur) cur.text += raw[i]; else lead += raw[i];
+  }
+  const rtl = cs.direction === "rtl";
+  for (const l of lines) {
+    const t = l.text.replace(/\s+/g, " ").trim();
+    if (!t) continue;
+    glyphs.push({ text: t, rtl, color: col, weight: cs.fontWeight, style: cs.fontStyle, family: cs.fontFamily,
+                  size: parseFloat(cs.fontSize), left: l.left - ox, top: l.top - oy, right: l.right - ox, bottom: l.bottom - oy });
+  }
+}
+
+const squeeze = async u8 => typeof CompressionStream === "function"
+  ? { data: await pipe(u8, new CompressionStream("deflate")), flate: true } : { data: u8, flate: false };
+
+/* drawn at four canvas pixels to the CSS pixel — about 380 dpi — with room
+   around the line for the strokes that reach past it */
+async function glyphImage(g, H) {
+  const S = 4, padX = Math.ceil(g.size * 0.3), padY = Math.ceil(g.size * 0.4);
+  const w = g.right - g.left, h = g.bottom - g.top;
+  const cw = Math.max(1, Math.ceil((w + 2 * padX) * S)), ch = Math.max(1, Math.ceil((h + 2 * padY) * S));
+  const cv = document.createElement("canvas");
+  cv.width = cw; cv.height = ch;
+  const cx = cv.getContext("2d");
+  cx.font = `${g.style === "italic" ? "italic " : ""}${g.weight} ${g.size * S}px ${g.family}`;
+  cx.direction = g.rtl ? "rtl" : "ltr";
+  cx.textAlign = "left";
+  cx.textBaseline = "alphabetic";
+  const mt = cx.measureText(g.text);
+  const asc = mt.fontBoundingBoxAscent || g.size * S * 0.905, desc = mt.fontBoundingBoxDescent || g.size * S * 0.212;
+  const base = padY * S + h * S * asc / (asc + desc);
+  const sx = mt.width > 0 ? Math.min(1.6, Math.max(0.6, w * S / mt.width)) : 1;
+  cx.setTransform(sx, 0, 0, 1, padX * S, 0);
+  cx.fillStyle = "#000";
+  cx.fillText(g.text, 0, base);
+  const px = cx.getImageData(0, 0, cw, ch).data;
+  const alpha = new Uint8Array(cw * ch), rgb = new Uint8Array(cw * ch * 3);
+  const c = g.color.map(v => Math.round(v * 255));
+  for (let i = 0, j = 0; i < alpha.length; i++, j += 3) { alpha[i] = px[i * 4 + 3]; rgb[j] = c[0]; rgb[j + 1] = c[1]; rgb[j + 2] = c[2]; }
+  return {
+    w: cw, h: ch, rgb: await squeeze(rgb), alpha: await squeeze(alpha),
+    X: (g.left - padX) * 0.75, Y: H - (g.top - padY + ch / S) * 0.75, W: cw / S * 0.75, H: ch / S * 0.75,
+  };
+}
+
+/* every box is drawn with the edges it has */
+function drawBox(elm, ops, ox, oy, H, images) {
+  const cs = getComputedStyle(elm);
+  if (cs.display === "none" || cs.visibility === "hidden") return false;
+  const r = elm.getBoundingClientRect();
+  if (r.width <= 0 || r.height <= 0) return true;
+  const X = (r.left - ox) * 0.75, Y = H - (r.bottom - oy) * 0.75;
+  const W = r.width * 0.75, Hh = r.height * 0.75;
+  const bg = rgbOf(cs.backgroundColor);
+  const rad = (parseFloat(cs.borderTopLeftRadius) || 0) * 0.75;
+  if (bg) ops.push(fillOp(bg) + (rad > 0.4 ? pillOp(X, Y, W, Hh, rad) : boxOp(X, Y, W, Hh)));
+  for (const side of ["Top", "Bottom", "Left", "Right"]) {
+    const w = (parseFloat(cs[`border${side}Width`]) || 0) * 0.75;
+    if (!w || cs[`border${side}Style`] === "none") continue;
+    const c = rgbOf(cs[`border${side}Color`]);
+    if (!c) continue;
+    ops.push(fillOp(c) + (side === "Top" ? boxOp(X, Y + Hh - w, W, w)
+                        : side === "Bottom" ? boxOp(X, Y, W, w)
+                        : side === "Left" ? boxOp(X, Y, w, Hh) : boxOp(X + W - w, Y, w, Hh)));
+  }
+  if (elm.tagName === "IMG" && elm.currentSrc) images.push({ src: elm.currentSrc, X, Y, W, H: Hh });
+  return true;
+}
+function walkSheet(node, ops, ox, oy, H, images, glyphs) {
+  if (node.nodeType === 3) { drawText(node, ops, ox, oy, H, glyphs); return; }
+  if (node.nodeType !== 1) return;
+  if (!drawBox(node, ops, ox, oy, H, images)) return;
+  for (const child of node.childNodes) walkSheet(child, ops, ox, oy, H, images, glyphs);
+}
+
+/* the logo is drawn into a canvas at four times its printed size, over the
+   sheet's own colour, and carried as one JPEG shared by every page */
+async function rasterize(src, wPt, hPt, bg) {
+  const img = new Image();
+  await new Promise((ok, fail) => { img.onload = ok; img.onerror = fail; img.src = src; });
+  const iw = img.naturalWidth || 300, ih = img.naturalHeight || 100;
+  const cw = Math.max(1, Math.round(wPt * 4)), ch = Math.max(1, Math.round(hPt * 4));
+  const cv = document.createElement("canvas");
+  cv.width = cw; cv.height = ch;
+  const cx = cv.getContext("2d");
+  cx.fillStyle = bg || "#fff"; cx.fillRect(0, 0, cw, ch);
+  /* placed as the sheet places it: fitted whole, against the left edge */
+  const s = Math.min(cw / iw, ch / ih), dw = iw * s, dh = ih * s;
+  cx.drawImage(img, 0, (ch - dh) / 2, dw, dh);
+  const url = cv.toDataURL("image/jpeg", 0.95), bin = atob(url.slice(url.indexOf(",") + 1));
+  const u8 = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  return { bytes: u8, w: cw, h: ch };
+}
+
+const FONTS = [["F1", "Helvetica"], ["F2", "Helvetica-Bold"], ["F4", "Times-Roman"], ["F5", "Times-Bold"]];
+
+async function makePdf(title) {
+  const host = $("#doc"), keep = host.style.transform;
+  host.style.transform = "none";                     // measure the sheets at 1:1
+  const sheets = [];
+  let paper = "#fff";
+  try {
+    for (const page of host.querySelectorAll(".page")) {
+      paper = getComputedStyle(page).backgroundColor || paper;
+      const box = page.getBoundingClientRect();
+      const W = box.width * 0.75, H = box.height * 0.75;
+      const ops = [], images = [], glyphs = [];
+      walkSheet(page, ops, box.left, box.top, H, images, glyphs);
+      sheets.push({ W, H, ops, images, glyphs });
+    }
+  } finally { host.style.transform = keep; }
+  for (const s of sheets) {
+    for (const im of s.images) { try { im.data = await rasterize(im.src, im.W, im.H, paper); } catch { im.data = null; } }
+    s.texts = [];
+    for (const g of s.glyphs) s.texts.push(await glyphImage(g, s.H));
+  }
+  const pool = new Map();
+  sheets.forEach(s => s.images.forEach(im => {
+    if (!im.data) return;
+    const key = im.src + "|" + im.data.w + "x" + im.data.h;
+    if (!pool.has(key)) pool.set(key, im.data);
+    im.key = key;
+  }));
+
+  const chunks = [];
+  let len = 0;
+  const push = d => { const u = typeof d === "string" ? latin1(d) : d; chunks.push(u); len += u.length; };
+  const offsets = [];
+  let next = 1;
+  const reserve = () => next++;
+  const open = n => { offsets[n] = len; push(`${n} 0 obj\n`); };
+  const close = () => push("\nendobj\n");
+  const stream = (dict, bytes) => { push(`<< ${dict} /Length ${bytes.length} >>\nstream\n`); push(bytes); push("\nendstream"); };
+
+  const catalogId = reserve(), pagesId = reserve(), infoId = reserve();
+  const fontIds = FONTS.map(() => reserve());
+  const imgIds = new Map([...pool.keys()].map(k => [k, reserve()]));
+  sheets.forEach(s => s.texts.forEach(t => { t.id = reserve(); t.mask = reserve(); }));
+  const pageIds = sheets.map(() => ({ page: reserve(), body: reserve() }));
+
+  push("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n");
+  open(catalogId); push(`<< /Type /Catalog /Pages ${pagesId} 0 R >>`); close();
+  open(pagesId);
+  push(`<< /Type /Pages /Count ${sheets.length} /Kids [ ${pageIds.map(p => p.page + " 0 R").join(" ")} ] >>`);
+  close();
+  open(infoId);
+  push(`<< /Title (${pdfText(title)}) /Producer (Meena Health Business Intelligence) /Creator (No-Show Follow-up Report page) >>`);
+  close();
+  FONTS.forEach(([, name], i) => {
+    open(fontIds[i]);
+    push(`<< /Type /Font /Subtype /Type1 /BaseFont /${name} /Encoding /WinAnsiEncoding >>`);
+    close();
+  });
+  for (const [key, id] of imgIds) {
+    const im = pool.get(key);
+    open(id);
+    stream(`/Type /XObject /Subtype /Image /Width ${im.w} /Height ${im.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode`, im.bytes);
+    close();
+  }
+  for (const s of sheets) for (const t of s.texts) {
+    const img = `/Type /XObject /Subtype /Image /Width ${t.w} /Height ${t.h} /BitsPerComponent 8`;
+    open(t.id);
+    stream(`${img} /ColorSpace /DeviceRGB${t.rgb.flate ? " /Filter /FlateDecode" : ""} /SMask ${t.mask} 0 R`, t.rgb.data);
+    close();
+    open(t.mask);
+    stream(`${img} /ColorSpace /DeviceGray${t.alpha.flate ? " /Filter /FlateDecode" : ""}`, t.alpha.data);
+    close();
+  }
+  sheets.forEach((s, i) => {
+    let body = s.ops.join("");
+    s.images.forEach(im => {
+      const id = im.key && imgIds.get(im.key);
+      if (id) body += `q\n${f2(im.W)} 0 0 ${f2(im.H)} ${f2(im.X)} ${f2(im.Y)} cm\n/X${id} Do\nQ\n`;
+    });
+    s.texts.forEach(t => { body += `q\n${f2(t.W)} 0 0 ${f2(t.H)} ${f2(t.X)} ${f2(t.Y)} cm\n/X${t.id} Do\nQ\n`; });
+    const used = [...new Set(s.images.map(im => im.key && imgIds.get(im.key)).filter(Boolean)), ...s.texts.map(t => t.id)];
+    open(pageIds[i].body);
+    stream("", latin1(body));
+    close();
+    open(pageIds[i].page);
+    push(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${f2(s.W)} ${f2(s.H)}] `
+       + `/Resources << /Font << ${FONTS.map(([n], k) => `/${n} ${fontIds[k]} 0 R`).join(" ")} >>`
+       + (used.length ? ` /XObject << ${used.map(id => `/X${id} ${id} 0 R`).join(" ")} >>` : "")
+       + ` >> /Contents ${pageIds[i].body} 0 R >>`);
+    close();
+  });
+
+  const xref = len, count = next;
+  let table = `xref\n0 ${count}\n0000000000 65535 f \n`;
+  for (let i = 1; i < count; i++) table += String(offsets[i] ?? 0).padStart(10, "0") + " 00000 n \n";
+  push(table);
+  push(`trailer\n<< /Size ${count} /Root ${catalogId} 0 R /Info ${infoId} 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+
+  const out = new Uint8Array(len);
+  let at = 0;
+  for (const c of chunks) { out.set(c, at); at += c.length; }
+  return new Blob([out], { type: "application/pdf" });
+}
+window.__makePdf = makePdf;       // the repo's browser checks build a file without clicking
+window.__readWorkbook = readWorkbook;   // and read a file the way an upload does
+
+
+/* ═════════════════ state and wiring ═════════════════ */
+const fresh = () => ({ files: [], sheets: [], sigs: new Set(), dets: [], read: null, err: null, data: null,
+                       touched: {}, pages: 0, wbBranch: "", wbFrom: null, wbTo: null, notes: new Map() });
+const state = fresh();
+
+const val = id => $(id).value.trim();
+function meta() {
+  const branch = state.touched.branch ? val("#inBranch") : state.wbBranch;
+  const from = state.touched.from ? parseDate(val("#inFrom")) : state.wbFrom;
+  let to = state.touched.to ? parseDate(val("#inTo")) : state.wbTo;
+  if (from && (!to || to < from)) to = from;
+  return { branch: branch || "Meena Center", from, to, dateLong: longDate(from, to), days: spanDays(from, to) };
+}
+function fileName(m) {
+  if (state.touched.name && val("#inName")) return val("#inName").replace(/[\\/:*?"<>|]/g, "");
+  const ymd = d => d ? iso(d).replace(/-/g, "") : "";
+  const tag = m.from ? ymd(m.from) + (m.days > 1 ? "-" + ymd(m.to) : "") : "";
+  return ["No_Show_Follow_up_Report", branchShort(m.branch), tag].filter(Boolean).join("_");
+}
+
+const arabicCount = (n, one, two, few, many) => n === 1 ? one : n === 2 ? two : n <= 10 ? n + " " + few : n + " " + many;
+const LTR_RUN = /[A-Za-z0-9][A-Za-z0-9 ,.:;()[\]'’\-–—/&%+“”"«»←]*[A-Za-z0-9%)\]”"»]|[A-Za-z0-9]/g;
+function bidiText(text) {
+  const frag = document.createDocumentFragment();
+  let at = 0;
+  for (const m of String(text).matchAll(LTR_RUN)) {
+    if (m.index > at) frag.append(document.createTextNode(text.slice(at, m.index)));
+    frag.append(el("bdi", null, m[0]));
+    at = m.index + m[0].length;
+  }
+  if (at < text.length) frag.append(document.createTextNode(text.slice(at)));
+  return frag;
+}
+function noticeBox(kind, text) {
+  const n = el("div", "note" + (kind === "bad" ? " bad" : kind === "warn" ? " warn" : ""));
+  const body = el("span");
+  body.append(bidiText(text));
+  n.append(el("span", "m"), body);
+  return n;
+}
+function tile(label, value) {
+  const t = el("div", "tile");
+  const b = el("b");
+  b.append(el("bdi", null, value));
+  t.append(el("span", null, label), b);
+  return t;
+}
+const counts = map => [...map].map(([k, n]) => k + " " + nf(n)).join(" · ");
+
+function paint() {
+  if (!state.data) return;
+  state.pages = renderDoc(state.data, meta());
+  $("#st3").textContent = state.pages + (state.pages === 1 ? " صفحة" : " صفحات");
+}
+
+function refresh() {
+  const host = $("#notices"), tiles = $("#tiles");
+  host.textContent = ""; tiles.textContent = "";
+  if (state.err) host.append(noticeBox("bad", state.err));
+  if (!state.read) {
+    $("#stage").hidden = true; $("#noPreview").hidden = false; $("#editHint").hidden = true;
+    $("#bPdf").disabled = true; $("#bSave").disabled = true; $("#bClear").disabled = !state.files.length;
+    $("#st3").textContent = "";
+    state.data = null;
+    return;
+  }
+  const d = state.data = analyse(state.read, { anyDept: $("#chkAny").checked, sort: $("#inSort").value });
+  const m = meta();
+
+  if (!state.touched.branch) $("#inBranch").value = state.wbBranch || "";
+  if (!state.touched.from) $("#inFrom").value = iso(state.wbFrom);
+  if (!state.touched.to) $("#inTo").value = state.wbTo && state.wbFrom && +state.wbTo !== +state.wbFrom ? iso(state.wbTo) : "";
+  if (!state.touched.name) $("#inName").value = fileName(m);
+
+  if (m.from) host.append(noticeBox("", "التاريخ: " + m.dateLong + (m.days > 1 ? " · " + arabicCount(m.days, "يوم واحد", "يومان", "أيام", "يومًا") : "")));
+  else host.append(noticeBox("warn", "لم يُعرف التاريخ من الملف — اكتبه في خانة «التاريخ»."));
+  if (!state.wbBranch && !state.touched.branch) host.append(noticeBox("warn", "لم يُعرف اسم الفرع من الملف — اكتبه في الإعدادات."));
+  if (!d.headed) host.append(noticeBox("bad", "الملف بلا أسطر «Status:» فلا يُعرف منه من حضر ومن لم يحضر — صدّر كشف Appointment Statistics – Detailed كما ينزل من MIS."));
+  else {
+    host.append(noticeBox("", "عدم الحضور: " + (d.missedBy.size ? counts(d.missedBy) : "لا شيء")
+      + " — والحضور: Reported " + nf(d.seen) + (d.cancelled ? " — والملغاة (" + nf(d.cancelled) + ") لا تُحسب" : "") + "."));
+    if (!d.seen) host.append(noticeBox("warn", "لا أسطر Reported في الملف، فلا يُعرف من حضر لاحقًا في اليوم نفسه."));
+  }
+  if (d.noAppt) host.append(noticeBox("warn", "لم يُعرف عمود Appt. Time في الملف، فتخرج أوقات المواعيد شرطة."));
+  if (d.otherBy.size) host.append(noticeBox("warn", "حالات لم تُعرف ولم تُحسب: " + counts(d.otherBy) + "."));
+  if (d.elsewhere && !$("#chkAny").checked)
+    host.append(noticeBox("", arabicCount(d.elsewhere, "مريض واحد", "مريضان", "مرضى", "مريضًا")
+      + " لم يحضر موعده وزار قسمًا آخر في اليوم نفسه — لا يُحسب «حضر بنفس اليوم»، وتظهر الزيارة في الملاحظات. ولاحتسابها فعّل الخيار في الإعدادات."));
+
+  $("#stage").hidden = false; $("#noPreview").hidden = true; $("#editHint").hidden = !d.total;
+  paint();
+  $("#bPdf").disabled = false; $("#bSave").disabled = false; $("#bClear").disabled = false;
+
+  tiles.append(tile("إجمالي عدم الحضور", nf(d.total)));
+  d.missedBy.forEach((n, k) => tiles.append(tile(k, nf(n))));
+  tiles.append(
+    tile("حضر بنفس اليوم", nf(d.attended)),
+    tile("لم يحضر", nf(d.total - d.attended)),
+    tile("نسبة الحضور بنفس اليوم", pct(d.rate)),
+    tile("الحضور — Reported", nf(d.seen)),
+    tile("صفحات الـPDF", String(state.pages)),
+  );
+}
+
+/* identical sheets — the same file dropped twice — are read once */
+const sigOf = s => s.grid.length + "|" + JSON.stringify(s.grid.slice(0, 12)) + "|" + JSON.stringify(s.grid.slice(-3));
+
+async function takeFiles(files) {
+  const got = [];
+  for (const f of files) {
+    try {
+      (await readWorkbook(f)).forEach(s => {
+        const sig = sigOf(s);
+        if (state.sigs.has(sig)) return;
+        state.sigs.add(sig);
+        got.push(Object.assign(s, { file: f.name }));
+      });
+    } catch (e) { toast(f.name + " — " + e.message, "bad"); }
+  }
+  state.files = [...state.files, ...files];
+  if (!got.length) { refresh(); return; }
+  state.sheets = [...state.sheets, ...got];
+
+  for (const s of got) {
+    const shaped = shapeDetail(s);
+    s.role = shaped ? "det" : null;
+    if (!shaped) continue;
+    const d = dateFromName(s.file);
+    shaped.span = periodOf(s) || (d && { from: d, to: d });
+    state.dets.push(shaped);
+  }
+  state.err = state.dets.length ? null
+    : "لم يُعرف كشف المواعيد المفصّل: يُعرف بأعمدة MRNO وType وAppt. Time وبأسطر «Doctor Name:» و«Status:». "
+      + "الأوراق المقروءة: " + state.sheets.map(x => x.name || x.file).join("، ");
+  state.read = state.dets.length ? readAppointments(state.dets) : null;
+
+  /* the branch and the date, read off the title blocks */
+  const dets = state.dets.map(x => x.sheet);
+  state.wbBranch = branchFrom(dets.length ? dets : state.sheets) || state.wbBranch;
+  const span = spanOf(state.dets.map(x => x.span));
+  if (span) { state.wbFrom = span.from; state.wbTo = span.to; }
+
+  const chips = el("div", "chips");
+  state.sheets.forEach(s => {
+    const c = el("span", "chip" + (s.role ? " ok" : ""));
+    c.append(el("b", null, s.file + (s.name && state.sheets.filter(x => x.file === s.file).length > 1 ? " · " + s.name : "")),
+             document.createTextNode(" · " + (s.role ? "Appointment Statistics – Detailed" : "غير مستخدمة")));
+    chips.append(c);
+  });
+  $("#fileInfo").textContent = "";
+  $("#fileInfo").append(chips);
+  $("#st1").textContent = [...new Set(state.files.map(f => f.name))].join(" · ");
+  $("#s1").classList.toggle("done", !state.err);
+
+  const had = !!state.data;
+  refresh();
+  if (state.data) {
+    const d = state.data;
+    toast("جاهز: " + arabicCount(d.total, "موعد واحد", "موعدان", "مواعيد", "موعدًا") + " بلا حضور، حضر منها "
+      + nf(d.attended) + " بنفس اليوم — اضغط «فتح الـPDF».", "ok");
+    if (!had) $("#s3").scrollIntoView({ behavior: "smooth", block: "start" });
+  } else toast("لم يُعرف الملف — راجع التنبيه في المعاينة.", "bad");
+}
+
+function hookDrop(zone, input, handler) {
+  zone.onclick = () => input.click();
+  zone.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); input.click(); } };
+  input.onchange = () => { if (input.files.length) handler([...input.files]); input.value = ""; };
+  for (const ev of ["dragenter", "dragover"]) zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.add("hot"); });
+  for (const ev of ["dragleave", "drop"]) zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.remove("hot"); });
+  zone.addEventListener("drop", e => { const f = [...(e.dataTransfer?.files || [])]; if (f.length) handler(f); });
+}
+hookDrop($("#dropX"), $("#fileX"), takeFiles);
+/* a file dropped anywhere on the page counts too, not just on the zone */
+addEventListener("dragover", e => e.preventDefault());
+addEventListener("drop", e => {
+  if (e.target.closest && e.target.closest("#dropX")) return;
+  e.preventDefault();
+  const f = [...(e.dataTransfer?.files || [])];
+  if (f.length) takeFiles(f);
+});
+
+const FIELDS = { "#inBranch": "branch", "#inFrom": "from", "#inTo": "to", "#inName": "name" };
+Object.entries(FIELDS).forEach(([id, key]) => {
+  $(id).addEventListener("input", () => { state.touched[key] = true; if (key !== "name") refresh(); });
+});
+$("#inSort").addEventListener("change", refresh);
+$("#chkAny").addEventListener("change", refresh);
+
+/* what is typed into Notes / Reason is kept per appointment, through a new
+   sort or setting; the pages are laid out again once the typing is done,
+   since a longer note can make its row taller */
+const doc = $("#doc");
+doc.addEventListener("input", e => {
+  const td = e.target.closest?.("td.nt");
+  if (td) state.notes.set(td.dataset.id, td.textContent.replace(/\s+/g, " ").trim());
+});
+doc.addEventListener("keydown", e => {
+  if (e.key === "Enter" && e.target.closest?.("td.nt")) { e.preventDefault(); e.target.blur(); }
+});
+doc.addEventListener("focusout", e => {
+  if (!e.target.closest?.("td.nt")) return;
+  setTimeout(() => { if (!document.activeElement?.closest?.("#doc td.nt")) paint(); }, 0);
+});
+
+$("#bClear").onclick = () => {
+  Object.assign(state, fresh());
+  ["#inBranch", "#inFrom", "#inTo", "#inName"].forEach(id => $(id).value = "");
+  $("#fileInfo").textContent = ""; $("#doc").textContent = "";
+  $("#st1").textContent = "لم يُرفع بعد"; $("#s1").classList.remove("done");
+  refresh();
+};
+
+/* Published inside a claude.ai artifact the page runs in a frame that may not
+   open tabs or start downloads itself, so there the file is handed to the
+   host instead. Served from its own address, the ordinary path runs. */
+const framed = () => typeof window.claude?.use === "function";
+async function hostSave(name, blob) {
+  const downloads = await window.claude.use("downloads").catch(() => null);
+  if (!downloads) return false;
+  try { await downloads.save({ filename: name, data: blob }); }
+  catch (e) {
+    toast(e?.code === "declined" ? "أُلغي الحفظ."
+        : "لا يمكن تسليم الملف من هذه النسخة — افتح الصفحة من رابطها المنشور.", "bad");
+  }
+  return true;
+}
+
+/* The file opens in a tab of its own, where the browser's PDF viewer offers
+   share, save and print — no print dialog in the way. */
+async function deliverPdf(save) {
+  if (!state.data) return;
+  const name = fileName(meta());
+  /* the tab is opened inside the click, before any await, or it is blocked */
+  const tab = save || framed() ? null : window.open("", "_blank");
+  const btn = save ? $("#bSave") : $("#bPdf");
+  const label = btn.lastChild.textContent;
+  btn.lastChild.textContent = " يُبنى الملف… ";
+  btn.disabled = true;
+  try {
+    const blob = await makePdf(name);
+    if (framed() && await hostSave(name + ".pdf", blob)) return;
+    const url = URL.createObjectURL(blob);
+    if (!save && tab) tab.location = url;
+    else {
+      const a = document.createElement("a");
+      a.href = url; a.download = name + ".pdf"; a.style.display = "none";
+      document.body.append(a); a.click(); a.remove();
+      if (!save) toast("المتصفح منع فتح تبويب جديد — نُزِّل الملف بدلًا من ذلك.", "");
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 120000);
+  } catch (e) {
+    if (tab) tab.close();
+    toast("تعذّر بناء الـPDF: " + e.message, "bad");
+  } finally {
+    btn.lastChild.textContent = label;
+    btn.disabled = false;
+  }
+}
+$("#bPdf").onclick = () => deliverPdf(false);
+$("#bSave").onclick = () => deliverPdf(true);
+
+addEventListener("resize", () => { if (state.data) fitStage(); });
+refresh();
+})();
+</script>
+
+</body>
+</html>
