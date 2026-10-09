@@ -446,7 +446,7 @@ python3 build_pages.py
 ## كيف تُحسب الأرقام
 
 - **Total OPD Visits** = مجموع `Totalseen` في أقسام Department Wise غير الطوارئ، وتحته `New / Follow-up` من الكشف المفصّل: New = ‏`New` + `Walk-in`، وFollow-up = ‏`Follow-up`، فيصير مجموعهما Totalseen — في ملفات 24 سبتمبر ‎2026‎: ‏‎155‎ New + ‏‎23‎ Walk-in = ‏‎178‎، و‎73‎ Follow-up، والمجموع ‎251‎، كما في القالب.
-- **EMERGENCY** = `Totalseen` لأي قسم فيه كلمة `Emergency`، وتحته New / Follow-up لأطبائه. والطوارئ لا تدخل جدول الأطباء.
+- **EMERGENCY** = `Totalseen` لأي قسم فيه كلمة `Emergency`، وتحته New / Follow-up لأطبائه. والفرع الذي لا طوارئ فيه **تُحذف بطاقته كاملةً** (لا شرطة ولا «Not reported»)، وتبقى البطاقات الأربع الأخرى.
 - **Appointments** = مجموع `Scheduled`، وتحته `Seen` = مجموع `Success` (من حضر بموعد) و`Show rate` = ‏Success ÷ Scheduled.
 - **No-Shows** = مجموع `Missed`، و`Rate` = ‏Missed ÷ Scheduled. وإن وُجد عمود `Cancelled` في أحد الكشوف ظهر بجانبه.
 - **Capacity Used** = الزيارات ÷ (Normal Slot + Freeze Slot) من ملف `Appt_Slot_Count`، أو ÷ السعة المكتوبة في الإعدادات إن لم يُرفع — ‏‎251 ÷ 300 = 84%‎.

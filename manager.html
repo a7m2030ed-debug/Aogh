@@ -2068,7 +2068,7 @@ function aggregate(opts) {
   if (systems.length) notices.push({ kind: "", text: "حسابات النظام لا تظهر في جدول الأطباء: " + systems.join("، ") });
   if (O.walkin != null && walkIncl && O.walkin > (O.visits || 0))
     notices.push({ kind: "warn", text: "مراجعو الـWalk-in أكثر من Total Seen — يبدو أن Total Seen لا يشملهم؛ أزل العلامة عن «عمود Total Seen يشمل مراجعي الـWalk-in» في الإعدادات." });
-  if (!E.present && state.counts.length) notices.push({ kind: "", text: "لا يوجد قسم طوارئ في الملفات — بطاقة EMERGENCY تخرج «Not reported»." });
+  if (!E.present && state.counts.length) notices.push({ kind: "", text: "لا يوجد قسم طوارئ في الملفات — بطاقة EMERGENCY لا تظهر في التقرير." });
 
   return { O, E, er: E.present, apptSeen, cap, slots, known, depts, table, listed: table.length, notices, svc, det,
            billSpan: svc && svc.dates.length ? { from: new Date(Math.min(...svc.dates)), to: new Date(Math.max(...svc.dates)) } : null };
@@ -2146,7 +2146,8 @@ function glance(data) {
   const split = S => S.newv == null ? [] : ["New " + nf(S.newv) + " / Follow-up " + (S.follow == null ? DASH : nf(S.follow))];
   const box = el("div", "grid6 kpis");
   box.append(kpi("Total OPD Visits", v(O.visits), split(O)));
-  box.append(kpi("EMERGENCY", data.er ? v(E.visits) : DASH, data.er ? split(E) : ["Not reported"]));
+  /* a branch without an emergency room has no EMERGENCY card at all */
+  if (data.er) box.append(kpi("EMERGENCY", v(E.visits), split(E)));
   box.append(kpi("Appointments", v(O.sched),
     apptSeen == null ? [] : ["Seen " + nf(apptSeen) + (known.sched ? "  ·  Show rate " + pct(apptSeen, O.sched) : "")]));
   const ns = [];
