@@ -1,0 +1,1397 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>تقرير النوشو — من دخل نفس اليوم أو اليوم التالي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<style>
+/* Layout: a clinic-operations dossier. Upload strip first; once both MIS files are read,
+   a ruled masthead, one KPI band, the headline question (who came back within a day),
+   then breakdowns and the patient lists. */
+:root{
+  --bg:#F5F7FA; --panel:#FFFFFF; --ink:#13203A; --ink-2:#44506A; --muted:#6A748A; --rule:#DCE1EA; --soft:#EEF1F6;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --none:#B9BFCA; --bar:#56657F; --focus:#2a78d6;
+  --good:#1C7A55; --good-soft:#DFF1E9; --crit:#A82838; --crit-soft:#FAE1E4;
+  --display:"Readex Pro","IBM Plex Sans Arabic",Tahoma,sans-serif;
+  --body:"IBM Plex Sans Arabic","Readex Pro",Tahoma,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0E1420; --panel:#151D2C; --ink:#E9EDF4; --ink-2:#B9C2D2; --muted:#8C97AB; --rule:#28324A; --soft:#1C2538;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --none:#4B5468; --bar:#8C9CB8; --focus:#6DA7EC;
+  --good:#4FBE8E; --good-soft:#13291F; --crit:#E8697C; --crit-soft:#2E1520; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1420; --panel:#151D2C; --ink:#E9EDF4; --ink-2:#B9C2D2; --muted:#8C97AB; --rule:#28324A; --soft:#1C2538;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --none:#4B5468; --bar:#8C9CB8; --focus:#6DA7EC;
+  --good:#4FBE8E; --good-soft:#13291F; --crit:#E8697C; --crit-soft:#2E1520; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.65}
+main{max-width:1180px;margin:0 auto;padding-inline:clamp(16px,4vw,40px);padding-block:28px 64px;display:flex;flex-direction:column;gap:40px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;font-weight:600}
+.num,td,.kpi b{font-variant-numeric:tabular-nums}
+button,input{font:inherit;color:inherit}
+
+/* masthead */
+.mast{display:flex;flex-direction:column;gap:10px;border-bottom:2px solid var(--ink);padding-bottom:18px}
+.eyebrow{font-family:var(--display);font-size:13px;color:var(--muted);letter-spacing:.02em}
+.mast h1{font-size:clamp(26px,4.2vw,40px);line-height:1.2}
+.mast p{margin:0;color:var(--ink-2);max-width:70ch}
+.meta{display:flex;flex-wrap:wrap;gap:6px 22px;color:var(--ink-2);font-size:13.5px}
+.meta b{font-weight:600;color:var(--ink)}
+
+/* upload */
+.drop{border:1.5px dashed var(--rule);border-radius:10px;background:var(--panel);padding:26px 22px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s}
+.drop:hover,.drop.over{border-color:var(--s1);background:var(--soft)}
+.drop:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
+.drop strong{font-family:var(--display);font-size:18px;font-weight:600}
+.drop span{color:var(--muted);font-size:13.5px}
+.slots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.slot{display:flex;align-items:center;gap:12px;border:1px solid var(--rule);border-radius:8px;background:var(--panel);padding:12px 14px;min-width:0}
+.slot .dot{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:14px;font-weight:700;background:var(--soft);color:var(--muted)}
+.slot.ok .dot{background:var(--good-soft);color:var(--good)}
+.slot div{min-width:0}
+.slot b{display:block;font-family:var(--display);font-weight:600;font-size:14px}
+.slot small{display:block;color:var(--muted);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.err{background:var(--crit-soft);color:var(--crit);border-radius:8px;padding:10px 14px;font-size:14px}
+.privacy{font-size:12.5px;color:var(--muted);margin:0}
+
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn{border:1px solid var(--rule);background:var(--panel);border-radius:8px;padding:9px 16px;cursor:pointer;font-family:var(--display);font-weight:500;font-size:14px}
+.btn:hover{border-color:var(--ink-2)}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.btn[disabled]{opacity:.55;cursor:progress}
+.toolbar .status{font-size:13px;color:var(--muted)}
+
+/* KPI band */
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border-block:1px solid var(--rule)}
+.kpi{padding:16px 18px;display:flex;flex-direction:column;gap:2px;border-inline-start:1px solid var(--rule);min-width:0}
+.kpi:first-child{border-inline-start:0}
+.kpi span{font-size:13px;color:var(--muted)}
+.kpi b{font-family:var(--display);font-size:clamp(26px,3.4vw,36px);font-weight:600;line-height:1.15}
+.kpi small{font-size:12.5px;color:var(--ink-2)}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-inline-end:6px;vertical-align:0}
+
+section{display:flex;flex-direction:column;gap:18px}
+.sec-head{display:flex;flex-direction:column;gap:4px;max-width:72ch}
+.sec-head h2{font-size:clamp(20px,2.6vw,26px)}
+.sec-head p{margin:0;color:var(--ink-2)}
+.panel{background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:20px;min-width:0}
+.grid2{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:20px}
+.panel h3{font-size:15.5px;margin-bottom:12px}
+.note{font-size:12.5px;color:var(--muted);margin:10px 0 0}
+
+.findings{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 36px}
+.findings li{padding:14px 0;border-top:1px solid var(--rule);display:flex;flex-direction:column;gap:3px;min-width:0}
+.findings li b{font-family:var(--display);font-weight:600;font-size:15px}
+.findings li span{color:var(--ink-2);font-size:14px}
+
+.split{display:flex;height:54px;border-radius:6px;overflow:hidden;gap:2px;background:var(--panel)}
+.split > div{overflow:hidden;display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--display);font-weight:600;font-size:14px;min-width:0;white-space:nowrap}
+.split .lbl-out{color:var(--ink)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:13px;color:var(--ink-2);margin-top:10px}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-inline-end:6px;vertical-align:-1px}
+
+.rows{display:flex;flex-direction:column;gap:12px}
+.row{display:grid;grid-template-columns:170px minmax(0,1fr) 64px;gap:12px;align-items:center}
+.row .name{font-size:13.5px;display:flex;align-items:center;gap:8px;min-width:0}
+.row .name i{flex:none;width:11px;height:11px;border-radius:2px}
+.track{display:flex;height:22px;gap:2px}
+.track > div{height:100%}
+.track > div:last-child{border-radius:4px 0 0 4px}
+.row .tot{font-family:var(--display);font-weight:600}
+
+.callouts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-block:1px solid var(--rule)}
+.callouts div{padding:14px 16px;border-inline-start:1px solid var(--rule);min-width:0}
+.callouts div:first-child{border-inline-start:0}
+.callouts b{display:block;font-family:var(--display);font-size:26px;font-weight:600}
+.callouts span{font-size:13.5px;color:var(--ink-2)}
+
+.tbl-wrap{overflow:auto;border:1px solid var(--rule);border-radius:8px;background:var(--panel)}
+.tbl-wrap.tall{max-height:640px}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+.tbl-wrap > table{min-width:760px}
+th{font-family:var(--display);font-weight:500;font-size:12.5px;color:var(--muted);text-align:start;padding:10px;border-bottom:1px solid var(--rule);white-space:nowrap;background:var(--panel);position:sticky;top:0;z-index:1}
+th button{all:unset;cursor:pointer;display:inline-flex;gap:4px;align-items:center}
+th button:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:3px}
+th button[aria-sort="descending"]::after{content:"▾"}
+th button[aria-sort="ascending"]::after{content:"▴"}
+td{padding:8px 10px;border-bottom:1px solid var(--soft);white-space:nowrap}
+tfoot td{font-weight:600;border-top:1px solid var(--rule);background:var(--soft)}
+td.en{direction:ltr;text-align:right;unicode-bidi:plaintext}
+.cellbar{display:flex;align-items:center;gap:8px}
+.cellbar .b{height:8px;border-radius:3px 0 0 3px;background:var(--bar);flex:none}
+.stack{display:flex;height:8px;gap:1px;flex:none}
+.stack i{display:block;height:100%}
+.list td{font-size:13px}
+.search{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.search input{border:1px solid var(--rule);background:var(--panel);border-radius:8px;padding:8px 12px;min-width:min(320px,100%)}
+.search input:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+.search small{color:var(--muted)}
+
+.chart{width:100%;height:auto;display:block;overflow:visible}
+.scroll{overflow-x:auto;overflow-y:hidden}
+.chart.wide{min-width:680px}
+.chart.mid{min-width:400px}
+.chart text{fill:var(--muted);font-family:var(--display);font-size:11px}
+.chart .grid{stroke:var(--rule);stroke-width:1}
+.chart .axis{stroke:var(--ink-2);stroke-width:1}
+.chart .val{fill:var(--ink-2);font-size:10.5px}
+.chart .hit{fill:transparent;cursor:crosshair}
+.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);padding:7px 10px;border-radius:6px;font-size:12.5px;line-height:1.5;z-index:10;max-width:240px}
+.tip b{font-family:var(--display)}
+
+footer{border-top:2px solid var(--ink);padding-top:16px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 36px;font-size:13px;color:var(--ink-2)}
+footer h3{grid-column:1/-1;font-size:15px;color:var(--ink)}
+footer p{margin:0;min-width:0}
+footer p b{color:var(--ink);font-weight:600}
+
+@media (max-width:860px){
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kpi{border-inline-start:0;border-top:1px solid var(--rule)}
+  .kpi:nth-child(-n+2){border-top:0}
+  .kpi:nth-child(even){border-inline-start:1px solid var(--rule)}
+  .kpi:last-child{grid-column:1/-1}
+  .grid2,.findings,footer,.slots,.callouts{grid-template-columns:minmax(0,1fr)}
+  .callouts div{border-inline-start:0;border-top:1px solid var(--rule)}
+  .callouts div:first-child{border-top:0}
+  .row{grid-template-columns:110px minmax(0,1fr) 48px}
+}
+@media (max-width:600px){.split > div{font-size:0}}
+@media print{
+  :root{--bg:#fff;--panel:#fff;--ink:#13203A;--ink-2:#44506A;--muted:#6A748A;--rule:#DCE1EA;--soft:#EEF1F6;
+    --s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;--none:#B9BFCA;--bar:#56657F;color-scheme:light}
+  body{-webkit-print-color-adjust:exact;print-color-adjust:exact;font-size:12px}
+  #upload,.toolbar,.search{display:none!important}
+  main{max-width:none;padding:0;gap:22px}
+  .tbl-wrap,.tbl-wrap.tall{max-height:none;overflow:visible}
+  th{position:static}
+  section,.panel{break-inside:avoid}
+  .list-sec{break-inside:auto}
+  .list-sec,.page-break{break-before:page}
+}
+</style>
+</head>
+<body>
+<main>
+  <header class="mast">
+    <div class="eyebrow" id="eyebrow">مراكز مينا · تقرير عدم الحضور (No Show)</div>
+    <h1>مرضى النوشو: من دخل المركز في نفس اليوم أو اليوم التالي؟</h1>
+    <p id="intro">ارفع ملفي الإكسل من نظام MIS لنفس الفترة، ويُبنى التقرير هنا فوراً مع ملف إكسل جاهز للتحميل.</p>
+    <div class="meta" id="meta" hidden></div>
+  </header>
+
+  <section id="upload">
+    <div class="drop" id="drop" tabindex="0" role="button" aria-describedby="drop-hint">
+      <strong>اسحب الملفين هنا أو اضغط لاختيارهما</strong>
+      <span id="drop-hint">xlsx · ملفان معاً أو كل ملف على حدة — يُتعرَّف على كل ملف من عنوانه</span>
+    </div>
+    <input type="file" id="file" accept=".xlsx,.xlsm,.xls" multiple hidden>
+    <div class="slots">
+      <div class="slot" id="slot-ns"><span class="dot">1</span><div><b>No Show Detailed – Main Report</b><small>مواعيد النوشو — لم يُرفع بعد</small></div></div>
+      <div class="slot" id="slot-ap"><span class="dot">2</span><div><b>Appointment Statistics – Detailed</b><small>كل الزيارات المسجّلة — لم يُرفع بعد</small></div></div>
+    </div>
+    <div class="err" id="err" role="alert" hidden></div>
+    <p class="privacy">كل المعالجة تجري داخل المتصفح: لا يُرفع أي ملف إلى أي خادم.</p>
+  </section>
+
+  <div class="toolbar" id="toolbar" hidden>
+    <button class="btn primary" id="btn-xlsx" type="button">تحميل تقرير الإكسل</button>
+    <button class="btn" id="btn-print" type="button">طباعة / حفظ PDF</button>
+    <button class="btn" id="btn-reset" type="button">ملفات جديدة</button>
+    <span class="status" id="xlsx-status" aria-live="polite"></span>
+  </div>
+
+  <div id="report" hidden style="display:flex;flex-direction:column;gap:44px">
+    <div class="kpis" id="kpis"></div>
+
+    <section>
+      <div class="sec-head"><h2>أبرز النتائج</h2></div>
+      <ul class="findings" id="findings"></ul>
+    </section>
+
+    <section>
+      <div class="sec-head">
+        <h2>ماذا حدث بعد النوشو؟</h2>
+        <p>لكل موعد نوشو بحثنا عن زيارة فعلية مسجّلة لنفس رقم الملف في نفس اليوم أو في اليوم التالي مباشرة، في أي عيادة أو في الطوارئ.</p>
+      </div>
+      <div class="panel">
+        <h3 id="split-title"></h3>
+        <div class="split" id="split" role="img"></div>
+        <div class="legend" id="split-legend"></div>
+      </div>
+      <div class="grid2">
+        <div class="panel">
+          <h3>أين دخل العائدون؟</h3>
+          <div class="rows" id="where"></div>
+          <div class="legend"><span><i style="background:var(--s1)"></i>نفس اليوم</span><span><i style="background:var(--s2)"></i>اليوم التالي</span></div>
+          <p class="note">عند وجود أكثر من زيارة اعتمدنا الأقرب صلةً بالموعد: نفس الطبيب، ثم نفس التخصص، ثم الطوارئ، ثم تخصص آخر.</p>
+        </div>
+        <div class="panel">
+          <h3>توقيت الزيارة</h3>
+          <div class="rows" id="timing"></div>
+          <h3 style="margin-top:22px">تصنيف الزيارة الفعلية</h3>
+          <div class="rows" id="rettype"></div>
+        </div>
+      </div>
+      <div class="callouts" id="callouts"></div>
+    </section>
+
+    <section>
+      <div class="sec-head">
+        <h2>حسب التخصص</h2>
+        <p>نسبة النوشو = النوشو ÷ (النوشو + المواعيد المحضورة من نوع جديد أو متابعة). اضغط على عنوان أي عمود للترتيب.</p>
+      </div>
+      <div class="tbl-wrap"><table id="spec"></table></div>
+    </section>
+
+    <section>
+      <div class="sec-head">
+        <h2>حسب الطبيب</h2>
+        <p>«لنفس الطبيب» تعني أن المريض دخل عند نفس الطبيب في نفس اليوم.</p>
+      </div>
+      <div class="tbl-wrap"><table id="doc"></table></div>
+    </section>
+
+    <section>
+      <div class="sec-head"><h2>التوزيع الزمني</h2><p id="trend-sub"></p></div>
+      <div class="panel">
+        <h3>نسبة النوشو الأسبوعية</h3>
+        <div class="scroll"><svg class="chart wide" id="weekly" viewBox="0 0 1000 300" dir="ltr"></svg></div>
+        <p class="note">الأسبوع يبدأ يوم الأحد. النقاط المفرغة أسابيع غير مكتملة (بداية الفترة ونهايتها).</p>
+      </div>
+      <div class="grid2">
+        <div class="panel"><h3>حسب ساعة الموعد</h3><div class="scroll"><svg class="chart mid" id="hours" viewBox="0 0 560 260" dir="ltr"></svg></div></div>
+        <div class="panel"><h3>حسب يوم الأسبوع</h3><div class="scroll"><svg class="chart mid" id="weekday" viewBox="0 0 440 260" dir="ltr"></svg></div></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-head"><h2>المرضى المتكرر غيابهم</h2><p id="rep-sub"></p></div>
+      <div class="panel"><div class="rows" id="repeat"></div></div>
+    </section>
+
+    <section class="list-sec">
+      <div class="sec-head"><h2 id="same-title">من دخل في نفس يوم موعد النوشو</h2>
+        <p>الزيارة المعروضة هي الأقرب صلةً بالموعد. «الفرق» = وقت الزيارة الفعلية مقارنةً بوقت موعد النوشو.</p></div>
+      <div class="search"><input type="search" id="q-same" placeholder="بحث بالاسم أو رقم الملف أو الطبيب أو الجوال" aria-label="بحث في قائمة نفس اليوم"><small id="n-same"></small></div>
+      <div class="tbl-wrap tall"><table class="list" id="t-same"></table></div>
+    </section>
+
+    <section class="list-sec">
+      <div class="sec-head"><h2 id="next-title">من دخل في اليوم التالي مباشرة</h2>
+        <p>يشمل فقط من لم يدخل في نفس اليوم، حتى لا يُعدّ الموعد مرتين.</p></div>
+      <div class="search"><input type="search" id="q-next" placeholder="بحث بالاسم أو رقم الملف أو الطبيب أو الجوال" aria-label="بحث في قائمة اليوم التالي"><small id="n-next"></small></div>
+      <div class="tbl-wrap tall"><table class="list" id="t-next"></table></div>
+    </section>
+
+    <footer>
+      <h3>المنهجية</h3>
+      <p><b>المصادر:</b> تقرير No Show Detailed – Main Report وتقرير Appointment Statistics – Detailed من نظام MIS.</p>
+      <p><b>الفترة:</b> تُحسب من التواريخ الفعلية في الملفين، لا من عنوان التقرير.</p>
+      <p><b>عاد نفس اليوم:</b> زيارة مسجّلة (Reported) لنفس رقم الملف في تاريخ موعد النوشو، قبله أو بعده، في أي عيادة أو الطوارئ.</p>
+      <p><b>عاد اليوم التالي:</b> لا زيارة في نفس اليوم وتوجد زيارة في اليوم التالي مباشرة. التصنيفان متنافيان.</p>
+      <p><b>خُدم في نفس التخصص:</b> عاد نفس اليوم لنفس الطبيب أو نفس التخصص، وغالباً ليس غياباً حقيقياً.</p>
+      <p><b>نسبة النوشو:</b> النوشو ÷ (النوشو + المواعيد المحضورة من نوع جديد أو متابعة في تخصصات تقرير النوشو).</p>
+    </footer>
+  </div>
+</main>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+/* ═════════════════════════ constants ═════════════════════════ */
+const RET = ['عاد نفس اليوم', 'عاد اليوم التالي', 'لم يعد خلال يوم'];
+const WHERE = ['نفس الطبيب', 'نفس التخصص - طبيب آخر', 'الطوارئ', 'تخصص آخر'];
+const TIM = ['نفس اليوم - قبل الموعد', 'نفس اليوم - نفس وقت الموعد', 'نفس اليوم - بعد الموعد', 'اليوم التالي'];
+const DAYS = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];   // getUTCDay order
+const SPEC_AR = {
+  'family medicine': 'طب الأسرة', 'physiotherapy': 'العلاج الطبيعي', 'obstetrics and gynaecology': 'النساء والولادة',
+  'pediatric': 'الأطفال', 'dental': 'الأسنان', 'ophthalmology': 'العيون', 'ent ( ear, nose,throat )': 'الأنف والأذن والحنجرة',
+  'mental health services': 'الصحة النفسية', 'sports medicine': 'الطب الرياضي', 'cardiology': 'القلب',
+  'emergency department': 'الطوارئ', 'riyadh bank - kafd': 'عيادة بنك الرياض - كافد', 'modon clinic': 'عيادة مدن', 'orthopedic': 'العظام'};
+const VT = {OP: 'عيادات', EMERGENCY: 'طوارئ'};
+const TY = {'New': 'جديد', 'Follow-up': 'متابعة', 'Walk-in': 'بدون موعد'};
+const MON = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+const DAY_MS = 86400000, MIN_MS = 60000;
+
+const $ = id => document.getElementById(id);
+const fmt = n => Math.round(n).toLocaleString('en-US');
+const pct = (x, d = 1) => (x * 100).toFixed(d) + '%';
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const norm = s => String(s ?? '').toLowerCase().split(/\s+/).filter(Boolean).join(' ');
+const tidy = s => String(s ?? '').split(/\s+/).filter(Boolean).join(' ');
+const pad = n => String(n).padStart(2, '0');
+/* every timestamp is "wall-clock milliseconds" built with Date.UTC, so no timezone shifts */
+const dayOf = t => Math.floor(t / DAY_MS) * DAY_MS;
+const dmy = t => { const d = new Date(t); return `${pad(d.getUTCDate())}-${pad(d.getUTCMonth() + 1)}-${d.getUTCFullYear()}`; };
+const hm = t => { const d = new Date(t); return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`; };
+const ym = t => { const d = new Date(t); return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}`; };
+
+/* ═════════════════════════ cell parsing ═════════════════════════ */
+function fromDate(d) { return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds()); }
+function fromSerial(n) { return Math.round((n - 25569) * DAY_MS / MIN_MS) * MIN_MS; }
+/* "27-06-2026 15:30:00" · "28-Sep-2026 00:00" · "2026-06-27 15:30" · Date · serial */
+function parseDT(v) {
+  if (v == null || v === '') return null;
+  if (v instanceof Date) return fromDate(v);
+  if (typeof v === 'number') return fromSerial(v);
+  const s = String(v).trim();
+  let m = s.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+  if (m) return Date.UTC(+m[3], +m[2] - 1, +m[1], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
+  m = s.match(/^(\d{1,2})[-\s]([A-Za-z]{3})[A-Za-z]*[-\s](\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+  if (m && MON[m[2].toLowerCase()] != null) return Date.UTC(+m[3], MON[m[2].toLowerCase()], +m[1], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
+  m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T\s](\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+  if (m) return Date.UTC(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
+  return null;
+}
+/* "15:30:00" · fraction of a day · Date → minutes after midnight */
+function parseTime(v) {
+  if (v == null || v === '') return 0;
+  if (v instanceof Date) return v.getHours() * 60 + v.getMinutes();
+  if (typeof v === 'number') return Math.round((v % 1) * 1440);
+  const m = String(v).match(/(\d{1,2}):(\d{2})/);
+  return m ? +m[1] * 60 + +m[2] : 0;
+}
+
+/* ═════════════════════════ file recognition ═════════════════════════ */
+function sheetRows(wb) { return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1, raw: true, defval: null, blankrows: false}); }
+function findHeader(rows, need) {
+  for (let i = 0; i < Math.min(rows.length, 40); i++) {
+    const cells = (rows[i] || []).map(c => norm(c));
+    if (need.every(n => cells.includes(n))) return i;
+  }
+  return -1;
+}
+function titleText(rows) { return rows.slice(0, 6).map(r => (r || []).filter(Boolean).join(' ')).join(' | '); }
+
+function parseNoShow(rows) {
+  const h = findHeader(rows, ['mrno', 'appointment_date_time']);
+  if (h < 0) return null;
+  const head = rows[h].map(c => norm(c)), col = n => head.indexOf(n);
+  const c = {s: col('s#'), mrn: col('mrno'), name: col('patient_name'), phone: col('phone'), dt: col('appointment_date_time'),
+             spec: col('speciality'), doc: col('provider_name'), lang: col('language')};
+  const out = [];
+  for (let i = h + 1; i < rows.length; i++) {
+    const r = rows[i] || [];
+    if (c.s >= 0 && !(String(r[c.s] ?? '').trim() !== '' && isFinite(+r[c.s]))) continue;
+    const t = parseDT(r[c.dt]);
+    if (!t || r[c.mrn] == null) continue;
+    out.push({mrn: String(r[c.mrn]).trim(), name: tidy(r[c.name]), phone: String(r[c.phone] ?? '').trim(), appt: t,
+              spec: tidy(r[c.spec]), doc: tidy(r[c.doc]), lang: tidy(r[c.lang])});
+  }
+  const title = rows.slice(0, h).map(r => (r || []).filter(Boolean).join(' ')).filter(Boolean);
+  return {rows: out, center: title[0] || '', range: title.find(t => /from date/i.test(t)) || ''};
+}
+
+function parseVisits(rows) {
+  const h = findHeader(rows, ['mrno', 'date of visit']);
+  if (h < 0) return null;
+  const head = rows[h].map(c => norm(c)), col = n => head.indexOf(n);
+  const c = {mrn: col('mrno'), name: col('name'), token: col('token no.'), time: col('appt. time'), date: col('date of visit'),
+             vt: col('visit type'), type: col('type'), dept: col('department')};
+  const out = []; let status = '', doctor = '';
+  for (let i = h + 1; i < rows.length; i++) {
+    const r = rows[i] || [], a = r[c.mrn];
+    if (a == null || String(a).trim() === '') continue;
+    const s = String(a).trim();
+    if (r[c.name] == null || String(r[c.name]).trim() === '') {
+      if (/^status\s*:/i.test(s)) status = s.split(':').slice(1).join(':').trim();
+      else if (/^doctor name\s*:/i.test(s)) doctor = tidy(s.split(':').slice(1).join(':'));
+      continue;
+    }
+    out.push({status, doctor, mrn: s, name: tidy(r[c.name]), time: parseTime(r[c.time]), date: parseDT(r[c.date]),
+              vt: tidy(r[c.vt]), type: tidy(r[c.type]), dept: tidy(r[c.dept])});
+  }
+  return {rows: out};
+}
+
+/* ═════════════════════════ analysis ═════════════════════════ */
+function analyse(nsFile, apFile) {
+  const ns = nsFile.rows.map((r, i) => ({...r, id: i, apptDay: dayOf(r.appt), specKey: norm(r.spec), docKey: norm(r.doc),
+                                          specAr: SPEC_AR[norm(r.spec)] || r.spec}));
+  ns.sort((a, b) => a.appt - b.appt || a.doc.localeCompare(b.doc));
+  const specKeys = new Set(ns.map(r => r.specKey));
+  const rep = apFile.rows.filter(v => /^reported$/i.test(v.status) && v.date != null).map(v => {
+    const sched = v.type === 'New' || v.type === 'Follow-up';
+    const dt = sched ? dayOf(v.date) + v.time * MIN_MS : v.date;
+    return {...v, sched, dt, day: dayOf(dt), docKey: norm(v.doctor), specKey: norm(v.dept), deptAr: SPEC_AR[norm(v.dept)] || v.dept};
+  });
+  const byMrn = new Map();
+  rep.forEach(v => { if (!byMrn.has(v.mrn)) byMrn.set(v.mrn, []); byMrn.get(v.mrn).push(v); });
+
+  ns.forEach(r => {
+    const ms = [];
+    (byMrn.get(r.mrn) || []).forEach(v => {
+      const delta = Math.round((v.day - r.apptDay) / DAY_MS);
+      if (delta !== 0 && delta !== 1) return;
+      const where = v.docKey === r.docKey ? WHERE[0] : v.specKey === r.specKey ? WHERE[1] : v.vt === 'EMERGENCY' ? WHERE[2] : WHERE[3];
+      const diff = Math.round((v.dt - r.appt) / MIN_MS);
+      const timing = delta === 1 ? TIM[3] : diff < 0 ? TIM[0] : diff === 0 ? TIM[1] : TIM[2];
+      ms.push({v, delta, where, rank: WHERE.indexOf(where), diff, timing});
+    });
+    ms.sort((a, b) => a.delta - b.delta || a.rank - b.rank || a.v.dt - b.v.dt);
+    r.sameDay = ms.some(x => x.delta === 0);
+    r.nextDay = ms.some(x => x.delta === 1);
+    r.ret = r.sameDay ? RET[0] : r.nextDay ? RET[1] : RET[2];
+    const p = ms[0];
+    r.p = p || null;
+    r.others = p ? ms.filter(x => x.delta === p.delta).length - 1 : 0;
+    r.served = r.sameDay && (p.where === WHERE[0] || p.where === WHERE[1]);
+    const d = new Date(r.appt);
+    r.weekday = DAYS[d.getUTCDay()];
+    r.hour = d.getUTCHours(); r.hourLbl = pad(r.hour) + ':00';
+    r.month = ym(r.appt);
+    r.weekStart = r.apptDay - d.getUTCDay() * DAY_MS;
+  });
+  const cnt = new Map(); ns.forEach(r => cnt.set(r.mrn, (cnt.get(r.mrn) || 0) + 1));
+  ns.forEach((r, i) => { r.count = cnt.get(r.mrn); r.s = i + 1; });
+
+  const sch = rep.filter(v => v.sched && specKeys.has(v.specKey)).map(v => {
+    const d = new Date(v.dt);
+    return {...v, weekday: DAYS[d.getUTCDay()], hourLbl: pad(d.getUTCHours()) + ':00', month: ym(v.dt), weekStart: v.day - d.getUTCDay() * DAY_MS};
+  });
+  return {ns, rep, sch, center: nsFile.center};
+}
+
+const countBy = (arr, key) => { const m = new Map(); arr.forEach(x => { const k = key(x); m.set(k, (m.get(k) || 0) + 1); }); return m; };
+
+function aggregate({ns, sch, center}) {
+  const N = ns.length, retCount = s => ns.filter(r => r.ret === s).length;
+  const R = {[RET[0]]: retCount(RET[0]), [RET[1]]: retCount(RET[1]), [RET[2]]: retCount(RET[2])};
+  const RETN = R[RET[0]] + R[RET[1]];
+  const where = {}; WHERE.forEach(w => where[w] = {[RET[0]]: ns.filter(r => r.sameDay && r.p.where === w).length,
+                                                  [RET[1]]: ns.filter(r => r.ret === RET[1] && r.p.where === w).length});
+  const timing = {}; TIM.forEach(t => timing[t] = ns.filter(r => r.p && r.p.timing === t).length);
+  const rettype = {}; ['New', 'Follow-up', 'Walk-in'].forEach(t => rettype[TY[t]] = {
+    [RET[0]]: ns.filter(r => r.sameDay && r.p.v.type === t).length, [RET[1]]: ns.filter(r => r.ret === RET[1] && r.p.v.type === t).length});
+  const served = ns.filter(r => r.served).length;
+  const samedoc_before = ns.filter(r => r.sameDay && r.p.where === WHERE[0] && r.p.diff < 0).length;
+  const walkin_same = ns.filter(r => r.sameDay && r.p.v.type === 'Walk-in').length;
+  const erAny = ns.filter(r => r.p && r.p.where === WHERE[2] && r.ret !== RET[2]).length;
+
+  const attSpec = countBy(sch, v => v.deptAr);
+  const specMap = new Map();
+  ns.forEach(r => { if (!specMap.has(r.specAr)) specMap.set(r.specAr, []); specMap.get(r.specAr).push(r); });
+  const spec = [...specMap].map(([name, rs]) => ({name, n: rs.length, att: attSpec.get(name) || 0,
+    pts: new Set(rs.map(r => r.mrn)).size, same: rs.filter(r => r.sameDay).length, next: rs.filter(r => r.ret === RET[1]).length,
+    served: rs.filter(r => r.served).length})).map(s => ({...s, rate: s.n / (s.n + s.att)})).sort((a, b) => b.n - a.n);
+  const tot_att = spec.reduce((s, x) => s + x.att, 0);
+
+  const docMap = new Map();
+  ns.forEach(r => { if (!docMap.has(r.doc)) docMap.set(r.doc, []); docMap.get(r.doc).push(r); });
+  const attDoc = countBy(sch, v => v.docKey);
+  const doc = [...docMap].map(([name, rs]) => {
+    const sc = countBy(rs, r => r.specAr); const specName = [...sc].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))[0][0];
+    return {name, spec: specName, n: rs.length, att: attDoc.get(norm(name)) || 0, pts: new Set(rs.map(r => r.mrn)).size,
+      same: rs.filter(r => r.sameDay).length, samedoc: rs.filter(r => r.sameDay && r.p.where === WHERE[0]).length,
+      next: rs.filter(r => r.ret === RET[1]).length, nextdoc: rs.filter(r => r.ret === RET[1] && r.p.where === WHERE[0]).length};
+  }).map(d => ({...d, rate: d.n / (d.n + d.att)})).sort((a, b) => b.rate - a.rate);
+
+  const weeks = [...new Set(ns.map(r => r.weekStart))].sort((a, b) => a - b);
+  const wAtt = countBy(sch, v => v.weekStart);
+  const months = [...new Set(ns.map(r => r.month))].sort();
+  const mAtt = countBy(sch, v => v.month), dAtt = countBy(sch, v => v.weekday), hAtt = countBy(sch, v => v.hourLbl);
+  const hours = [...new Set(ns.map(r => r.hourLbl))].sort();
+  const pc = [...new Map(ns.map(r => [r.mrn, r.count])).values()];
+  const bins = [['مرة واحدة', 1, 1], ['مرتان', 2, 2], ['3 مرات', 3, 3], ['4 - 5 مرات', 4, 5], ['6 مرات فأكثر', 6, 999]];
+  const repeat = bins.map(([lbl, lo, hi]) => ({lbl, lo, hi, pts: pc.filter(c => c >= lo && c <= hi).length,
+                                               appts: ns.filter(r => r.count >= lo && r.count <= hi).length}));
+  const rep3 = ns.filter(r => r.count >= 3);
+  const rep3_pts = new Set(rep3.map(r => r.mrn)).size, rep3_appts = rep3.length;
+  const days = ns.map(r => r.apptDay);
+  const D0 = Math.min(...days), D1 = Math.max(...days);
+  const rateOf = (n, a) => n / (n + a);
+  const mm = months.map(m => ({m, n: ns.filter(r => r.month === m).length, att: mAtt.get(m) || 0}));
+  const weekday = DAYS.map(d => ({d, n: ns.filter(r => r.weekday === d).length, att: dAtt.get(d) || 0}));
+  const hrs = hours.map(h => ({h, n: ns.filter(r => r.hourLbl === h).length, att: hAtt.get(h) || 0}));
+
+  /* findings — same wording as the reference workbook */
+  const big = spec.filter(s => s.n + s.att >= 500).slice().sort((a, b) => a.rate - b.rate);
+  const fm = spec.find(s => s.name === 'طب الأسرة') || spec[0];
+  const mFirst = mm.find(x => x.att > 1000) || mm[0], mLast = mm.slice().reverse().find(x => x.att > 1000) || mm[mm.length - 1];
+  const wdR = weekday.filter(x => x.n + x.att > 0).map(x => ({...x, r: rateOf(x.n, x.att)}));
+  const wdMax = wdR.reduce((a, b) => b.r > a.r ? b : a), wdMin = wdR.reduce((a, b) => b.r < a.r ? b : a);
+  const wdLow = wdR.reduce((a, b) => (b.n + b.att) < (a.n + a.att) ? b : a);
+  const hrR = hrs.filter(x => x.n >= 50).map(x => ({...x, r: rateOf(x.n, x.att)}));
+  const hrMax = hrR.length ? hrR.reduce((a, b) => b.r > a.r ? b : a) : null;
+  const monthName = m => ({'01':'يناير','02':'فبراير','03':'مارس','04':'أبريل','05':'مايو','06':'يونيو','07':'يوليو','08':'أغسطس','09':'سبتمبر','10':'أكتوبر','11':'نوفمبر','12':'ديسمبر'})[m.slice(5)];
+  const rFirst = rateOf(mFirst.n, mFirst.att), rLast = rateOf(mLast.n, mLast.att);
+  const findings = [
+    [RETN / N >= 0.2 ? 'ربع مرضى النوشو تقريباً دخلوا المركز خلال يوم واحد' : 'من دخل المركز خلال يوم من موعد النوشو',
+     `${fmt(RETN)} موعد نوشو (${pct(RETN / N)}) تبعته زيارة فعلية لنفس المريض: ${fmt(R[RET[0]])} في نفس اليوم (${pct(R[RET[0]] / N)}) و${fmt(R[RET[1]])} في اليوم التالي (${pct(R[RET[1]] / N)}).`],
+    ['جزء من النوشو ليس غياباً فعلياً',
+     `${fmt(served)} موعد نوشو (${pct(served / N)}) خُدم أصحابها في نفس اليوم ونفس التخصص، منها ${fmt(samedoc_before)} حالة حضر فيها المريض عند نفس الطبيب في موعد أبكر، وهذا مؤشر على حجز مكرر لم يُلغَ. تنظيف هذه الحجوزات يخفّض نسبة النوشو المعلنة ويحرّر مواعيد.`],
+    ['دخول بدون موعد بدل الموعد المحجوز',
+     `${fmt(walkin_same)} من العائدين في نفس اليوم سُجّلوا Walk-in (عيادات أو طوارئ) بدلاً من حضور الموعد الأصلي، و${fmt(erAny)} حالة راجعت الطوارئ خلال يوم.`],
+    ['النسبة العامة وأعلى التخصصات',
+     `نسبة النوشو العامة ${pct(N / (N + tot_att))}.` + (big.length ? ` أعلاها ${big[big.length - 1].name} (${pct(big[big.length - 1].rate)}) وأقلها ${big[0].name} (${pct(big[0].rate)}) (بين التخصصات التي لديها 500 موعد فأكثر).` : '') +
+     ` ${fm.name} وحده يمثل ${Math.round(fm.n / N * 100)}% من كل النوشو.`],
+    [rLast < rFirst ? 'الاتجاه يتحسّن' : 'الاتجاه الشهري',
+     mFirst === mLast ? `نسبة النوشو في ${monthName(mFirst.m)} ${pct(rFirst)}.` :
+     `${rLast < rFirst ? 'انخفضت' : 'ارتفعت'} نسبة النوشو من ${pct(rFirst)} في ${monthName(mFirst.m)} إلى ${pct(rLast)} في ${monthName(mLast.m)}.`],
+    ['المرضى المتكرر غيابهم',
+     `${fmt(rep3_pts)} مريضاً تكرر غيابهم 3 مرات أو أكثر، وتسببوا في ${fmt(rep3_appts)} موعد نوشو (${pct(rep3_appts / N)}). هؤلاء أولوية لسياسة تأكيد المواعيد.`],
+    ['أوقات وأيام الذروة',
+     `أعلى يوم نسبةً: ${wdMax.d} (${pct(wdMax.r)}${wdMax === wdLow ? '، وهو أقل الأيام حجزاً' : ''}) وأقله: ${wdMin.d} (${pct(wdMin.r)}).` + (hrMax ? ` وأعلى ساعة نسبةً: ${hrMax.h} (${pct(hrMax.r)}).` : '')],
+  ];
+  return {center, N, patients: new Set(ns.map(r => r.mrn)).size, booked: N + tot_att, tot_att, rate: N / (N + tot_att),
+    period: [dmy(D0), dmy(D1)], D0, D1, ret: R, RETN, where, timing, rettype, served, samedoc_before, walkin_same, erAny,
+    spec, doc, weeks: weeks.map((w, i) => ({t: w, w: dmy(w).slice(0, 5), n: ns.filter(r => r.weekStart === w).length, att: wAtt.get(w) || 0,
+      partial: i === 0 || i === weeks.length - 1})),
+    months: mm, weekday, hours: hrs, repeat, rep3_pts, rep3_appts, findings, monthFirst: mFirst, monthLast: mLast};
+}
+
+/* interpretation of the matched visit */
+function interp(r) {
+  const p = r.p, same = r.ret === RET[0];
+  if (same) return {
+    [WHERE[0]]: p.diff < 0 ? 'حجز مكرر محتمل: حضر في موعد أبكر لدى نفس الطبيب' : 'حضر متأخراً أو أُعيد حجزه لاحقاً لدى نفس الطبيب',
+    [WHERE[1]]: 'خُدم في نفس التخصص لدى طبيب آخر', [WHERE[2]]: 'راجع الطوارئ بدلاً من موعده',
+    [WHERE[3]]: 'حضر لعيادة أخرى في نفس اليوم ولم يحضر هذا الموعد'}[p.where];
+  return {[WHERE[0]]: 'أُعيد حجزه لدى نفس الطبيب في اليوم التالي', [WHERE[1]]: 'راجع نفس التخصص لدى طبيب آخر في اليوم التالي',
+          [WHERE[2]]: 'راجع الطوارئ في اليوم التالي', [WHERE[3]]: 'راجع عيادة أخرى في اليوم التالي'}[p.where];
+}
+function diffTxt(mins) {
+  const a = Math.abs(mins), h = Math.floor(a / 60), m = a % 60;
+  const s = ((h ? `${h} س ` : '') + (m || !h ? `${m} د` : '')).trim();
+  return (mins < 0 ? 'قبل الموعد بـ ' : 'بعد الموعد بـ ') + s;
+}
+
+/* ═════════════════════════ page render ═════════════════════════ */
+const RCOL = ['var(--s1)', 'var(--s2)', 'var(--none)'];
+const WCOL = ['var(--s1)', 'var(--s2)', 'var(--s3)', 'var(--s4)'];
+const tip = $('tip');
+function showTip(e, html) { tip.innerHTML = html; tip.hidden = false; moveTip(e); }
+function moveTip(e) {
+  const r = tip.getBoundingClientRect(); let x = e.clientX + 14, y = e.clientY + 14;
+  if (x + r.width > innerWidth - 8) x = e.clientX - r.width - 14;
+  if (y + r.height > innerHeight - 8) y = e.clientY - r.height - 14;
+  tip.style.left = Math.max(8, x) + 'px'; tip.style.top = Math.max(8, y) + 'px';
+}
+function hideTip() { tip.hidden = true; }
+function bindTip(el, html) { el.addEventListener('pointerenter', e => showTip(e, html)); el.addEventListener('pointermove', moveTip); el.addEventListener('pointerleave', hideTip); }
+
+function rows(host, items, max) {
+  host.innerHTML = '';
+  items.forEach(it => {
+    const tot = it.parts.reduce((s, p) => s + p.v, 0);
+    const row = document.createElement('div'); row.className = 'row';
+    row.innerHTML = `<div class="name">${it.color ? `<i style="background:${it.color}"></i>` : ''}<span>${esc(it.name)}</span></div><div class="track"></div><div class="tot num">${it.totLabel ?? fmt(tot)}</div>`;
+    const tr = row.querySelector('.track');
+    it.parts.forEach(p => {
+      if (!p.v) return;
+      const b = document.createElement('div');
+      b.style.width = (p.v / Math.max(max, 1) * 100) + '%'; b.style.background = p.color;
+      bindTip(b, `<b>${esc(it.name)}</b><br>${p.label}: ${fmt(p.v)}${p.extra ? '<br>' + p.extra : ''}`);
+      tr.appendChild(b);
+    });
+    host.appendChild(row);
+  });
+}
+
+function table(host, cols, data, foot, sortKey) {
+  let key = sortKey, d = -1;
+  function render() {
+    const rs = [...data].sort((a, b) => { const x = a[key], y = b[key]; return (typeof x === 'string' ? x.localeCompare(y, 'ar') : x - y) * d; });
+    host.innerHTML = `<thead><tr>${cols.map(c => `<th scope="col"><button type="button" data-k="${c.k}" ${c.k === key ? `aria-sort="${d < 0 ? 'descending' : 'ascending'}"` : ''}>${c.t}</button></th>`).join('')}</tr></thead>
+      <tbody>${rs.map(r => `<tr>${cols.map(c => `<td class="${c.cls || ''}">${c.f ? c.f(r) : esc(r[c.k])}</td>`).join('')}</tr>`).join('')}</tbody>
+      ${foot ? `<tfoot><tr>${cols.map(c => `<td class="${c.cls || ''}">${foot[c.k] ?? ''}</td>`).join('')}</tr></tfoot>` : ''}`;
+    host.querySelectorAll('th button').forEach(b => b.addEventListener('click', () => {
+      const k = b.dataset.k; if (k === key) d = -d; else { key = k; d = -1; } render();
+      host.querySelector(`th button[data-k="${k}"]`).focus();
+    }));
+  }
+  render();
+}
+
+const SVGNS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent) { const e = document.createElementNS(SVGNS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); parent && parent.appendChild(e); return e; }
+function niceMax(v) { return [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.5, 0.6, 0.8, 1].find(x => x >= v) || v; }
+
+function weeklyChart(A) {
+  const svg = $('weekly'); svg.innerHTML = '';
+  const W = 1000, H = 300, m = {l: 48, r: 24, t: 22, b: 36};
+  const pts = A.weeks.map(w => ({...w, r: w.n / Math.max(1, w.n + w.att)}));
+  if (pts.length < 2) return;
+  const yMax = niceMax(Math.max(...pts.map(p => p.r)) * 1.08);
+  const x = i => m.l + i * (W - m.l - m.r) / (pts.length - 1), y = v => H - m.b - v / yMax * (H - m.t - m.b);
+  const step = yMax > 0.4 ? 0.1 : 0.05;
+  for (let v = 0; v <= yMax + 1e-9; v += step) {
+    el('line', {x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), class: 'grid'}, svg);
+    el('text', {x: m.l - 8, y: y(v) + 4, 'text-anchor': 'end'}, svg).textContent = Math.round(v * 100) + '%';
+  }
+  el('line', {x1: m.l, x2: W - m.r, y1: y(0), y2: y(0), class: 'axis'}, svg);
+  const every = Math.ceil(pts.length / 16);
+  pts.forEach((p, i) => { if (i % every === 0) el('text', {x: x(i), y: H - m.b + 18, 'text-anchor': 'middle'}, svg).textContent = p.w; });
+  el('line', {x1: m.l, x2: W - m.r, y1: y(A.rate), y2: y(A.rate), stroke: 'var(--muted)', 'stroke-dasharray': '4 4'}, svg);
+  el('text', {x: W - m.r, y: y(A.rate) - 6, 'text-anchor': 'start', direction: 'rtl', class: 'val'}, svg).textContent = 'متوسط الفترة ' + pct(A.rate);
+  el('path', {d: pts.map((p, i) => (i ? 'L' : 'M') + x(i) + ' ' + y(p.r)).join(' '), fill: 'none', stroke: 'var(--bar)', 'stroke-width': 2.25, 'stroke-linejoin': 'round'}, svg);
+  const cross = el('line', {y1: m.t, y2: H - m.b, stroke: 'var(--ink-2)', visibility: 'hidden'}, svg);
+  const dots = pts.map((p, i) => el('circle', {cx: x(i), cy: y(p.r), r: 4.5, fill: p.partial ? 'var(--panel)' : 'var(--bar)', stroke: p.partial ? 'var(--bar)' : 'var(--panel)', 'stroke-width': 2}, svg));
+  const hit = el('rect', {x: m.l, y: m.t, width: W - m.l - m.r, height: H - m.t - m.b, class: 'hit'}, svg);
+  hit.addEventListener('pointermove', e => {
+    const b = svg.getBoundingClientRect(), sx = (e.clientX - b.left) / b.width * W;
+    const i = Math.max(0, Math.min(pts.length - 1, Math.round((sx - m.l) / ((W - m.l - m.r) / (pts.length - 1)))));
+    const p = pts[i]; cross.setAttribute('x1', x(i)); cross.setAttribute('x2', x(i)); cross.setAttribute('visibility', 'visible');
+    dots.forEach((d, j) => d.setAttribute('r', j === i ? 6.5 : 4.5));
+    showTip(e, `<b>أسبوع ${p.w}</b>${p.partial ? ' (غير مكتمل)' : ''}<br>نسبة النوشو: ${pct(p.r)}<br>النوشو: ${fmt(p.n)} · المحضور: ${fmt(p.att)}`);
+  });
+  hit.addEventListener('pointerleave', () => { cross.setAttribute('visibility', 'hidden'); dots.forEach(d => d.setAttribute('r', 4.5)); hideTip(); });
+}
+
+function columnChart(svg, W, H, data, label) {
+  svg.innerHTML = '';
+  if (!data.length) return;
+  const m = {l: 46, r: 10, t: 22, b: 30};
+  const yMax = niceMax(Math.max(...data.map(d => d.r)) * 1.18);
+  const bw = (W - m.l - m.r) / data.length, y = v => H - m.b - v / yMax * (H - m.t - m.b);
+  const step = yMax > 0.4 ? 0.1 : 0.05;
+  for (let v = 0; v <= yMax + 1e-9; v += step) {
+    el('line', {x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), class: 'grid'}, svg);
+    el('text', {x: m.l - 6, y: y(v) + 4, 'text-anchor': 'end'}, svg).textContent = Math.round(v * 100) + '%';
+  }
+  const top = data.reduce((a, b) => b.r > a.r ? b : a);
+  data.forEach((d, i) => {
+    const x0 = m.l + i * bw + bw * 0.18, w = bw * 0.64, r = Math.min(4, w / 2), yt = y(d.r), yb = y(0);
+    el('path', {d: `M${x0} ${yb} V${yt + r} Q${x0} ${yt} ${x0 + r} ${yt} H${x0 + w - r} Q${x0 + w} ${yt} ${x0 + w} ${yt + r} V${yb} Z`, fill: d === top ? 'var(--ink)' : 'var(--bar)'}, svg);
+    el('text', {x: x0 + w / 2, y: H - m.b + 16, 'text-anchor': 'middle'}, svg).textContent = d.lbl;
+    if (d === top) el('text', {x: x0 + w / 2, y: yt - 6, 'text-anchor': 'middle', class: 'val'}, svg).textContent = pct(d.r);
+    bindTip(el('rect', {x: m.l + i * bw, y: m.t, width: bw, height: H - m.t - m.b, class: 'hit'}, svg),
+            `<b>${label} ${d.lbl}</b><br>نسبة النوشو: ${pct(d.r)}<br>النوشو: ${fmt(d.n)} · المحضور: ${fmt(d.att)}`);
+  });
+  el('line', {x1: m.l, x2: W - m.r, y1: y(0), y2: y(0), class: 'axis'}, svg);
+}
+
+function listTable(host, q, counter, data) {
+  const cols = ['#', 'رقم الملف', 'اسم المريض', 'الجوال', 'موعد النوشو', 'تخصص الموعد', 'طبيب الموعد', 'الزيارة الفعلية',
+                'طبيب الزيارة', 'قسم الزيارة', 'التصنيف', 'مكان العودة', 'الفرق', 'التفسير المرجّح'];
+  const head = `<thead><tr>${cols.map(c => `<th scope="col">${c}</th>`).join('')}</tr></thead>`;
+  const rowHtml = (r, i) => `<tr><td>${i + 1}</td><td class="en">${esc(r.mrn)}</td><td class="en">${esc(r.name)}</td><td class="en">${esc(r.phone)}</td>
+    <td class="en">${dmy(r.appt).slice(0, 5)} ${hm(r.appt)}</td><td>${esc(r.specAr)}</td><td class="en">${esc(r.doc)}</td>
+    <td class="en">${dmy(r.p.v.dt).slice(0, 5)} ${hm(r.p.v.dt)}</td><td class="en">${esc(r.p.v.doctor)}</td><td>${esc(r.p.v.deptAr)}</td>
+    <td>${TY[r.p.v.type] || esc(r.p.v.type)}</td><td><i class="sw" style="background:${WCOL[WHERE.indexOf(r.p.where)]}"></i>${r.p.where}</td>
+    <td>${r.ret === RET[0] ? diffTxt(r.p.diff) : 'اليوم التالي'}</td><td>${interp(r)}</td></tr>`;
+  const all = data.map((r, i) => ({r, i, hay: [r.mrn, r.name, r.phone, r.doc, r.p.v.doctor, r.specAr].join(' ').toLowerCase()}));
+  function render() {
+    const t = q.value.trim().toLowerCase();
+    const sel = t ? all.filter(x => x.hay.includes(t)) : all;
+    host.innerHTML = head + `<tbody>${sel.map(x => rowHtml(x.r, x.i)).join('')}</tbody>`;
+    counter.textContent = t ? `${fmt(sel.length)} من ${fmt(all.length)}` : `${fmt(all.length)} موعد نوشو`;
+  }
+  q.value = ''; q.oninput = render; render();
+}
+
+function renderReport(S, A) {
+  const N = A.N, RETN = A.RETN;
+  $('eyebrow').textContent = `${A.center || 'مراكز مينا'} · تقرير عدم الحضور (No Show)`;
+  $('intro').hidden = true;
+  $('meta').hidden = false;
+  $('meta').innerHTML = `<span>الفترة الفعلية: <b>${A.period[0]}</b> إلى <b>${A.period[1]}</b></span>
+    <span>المواعيد المحجوزة: <b>${fmt(A.booked)}</b></span><span>المصدر: نظام MIS</span>`;
+  const kpis = [
+    ['نسبة النوشو', pct(A.rate), `من ${fmt(A.booked)} موعد محجوز`],
+    ['مواعيد النوشو', fmt(N), `${fmt(A.patients)} مريض`],
+    ['دخلوا خلال يوم', fmt(RETN), `${pct(RETN / N)} من النوشو`],
+    ['<i class="sw" style="background:var(--s1)"></i>عادوا نفس اليوم', fmt(A.ret[RET[0]]), `${pct(A.ret[RET[0]] / N)} من النوشو`],
+    ['<i class="sw" style="background:var(--s2)"></i>عادوا اليوم التالي', fmt(A.ret[RET[1]]), `${pct(A.ret[RET[1]] / N)} من النوشو`]];
+  $('kpis').innerHTML = kpis.map(([a, b, c]) => `<div class="kpi"><span>${a}</span><b>${b}</b><small>${c}</small></div>`).join('');
+  $('findings').innerHTML = A.findings.map(([t, b]) => `<li><b>${esc(t)}</b><span>${esc(b)}</span></li>`).join('');
+
+  $('split-title').textContent = `${fmt(N)} موعد نوشو`;
+  $('split').setAttribute('aria-label', RET.map(r => `${r}: ${A.ret[r]}`).join('، '));
+  $('split').innerHTML = '';
+  RET.forEach((r, i) => {
+    const v = A.ret[r]; if (!v) return;
+    const d = document.createElement('div');
+    d.style.flex = `${v} 1 0`; d.style.background = RCOL[i]; if (i === 2) d.className = 'lbl-out';
+    d.textContent = `${fmt(v)} · ${pct(v / N)}`; bindTip(d, `<b>${r}</b><br>${fmt(v)} موعد · ${pct(v / N)}`);
+    $('split').appendChild(d);
+  });
+  $('split-legend').innerHTML = RET.map((r, i) => `<span><i style="background:${RCOL[i]}"></i>${r}: <b class="num">${fmt(A.ret[r])}</b></span>`).join('');
+
+  const wMax = Math.max(...WHERE.map(w => A.where[w][RET[0]] + A.where[w][RET[1]]));
+  rows($('where'), WHERE.map((w, i) => ({name: w, color: WCOL[i], parts: [
+    {v: A.where[w][RET[0]], color: 'var(--s1)', label: 'نفس اليوم', extra: pct(A.where[w][RET[0]] / Math.max(1, RETN)) + ' من العائدين'},
+    {v: A.where[w][RET[1]], color: 'var(--s2)', label: 'اليوم التالي'}]})), wMax);
+  const T = A.timing;
+  const tItems = [
+    {name: 'قبل وقت الموعد', parts: [{v: T[TIM[0]], color: 'var(--s1)', label: 'نفس اليوم'}]},
+    {name: 'بعد وقت الموعد', parts: [{v: T[TIM[2]] + T[TIM[1]], color: 'var(--s1)', label: 'نفس اليوم'}]},
+    {name: 'اليوم التالي', parts: [{v: T[TIM[3]], color: 'var(--s2)', label: 'اليوم التالي'}]}];
+  rows($('timing'), tItems, Math.max(...tItems.map(i => i.parts[0].v)));
+  const rtN = {'جديد': 'موعد جديد', 'متابعة': 'موعد متابعة', 'بدون موعد': 'بدون موعد (Walk-in)'};
+  rows($('rettype'), Object.keys(A.rettype).map(k => ({name: rtN[k], parts: [
+    {v: A.rettype[k][RET[0]], color: 'var(--s1)', label: 'نفس اليوم'}, {v: A.rettype[k][RET[1]], color: 'var(--s2)', label: 'اليوم التالي'}]})),
+    Math.max(...Object.values(A.rettype).map(o => o[RET[0]] + o[RET[1]])));
+  $('callouts').innerHTML = `
+    <div><b class="num">${fmt(A.served)}</b><span>خُدموا في نفس اليوم ونفس التخصص (${pct(A.served / N)} من النوشو). غالباً ليسوا غياباً حقيقياً.</span></div>
+    <div><b class="num">${fmt(A.samedoc_before)}</b><span>حضروا عند نفس الطبيب في موعد أبكر من موعد النوشو. مؤشر حجز مكرر لم يُلغَ.</span></div>
+    <div><b class="num">${fmt(A.walkin_same)}</b><span>دخلوا نفس اليوم بدون موعد (Walk-in) في العيادات أو الطوارئ بدل موعدهم الأصلي.</span></div>`;
+
+  const maxRate = Math.max(...A.doc.map(x => x.rate), ...A.spec.map(x => x.rate));
+  const rateCell = r => `<div class="cellbar"><span class="b" style="width:${Math.round(r.rate / maxRate * 80)}px"></span><span>${pct(r.rate)}</span></div>`;
+  const retCell = r => { const t = (r.same + r.next) / r.n; return `<div class="cellbar"><span class="stack" style="width:${Math.round(t * 140)}px"><i style="flex:${r.same};background:var(--s1)"></i><i style="flex:${r.next};background:var(--s2)"></i></span><span>${pct(t)}</span></div>`; };
+  table($('spec'), [
+    {k: 'name', t: 'التخصص'}, {k: 'n', t: 'النوشو', f: r => fmt(r.n)}, {k: 'booked', t: 'المحجوز', f: r => fmt(r.booked)},
+    {k: 'rate', t: 'نسبة النوشو', f: rateCell}, {k: 'same', t: 'عادوا نفس اليوم', f: r => fmt(r.same)},
+    {k: 'next', t: 'عادوا اليوم التالي', f: r => fmt(r.next)}, {k: 'retr', t: 'نسبة العائدين', f: retCell},
+    {k: 'served', t: 'خُدموا في نفس التخصص', f: r => fmt(r.served)}],
+    A.spec.map(s => ({...s, booked: s.n + s.att, retr: (s.same + s.next) / s.n})),
+    {name: 'الإجمالي', n: fmt(N), booked: fmt(A.booked), rate: pct(A.rate), same: fmt(A.ret[RET[0]]), next: fmt(A.ret[RET[1]]), retr: pct(RETN / N), served: fmt(A.served)}, 'n');
+  table($('doc'), [
+    {k: 'name', t: 'الطبيب', cls: 'en'}, {k: 'spec', t: 'التخصص'}, {k: 'n', t: 'النوشو', f: r => fmt(r.n)},
+    {k: 'booked', t: 'المحجوز', f: r => fmt(r.booked)}, {k: 'rate', t: 'نسبة النوشو', f: rateCell},
+    {k: 'same', t: 'عادوا نفس اليوم', f: r => fmt(r.same)}, {k: 'samedoc', t: 'منهم لنفس الطبيب', f: r => fmt(r.samedoc)},
+    {k: 'next', t: 'عادوا اليوم التالي', f: r => fmt(r.next)}, {k: 'retr', t: 'نسبة العائدين', f: retCell}],
+    A.doc.map(x => ({...x, booked: x.n + x.att, retr: (x.same + x.next) / x.n})), null, 'rate');
+
+  weeklyChart(A);
+  const mf = A.monthFirst, ml = A.monthLast;
+  $('trend-sub').textContent = mf === ml ? '' : `نسبة النوشو الشهرية: ${pct(mf.n / (mf.n + mf.att))} في ${mf.m} مقابل ${pct(ml.n / (ml.n + ml.att))} في ${ml.m}.`;
+  columnChart($('hours'), 560, 260, A.hours.filter(h => h.n >= 50).map(h => ({lbl: h.h.slice(0, 2), n: h.n, att: h.att, r: h.n / (h.n + h.att)})), 'الساعة');
+  columnChart($('weekday'), 440, 260, A.weekday.filter(d => d.n + d.att > 0).map(d => ({lbl: d.d, n: d.n, att: d.att, r: d.n / (d.n + d.att)})), '');
+  $('rep-sub').textContent = `${fmt(A.rep3_pts)} مريضاً تكرر غيابهم 3 مرات أو أكثر، وتسببوا في ${fmt(A.rep3_appts)} موعد نوشو (${pct(A.rep3_appts / N)} من الإجمالي). قائمتهم الكاملة في ملف الإكسل.`;
+  rows($('repeat'), A.repeat.map((r, i) => ({name: `${r.lbl} (${fmt(r.pts)} مريض)`, totLabel: fmt(r.appts), parts: [{v: r.appts, color: i >= 2 ? 'var(--ink)' : 'var(--bar)', label: 'مواعيد النوشو', extra: `${pct(r.appts / N)} من النوشو`}]})),
+       Math.max(...A.repeat.map(r => r.appts)));
+
+  const byAppt = (a, b) => a.appt - b.appt || (a.mrn < b.mrn ? -1 : a.mrn > b.mrn ? 1 : 0);
+  const same = S.ns.filter(r => r.ret === RET[0]).sort(byAppt), next = S.ns.filter(r => r.ret === RET[1]).sort(byAppt);
+  $('same-title').textContent = `من دخل في نفس يوم موعد النوشو — ${fmt(same.length)}`;
+  $('next-title').textContent = `من دخل في اليوم التالي مباشرة — ${fmt(next.length)}`;
+  listTable($('t-same'), $('q-same'), $('n-same'), same);
+  listTable($('t-next'), $('q-next'), $('n-next'), next);
+}
+</script>
+
+<script>
+/* ═════════════════════════ chart images for the workbook (canvas → PNG) ═════════════════════════ */
+const XC = {navy: '#1C3557', blue: '#2A78D6', orange: '#EB6834', aqua: '#1BAF7A', yellow: '#EDA100', gray: '#9A9893', grid: '#E6E6E6', text: '#5B6472', ink: '#13203A', slate: '#56657F'};
+const CF = 'Arial, Tahoma, sans-serif';
+function canvas(w, h) {
+  const c = document.createElement('canvas'), k = 2; c.width = w * k; c.height = h * k;
+  const x = c.getContext('2d'); x.scale(k, k); x.fillStyle = '#fff'; x.fillRect(0, 0, w, h); return {c, x, w, h};
+}
+function title(x, w, t) { x.fillStyle = XC.navy; x.font = `bold 15px ${CF}`; x.textAlign = 'center'; x.direction = 'rtl'; x.fillText(t, w / 2, 24); }
+function legendRow(x, w, y, items) {
+  x.font = `12px ${CF}`; x.direction = 'rtl';
+  const widths = items.map(([t]) => x.measureText(t).width + 30), total = widths.reduce((a, b) => a + b, 0);
+  let cx = w / 2 + total / 2;
+  items.forEach(([t, col], i) => { x.fillStyle = col; x.fillRect(cx - 12, y - 9, 10, 10); x.fillStyle = XC.text; x.textAlign = 'right'; x.fillText(t, cx - 18, y); cx -= widths[i]; });
+}
+/* horizontal bars; series stacked; labels on the right (RTL) */
+function imgHBar({t, labels, series, w = 620, h = 380, percent = false, valueLabels = true}) {
+  const {c, x} = canvas(w, h);
+  title(x, w, t);
+  const m = {t: 44, b: series.length > 1 ? 44 : 22, r: 170, l: 54};
+  const tot = labels.map((_, i) => series.reduce((s, se) => s + se.values[i], 0));
+  const max = Math.max(...tot) * 1.08 || 1;
+  const bh = (h - m.t - m.b) / labels.length, X = v => w - m.r - v / max * (w - m.r - m.l);
+  x.strokeStyle = XC.grid; x.lineWidth = 1;
+  for (let k = 0; k <= 4; k++) { const gx = X(max / 4 * k); x.beginPath(); x.moveTo(gx, m.t); x.lineTo(gx, h - m.b); x.stroke(); }
+  labels.forEach((lbl, i) => {
+    const y0 = m.t + i * bh + bh * 0.18, hh = bh * 0.64;
+    x.fillStyle = XC.ink; x.font = `12px ${CF}`; x.textAlign = 'left'; x.direction = 'rtl';
+    x.textAlign = 'right'; x.fillText(lbl, w - 8, y0 + hh / 2 + 4);
+    let acc = 0;
+    series.forEach(se => {
+      const v = se.values[i]; if (!v) return;
+      x.fillStyle = se.color; x.fillRect(X(acc + v), y0, X(acc) - X(acc + v) - 1.5, hh); acc += v;
+    });
+    if (valueLabels) {
+      x.fillStyle = XC.text; x.font = `11px ${CF}`; x.textAlign = 'right'; x.direction = 'ltr';
+      x.fillText(percent ? (tot[i] * 100).toFixed(1) + '%' : fmt(tot[i]), X(tot[i]) - 5, y0 + hh / 2 + 4);
+    }
+  });
+  if (series.length > 1) legendRow(x, w, h - 14, series.map(s => [s.name, s.color]));
+  return c.toDataURL('image/png');
+}
+/* vertical columns; optional stacked; categories left→right */
+function imgCol({t, labels, series, w = 560, h = 300, percent = true, highlightMax = false, valueLabels = true}) {
+  const {c, x} = canvas(w, h);
+  title(x, w, t);
+  const m = {t: 44, b: series.length > 1 ? 52 : 34, l: 46, r: 12};
+  const tot = labels.map((_, i) => series.reduce((s, se) => s + se.values[i], 0));
+  const raw = (Math.max(...tot) || 1) * 1.12;
+  const step = percent ? (raw > 0.4 ? 0.1 : 0.05) : Math.pow(10, Math.floor(Math.log10(raw))) / (raw / Math.pow(10, Math.floor(Math.log10(raw))) < 3 ? 2 : 1);
+  const max = Math.ceil(raw / step - 1e-9) * step;
+  const bw = (w - m.l - m.r) / labels.length, Y = v => h - m.b - v / max * (h - m.t - m.b);
+  x.strokeStyle = XC.grid; x.fillStyle = XC.text; x.font = `10px ${CF}`; x.textAlign = 'right'; x.direction = 'ltr';
+  for (let v = 0; v <= max + 1e-9; v += step) { const gy = Y(v); x.beginPath(); x.moveTo(m.l, gy); x.lineTo(w - m.r, gy); x.stroke();
+    x.fillText(percent ? Math.round(v * 100) + '%' : fmt(v), m.l - 5, gy + 3); }
+  const top = tot.indexOf(Math.max(...tot));
+  labels.forEach((lbl, i) => {
+    const x0 = m.l + i * bw + bw * 0.18, ww = bw * 0.64; let acc = 0;
+    series.forEach(se => { const v = se.values[i]; if (!v) return;
+      x.fillStyle = highlightMax && i === top ? XC.ink : se.color; x.fillRect(x0, Y(acc + v), ww, Y(acc) - Y(acc + v) - (series.length > 1 ? 1.5 : 0)); acc += v; });
+    x.fillStyle = XC.text; x.font = `10px ${CF}`; x.textAlign = 'center'; x.direction = 'rtl'; x.fillText(lbl, x0 + ww / 2, h - m.b + 14);
+    if (valueLabels) { x.direction = 'ltr'; x.fillText(percent ? (tot[i] * 100).toFixed(0) + '%' : fmt(tot[i]), x0 + ww / 2, Y(tot[i]) - 5); }
+  });
+  x.strokeStyle = XC.slate; x.beginPath(); x.moveTo(m.l, Y(0)); x.lineTo(w - m.r, Y(0)); x.stroke();
+  if (series.length > 1) legendRow(x, w, h - 12, series.map(s => [s.name, s.color]));
+  return c.toDataURL('image/png');
+}
+function imgLine({t, labels, values, avg, w = 640, h = 300}) {
+  const {c, x} = canvas(w, h);
+  title(x, w, t);
+  const m = {t: 44, b: 34, l: 46, r: 16};
+  const max = niceMax(Math.max(...values) * 1.1);
+  const X = i => m.l + i * (w - m.l - m.r) / Math.max(1, values.length - 1), Y = v => h - m.b - v / max * (h - m.t - m.b);
+  x.strokeStyle = XC.grid; x.fillStyle = XC.text; x.font = `10px ${CF}`; x.textAlign = 'right'; x.direction = 'ltr';
+  for (let v = 0; v <= max + 1e-9; v += max > 0.4 ? 0.1 : 0.05) { x.beginPath(); x.moveTo(m.l, Y(v)); x.lineTo(w - m.r, Y(v)); x.stroke(); x.fillText(Math.round(v * 100) + '%', m.l - 5, Y(v) + 3); }
+  x.setLineDash([4, 4]); x.strokeStyle = XC.text; x.beginPath(); x.moveTo(m.l, Y(avg)); x.lineTo(w - m.r, Y(avg)); x.stroke(); x.setLineDash([]);
+  x.strokeStyle = XC.slate; x.lineWidth = 2.25; x.beginPath(); values.forEach((v, i) => i ? x.lineTo(X(i), Y(v)) : x.moveTo(X(i), Y(v))); x.stroke(); x.lineWidth = 1;
+  const every = Math.ceil(labels.length / 12);
+  values.forEach((v, i) => {
+    x.fillStyle = XC.slate; x.beginPath(); x.arc(X(i), Y(v), 3.5, 0, 7); x.fill();
+    x.fillStyle = XC.text; x.textAlign = 'center';
+    if (i % every === 0) x.fillText(labels[i], X(i), h - m.b + 14);
+    x.fillText((v * 100).toFixed(1) + '%', X(i), Y(v) - 8);
+  });
+  return c.toDataURL('image/png');
+}
+function imgDonut({t, labels, values, colors, w = 480, h = 330}) {
+  const {c, x} = canvas(w, h);
+  title(x, w, t);
+  const cx = w / 2, cy = 40 + (h - 80) / 2, R = (h - 90) / 2, r = R * 0.55, tot = values.reduce((a, b) => a + b, 0) || 1;
+  let a0 = -Math.PI / 2;
+  values.forEach((v, i) => {
+    const a1 = a0 + v / tot * Math.PI * 2;
+    x.fillStyle = colors[i]; x.beginPath(); x.arc(cx, cy, R, a0, a1); x.arc(cx, cy, r, a1, a0, true); x.closePath(); x.fill();
+    x.strokeStyle = '#fff'; x.lineWidth = 2; x.stroke();
+    if (v / tot > 0.04) { const am = (a0 + a1) / 2, lr = (R + r) / 2; x.fillStyle = '#fff'; x.font = `bold 12px ${CF}`; x.textAlign = 'center'; x.direction = 'ltr';
+      x.fillText((v / tot * 100).toFixed(1) + '%', cx + Math.cos(am) * lr, cy + Math.sin(am) * lr + 4); }
+    a0 = a1;
+  });
+  legendRow(x, w, h - 12, labels.map((l, i) => [l, colors[i]]));
+  return c.toDataURL('image/png');
+}
+</script>
+
+<script>
+/* ═════════════════════════ Excel workbook (mirrors the reference report) ═════════════════════════ */
+function colL(n) { let s = ''; while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; }
+const addr = (r, c, abs) => abs ? `$${colL(c)}$${r}` : `${colL(c)}${r}`;
+const ARGB = h => 'FF' + h.replace('#', '').toUpperCase();
+
+async function buildWorkbook(S, A) {
+  const ns = S.ns, N = ns.length, RETN = A.RETN;
+  const wb = new ExcelJS.Workbook();
+  wb.creator = A.center || 'Meena'; wb.title = 'تقرير عدم الحضور (No Show) التفصيلي'; wb.calcProperties.fullCalcOnLoad = true;
+  const NAVY = '#1C3557', BLUE = '#2A78D6', ORANGE = '#EB6834', AQUA = '#1BAF7A', YELLOW = '#EDA100', GRAY = '#9A9893';
+  const BAND = '#F3F6FA', LINE = '#D9DEE6', MUTED = '#5B6472', TOT = '#E4EAF3';
+  const WC = {[WHERE[0]]: BLUE, [WHERE[1]]: ORANGE, [WHERE[2]]: AQUA, [WHERE[3]]: YELLOW};
+  const RC = {[RET[0]]: BLUE, [RET[1]]: ORANGE, [RET[2]]: GRAY};
+  const thin = {style: 'thin', color: {argb: ARGB(LINE)}};
+  const BOX = {top: thin, bottom: thin, left: thin, right: thin};
+  const F = (o = {}) => ({name: 'Arial', size: 10, ...o});
+  const AL = (o = {}) => ({vertical: 'middle', readingOrder: 'rtl', ...o});
+  const S_ = {
+    title: {font: F({bold: true, size: 20, color: {argb: ARGB(NAVY)}}), alignment: AL()},
+    subtitle: {font: F({size: 11, color: {argb: ARGB(MUTED)}}), alignment: AL()},
+    h2: {font: F({bold: true, size: 13, color: {argb: ARGB(NAVY)}}), alignment: AL(), border: {bottom: {style: 'medium', color: {argb: ARGB(BLUE)}}}},
+    note: {font: F({size: 9, italic: true, color: {argb: ARGB(MUTED)}}), alignment: AL({wrapText: true, vertical: 'top'})},
+    hdr: {font: F({bold: true, color: {argb: 'FFFFFFFF'}}), fill: {type: 'pattern', pattern: 'solid', fgColor: {argb: ARGB(NAVY)}}, alignment: AL({horizontal: 'center', wrapText: true}), border: {top: {style: 'thin', color: {argb: ARGB(NAVY)}}, bottom: {style: 'thin', color: {argb: ARGB(NAVY)}}, left: {style: 'thin', color: {argb: ARGB(NAVY)}}, right: {style: 'thin', color: {argb: ARGB(NAVY)}}}},
+    txt: {font: F(), alignment: AL(), border: BOX},
+    txtb: {font: F({bold: true}), alignment: AL(), border: BOX},
+    txtc: {font: F(), alignment: AL({horizontal: 'center'}), border: BOX},
+    int: {font: F(), alignment: AL({horizontal: 'center'}), border: BOX, numFmt: '#,##0'},
+    inp: {font: F({color: {argb: 'FF0000FF'}}), alignment: AL({horizontal: 'center'}), border: BOX, numFmt: '#,##0'},
+    pct: {font: F(), alignment: AL({horizontal: 'center'}), border: BOX, numFmt: '0.0%'},
+    date: {font: F(), alignment: AL({horizontal: 'center'}), border: BOX, numFmt: 'dd-mm-yyyy'},
+    time: {font: F(), alignment: AL({horizontal: 'center'}), border: BOX, numFmt: 'hh:mm'},
+    dtm: {font: F(), alignment: AL({horizontal: 'center'}), border: BOX, numFmt: 'dd-mm-yyyy hh:mm'},
+    tot_txt: {font: F({bold: true}), fill: {type: 'pattern', pattern: 'solid', fgColor: {argb: ARGB(TOT)}}, alignment: AL(), border: BOX},
+    tot_int: {font: F({bold: true}), fill: {type: 'pattern', pattern: 'solid', fgColor: {argb: ARGB(TOT)}}, alignment: AL({horizontal: 'center'}), border: BOX, numFmt: '#,##0'},
+    tot_pct: {font: F({bold: true}), fill: {type: 'pattern', pattern: 'solid', fgColor: {argb: ARGB(TOT)}}, alignment: AL({horizontal: 'center'}), border: BOX, numFmt: '0.0%'},
+    kpi_lbl: {font: F({bold: true, color: {argb: ARGB(MUTED)}}), fill: {type: 'pattern', pattern: 'solid', fgColor: {argb: ARGB(BAND)}}, alignment: AL({horizontal: 'center', wrapText: true}), border: {top: {style: 'thick', color: {argb: ARGB(BLUE)}}}},
+    kpi_val: {font: F({bold: true, size: 24, color: {argb: ARGB(NAVY)}}), fill: {type: 'pattern', pattern: 'solid', fgColor: {argb: ARGB(BAND)}}, alignment: AL({horizontal: 'center'}), numFmt: '#,##0'},
+    kpi_valp: {font: F({bold: true, size: 24, color: {argb: ARGB(NAVY)}}), fill: {type: 'pattern', pattern: 'solid', fgColor: {argb: ARGB(BAND)}}, alignment: AL({horizontal: 'center'}), numFmt: '0.0%'},
+    kpi_sub: {font: F({size: 9, color: {argb: ARGB(MUTED)}}), fill: {type: 'pattern', pattern: 'solid', fgColor: {argb: ARGB(BAND)}}, alignment: AL({horizontal: 'center'}), numFmt: '0.0%" من إجمالي النوشو"'},
+    kpi_subt: {font: F({size: 9, color: {argb: ARGB(MUTED)}}), fill: {type: 'pattern', pattern: 'solid', fgColor: {argb: ARGB(BAND)}}, alignment: AL({horizontal: 'center', wrapText: true})},
+    bullet: {font: F({size: 11}), alignment: AL({wrapText: true, vertical: 'top'})},
+    bullet_b: {font: F({size: 11, bold: true, color: {argb: ARGB(NAVY)}}), alignment: AL({wrapText: true, vertical: 'top'})},
+    link: {font: F({color: {argb: ARGB(BLUE)}, underline: true}), alignment: AL({horizontal: 'center'}), border: BOX},
+  };
+  const chip = col => ({font: F(), alignment: AL({horizontal: 'center'}), border: {...BOX, left: {style: 'thick', color: {argb: ARGB(col)}}}});
+  function put(ws, r, c, v, st) {
+    const cell = ws.getCell(r, c);
+    if (v !== undefined && v !== null && v !== '') cell.value = v;
+    const s = typeof st === 'string' ? S_[st] : st;
+    if (s) { if (s.font) cell.font = s.font; if (s.fill) cell.fill = s.fill; if (s.alignment) cell.alignment = s.alignment; if (s.border) cell.border = s.border; if (s.numFmt) cell.numFmt = s.numFmt; }
+    return cell;
+  }
+  const fx = (formula, result) => ({formula, result});
+  function header(ws, r, c, labels, height = 30) { ws.getRow(r).height = height; labels.forEach((l, i) => put(ws, r, c + i, l, 'hdr')); }
+  function merge(ws, r1, c1, r2, c2, v, st) { ws.mergeCells(r1, c1, r2, c2); return put(ws, r1, c1, v, st); }
+  function widths(ws, list) { list.forEach((w, i) => { ws.getColumn(i + 1).width = w; }); }
+  function sheet(name, tab, freeze) {
+    const view = {rightToLeft: true, showGridLines: false, zoomScale: 90};
+    if (freeze) Object.assign(view, {state: 'frozen', xSplit: freeze[1], ySplit: freeze[0]});
+    return wb.addWorksheet(name, {views: [view], properties: tab ? {tabColor: {argb: ARGB(tab)}} : {}});
+  }
+  function image(ws, dataUrl, row0, col0, w, h) {
+    const id = wb.addImage({base64: dataUrl, extension: 'png'});
+    ws.addImage(id, {tl: {col: col0, row: row0}, ext: {width: w, height: h}});
+  }
+  const dataBar = (ws, ref, color) => ws.addConditionalFormatting({ref, rules: [{type: 'dataBar', gradient: false, cfvo: [{type: 'num', value: 0}, {type: 'max'}], color: {argb: ARGB(color)}}]});
+
+  /* ---------- data sheet: the source for every COUNTIFS ---------- */
+  const DS = 'بيانات النوشو';
+  const dcols = [['م', 6], ['رقم الملف (MRN)', 12], ['اسم المريض', 30], ['الجوال', 13], ['تاريخ الموعد', 12], ['وقت الموعد', 9],
+    ['اليوم', 10], ['الساعة', 8], ['الشهر', 9], ['بداية الأسبوع (الأحد)', 12], ['التخصص', 26], ['التخصص (عربي)', 18],
+    ['الطبيب', 28], ['اللغة', 9], ['عدد مرات نوشو المريض', 10], ['حالة العودة', 15], ['مكان العودة', 20],
+    ['توقيت العودة', 22], ['تاريخ ووقت الزيارة الفعلية', 17], ['طبيب الزيارة', 28], ['قسم الزيارة', 18],
+    ['نوع الزيارة', 10], ['تصنيف الزيارة', 14], ['الفرق عن الموعد (دقيقة)', 11], ['خُدم في نفس التخصص نفس اليوم', 12]];
+  const CI = {}; dcols.forEach(([n], i) => CI[n] = i + 1);
+  const LAST = N + 1;
+  const rng = col => `'${DS}'!$${colL(CI[col])}$2:$${colL(CI[col])}$${LAST}`;
+  const field = {'التخصص (عربي)': r => r.specAr, 'الطبيب': r => r.doc, 'حالة العودة': r => r.ret, 'مكان العودة': r => r.p ? r.p.where : null,
+    'توقيت العودة': r => r.p ? r.p.timing : null, 'اليوم': r => r.weekday, 'الساعة': r => r.hourLbl, 'الشهر': r => r.month,
+    'اللغة': r => r.lang, 'خُدم في نفس التخصص نفس اليوم': r => r.served ? 'نعم' : 'لا', 'بداية الأسبوع (الأحد)': r => r.weekStart,
+    'تصنيف الزيارة': r => r.p ? TY[r.p.v.type] : null};
+  function countifs(conds) {
+    const parts = [], v = ns.filter(r => conds.every(([c, val]) => field[c](r) === val)).length;
+    conds.forEach(([c, val]) => {
+      if (typeof val === 'number') { const d = new Date(val); parts.push(`${rng(c)},DATE(${d.getUTCFullYear()},${d.getUTCMonth() + 1},${d.getUTCDate()})`); }
+      else parts.push(`${rng(c)},"${String(val).replace(/"/g, '""')}"`);
+    });
+    return {f: `COUNTIFS(${parts.join(',')})`, v};
+  }
+  const wcount = (ws, r, c, conds, st = 'int') => { const {f, v} = countifs(conds); put(ws, r, c, fx(f, v), st); return v; };
+  const wpct = (ws, r, c, num, den, nv, dv, st = 'pct') => put(ws, r, c, fx(`IFERROR(${num}/${den},0)`, dv ? nv / dv : 0), st);
+  const wsum = (ws, r, c, r0, r1, v, st = 'tot_int') => put(ws, r, c, fx(`SUM(${addr(r0, c)}:${addr(r1, c)})`, v), st);
+
+  const S1 = sheet('الملخص التنفيذي', NAVY);
+  const S2 = sheet('عادوا نفس اليوم', BLUE, [12, 3]);
+  const S3 = sheet('عادوا اليوم التالي', ORANGE, [12, 3]);
+  const S4 = sheet('تحليل العودة', BLUE);
+  const S5 = sheet('التخصصات', null, [4, 1]);
+  const S6 = sheet('الأطباء', null, [4, 1]);
+  const S7 = sheet('التوزيع الزمني');
+  const S8 = sheet('المرضى المتكررون', null, [14, 3]);
+  const SD = sheet(DS, GRAY, [1, 3]);
+  const SM = sheet('المنهجية والتعريفات', GRAY);
+
+  widths(SD, dcols.map(c => c[1]));
+  header(SD, 1, 1, dcols.map(c => c[0]), 42);
+  const asDate = t => new Date(t);   /* already wall-clock UTC */
+  ns.forEach((r, i) => {
+    const row = i + 2, p = r.p;
+    const vals = [[r.s, 'int'], [r.mrn, 'txtc'], [r.name, 'txt'], [r.phone, 'txtc'], [asDate(r.apptDay), 'date'],
+      [(r.appt - r.apptDay) / DAY_MS, 'time'], [r.weekday, 'txtc'], [r.hourLbl, 'txtc'], [r.month, 'txtc'], [asDate(r.weekStart), 'date'],
+      [r.spec, 'txt'], [r.specAr, 'txt'], [r.doc, 'txt'], [r.lang, 'txtc'], [r.count, 'int'], [r.ret, chip(RC[r.ret])],
+      [p ? p.where : '', p ? chip(WC[p.where]) : 'txtc'], [p ? p.timing : '', 'txtc'], [p ? asDate(p.v.dt) : '', 'dtm'],
+      [p ? p.v.doctor : '', 'txt'], [p ? p.v.deptAr : '', 'txt'], [p ? VT[p.v.vt] || p.v.vt : '', 'txtc'], [p ? TY[p.v.type] || p.v.type : '', 'txtc'],
+      [p ? p.diff : '', 'int'], [r.served ? 'نعم' : 'لا', 'txtc']];
+    vals.forEach(([v, st], j) => put(SD, row, j + 1, v, st));
+  });
+  SD.autoFilter = {from: {row: 1, column: 1}, to: {row: N + 1, column: dcols.length}};
+
+  /* ---------- detail sheets ---------- */
+  function detail(ws, which) {
+    const day = which === RET[0] ? 'same' : 'next';
+    const sub = ns.filter(r => r.ret === which).sort((a, b) => a.appt - b.appt || (a.mrn < b.mrn ? -1 : a.mrn > b.mrn ? 1 : 0));
+    ws.getRow(1).height = 30;
+    put(ws, 1, 1, day === 'same' ? 'مرضى النوشو الذين دخلوا في نفس يوم الموعد' : 'مرضى النوشو الذين دخلوا في اليوم التالي مباشرة', 'title');
+    merge(ws, 2, 1, 2, 13, (day === 'next' ? 'يشمل فقط من لم يدخل في نفس اليوم (لتجنّب العدّ المزدوج). ' : '') +
+      'الزيارة المعروضة هي الأقرب صلةً بالموعد (نفس الطبيب ← نفس التخصص ← الطوارئ ← تخصص آخر). اللون في عمود «مكان العودة» يوضح الفئة. استخدم الفلتر في صف العناوين للتصفية.', 'note');
+    ws.getRow(2).height = 30;
+    put(ws, 4, 1, 'ملخص حسب مكان العودة', 'h2');
+    header(ws, 5, 1, ['مكان العودة', 'العدد', 'النسبة'], 22);
+    WHERE.forEach((w, i) => {
+      put(ws, 6 + i, 1, w, chip(WC[w]));
+      const v = wcount(ws, 6 + i, 2, [['حالة العودة', which], ['مكان العودة', w]]);
+      wpct(ws, 6 + i, 3, addr(6 + i, 2), addr(10, 2, true), v, sub.length);
+    });
+    put(ws, 10, 1, 'الإجمالي', 'tot_txt'); wsum(ws, 10, 2, 6, 9, sub.length);
+    put(ws, 10, 3, fx('SUM(C6:C9)', 1), 'tot_pct');
+    if (day === 'same') {
+      put(ws, 4, 5, 'ملخص حسب التوقيت', 'h2');
+      header(ws, 5, 5, ['التوقيت', 'العدد', 'النسبة'], 22);
+      [TIM[0], TIM[2], TIM[1]].forEach((t, i) => {
+        put(ws, 6 + i, 5, t, 'txt');
+        const v = wcount(ws, 6 + i, 6, [['حالة العودة', which], ['توقيت العودة', t]]);
+        wpct(ws, 6 + i, 7, addr(6 + i, 6), addr(10, 2, true), v, sub.length);
+      });
+    }
+    const cols = [['م', 5], ['رقم الملف', 11], ['اسم المريض', 28], ['الجوال', 12], ['تاريخ موعد النوشو', 12], ['وقت الموعد', 8],
+      ['تخصص الموعد', 17], ['طبيب الموعد', 26], ['تاريخ الزيارة الفعلية', 12], ['وقت الزيارة', 8], ['طبيب الزيارة', 26],
+      ['قسم الزيارة', 17], ['نوع الزيارة', 9], ['تصنيف الزيارة', 11], ['مكان العودة', 19], ['الفرق عن الموعد', 20],
+      ['التفسير المرجّح', 44], ['زيارات أخرى مطابقة', 9]];
+    widths(ws, cols.map(c => c[1]));
+    put(ws, 11, 1, `القائمة التفصيلية (${fmt(sub.length)} موعد نوشو)`, 'h2');
+    header(ws, 12, 1, cols.map(c => c[0]), 36);
+    sub.forEach((r, k) => {
+      const row = 13 + k, p = r.p;
+      [[k + 1, 'int'], [r.mrn, 'txtc'], [r.name, 'txt'], [r.phone, 'txtc'], [asDate(r.apptDay), 'date'], [hm(r.appt), 'txtc'],
+       [r.specAr, 'txt'], [r.doc, 'txt'], [asDate(p.v.day), 'date'], [hm(p.v.dt), 'txtc'], [p.v.doctor, 'txt'], [p.v.deptAr, 'txt'],
+       [VT[p.v.vt] || p.v.vt, 'txtc'], [TY[p.v.type] || p.v.type, 'txtc'], [p.where, chip(WC[p.where])], [diffTxt(p.diff), 'txt'],
+       [interp(r), 'txt'], [r.others, 'int']].forEach(([v, st], j) => put(ws, row, j + 1, v === 0 ? 0 : v, st));
+    });
+    ws.autoFilter = {from: {row: 12, column: 1}, to: {row: 12 + sub.length, column: cols.length}};
+    ws.pageSetup = {orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9, printTitlesRow: '12:12'};
+  }
+  detail(S2, RET[0]); detail(S3, RET[1]);
+
+  /* ---------- specialties ---------- */
+  let ws = S5;
+  ws.getRow(1).height = 30; put(ws, 1, 1, 'تحليل النوشو حسب التخصص', 'title');
+  merge(ws, 2, 1, 2, 11, 'المواعيد المحضورة (باللون الأزرق) مأخوذة من تقرير Appointment Statistics — الزيارات المسجّلة (Reported) من نوع جديد/متابعة فقط (بدون Walk-in) لنفس الفترة. نسبة النوشو = النوشو ÷ (النوشو + المحضورة).', 'note');
+  ws.getRow(2).height = 30;
+  widths(ws, [24, 11, 11, 11, 10, 11, 10, 11, 11, 12, 13]);
+  header(ws, 4, 1, ['التخصص', 'مواعيد النوشو', 'المواعيد المحضورة', 'إجمالي المحجوز', 'نسبة النوشو', 'حصة من إجمالي النوشو',
+    'عدد المرضى', 'عادوا نفس اليوم', 'عادوا اليوم التالي', 'نسبة العائدين خلال يوم', 'خُدموا في نفس التخصص نفس اليوم'], 42);
+  let r0 = 5, r1 = r0 + A.spec.length - 1, tot = r1 + 1;
+  A.spec.forEach((s, k) => {
+    const r = r0 + k;
+    put(ws, r, 1, s.name, 'txtb');
+    const n = wcount(ws, r, 2, [['التخصص (عربي)', s.name]]);
+    put(ws, r, 3, s.att, 'inp');
+    put(ws, r, 4, fx(`${addr(r, 2)}+${addr(r, 3)}`, n + s.att), 'int');
+    wpct(ws, r, 5, addr(r, 2), addr(r, 4), n, n + s.att);
+    wpct(ws, r, 6, addr(r, 2), addr(tot, 2, true), n, N);
+    put(ws, r, 7, s.pts, 'int');
+    const a = wcount(ws, r, 8, [['التخصص (عربي)', s.name], ['حالة العودة', RET[0]]]);
+    const b = wcount(ws, r, 9, [['التخصص (عربي)', s.name], ['حالة العودة', RET[1]]]);
+    put(ws, r, 10, fx(`IFERROR((${addr(r, 8)}+${addr(r, 9)})/${addr(r, 2)},0)`, (a + b) / n), 'pct');
+    wcount(ws, r, 11, [['التخصص (عربي)', s.name], ['خُدم في نفس التخصص نفس اليوم', 'نعم']]);
+  });
+  put(ws, tot, 1, 'الإجمالي', 'tot_txt');
+  [[2, N], [3, A.tot_att], [4, N + A.tot_att], [8, A.ret[RET[0]]], [9, A.ret[RET[1]]], [11, A.served]].forEach(([c, v]) => wsum(ws, tot, c, r0, r1, v));
+  wpct(ws, tot, 5, addr(tot, 2), addr(tot, 4), N, N + A.tot_att, 'tot_pct');
+  put(ws, tot, 6, fx(`SUM(${addr(r0, 6)}:${addr(r1, 6)})`, 1), 'tot_pct');
+  put(ws, tot, 7, A.patients, 'tot_int').note = 'عدد المرضى الفريدين في كل النوشو (المريض الواحد قد يظهر في أكثر من تخصص، لذلك لا يساوي مجموع العمود).';
+  wpct(ws, tot, 10, `(${addr(tot, 8)}+${addr(tot, 9)})`, addr(tot, 2), RETN, N, 'tot_pct');
+  dataBar(ws, `E${r0}:E${r1}`, '#F4A582'); dataBar(ws, `J${r0}:J${r1}`, '#86B6EF');
+  const specRate = A.spec.slice().sort((a, b) => b.rate - a.rate);
+  image(ws, imgHBar({t: 'نسبة النوشو حسب التخصص', labels: specRate.map(s => s.name), series: [{name: 'نسبة النوشو', color: ORANGE, values: specRate.map(s => s.rate)}], percent: true}), tot + 1, 0, 620, 380);
+  image(ws, imgHBar({t: 'العائدون خلال يوم حسب التخصص', labels: A.spec.map(s => s.name), series: [{name: 'عادوا نفس اليوم', color: BLUE, values: A.spec.map(s => s.same)}, {name: 'عادوا اليوم التالي', color: ORANGE, values: A.spec.map(s => s.next)}]}), tot + 1, 6, 620, 380);
+
+  /* ---------- doctors ---------- */
+  ws = S6;
+  ws.getRow(1).height = 30; put(ws, 1, 1, 'تحليل النوشو حسب الطبيب', 'title');
+  merge(ws, 2, 1, 2, 12, 'مرتّب تنازلياً حسب نسبة النوشو. المواعيد المحضورة (أزرق) من تقرير Appointment Statistics (جديد + متابعة). الأشرطة الملوّنة تُسهّل المقارنة.', 'note');
+  widths(ws, [28, 17, 11, 11, 11, 10, 10, 11, 11, 11, 11, 12]);
+  header(ws, 4, 1, ['الطبيب', 'التخصص', 'مواعيد النوشو', 'المواعيد المحضورة', 'إجمالي المحجوز', 'نسبة النوشو', 'عدد المرضى',
+    'عادوا نفس اليوم', 'منهم لنفس الطبيب', 'عادوا اليوم التالي', 'منهم لنفس الطبيب', 'نسبة العائدين خلال يوم'], 42);
+  r0 = 5; r1 = r0 + A.doc.length - 1; tot = r1 + 1;
+  A.doc.forEach((d, k) => {
+    const r = r0 + k;
+    put(ws, r, 1, d.name, 'txtb'); put(ws, r, 2, d.spec, 'txt');
+    const n = wcount(ws, r, 3, [['الطبيب', d.name]]);
+    put(ws, r, 4, d.att, 'inp');
+    put(ws, r, 5, fx(`${addr(r, 3)}+${addr(r, 4)}`, n + d.att), 'int');
+    wpct(ws, r, 6, addr(r, 3), addr(r, 5), n, n + d.att);
+    put(ws, r, 7, d.pts, 'int');
+    const a = wcount(ws, r, 8, [['الطبيب', d.name], ['حالة العودة', RET[0]]]);
+    wcount(ws, r, 9, [['الطبيب', d.name], ['حالة العودة', RET[0]], ['مكان العودة', WHERE[0]]]);
+    const b = wcount(ws, r, 10, [['الطبيب', d.name], ['حالة العودة', RET[1]]]);
+    wcount(ws, r, 11, [['الطبيب', d.name], ['حالة العودة', RET[1]], ['مكان العودة', WHERE[0]]]);
+    put(ws, r, 12, fx(`IFERROR((${addr(r, 8)}+${addr(r, 10)})/${addr(r, 3)},0)`, (a + b) / n), 'pct');
+  });
+  put(ws, tot, 1, 'الإجمالي', 'tot_txt'); put(ws, tot, 2, '', 'tot_txt');
+  const dsum = k => A.doc.reduce((s, d) => s + d[k], 0);
+  [[3, N], [4, dsum('att')], [5, N + dsum('att')], [8, dsum('same')], [9, dsum('samedoc')], [10, dsum('next')], [11, dsum('nextdoc')]].forEach(([c, v]) => wsum(ws, tot, c, r0, r1, v));
+  wpct(ws, tot, 6, addr(tot, 3), addr(tot, 5), N, N + dsum('att'), 'tot_pct');
+  put(ws, tot, 7, A.patients, 'tot_int');
+  wpct(ws, tot, 12, `(${addr(tot, 8)}+${addr(tot, 10)})`, addr(tot, 3), dsum('same') + dsum('next'), N, 'tot_pct');
+  dataBar(ws, `F${r0}:F${r1}`, '#F4A582'); dataBar(ws, `C${r0}:C${r1}`, '#C9CDD4'); dataBar(ws, `L${r0}:L${r1}`, '#86B6EF');
+  image(ws, imgHBar({t: 'نسبة النوشو حسب الطبيب', labels: A.doc.map(d => d.name), series: [{name: 'نسبة النوشو', color: ORANGE, values: A.doc.map(d => d.rate)}], percent: true, w: 760, h: Math.max(380, 26 * A.doc.length + 70)}), tot + 1, 0, 760, Math.max(380, 26 * A.doc.length + 70));
+
+  /* ---------- time ---------- */
+  ws = S7;
+  ws.getRow(1).height = 30; put(ws, 1, 1, 'التوزيع الزمني للنوشو', 'title');
+  merge(ws, 2, 1, 2, 13, 'النسبة = النوشو ÷ (النوشو + المواعيد المحضورة من جديد/متابعة) لنفس الفترة. الأسبوع يبدأ يوم الأحد؛ الأسبوع الأول والأخير غير مكتملين.', 'note');
+  widths(ws, [16, 11, 11, 11, 10, 11, 3, 12, 11, 11, 11, 10, 11, 11]);
+  const keyField = {'اليوم': 'weekday', 'الساعة': 'hourLbl', 'الشهر': 'month', 'بداية الأسبوع (الأحد)': 'weekStart'};
+  function timeTable(rTop, c0, ttl, key, list) {
+    put(ws, rTop, c0, ttl, 'h2');
+    header(ws, rTop + 1, c0, [key, 'مواعيد النوشو', 'المواعيد المحضورة', 'إجمالي المحجوز', 'نسبة النوشو', 'عادوا خلال يوم'], 30);
+    const rs = rTop + 2; let tn = 0, ta = 0, tr = 0;
+    list.forEach((o, k) => {
+      const r = rs + k;
+      put(ws, r, c0, key === 'بداية الأسبوع (الأحد)' ? asDate(o.lbl) : o.lbl, key === 'بداية الأسبوع (الأحد)' ? 'date' : 'txtc');
+      const n = wcount(ws, r, c0 + 1, [[key, o.lbl]]);
+      put(ws, r, c0 + 2, o.att, 'inp');
+      put(ws, r, c0 + 3, fx(`${addr(r, c0 + 1)}+${addr(r, c0 + 2)}`, n + o.att), 'int');
+      wpct(ws, r, c0 + 4, addr(r, c0 + 1), addr(r, c0 + 3), n, n + o.att);
+      const x1 = countifs([[key, o.lbl], ['حالة العودة', RET[0]]]), x2 = countifs([[key, o.lbl], ['حالة العودة', RET[1]]]);
+      put(ws, r, c0 + 5, fx(`${x1.f}+${x2.f}`, x1.v + x2.v), 'int');
+      tn += n; ta += o.att; tr += x1.v + x2.v;
+    });
+    const re = rs + list.length - 1;
+    put(ws, re + 1, c0, 'الإجمالي', 'tot_txt');
+    wsum(ws, re + 1, c0 + 1, rs, re, tn); wsum(ws, re + 1, c0 + 2, rs, re, ta); wsum(ws, re + 1, c0 + 3, rs, re, tn + ta);
+    wpct(ws, re + 1, c0 + 4, addr(re + 1, c0 + 1), addr(re + 1, c0 + 3), tn, tn + ta, 'tot_pct');
+    wsum(ws, re + 1, c0 + 5, rs, re, tr);
+    dataBar(ws, `${colL(c0 + 4)}${rs}:${colL(c0 + 4)}${re}`, '#F4A582');
+    return re + 1;
+  }
+  const wEnd = timeTable(4, 1, 'الاتجاه الأسبوعي', 'بداية الأسبوع (الأحد)', A.weeks.map(w => ({lbl: w.t, att: w.att})));
+  const mEnd = timeTable(4, 8, 'حسب الشهر', 'الشهر', A.months.map(m => ({lbl: m.m, att: m.att})));
+  put(ws, mEnd + 1, 8, 'الشهر الأول والأخير قد لا يكونان مكتملين.', 'note');
+  const dEnd = timeTable(mEnd + 3, 8, 'حسب يوم الأسبوع', 'اليوم', A.weekday.map(d => ({lbl: d.d, att: d.att})));
+  const hEnd = timeTable(wEnd + 2, 1, 'حسب ساعة الموعد', 'الساعة', A.hours.map(h => ({lbl: h.h, att: h.att})));
+  const cr = Math.max(hEnd, dEnd) + 2;
+  image(ws, imgLine({t: 'نسبة النوشو الأسبوعية', labels: A.weeks.map(w => w.w), values: A.weeks.map(w => w.n / Math.max(1, w.n + w.att)), avg: A.rate}), cr, 0, 640, 300);
+  image(ws, imgCol({t: 'نسبة النوشو حسب يوم الأسبوع', labels: A.weekday.map(d => d.d), series: [{name: '', color: BLUE, values: A.weekday.map(d => d.n / Math.max(1, d.n + d.att))}], highlightMax: true}), cr, 7, 560, 300);
+  const hh = A.hours.filter(h => h.n >= 50);
+  image(ws, imgCol({t: 'نسبة النوشو حسب ساعة الموعد', labels: hh.map(h => h.h.slice(0, 2)), series: [{name: '', color: BLUE, values: hh.map(h => h.n / Math.max(1, h.n + h.att))}], highlightMax: true, w: 640}), cr + 16, 0, 640, 300);
+  image(ws, imgCol({t: 'عدد مواعيد النوشو أسبوعياً', labels: A.weeks.map(w => w.w), series: [{name: '', color: GRAY, values: A.weeks.map(w => w.n)}], percent: false}), cr + 16, 7, 560, 300);
+
+  /* ---------- repeat patients ---------- */
+  ws = S8;
+  ws.getRow(1).height = 30; put(ws, 1, 1, 'المرضى المتكرر غيابهم', 'title');
+  merge(ws, 2, 1, 2, 11, 'المرضى الذين تكرر تسجيلهم نوشو 3 مرات أو أكثر خلال الفترة — هم الفئة الأعلى أولوية للتواصل وتأكيد المواعيد.', 'note');
+  put(ws, 4, 1, 'توزيع المرضى حسب عدد مرات النوشو', 'h2');
+  header(ws, 5, 1, ['عدد مرات النوشو', 'عدد المرضى', 'نسبة المرضى', 'مواعيد النوشو الناتجة', 'حصة من إجمالي النوشو'], 30);
+  const nsc = rng('عدد مرات نوشو المريض');
+  A.repeat.forEach((b, k) => {
+    const r = 6 + k;
+    put(ws, r, 1, b.lbl, 'txtb');
+    put(ws, r, 2, fx(`ROUND(SUMPRODUCT((${nsc}>=${b.lo})*(${nsc}<=${b.hi})/${nsc}),0)`, b.pts), 'int');
+    put(ws, r, 3, fx(`IFERROR(${addr(r, 2)}/$B$11,0)`, b.pts / A.patients), 'pct');
+    put(ws, r, 4, fx(`COUNTIFS(${nsc},">=${b.lo}",${nsc},"<=${b.hi}")`, b.appts), 'int');
+    put(ws, r, 5, fx(`IFERROR(${addr(r, 4)}/$D$11,0)`, b.appts / N), 'pct');
+  });
+  put(ws, 11, 1, 'الإجمالي', 'tot_txt'); wsum(ws, 11, 2, 6, 10, A.patients); wsum(ws, 11, 4, 6, 10, N);
+  put(ws, 11, 3, fx('SUM(C6:C10)', 1), 'tot_pct'); put(ws, 11, 5, fx('SUM(E6:E10)', 1), 'tot_pct');
+  const pm = new Map();
+  ns.filter(r => r.count >= 3).forEach(r => {
+    if (!pm.has(r.mrn)) pm.set(r.mrn, {mrn: r.mrn, name: r.name, phone: r.phone, n: 0, specs: new Set(), docs: new Set(), first: Infinity, last: -Infinity, ret: 0, lang: r.lang});
+    const o = pm.get(r.mrn); o.n++; o.specs.add(r.specAr); o.docs.add(r.doc); o.first = Math.min(o.first, r.apptDay); o.last = Math.max(o.last, r.apptDay);
+    if (r.ret !== RET[2]) o.ret++;
+  });
+  const rp = [...pm.values()].sort((a, b) => b.n - a.n || b.last - a.last || (a.mrn < b.mrn ? -1 : 1));
+  put(ws, 13, 1, `قائمة المرضى (${fmt(rp.length)} مريض — ${fmt(rp.reduce((s, o) => s + o.n, 0))} موعد نوشو)`, 'h2');
+  widths(ws, [16, 12, 30, 12, 12, 30, 44, 11, 11, 10, 9]);
+  header(ws, 14, 1, ['م', 'رقم الملف', 'اسم المريض', 'الجوال', 'عدد مرات النوشو', 'التخصصات', 'الأطباء', 'أول نوشو', 'آخر نوشو', 'مرات العودة خلال يوم', 'اللغة'], 36);
+  const sortAr = s => [...s].sort((a, b) => a < b ? -1 : 1);
+  rp.forEach((o, k) => {
+    const r = 15 + k;
+    put(ws, r, 1, k + 1, 'int'); put(ws, r, 2, o.mrn, 'txtc'); put(ws, r, 3, o.name, 'txt'); put(ws, r, 4, o.phone, 'txtc');
+    put(ws, r, 5, fx(`COUNTIFS(${rng('رقم الملف (MRN)')},${addr(r, 2)})`, o.n), 'int');
+    put(ws, r, 6, sortAr(o.specs).join('، '), 'txt'); put(ws, r, 7, sortAr(o.docs).join('، '), 'txt');
+    put(ws, r, 8, asDate(o.first), 'date'); put(ws, r, 9, asDate(o.last), 'date'); put(ws, r, 10, o.ret, 'int'); put(ws, r, 11, o.lang, 'txtc');
+  });
+  if (rp.length) {
+    ws.addConditionalFormatting({ref: `E15:E${14 + rp.length}`, rules: [{type: 'colorScale', cfvo: [{type: 'min'}, {type: 'percentile', value: 50}, {type: 'max'}], color: [{argb: 'FFFFF4E5'}, {argb: 'FFF4A582'}, {argb: 'FFD6604D'}]}]});
+    ws.autoFilter = {from: {row: 14, column: 1}, to: {row: 14 + rp.length, column: 11}};
+  }
+
+  /* ---------- return analysis ---------- */
+  ws = S4;
+  ws.getRow(1).height = 30; put(ws, 1, 1, 'تحليل عودة مرضى النوشو خلال يوم', 'title');
+  merge(ws, 2, 1, 2, 10, 'لكل موعد نوشو بُحث عن زيارة فعلية مسجّلة (Reported) لنفس رقم الملف في نفس اليوم أو اليوم التالي، في أي عيادة أو الطوارئ.', 'note');
+  widths(ws, [26, 14, 14, 14, 12, 12, 3, 24, 12, 12, 12, 12]);
+  put(ws, 4, 1, 'حالة العودة × مكان العودة', 'h2');
+  header(ws, 5, 1, ['مكان العودة', RET[0], RET[1], 'الإجمالي', 'النسبة من العائدين', 'النسبة من كل النوشو'], 36);
+  const MRN = rng('رقم الملف (MRN)');
+  WHERE.forEach((w, k) => {
+    const r = 6 + k;
+    put(ws, r, 1, w, chip(WC[w]));
+    const a = wcount(ws, r, 2, [['حالة العودة', RET[0]], ['مكان العودة', w]]);
+    const b = wcount(ws, r, 3, [['حالة العودة', RET[1]], ['مكان العودة', w]]);
+    put(ws, r, 4, fx(`${addr(r, 2)}+${addr(r, 3)}`, a + b), 'int');
+    wpct(ws, r, 5, addr(r, 4), '$D$10', a + b, RETN);
+    wpct(ws, r, 6, addr(r, 4), `COUNTA(${MRN})`, a + b, N);
+  });
+  put(ws, 10, 1, 'الإجمالي', 'tot_txt');
+  [[2, A.ret[RET[0]]], [3, A.ret[RET[1]]], [4, RETN]].forEach(([c, v]) => wsum(ws, 10, c, 6, 9, v));
+  put(ws, 10, 5, fx('SUM(E6:E9)', 1), 'tot_pct');
+  wpct(ws, 10, 6, 'D10', `COUNTA(${MRN})`, RETN, N, 'tot_pct');
+  image(ws, imgCol({t: 'أين دخل مرضى النوشو؟', labels: [RET[0], RET[1]], percent: false, w: 520, h: 360,
+    series: WHERE.map(w => ({name: w, color: WC[w], values: [A.where[w][RET[0]], A.where[w][RET[1]]]}))}), 3, 7, 520, 360);
+  put(ws, 13, 1, 'توقيت الزيارة × مكان العودة', 'h2');
+  header(ws, 14, 1, ['التوقيت', ...WHERE, 'الإجمالي'], 36);
+  TIM.forEach((t, k) => {
+    const r = 15 + k; put(ws, r, 1, t, 'txtb'); let s = 0;
+    WHERE.forEach((w, j) => { s += wcount(ws, r, 2 + j, [['توقيت العودة', t], ['مكان العودة', w]]); });
+    put(ws, r, 6, fx(`SUM(${addr(r, 2)}:${addr(r, 5)})`, s), 'tot_int');
+  });
+  put(ws, 19, 1, 'الإجمالي', 'tot_txt');
+  WHERE.forEach((w, j) => wsum(ws, 19, 2 + j, 15, 18, ns.filter(r => r.p && r.p.where === w).length));
+  wsum(ws, 19, 6, 15, 18, RETN);
+  put(ws, 22, 1, 'تصنيف الزيارة الفعلية للعائدين', 'h2');
+  header(ws, 23, 1, ['تصنيف الزيارة', RET[0], RET[1], 'الإجمالي'], 30);
+  ['جديد', 'متابعة', 'بدون موعد'].forEach((t, k) => {
+    const r = 24 + k; put(ws, r, 1, t, 'txtb');
+    const a = wcount(ws, r, 2, [['حالة العودة', RET[0]], ['تصنيف الزيارة', t]]);
+    const b = wcount(ws, r, 3, [['حالة العودة', RET[1]], ['تصنيف الزيارة', t]]);
+    put(ws, r, 4, fx(`${addr(r, 2)}+${addr(r, 3)}`, a + b), 'tot_int');
+  });
+  put(ws, 27, 1, 'الإجمالي', 'tot_txt');
+  [[2, A.ret[RET[0]]], [3, A.ret[RET[1]]], [4, RETN]].forEach(([c, v]) => wsum(ws, 27, c, 24, 26, v));
+  merge(ws, 28, 1, 29, 6, '«بدون موعد» = Walk-in (حضر وسُجّل مباشرة دون الموعد الأصلي). «جديد/متابعة» = زيارة بموعد آخر مسجّل.', 'note');
+  put(ws, 31, 1, 'حسب لغة المريض', 'h2');
+  header(ws, 32, 1, ['اللغة', 'مواعيد النوشو', RET[0], RET[1], 'نسبة العائدين خلال يوم'], 30);
+  [...new Set(ns.map(r => r.lang))].filter(Boolean).sort().forEach((lg, k) => {
+    const r = 33 + k; put(ws, r, 1, {Arabic: 'عربي', English: 'إنجليزي'}[lg] || lg, 'txtb');
+    const n = wcount(ws, r, 2, [['اللغة', lg]]);
+    const a = wcount(ws, r, 3, [['اللغة', lg], ['حالة العودة', RET[0]]]);
+    const b = wcount(ws, r, 4, [['اللغة', lg], ['حالة العودة', RET[1]]]);
+    put(ws, r, 5, fx(`IFERROR((${addr(r, 3)}+${addr(r, 4)})/${addr(r, 2)},0)`, n ? (a + b) / n : 0), 'pct');
+  });
+
+  /* ---------- executive summary ---------- */
+  ws = S1;
+  widths(ws, [2, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 2]);
+  merge(ws, 2, 2, 2, 13, 'تقرير عدم الحضور (No Show) التفصيلي', 'title'); ws.getRow(2).height = 34;
+  const today = new Date();
+  merge(ws, 3, 2, 3, 13, `${A.center || ''}  |  فترة البيانات الفعلية: ${A.period[0]} إلى ${A.period[1]}  |  تاريخ الإعداد: ${pad(today.getDate())}-${pad(today.getMonth() + 1)}-${today.getFullYear()}`, 'subtitle');
+  ws.getRow(3).height = 20;
+  const specTot = 5 + A.spec.length;
+  const kp = [
+    ['إجمالي مواعيد النوشو', fx(`COUNTA(${MRN})`, N), 'kpi_val', 'موعد'],
+    ['عدد المرضى', A.patients, 'kpi_val', 'مريض فريد'],
+    ['نسبة النوشو من المحجوز', fx(`'التخصصات'!E${specTot}`, A.rate), 'kpi_valp', `من ${fmt(A.booked)} موعد محجوز`],
+    ['عادوا نفس اليوم', fx(countifs([['حالة العودة', RET[0]]]).f, A.ret[RET[0]]), 'kpi_val', 'pct'],
+    ['عادوا اليوم التالي', fx(countifs([['حالة العودة', RET[1]]]).f, A.ret[RET[1]]), 'kpi_val', 'pct'],
+    ['لم يعودوا خلال يوم', fx(countifs([['حالة العودة', RET[2]]]).f, A.ret[RET[2]]), 'kpi_val', 'pct']];
+  ws.getRow(5).height = 30; ws.getRow(6).height = 44; ws.getRow(7).height = 22;
+  kp.forEach(([lbl, v, st, sub], k) => {
+    const c = 2 + 2 * k;
+    merge(ws, 5, c, 5, c + 1, lbl, 'kpi_lbl');
+    merge(ws, 6, c, 6, c + 1, v, st);
+    if (sub === 'pct') merge(ws, 7, c, 7, c + 1, fx(`IFERROR(${addr(6, c)}/${addr(6, 2)},0)`, v.result / N), 'kpi_sub');
+    else merge(ws, 7, c, 7, c + 1, sub, 'kpi_subt');
+  });
+  ws.getCell(6, 4).note = 'عدد أرقام الملفات الفريدة — محسوب من البيانات.';
+  merge(ws, 9, 2, 9, 13, 'أبرز النتائج', 'h2'); ws.getRow(9).height = 22;
+  let r = 10;
+  A.findings.forEach(([t, b]) => {
+    merge(ws, r, 2, r, 13, '◀  ' + t, 'bullet_b'); ws.getRow(r).height = 18;
+    merge(ws, r + 1, 2, r + 1, 13, b, 'bullet'); ws.getRow(r + 1).height = 34;
+    r += 2;
+  });
+  r += 1;
+  merge(ws, r, 2, r, 7, 'حالة العودة بعد النوشو', 'h2'); merge(ws, r, 9, r, 13, 'أين دخل العائدون؟', 'h2');
+  ws.getRow(r + 1).height = 24;
+  merge(ws, r + 1, 2, r + 1, 3, 'الحالة', 'hdr'); put(ws, r + 1, 4, 'العدد', 'hdr'); put(ws, r + 1, 5, 'النسبة', 'hdr'); merge(ws, r + 1, 6, r + 1, 7, 'التفاصيل في', 'hdr');
+  const rs = r + 2;
+  const links = {[RET[0]]: ['عادوا نفس اليوم', 'ورقة «عادوا نفس اليوم»'], [RET[1]]: ['عادوا اليوم التالي', 'ورقة «عادوا اليوم التالي»'], [RET[2]]: [DS, 'ورقة «بيانات النوشو»']};
+  RET.forEach((st, k) => {
+    const rr = rs + k;
+    merge(ws, rr, 2, rr, 3, st, chip(RC[st]));
+    const v = wcount(ws, rr, 4, [['حالة العودة', st]]);
+    wpct(ws, rr, 5, addr(rr, 4), addr(rs + 3, 4, true), v, N);
+    merge(ws, rr, 6, rr, 7, {text: links[st][1], hyperlink: `#'${links[st][0]}'!A1`}, 'link');
+  });
+  merge(ws, rs + 3, 2, rs + 3, 3, 'الإجمالي', 'tot_txt'); wsum(ws, rs + 3, 4, rs, rs + 2, N);
+  put(ws, rs + 3, 5, fx(`SUM(${addr(rs, 5)}:${addr(rs + 2, 5)})`, 1), 'tot_pct'); merge(ws, rs + 3, 6, rs + 3, 7, '', 'tot_txt');
+  merge(ws, r + 1, 9, r + 1, 10, 'مكان العودة', 'hdr'); put(ws, r + 1, 11, 'نفس اليوم', 'hdr'); put(ws, r + 1, 12, 'اليوم التالي', 'hdr'); put(ws, r + 1, 13, 'الإجمالي', 'hdr');
+  WHERE.forEach((w, k) => {
+    const rr = rs + k;
+    merge(ws, rr, 9, rr, 10, w, chip(WC[w]));
+    const a = wcount(ws, rr, 11, [['حالة العودة', RET[0]], ['مكان العودة', w]]);
+    const b = wcount(ws, rr, 12, [['حالة العودة', RET[1]], ['مكان العودة', w]]);
+    put(ws, rr, 13, fx(`${addr(rr, 11)}+${addr(rr, 12)}`, a + b), 'int');
+  });
+  merge(ws, rs + 4, 9, rs + 4, 10, 'الإجمالي', 'tot_txt');
+  [[11, A.ret[RET[0]]], [12, A.ret[RET[1]]], [13, RETN]].forEach(([c, v]) => wsum(ws, rs + 4, c, rs, rs + 3, v));
+  const cr2 = rs + 6;
+  image(ws, imgDonut({t: 'حالة العودة بعد النوشو', labels: RET, values: RET.map(s => A.ret[s]), colors: [BLUE, ORANGE, GRAY]}), cr2 - 1, 1, 480, 330);
+  image(ws, imgHBar({t: 'أين دخل العائدون؟', labels: WHERE, w: 520, h: 330,
+    series: [{name: 'نفس اليوم', color: BLUE, values: WHERE.map(w => A.where[w][RET[0]])}, {name: 'اليوم التالي', color: ORANGE, values: WHERE.map(w => A.where[w][RET[1]])}]}), cr2 - 1, 7, 520, 330);
+  ws.pageSetup = {orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9};
+
+  /* ---------- methodology ---------- */
+  ws = SM;
+  widths(ws, [2, 30, 100]);
+  ws.getRow(1).height = 30; put(ws, 1, 2, 'المنهجية والتعريفات', 'title');
+  const meth = [
+    ['مصادر البيانات', `No Show Detailed – Main Report (مواعيد النوشو) + Appointment Statistics – Detailed (كل الزيارات المسجّلة Reported مع الطبيب والقسم وتاريخ/وقت الزيارة). ${A.center || ''}`],
+    ['الفترة', `كل الأرقام تغطي الفترة الفعلية في البيانات: ${A.period[0]} إلى ${A.period[1]} (قد تختلف عن التاريخ المكتوب في عنوان تقرير MIS).`],
+    ['طريقة الربط', 'لكل موعد نوشو (رقم ملف + تاريخ الموعد) بُحث في الزيارات المسجّلة عن نفس رقم الملف بتاريخ زيارة = يوم الموعد (نفس اليوم) أو يوم الموعد + 1 (اليوم التالي مباشرة، يوم تقويمي).'],
+    ['عاد نفس اليوم', 'توجد زيارة فعلية لنفس المريض في نفس تاريخ موعد النوشو، في أي عيادة أو الطوارئ، قبل الموعد أو بعده.'],
+    ['عاد اليوم التالي', 'لا توجد زيارة في نفس اليوم، وتوجد زيارة في اليوم التالي مباشرة. (التصنيفان متنافيان حتى لا يُعدّ الموعد مرتين).'],
+    ['مكان العودة', 'عند وجود أكثر من زيارة يُعتمد الأقرب صلة بالموعد بالترتيب: نفس الطبيب ← نفس التخصص لدى طبيب آخر ← الطوارئ ← تخصص آخر. عدد الزيارات الأخرى مذكور في عمود «زيارات أخرى مطابقة».'],
+    ['وقت الزيارة', 'للزيارات بموعد (جديد/متابعة) يُستخدم وقت الموعد المسجّل للزيارة، ولزيارات Walk-in والطوارئ يُستخدم وقت التسجيل الفعلي.'],
+    ['خُدم في نفس التخصص', 'عاد نفس اليوم إلى نفس الطبيب أو نفس التخصص. هذه الحالات غالباً ليست غياباً حقيقياً (حجز مكرر، أو نقل لطبيب آخر، أو حضر متأخراً وسُجّل بزيارة جديدة).'],
+    ['نسبة النوشو', 'مواعيد النوشو ÷ (مواعيد النوشو + المواعيد المحضورة). المواعيد المحضورة = زيارات Reported من نوع جديد أو متابعة في التخصصات الواردة في تقرير النوشو (بدون Walk-in والطوارئ).'],
+    ['إعادة الحساب', 'كل جداول الملخص والتحليل مبنية بمعادلات COUNTIFS على ورقة «بيانات النوشو»؛ أي تعديل على تلك الورقة ينعكس تلقائياً. الأرقام باللون الأزرق مُدخلة من تقرير Appointment Statistics.'],
+    ['مصدر الملف', 'أُنشئ هذا الملف داخل المتصفح من صفحة «تقرير النوشو» دون رفع البيانات لأي خادم.']];
+  header(ws, 3, 2, ['البند', 'التوضيح'], 24);
+  meth.forEach(([a, b], k) => { put(ws, 4 + k, 2, a, 'txtb'); put(ws, 4 + k, 3, b, {...S_.txt, alignment: AL({wrapText: true})}); ws.getRow(4 + k).height = 36; });
+
+  wb.views = [{activeTab: 0}];
+  return wb.xlsx.writeBuffer();
+}
+</script>
+
+<script>
+/* ═════════════════════════ wiring ═════════════════════════ */
+const state = {ns: null, ap: null, S: null, A: null};
+const drop = $('drop'), input = $('file');
+
+function setSlot(id, ok, text) { const s = $(id); s.classList.toggle('ok', ok); s.querySelector('.dot').textContent = ok ? '✓' : id === 'slot-ns' ? '1' : '2'; s.querySelector('small').textContent = text; }
+function showErr(msg) { $('err').textContent = msg; $('err').hidden = !msg; }
+
+async function readFile(file) {
+  if (/\.xls$/i.test(file.name)) throw new Error(`«${file.name}» بصيغة xls القديمة — افتحه في Excel واحفظه بصيغة xlsx.`);
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(buf, {type: 'array', cellDates: true});
+  const rows = sheetRows(wb);
+  const t = titleText(rows).toLowerCase();
+  const nsP = parseNoShow(rows);
+  if (nsP && (t.includes('no show') || nsP.rows.length)) {
+    if (!nsP.rows.length) throw new Error(`«${file.name}» تقرير No Show لكنه بلا صفوف بيانات.`);
+    state.ns = nsP; setSlot('slot-ns', true, `${file.name} — ${fmt(nsP.rows.length)} موعد نوشو`); return;
+  }
+  const apP = parseVisits(rows);
+  if (apP) {
+    if (!apP.rows.some(v => /^reported$/i.test(v.status))) throw new Error(`«${file.name}» لا يحتوي قسم الزيارات المسجّلة (Status: Reported).`);
+    state.ap = apP; setSlot('slot-ap', true, `${file.name} — ${fmt(apP.rows.length)} سجل`); return;
+  }
+  throw new Error(`لم أتعرّف على «${file.name}». المطلوب: No Show Detailed – Main Report و Appointment Statistics – Detailed من نظام MIS.`);
+}
+
+async function handle(files) {
+  showErr('');
+  for (const f of files) { try { await readFile(f); } catch (e) { showErr(e.message); } }
+  if (state.ns && state.ap) {
+    try {
+      state.S = analyse(state.ns, state.ap); state.A = aggregate(state.S);
+      renderReport(state.S, state.A);
+      $('upload').hidden = true; $('toolbar').hidden = false; $('report').hidden = false;
+      $('xlsx-status').textContent = '';
+    } catch (e) { console.error(e); showErr('تعذّر بناء التقرير: ' + e.message); }
+  }
+}
+
+drop.addEventListener('click', () => input.click());
+drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); } });
+input.addEventListener('change', () => { handle([...input.files]); input.value = ''; });
+['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', e => handle([...e.dataTransfer.files]));
+
+$('btn-xlsx').addEventListener('click', async () => {
+  const b = $('btn-xlsx'); b.disabled = true; $('xlsx-status').textContent = 'جارٍ تجهيز ملف الإكسل…';
+  try {
+    const buf = await buildWorkbook(state.S, state.A);
+    const blob = new Blob([buf], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `NoShow_Report_${state.A.period[0]}_${state.A.period[1]}.xlsx`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    $('xlsx-status').textContent = 'تم تحميل ملف الإكسل.';
+  } catch (e) { console.error(e); $('xlsx-status').textContent = 'تعذّر إنشاء الملف: ' + e.message; }
+  b.disabled = false;
+});
+$('btn-print').addEventListener('click', () => window.print());
+$('btn-reset').addEventListener('click', () => {
+  Object.assign(state, {ns: null, ap: null, S: null, A: null});
+  setSlot('slot-ns', false, 'مواعيد النوشو — لم يُرفع بعد'); setSlot('slot-ap', false, 'كل الزيارات المسجّلة — لم يُرفع بعد');
+  $('upload').hidden = false; $('toolbar').hidden = true; $('report').hidden = true; $('meta').hidden = true; $('intro').hidden = false; showErr('');
+  window.scrollTo(0, 0);
+});
+</script>
+</body>
+</html>
