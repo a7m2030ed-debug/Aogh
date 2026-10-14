@@ -18,7 +18,7 @@
 python3 build_pages.py
 ```
 
-في المستودع سبع صفحات مستقلة عن مُعبِّئ التقرير:
+في المستودع ثماني صفحات مستقلة عن مُعبِّئ التقرير:
 
 | الصفحة | الرابط | ما هي |
 |---|---|---|
@@ -27,6 +27,7 @@ python3 build_pages.py
 | **[تقرير الأطباء التفصيلي](#تقرير-الأطباء-التفصيلي--physicianhtml)** | https://a7m2030ed-debug.github.io/Aogh/physician.html | قالب الـPDF «Physician Detail — Single Table» يُملأ من تصدير MIS لأي مدة: يوم أو أسبوع أو شهر |
 | **[سجل الموظفين](#سجل-الموظفين--hrhtml)** | https://a7m2030ed-debug.github.io/Aogh/hr.html | قاعدة بيانات الموارد البشرية وواجهتها |
 | **National Day Offer Report — Meena** | https://a7m2030ed-debug.github.io/Aogh/meena.html | يقرأ جدول المبيعات (كل صيغ الإكسل وCSV وPDF والصور، ملف واحد أو عدة أيام معًا) ويُخرج تقرير الصفحتين، ويحفظه PDF أو PowerPoint — الواجهة بالإنجليزي |
+| **تقرير عرض سرطان الثدي — Meena** | https://a7m2030ed-debug.github.io/Aogh/mammogram.html | عرض أكتوبر للماموجرام: يقرأ تصدير `Service wise Count – Detailed Category Wise` (ملف إكسل أو CSV لكل فرع) ويُخرج تقرير يومي أو تراكمي من أول يوم عرض (١٠ أكتوبر): الأرقام والفروع والأطباء، ويحفظه PDF أو PowerPoint |
 | **[تجربة المريض — عروض اليوم الوطني](#تجربة-المريض--experiencehtml)** | https://a7m2030ed-debug.github.io/Aogh/experience.html | قالب الـPDF «Patient Experience — National Day Offers» (A4 عرضي) يُبنى بمجرد رفع ملف إكسل أو PDF أو صورة: بطاقات الأرقام وتوزيع الفروع وجدول المرضى، ويُحفظ PDF أو PNG |
 | **[نظام إدارة وتوثيق الفرع الطبي](#نظام-إدارة-وتوثيق-الفرع-الطبي--branchhtml)** | https://a7m2030ed-debug.github.io/Aogh/branch.html | نسخة Pilot لفرع واحد بثلاث وحدات: توثيق الموظفين · كادر الفرع · القدرة الاستيعابية |
 
