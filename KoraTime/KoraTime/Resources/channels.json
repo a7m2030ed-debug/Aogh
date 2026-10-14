@@ -51,11 +51,11 @@
     "logo": "https://i.imgur.com/R1hGX1d.png"
   },
   {
-    "name": "الكويت الرياضية بلس",
+    "name": "الهدّاف",
     "group": "رياضة",
-    "url": "https://kwtsplta.cdn.mangomolo.com/spl/smil:spl.stream.smil/chunklist.m3u8",
-    "note": "قناة مفتوحة — الكويت",
-    "logo": "https://i.imgur.com/l4oX0gf.png"
+    "url": "https://live.elheddaftv.com:8081/elheddaftv/index.m3u8",
+    "note": "قناة مفتوحة — الجزائر",
+    "logo": "https://i.imgur.com/cDkIDIA.png"
   },
   {
     "name": "ريد بُل",
@@ -74,10 +74,9 @@
   {
     "name": "ACI Sport TV",
     "group": "رياضة",
-    "url": "http://145.239.5.177/564a/index.m3u8",
-    "note": "قناة مفتوحة — إيطاليا قد تعمل داخل المنطقة فقط — تعذّر التحقّق من خارجها.",
-    "logo": "https://i.imgur.com/U8cHMOt.png",
-    "geoRestricted": true
+    "url": "https://webstream.multistream.it/memfs/e2cb3629-c1a2-495b-b43a-9eb386f04ed8.m3u8",
+    "note": "قناة مفتوحة — إيطاليا",
+    "logo": "https://i.imgur.com/U8cHMOt.png"
   },
   {
     "name": "AS3 Sport TV",
@@ -115,6 +114,13 @@
     "logo": "https://i.imgur.com/uAaQDr6.png"
   },
   {
+    "name": "Canal+ Sport",
+    "group": "رياضة أوروبية",
+    "url": "http://tv.streambox.fr/live/testlivestream/testlivestream/31.m3u8",
+    "note": "قناة مفتوحة — فرنسا",
+    "logo": "https://i.imgur.com/EOXnU15.png"
+  },
+  {
     "name": "ESPN",
     "group": "رياضة أوروبية",
     "url": "https://lb.iptvnetwork.net/ls28/10041/playlist.m3u8",
@@ -128,6 +134,14 @@
     "url": "https://lb.iptvnetwork.net/ls28/10042/playlist.m3u8",
     "note": "قناة مفتوحة — هولندا",
     "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bf/ESPN2_logo.svg/960px-ESPN2_logo.svg.png",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36"
+  },
+  {
+    "name": "ESPN 3",
+    "group": "رياضة أوروبية",
+    "url": "https://lb.iptvnetwork.net/ls28/10043/playlist.m3u8",
+    "note": "قناة مفتوحة — هولندا",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/ESPN3_Logo.png/960px-ESPN3_Logo.png",
     "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36"
   },
   {
@@ -148,7 +162,7 @@
   {
     "name": "Eurosport 1",
     "group": "رياضة أوروبية",
-    "url": "https://andro.mangeinde4.lat/checklist/androstreamlivees1.m3u8",
+    "url": "http://88.212.15.17/live/esp1_hun/index.m3u8",
     "note": "قناة مفتوحة — فرنسا",
     "logo": "https://i.imgur.com/olQJgm7.png"
   },
@@ -210,6 +224,13 @@
     "logo": "https://www.sms.cz/kategorie/televize/bmp/loga/velka/golfchannel.png"
   },
   {
+    "name": "Golf Zone",
+    "group": "رياضة أوروبية",
+    "url": "http://57.128.231.171:8080/248/index.m3u8",
+    "note": "قناة مفتوحة — بولندا",
+    "logo": "https://i.ibb.co/ZR8cRj8d/Golf-Zone.png"
+  },
+  {
     "name": "HTSpor TV",
     "group": "رياضة أوروبية",
     "url": "https://ciner.daioncdn.net/ht-spor/ht-spor.m3u8?app=web",
@@ -245,11 +266,32 @@
     "logo": "https://i.imgur.com/M1Ee79b.png"
   },
   {
+    "name": "LRT Plius",
+    "group": "رياضة أوروبية",
+    "url": "http://stream.mcquack.net/353/index.m3u8",
+    "note": "قناة مفتوحة — ليتوانيا",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/LRT_Plius_Logo_2022.svg/960px-LRT_Plius_Logo_2022.svg.png"
+  },
+  {
     "name": "MadeinBO TV",
     "group": "رياضة أوروبية",
     "url": "https://srvx1.selftv.video/dmchannel/live/playlist.m3u8",
     "note": "قناة مفتوحة — إيطاليا",
     "logo": "https://i.imgur.com/47X44DD.png"
+  },
+  {
+    "name": "Maincast Cybersport",
+    "group": "رياضة أوروبية",
+    "url": "http://stream.mcquack.net/487/index.m3u8",
+    "note": "قناة مفتوحة — أوكرانيا",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/5/57/Maincast_%28HD_Logo%29_2024.png"
+  },
+  {
+    "name": "Maincast Sport",
+    "group": "رياضة أوروبية",
+    "url": "http://stream.mcquack.net/490/index.m3u8",
+    "note": "قناة مفتوحة — أوكرانيا",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/5/57/Maincast_%28HD_Logo%29_2024.png"
   },
   {
     "name": "Match4",
@@ -300,6 +342,29 @@
     "logo": "https://i.imgur.com/5pMo7dL.png"
   },
   {
+    "name": "Realitatea Sportiva",
+    "group": "رياضة أوروبية",
+    "url": "https://stream.realitatea.net/realitatea/sportiva_md/ts:playlist.m3u8",
+    "note": "قناة مفتوحة — رومانيا",
+    "logo": "https://i.imgur.com/BaEyZto.png"
+  },
+  {
+    "name": "Setanta Sports 2 Eurasia",
+    "group": "رياضة أوروبية",
+    "url": "http://stream.mcquack.net/235/index.m3u8",
+    "note": "قناة مفتوحة — أيرلندا",
+    "logo": "https://i.imgur.com/ouHunnK.png",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+  },
+  {
+    "name": "Sport 1",
+    "group": "رياضة أوروبية",
+    "url": "http://stream.mcquack.net/391/index.m3u8",
+    "note": "قناة مفتوحة — أوكرانيا",
+    "logo": "https://i.imgur.com/Zjb8awW.png",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+  },
+  {
     "name": "Sportitalia",
     "group": "رياضة أوروبية",
     "url": "https://edge-001.streamup.eu/sportitalia/sihd_abr/playlist.m3u8",
@@ -312,6 +377,21 @@
     "url": "https://edge-001.streamup.eu/sportitalia/sisolocalcio_abr/playlist.m3u8",
     "note": "قناة مفتوحة — إيطاليا",
     "logo": "https://i.imgur.com/hu56Ya5.png"
+  },
+  {
+    "name": "Sporty TV",
+    "group": "رياضة أوروبية",
+    "url": "https://dash2.antik.sk/live/sporty_tv/index.m3u8",
+    "note": "قناة مفتوحة — التشيك",
+    "logo": "https://i.imgur.com/Wz5bQKx.jpeg"
+  },
+  {
+    "name": "Suspilne. Sport",
+    "group": "رياضة أوروبية",
+    "url": "http://stream.mcquack.net/444/index.m3u8",
+    "note": "قناة مفتوحة — أوكرانيا",
+    "logo": "https://i.imgur.com/16IhU0M.png",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
   },
   {
     "name": "TJK TV",
@@ -352,6 +432,11 @@
     "name": "الجزيرة",
     "group": "إخبارية",
     "url": "https://live-hls-web-aja.getaj.net/AJA/index.m3u8"
+  },
+  {
+    "name": "الجزيرة مباشر",
+    "group": "إخبارية",
+    "url": "https://live-hls-web-ajm.getaj.net/AJM/index.m3u8"
   },
   {
     "name": "تجربة البث HD",
