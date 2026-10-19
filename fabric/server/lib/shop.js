@@ -116,6 +116,10 @@ function normalizeProduct(input, existing, products) {
   if (imgs.length > 8) throw bad("أقصى عدد للصور ثماني صور");
   p.images = imgs.map((s, i) => mediaSrc(s, `الصورة ${i + 1}`));
 
+  /* نقش مولَّد من اللون لا صورة القماش نفسه. يُمكّن صاحب المتجر من إدخال
+     أقمشته قبل تصويرها، ويُبقي أثرًا يدلّه على ما ينتظر صورة حقيقية. */
+  p.imagesGenerated = bool(input.imagesGenerated);
+
   if (input.video && input.video.kind === "file" && input.video.src) {
     p.video = { kind: "file", src: mediaSrc(input.video.src, "الفيديو") };
   } else {

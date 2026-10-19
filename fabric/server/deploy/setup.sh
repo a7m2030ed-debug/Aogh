@@ -18,6 +18,7 @@ DOMAIN="${1:-}"
 EMAIL="${2:-}"
 APP_USER="naseej"
 APP_DIR="/srv/naseej"
+NGINX_USER="www-data"
 NODE_MAJOR="22"
 
 c_ok()   { printf '\033[0;32m✓\033[0m %s\n' "$1"; }
@@ -125,9 +126,20 @@ rsync -a --delete \
   --exclude 'server/' \
   "$SRC_DIR/../" "$APP_DIR/" 2>/dev/null || true
 
-mkdir -p "$APP_DIR/server/data"
+mkdir -p "$APP_DIR/server/data/uploads"
 chown -R "$APP_USER:$APP_USER" "$APP_DIR"
-chmod 750 "$APP_DIR/server/data"
+
+# Nginx يخدم ملفات الواجهة وصور المنتجات مباشرة دون المرور على Node، فيلزمه
+# المرور إلى مجلديهما لا أكثر. المرور (x) بلا قراءة (r): يفتح ما يعرف مساره
+# ولا يسرد المجلد، فتبقى بيانات الطلبات و.env خارج متناوله.
+chmod 751 "$APP_DIR" "$APP_DIR/server"
+chown "$APP_USER:$NGINX_USER" "$APP_DIR/server/data"
+chmod 710 "$APP_DIR/server/data"
+# مجلد الصور وحده يُقرأ ويُسرد. setgid ليرث كل ما يُرفع لاحقًا المجموعة نفسها.
+chown "$APP_USER:$NGINX_USER" "$APP_DIR/server/data/uploads"
+chmod 2750 "$APP_DIR/server/data/uploads"
+# ملفات البيانات: للمالك وحده. يشمل تثبيتًا قائمًا كُتبت ملفاته قبل ضبط UMask.
+find "$APP_DIR/server/data" -maxdepth 1 -type f -exec chmod 640 {} + 2>/dev/null || true
 c_ok "الملفات في $APP_DIR"
 
 # --------------------------------------------------------------- .env
@@ -183,6 +195,10 @@ StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=naseej
 
+# ما يكتبه الخادم للمالك ومجموعته فقط: بيانات الطلبات لا تُقرأ من مستخدم آخر،
+# وصور المنتجات ترث مجموعة Nginx من setgid فيقرؤها ويخدمها مباشرة.
+UMask=0027
+
 # تضييق الصلاحيات: لا يكتب إلا في مجلد بياناته
 NoNewPrivileges=true
 PrivateTmp=true
@@ -213,6 +229,18 @@ fi
 
 # --------------------------------------------------------------- Nginx
 
+# مناطق التخزين والكبح تُعرَّف على مستوى http لا داخل server
+mkdir -p /var/cache/nginx
+cat > /etc/nginx/conf.d/naseej-zones.conf <<'ZONEEOF'
+# تخزين مؤقت لردّ الكتالوج: يُبنى مرة كل دقيقة مهما بلغ عدد الزوار
+proxy_cache_path /var/cache/nginx/naseej levels=1:2 keys_zone=naseej:16m
+                 max_size=256m inactive=10m use_temp_path=off;
+
+# كبح معدّل الطلبات على الواجهة البرمجية: يحمي من الروبوتات وموجات الضغط
+limit_req_zone $binary_remote_addr zone=naseej_api:16m rate=20r/s;
+limit_conn_zone $binary_remote_addr zone=naseej_conn:16m;
+ZONEEOF
+
 cat > /etc/nginx/sites-available/naseej <<NGXEOF
 server {
     listen 80;
@@ -220,6 +248,65 @@ server {
     server_name $DOMAIN;
 
     client_max_body_size 15M;
+    limit_conn naseej_conn 40;
+
+    # الضغط لما يخدمه Nginx مباشرة (الخادم يضغط ردوده بنفسه)
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_proxied any;
+    gzip_types text/plain text/css application/json application/javascript
+               text/javascript image/svg+xml application/manifest+json;
+
+    # صور المنتجات: اسمها من تجزئة محتواها، فلا تتغيّر أبدًا تحت نفس الاسم
+    location /uploads/ {
+        alias $APP_DIR/server/data/uploads/;
+        access_log off;
+        expires 1y;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+        add_header X-Content-Type-Options nosniff;
+    }
+
+    # ملفات الواجهة: يخدمها Nginx مباشرة فلا تمرّ على Node
+    location /assets/ {
+        alias $APP_DIR/assets/;
+        access_log off;
+        expires 7d;
+        add_header Cache-Control "public, max-age=604800";
+        add_header X-Content-Type-Options nosniff;
+    }
+
+    # الكتالوج: يُخزَّن دقيقة، ويُبنى مرة واحدة حتى لو طلبه ألف زائر معًا
+    location = /api/catalog {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header Accept-Encoding \$http_accept_encoding;
+
+        proxy_cache naseej;
+        proxy_cache_valid 200 60s;
+        proxy_cache_key "\$scheme\$request_uri\$http_accept_encoding";
+        proxy_cache_lock on;
+        proxy_cache_lock_timeout 5s;
+        proxy_cache_use_stale updating error timeout http_500 http_502 http_503;
+        proxy_cache_background_update on;
+        add_header X-Cache \$upstream_cache_status;
+    }
+
+    # بقية الواجهة البرمجية: بلا تخزين، مع كبح المعدّل
+    location /api/ {
+        limit_req zone=naseej_api burst=40 nodelay;
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_read_timeout 60s;
+    }
 
     location / {
         proxy_pass http://127.0.0.1:3000;

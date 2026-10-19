@@ -247,6 +247,7 @@
         colorName: o.colorName,
         blurb: o.blurb,
         images: imgs,
+        imagesGenerated: true, // نقش مولَّد: الكتالوج المبدئي بلا صور قماش حقيقية
         video: o.video !== false ? { kind: "generated", color: o.color } : null,
         specs: {
           origin: o.origin,
@@ -528,6 +529,16 @@
     Mode.health = data.health || null;
     emit();
     return { mode: "live", health: Mode.health };
+  }
+
+  /* مسار الوسيط كما يُرسله الخادم نسبيّ (uploads/…) حتى يبقى صغيرًا في
+     الكتالوج. هنا يُحلّ مقابل عنوان الخادم، فيصحّ أيضًا حين يكون الخادم
+     على نطاق غير نطاق الصفحة. وdata URI في وضع العرض يمرّ كما هو. */
+  function mediaUrl(src) {
+    const s = String(src || "");
+    if (!s || /^(data:|blob:|https?:\/\/|\/)/i.test(s)) return s;
+    const base = Mode.live && api() ? api().base : "";
+    return (base ? base.replace(/\/+$/, "") + "/" : "") + s.replace(/^\/+/, "");
   }
 
   /* بعد إجراء على الخادم: نعيد قراءة الطلب من مصدره لا نخمّن نتيجته */
@@ -1016,7 +1027,7 @@
     Mode, boot, loadAdmin, refreshCatalog, refreshAdminOrder,
     isLive: () => Mode.live,
     DB, Cart, Money, Payments, Shipping, placeOrder,
-    fabricArt, bannerArt, wiqfaGlyph, payLogo, shade,
+    fabricArt, bannerArt, wiqfaGlyph, payLogo, shade, mediaUrl,
     fmtQty, fmtDate, fmtDateShort, round2, esc, sleep,
     statusOf, wiqfaOf, categoryOf, onChange, emit,
   };

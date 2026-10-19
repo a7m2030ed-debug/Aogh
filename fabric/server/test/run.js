@@ -353,6 +353,42 @@ async function main() {
       assert.ok(cat.json.products.some((p) => p.id === created.id), "ظهر في الكتالوج");
     });
 
+    await test("قماش بنقش مولَّد يُدخَل الآن وتُرفع صورته لاحقًا", async () => {
+      // مسار من يريد إدخال أقمشته قبل تصويرها: اللوحة تولّد نقشًا من اللون،
+      // ويُعلَّم القماش ليُعرف لاحقًا أنه ينتظر صورة حقيقية.
+      const base = {
+        name: "قماش بلا تصوير", sku: "T-GEN-1", category: "summer", wiqfa: "nisf",
+        color: "#3b2a1a", colorName: "بنّي", blurb: "أُدخل قبل التصوير",
+        specs: { origin: "اليابان", composition: "100٪ بوليستر", weight: "180 غم/م²", width: 150 },
+        meter: { enabled: true, price: 210, stock: 40, low: 10 },
+        active: true,
+      };
+      const gen = await api("POST", "/api/admin/products", Object.assign({}, base, {
+        images: ["data:image/svg+xml;charset=utf-8,%3Csvg%3E%3C/svg%3E"],
+        imagesGenerated: true,
+      }));
+      assert.strictEqual(gen.status, 201, gen.text);
+      assert.strictEqual(gen.json.product.imagesGenerated, true, "وُسم بأنه نقش مولَّد");
+
+      // العلامة للوحة وحدها: الزبون لا يعنيه أن النقش مولَّد
+      const pub = (await api("GET", "/api/catalog", undefined, { noCookie: true }))
+        .json.products.find((p) => p.id === gen.json.product.id);
+      assert.ok(pub, "معروض في المتجر كأي قماش");
+      assert.strictEqual(pub.imagesGenerated, undefined, "العلامة لا تخرج للزبون");
+
+      // رفع صورة حقيقية لاحقًا يرفع العلامة
+      const real = await api("PUT", `/api/admin/products/${gen.json.product.id}`,
+        Object.assign({}, gen.json.product, {
+          images: ["data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="],
+          imagesGenerated: false,
+        }));
+      assert.strictEqual(real.status, 200, real.text);
+      assert.strictEqual(real.json.product.imagesGenerated, false, "زالت العلامة");
+      assert.ok(/^uploads\/.+\.png$/.test(real.json.product.images[0]), "الصورة الحقيقية ملف");
+
+      await api("DELETE", `/api/admin/products/${gen.json.product.id}`);
+    });
+
     await test("إخفاء القماش يُخرجه من المتجر ويبقيه في اللوحة", async () => {
       await api("PUT", `/api/admin/products/${created.id}`, Object.assign({}, created, { active: false }));
       const cat = await api("GET", "/api/catalog", undefined, { noCookie: true });
@@ -389,6 +425,43 @@ async function main() {
       const r = await api("GET", `/api/admin/orders/${order.id}/invoice`);
       assert.strictEqual(r.json.invoice.vatApplied, false, "vatApplied=false");
       assert.strictEqual(r.json.invoice.totals.vat, 0, "لا ضريبة في الفاتورة");
+    });
+
+    await test("الدفع عند الاستلام يُعتمد فورًا بلا بوابة ويخصم المخزون", async () => {
+      // هذا مسار الإطلاق لمن لم تجهز بوابته بعد: لا بوابة تُستدعى أصلًا
+      const cur = (await api("GET", "/api/admin/data")).json.settings;
+      await api("PUT", "/api/admin/settings", {
+        gateways: cur.gateways.map((g) => Object.assign({}, g, { active: g.id === "cod" })),
+      });
+
+      const cat = await api("GET", "/api/catalog", undefined, { noCookie: true });
+      assert.deepStrictEqual(cat.json.settings.gateways.map((g) => g.id), ["cod"], "الدفع عند الاستلام وحده");
+      const target = cat.json.products.find((p) => p.meter.enabled && p.meter.stock > 10);
+      const before = target.meter.stock;
+
+      const r = await api("POST", "/api/orders", {
+        items: [{ productId: target.id, mode: "meter", qty: 3 }],
+        customer: { name: "زبون الدفع عند الاستلام", phone: "0553334444" },
+        shipping: { carrier: "smsa", city: "الرياض", address: "شارع العليا، مبنى 9" },
+        paymentMethod: "cod",
+      }, { noCookie: true });
+
+      assert.strictEqual(r.status, 201, r.text);
+      assert.strictEqual(r.json.redirectUrl, null, "لا انتقال إلى بوابة");
+      assert.strictEqual(r.json.order.status, "new", "اعتُمد فورًا لا pending_payment");
+      assert.strictEqual(r.json.order.payment.status, "pending", "يُحصَّل عند التسليم");
+
+      const after = (await api("GET", "/api/catalog", undefined, { noCookie: true }))
+        .json.products.find((p) => p.id === target.id).meter.stock;
+      assert.strictEqual(after, Math.round((before - 3) * 100) / 100, "خُصم المخزون");
+
+      // التسليم يحوّله إلى مدفوع
+      await api("PATCH", `/api/admin/orders/${r.json.order.id}`, { status: "delivered" });
+      const adm = (await api("GET", "/api/admin/data")).json.orders.find((o) => o.id === r.json.order.id);
+      assert.strictEqual(adm.payment.status, "paid", "صار مدفوعًا بعد التسليم");
+
+      // نعيد وسائل الدفع كما كانت لبقية الاختبارات
+      await api("PUT", "/api/admin/settings", { gateways: cur.gateways });
     });
 
     await test("رقم ضريبي غير صحيح يُرفض", async () => {
