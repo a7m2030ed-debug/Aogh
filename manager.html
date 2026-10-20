@@ -221,6 +221,7 @@ details.map > div{padding:4px 12px 12px; display:flex; flex-direction:column; ga
 .kpi .v{position:absolute; left:3mm; top:4.9mm; width:24.9mm; height:5.6mm; font:700 13pt/5.6mm var(--fs); color:var(--ink-d); white-space:nowrap; overflow:hidden}
 .kpi .s{position:absolute; left:3mm; top:11.2mm; width:25.9mm; height:3mm; font:400 5.5pt/3mm var(--fs); color:var(--mut); white-space:nowrap; overflow:hidden}
 .kpi .s .hot{color:var(--amber)}
+.kpi .s .good{color:var(--good-d)}
 .kpi .nil{color:var(--dash)}
 
 .depts{row-gap:2.1mm; margin-bottom:8mm}
@@ -2070,7 +2071,10 @@ function aggregate(opts) {
     notices.push({ kind: "warn", text: "مراجعو الـWalk-in أكثر من Total Seen — يبدو أن Total Seen لا يشملهم؛ أزل العلامة عن «عمود Total Seen يشمل مراجعي الـWalk-in» في الإعدادات." });
   if (!E.present && state.counts.length) notices.push({ kind: "", text: "لا يوجد قسم طوارئ في الملفات — بطاقة EMERGENCY لا تظهر في التقرير." });
 
-  return { O, E, er: E.present, apptSeen, cap, slots, known, depts, table, listed: table.length, notices, svc, det,
+  /* the branch's net income: every line of the services export, outpatient,
+     emergency and the registration account alike */
+  const revenue = svc ? [...svc.by.values()].reduce((n, p) => n + p.net, 0) : null;
+  return { O, E, er: E.present, apptSeen, cap, revenue, slots, known, depts, table, listed: table.length, notices, svc, det,
            billSpan: svc && svc.dates.length ? { from: new Date(Math.min(...svc.dates)), to: new Date(Math.max(...svc.dates)) } : null };
 }
 
@@ -2159,6 +2163,13 @@ function glance(data) {
     O.visits == null || !cap ? [] :
     known.walkin ? [nf(apptSeen) + " seen + " + nf(O.walkin || 0) + " walk-in / " + nf(cap)]
                  : [nf(O.visits) + " visits / " + nf(cap)]));
+  /* the branch's income, and that income over every visit of the day —
+     the clinics' and the emergency room's */
+  if (data.revenue != null) {
+    const visits = (O.visits || 0) + (data.er ? E.visits || 0 : 0);
+    box.append(kpi("Net Revenue", kFmt(data.revenue),
+      visits > 0 ? [{ cls: "good", t: "Per visit: " + nf(data.revenue / visits) }] : []));
+  }
   return box;
 }
 function deptGrid(data) {
