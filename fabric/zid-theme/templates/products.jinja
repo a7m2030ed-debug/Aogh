@@ -1,0 +1,175 @@
+{% extends "layout.jinja" %}
+
+{% block title %}{{ store.name }} – {{ _('All Products') }}{% endblock %}
+
+{% block content %}
+  {# Breadcrumb Section #}
+  <section class="px-4 py-6 md:px-16">
+    <div class="theme-container">
+      {%
+        with
+        items=[
+          {'href': url_for('home'), 'label': _("Home")},
+          {'label': _("All Products")}
+        ]
+      %}
+        {% include 'components/ui/breadcrumb.jinja' %}
+      {% endwith %}
+    </div>
+  </section>
+
+  <section class="px-4 pb-6 md:px-16 md:pb-16">
+    <div class="theme-container">
+      {# Products Content - This entire container is swapped during AJAX filtering #}
+      <div
+        id="products-content"
+        class="flex flex-col gap-6 transition-opacity duration-200"
+      >
+        {% include 'components/products/products-header.jinja' %}
+        {% if products.results %}
+          <div
+            data-grid-root="true"
+            data-grid="four"
+            class="group/grid grid gap-x-4 gap-y-10"
+          >
+            {% for product in products.results %}
+              {% include 'components/products/product-card.jinja' %}
+            {% endfor %}
+          </div>
+        {% else %}
+          {# No results state #}
+          <div class="flex flex-col items-center justify-center py-16 text-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="64"
+              height="64"
+              viewBox="0 0 24 24"
+              fill="none"
+              class="text-muted-foreground mb-6"
+            >
+              <path
+                d="M15.5 14H14.71L14.43 13.73C15.41 12.59 16 11.11 16 9.5C16 5.91 13.09 3 9.5 3C5.91 3 3 5.91 3 9.5C3 13.09 5.91 16 9.5 16C11.11 16 12.59 15.41 13.73 14.43L14 14.71V15.5L19 20.49L20.49 19L15.5 14ZM9.5 14C7.01 14 5 11.99 5 9.5C5 7.01 7.01 5 9.5 5C11.99 5 14 7.01 14 9.5C14 11.99 11.99 14 9.5 14Z"
+                fill="currentColor"
+              />
+              <path
+                d="M7 9H12V10H7V9Z"
+                fill="currentColor"
+              />
+            </svg>
+            <h3 class="text-foreground text-h6 mb-2">{{ _("No results found") }}</h3>
+            <p class="text-muted-foreground text-body2 mb-6">
+              {{ _("We couldn't find any products matching your search. Try adjusting your filters or search terms.") }}
+            </p>
+            <a
+              href="/products"
+              class="bg-primary text-primary-foreground rounded-lg px-6 py-3 text-sm font-medium"
+            >
+              {{ _("View all products") }}
+            </a>
+          </div>
+        {% endif %}
+        {% set totalPages = ((products.count / (session.query_params.get('page_size') or 24)|int) | round(0, 'ceil')) | int %}
+        {% set currentPage = products.page %}
+        {% include 'components/products/pagination.jinja' %}
+      </div>
+    </div>
+  </section>
+
+  {# Quick View Modal #}
+  {% include 'components/products/quick-view-modal.jinja' %}
+
+  <script>
+    (function () {
+      // Track grid mode separately for desktop and mobile
+      let desktopGridMode = "four";
+      let mobileGridMode = "one";
+
+      function isMobile() {
+        return window.matchMedia("(max-width: 767px)").matches;
+      }
+
+      function getCurrentMode() {
+        return isMobile() ? mobileGridMode : desktopGridMode;
+      }
+
+      function initGridControls() {
+        const gridRoot = document.querySelector("[data-grid-root]");
+
+        if (!gridRoot) return;
+
+        // Apply current mode to grid root
+        gridRoot.setAttribute("data-grid", getCurrentMode());
+
+        // Update button checked states
+        const allButtons = document.querySelectorAll("[data-grid-btn]");
+        allButtons.forEach((btn) => {
+          const mode = btn.dataset.gridBtn;
+          const isDesktopBtn = mode === "four";
+          const isMobileBtn = mode === "one";
+          const isListBtn = mode === "list";
+
+          let shouldCheck = false;
+          if (isDesktopBtn) {
+            shouldCheck = mode === desktopGridMode;
+          } else if (isMobileBtn) {
+            shouldCheck = mobileGridMode === "one";
+          } else if (isListBtn) {
+            // List button appears on both - check based on current context
+            shouldCheck = (isMobile() && mobileGridMode === "list") || (!isMobile() && desktopGridMode === "list");
+          }
+
+          btn.checked = shouldCheck;
+        });
+      }
+
+      function setGrid(mode) {
+        const gridRoot = document.querySelector("[data-grid-root]");
+
+        // Update the appropriate mode based on button type
+        if (mode === "one") {
+          mobileGridMode = mode;
+        } else if (mode === "four") {
+          desktopGridMode = mode;
+        } else if (mode === "list") {
+          // List mode updates based on current viewport
+          if (isMobile()) {
+            mobileGridMode = mode;
+          } else {
+            desktopGridMode = mode;
+          }
+        }
+
+        if (gridRoot) {
+          gridRoot.setAttribute("data-grid", mode);
+        }
+
+        // Update all button states
+        initGridControls();
+      }
+
+      // Event delegation for grid buttons (works after AJAX swap)
+      document.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-grid-btn]");
+        if (btn) {
+          setGrid(btn.dataset.gridBtn);
+        }
+      });
+
+      // Handle viewport changes
+      const mediaQuery = window.matchMedia("(max-width: 767px)");
+      mediaQuery.addEventListener("change", () => {
+        const gridRoot = document.querySelector("[data-grid-root]");
+        if (gridRoot) {
+          gridRoot.setAttribute("data-grid", getCurrentMode());
+        }
+        initGridControls();
+      });
+
+      // Re-initialize after AJAX swap
+      window.addEventListener("products-updated", initGridControls);
+
+      // Initial setup
+      initGridControls();
+    })();
+  </script>
+{% endblock %}

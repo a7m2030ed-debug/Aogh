@@ -1,0 +1,76 @@
+{#
+  "How many meters do I need?" — suggests fabric length from the
+  customer's height and number of thobes.
+
+  Optional: calc_rows_source — list of {label, meters} from the merchant's
+  settings (sections pass their own list, the product page passes the
+  layout list). Built-in rows when it is empty.
+
+  Behavior: assets/js/features/meter-calculator.js
+#}
+{% set calc = namespace(rows=[]) %}
+{% for row in (calc_rows_source if calc_rows_source is defined else none) or [] %}
+  {% if row.label and row.meters %}
+    {% set calc.rows = calc.rows + [{'label': row.label, 'meters': row.meters}] %}
+  {% endif %}
+{% endfor %}
+{% set calc_rows = calc.rows %}
+{% if calc_rows | length == 0 %}
+  {% set calc_rows = [
+    {'label': _('Up to 165 cm'), 'meters': 3},
+    {'label': _('166 – 178 cm'), 'meters': 3.5},
+    {'label': _('179 – 188 cm'), 'meters': 4},
+    {'label': _('Over 188 cm'), 'meters': 4.5}
+  ] %}
+{% endif %}
+{% set calc_selected = 1 if calc_rows | length > 1 else 0 %}
+
+<div
+  class="nsj-calc"
+  data-nsj-calc
+>
+  <p class="nsj-calc__label">{{ _('Your height') }}</p>
+  <div
+    class="nsj-calc__opts"
+    style="--nsj-opts: {{ calc_rows | length }}"
+  >
+    {% for row in calc_rows %}
+      <button
+        type="button"
+        class="nsj-calc__opt"
+        data-meters="{{ row.meters }}"
+        aria-pressed="{{ 'true' if loop.index0 == calc_selected else 'false' }}"
+      >
+        {{ row.label }}
+      </button>
+    {% endfor %}
+  </div>
+  <div class="nsj-calc__row">
+    <span class="nsj-calc__label">{{ _('Number of thobes') }}</span>
+    <div class="nsj-calc__stepper">
+      <button
+        type="button"
+        data-step="-1"
+        aria-label="{{ _('Decrease') }}"
+      >
+        −
+      </button>
+      <output data-count>1</output>
+      <button
+        type="button"
+        data-step="1"
+        aria-label="{{ _('Increase') }}"
+      >
+        +
+      </button>
+    </div>
+  </div>
+  <div
+    class="nsj-calc__result"
+    aria-live="polite"
+  >
+    <strong data-total>{{ calc_rows[calc_selected].meters }}</strong>
+    <span>{{ _('meters') }}</span>
+  </div>
+  <p class="nsj-calc__hint">{{ _('An estimate for a standard thobe. Your tailor may add half a meter for wide sleeves or a longer cut.') }}</p>
+</div>

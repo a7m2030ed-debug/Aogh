@@ -1,0 +1,105 @@
+{% from 'components/naseej/macros.jinja' import drape_art, arrow %}
+{% set layout = settings.layout | default('split') %}
+{% set is_lazy = (settings.order | default(3) | int) > 2 %}
+{% set heading = settings.heading | default('') | trim %}
+{% set highlight = settings.heading_highlight | default('') | trim %}
+{% set notes = (settings.notes | default('')).split('|') | map('trim') | select | list %}
+
+{% macro hero_media(class='') %}
+  {% if settings.image %}
+    <picture>
+      {% if settings.image_mobile %}
+        <source
+          media="(max-width: 767px)"
+          srcset="{{ image_url(settings.image_mobile, w=960, q=85, f='auto') }}"
+        />
+      {% endif %}
+      <img
+        src="{{ image_url(settings.image, w=1600, q=88, f='auto') }}"
+        alt="{{ heading }}"
+        width="800"
+        height="1000"
+        class="{{ class }}"
+        {% if is_lazy %}loading="lazy"{% else %}fetchpriority="high"{% endif %}
+      />
+    </picture>
+  {% else %}
+    {{ drape_art(sectionId ~ '-art', settings.art_tone | default('ivory')) }}
+  {% endif %}
+{% endmacro %}
+
+<section
+  section-id="{{ sectionId }}"
+  class="nsj-hero {{ 'nsj-hero--full' if layout == 'full' }}"
+>
+  {% if layout == 'full' %}
+    <div class="nsj-hero__bg">{{ hero_media() }}</div>
+  {% endif %}
+
+  <div class="theme-container {{ 'nsj-hero__grid' if layout != 'full' }}">
+    <div class="nsj-hero__copy">
+      {% if settings.eyebrow and settings.eyebrow | trim %}
+        <span class="nsj-eyebrow">{{ settings.eyebrow }}</span>
+      {% endif %}
+
+      {% if heading %}
+        {# Optional gold word: split around it rather than building HTML strings #}
+        {% set parts = heading.split(highlight, 1) if highlight and highlight in heading else [heading] %}
+        {% set tag = 'h1' if settings.is_primary_hero else 'h2' %}
+        <{{ tag }} class="nsj-hero__title">
+          {%- if parts | length == 2 -%}
+            {{ parts[0] }}<em>{{ highlight }}</em>{{ parts[1] }}
+          {%- else -%}
+            {{ heading }}
+          {%- endif -%}
+        </{{ tag }}>
+      {% endif %}
+
+      {% if settings.description and settings.description | trim %}
+        <p class="nsj-hero__lead">{{ settings.description }}</p>
+      {% endif %}
+
+      {% if (settings.button_text and settings.button_text | trim) or (settings.button2_text and settings.button2_text | trim) %}
+        <div class="nsj-hero__actions">
+          {% if settings.button_text and settings.button_text | trim %}
+            <a
+              href="{{ settings.button_url or url_for('list_products') }}"
+              class="btn btn-filled btn-lg px-7"
+            >
+              {{ settings.button_text }}
+              {{ arrow() }}
+            </a>
+          {% endif %}
+          {% if settings.button2_text and settings.button2_text | trim %}
+            <a
+              href="{{ settings.button2_url or '#wiqfa' }}"
+              class="btn btn-lg px-7 {{ 'btn-on-dark' if layout == 'full' else 'btn-outlined' }}"
+            >
+              {{ settings.button2_text }}
+            </a>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      {% if notes %}
+        <p class="nsj-hero__note">
+          {% for note in notes %}
+            <span>{{ note }}</span>
+          {% endfor %}
+        </p>
+      {% endif %}
+    </div>
+
+    {% if layout != 'full' %}
+      <div class="nsj-hero__art">
+        <div class="nsj-hero__frame">{{ hero_media() }}</div>
+        {% if settings.seal_title and settings.seal_title | trim %}
+          <div class="nsj-hero__seal">
+            <strong>{{ settings.seal_title }}</strong>
+            {% if settings.seal_text %}<span>{{ settings.seal_text }}</span>{% endif %}
+          </div>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+</section>

@@ -1,0 +1,28 @@
+{
+  "ar": {
+    "font_family": "IBM+Plex+Sans+Arabic",
+    "font_heading": "El+Messiri",
+    "theme_primary": "#1B1A17",
+    "theme_primary_foreground": "#FAF7F1",
+    "theme_secondary": "#F2ECE1",
+    "theme_accent": "#A98B4B",
+    "theme_background": "#FAF7F1",
+    "theme_foreground": "#1B1A17",
+    "theme_muted": "#6F6A60",
+    "theme_border": "#E4DCCD",
+    "theme_radius": 2
+  },
+  "en": {
+    "font_family": "Roboto",
+    "font_heading": "El+Messiri",
+    "theme_primary": "#1B1A17",
+    "theme_primary_foreground": "#FAF7F1",
+    "theme_secondary": "#F2ECE1",
+    "theme_accent": "#A98B4B",
+    "theme_background": "#FAF7F1",
+    "theme_foreground": "#1B1A17",
+    "theme_muted": "#6F6A60",
+    "theme_border": "#E4DCCD",
+    "theme_radius": 2
+  }
+}

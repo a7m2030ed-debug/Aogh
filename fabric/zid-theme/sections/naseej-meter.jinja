@@ -1,0 +1,29 @@
+{% set wa_number = (settings.whatsapp | default('') | string).replace('+', '').replace(' ', '') %}
+
+<section
+  section-id="{{ sectionId }}"
+  class="nsj-section"
+>
+  <div class="theme-container">
+    <div class="nsj-calc-panel">
+      <div class="flex flex-col items-start gap-5">
+        {% with eyebrow=settings.eyebrow, title=settings.title, description=settings.description, align='start' %}
+          {% include 'components/naseej/section-head.jinja' %}
+        {% endwith %}
+        {% if wa_number and settings.whatsapp_text %}
+          <a
+            href="https://wa.me/{{ wa_number }}?text={{ settings.title | default('') | urlencode }}"
+            target="_blank"
+            rel="noopener"
+            class="btn btn-outlined btn-lg"
+          >
+            {{ settings.whatsapp_text }}
+          </a>
+        {% endif %}
+      </div>
+      {% with calc_rows_source=settings.rows %}
+        {% include 'components/naseej/meter-calculator.jinja' %}
+      {% endwith %}
+    </div>
+  </div>
+</section>

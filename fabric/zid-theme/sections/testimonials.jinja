@@ -1,0 +1,150 @@
+<section
+  section-id="{{ sectionId }}"
+  class="section-testimonials px-4 py-6 md:px-16 md:py-16"
+>
+  <div class="theme-container space-y-6">
+    {% if settings.title and settings.title | trim %}
+      <h2 class="text-foreground text-xl md:text-2xl font-semibold tracking-tight">{{ settings.title }}</h2>
+    {% endif %}
+
+    {# Wrapper for carousel + controls so data-carousel can find all elements #}
+    <div
+      class="embla-wrapper space-y-6"
+      data-carousel
+      data-carousel-align="start"
+    >
+      <div class="embla">
+        <div
+          class="embla__viewport overflow-hidden"
+          data-carousel-viewport
+        >
+          <div class="embla__container">
+            {% for testimonial in safeget(settings, "testimonials", []) %}
+              <div class="embla__slide h-auto">
+                <article class="border-accent bg-secondary flex h-full flex-col rounded border p-6">
+                  {% if testimonial.rating %}
+                    <div
+                      class="flex items-center gap-1"
+                      aria-label="{{ testimonial.rating }} out of 5 stars"
+                    >
+                      {% for i in range(5) %}
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          class="{% if i < testimonial.rating %}text-warning{% else %}text-muted-foreground{% endif %}"
+                        >
+                          <path
+                            d="M12 18.1704L18.18 21.9004L16.54 14.8704L22 10.1404L14.81 9.53039L12 2.90039L9.19 9.53039L2 10.1404L7.46 14.8704L5.82 21.9004L12 18.1704Z"
+                            fill="currentColor"
+                          ></path>
+                        </svg>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+
+                  <p class="text-foreground text-base mt-6 mb-4 flex-1">{{ testimonial.text }}</p>
+
+                  {% if testimonial.name and testimonial.name | trim %}
+                    <h3 class="text-foreground text-sm font-semibold">{{ testimonial.name }}</h3>
+                  {% endif %}
+                </article>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="embla__progress bg-secondary h-1 w-full rounded">
+          <div
+            class="embla__progress-bar bg-accent h-1 rounded-sm"
+            style="width: 0%"
+            data-carousel-progress
+          ></div>
+        </div>
+        <div class="hidden items-center gap-2 md:flex">
+          <button
+            class="embla__prev flex size-10 items-center justify-center rounded bg-white/10 p-2.5 backdrop-blur-sm disabled:opacity-30"
+            aria-label="{{ _('Previous') }}"
+            data-carousel-prev
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              class="rtl:rotate-180"
+              fill="none"
+            >
+              <path
+                d="M10.2945 11.9752L14.6477 16.3284C14.8177 16.4984 14.8986 16.6974 14.8902 16.9252C14.8819 17.153 14.7927 17.3519 14.6227 17.5219C14.4527 17.6919 14.2496 17.7769 14.0135 17.7769C13.7773 17.7769 13.5742 17.6919 13.4042 17.5219L8.46022 12.5779C8.36889 12.4866 8.30255 12.3913 8.26122 12.2919C8.21989 12.1928 8.19922 12.0872 8.19922 11.9752C8.19922 11.8632 8.21989 11.7576 8.26122 11.6584C8.30255 11.5591 8.36889 11.4638 8.46022 11.3724L13.4292 6.40344C13.5992 6.23344 13.8023 6.14844 14.0385 6.14844C14.2746 6.14844 14.4777 6.23344 14.6477 6.40344C14.8177 6.57344 14.9027 6.77652 14.9027 7.01269C14.9027 7.24885 14.8177 7.45194 14.6477 7.62194L10.2945 11.9752Z"
+                fill="currentColor"
+              ></path>
+            </svg>
+          </button>
+
+          <button
+            class="embla__next flex size-10 items-center justify-center rounded bg-white/10 p-2.5 backdrop-blur-sm disabled:opacity-30"
+            aria-label="{{ _('Next') }}"
+            data-carousel-next
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              class="rtl:rotate-180"
+              fill="none"
+            >
+              <path
+                d="M13.1081 11.9746L8.7548 7.62135C8.5848 7.45135 8.50397 7.25244 8.5123 7.0246C8.52064 6.79677 8.6098 6.59785 8.7798 6.42785C8.9498 6.25785 9.15289 6.17285 9.38905 6.17285C9.62522 6.17285 9.8283 6.25785 9.9983 6.42785L14.9423 11.3719C15.0336 11.4632 15.1 11.5585 15.1413 11.6579C15.1826 11.757 15.2033 11.8626 15.2033 11.9746C15.2033 12.0866 15.1826 12.1922 15.1413 12.2914C15.1 12.3907 15.0336 12.486 14.9423 12.5774L9.9733 17.5464C9.8033 17.7164 9.60439 17.7972 9.37655 17.7889C9.14872 17.7805 8.9498 17.6914 8.7798 17.5214C8.6098 17.3514 8.5248 17.1483 8.5248 16.9121C8.5248 16.6759 8.6098 16.4729 8.7798 16.3029L13.1081 11.9746Z"
+                fill="currentColor"
+              ></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  [section-id="{{ sectionId }}"] .embla {
+    --slide-spacing: 1rem; /* gap 4 = 1rem */
+    --slide-size-xs: 83.3333%;
+    --slide-size-sm: 50%;
+    --slide-size-lg: 33.3333%;
+  }
+
+  [section-id="{{ sectionId }}"] .embla__container {
+    display: flex;
+    touch-action: pan-y pinch-zoom;
+    margin-inline-start: calc(var(--slide-spacing) * -1);
+    align-items: stretch;
+  }
+
+  [section-id="{{ sectionId }}"] .embla__slide {
+    transform: translate3d(0, 0, 0);
+    flex: 0 0 var(--slide-size-xs);
+    min-width: 0;
+    padding-inline-start: var(--slide-spacing);
+  }
+
+  @media (min-width: 640px) {
+    /* sm */
+    [section-id="{{ sectionId }}"] .embla__slide {
+      flex-basis: var(--slide-size-sm);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    /* lg */
+    [section-id="{{ sectionId }}"] .embla__slide {
+      flex-basis: var(--slide-size-lg);
+    }
+  }
+</style>
+
+{# Carousel is now initialized by main.js using data-carousel attributes #}

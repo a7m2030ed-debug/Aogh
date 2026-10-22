@@ -1,0 +1,44 @@
+{% from 'components/naseej/macros.jinja' import drape_art, arrow %}
+{% set is_lazy = (settings.order | default(3) | int) > 2 %}
+
+<section
+  section-id="{{ sectionId }}"
+  class="nsj-section"
+>
+  <div class="theme-container nsj-story {{ 'nsj-story--flip' if settings.flip }}">
+    <div class="nsj-story__media">
+      {% if settings.image %}
+        <img
+          src="{{ image_url(settings.image, w=1500, q=85, f='auto') }}"
+          alt="{{ settings.title }}"
+          {% if is_lazy %}loading="lazy"{% endif %}
+        />
+      {% else %}
+        {{ drape_art(sectionId ~ '-art', settings.art_tone | default('sand')) }}
+      {% endif %}
+    </div>
+    <div class="nsj-story__body">
+      {% if settings.eyebrow %}
+        <span class="nsj-eyebrow">{{ settings.eyebrow }}</span>
+      {% endif %}
+      {% if settings.title %}
+        <h2 class="nsj-title">{{ settings.title }}</h2>
+      {% endif %}
+      {% if settings.text %}
+        <p class="nsj-story__text">{{ settings.text }}</p>
+      {% endif %}
+      {% if settings.signature %}
+        <p class="nsj-story__sign">{{ settings.signature }}</p>
+      {% endif %}
+      {% if settings.button_text and settings.button_text | trim %}
+        <a
+          href="{{ settings.button_url or url_for('list_products') }}"
+          class="btn btn-outlined btn-lg mt-2"
+        >
+          {{ settings.button_text }}
+          {{ arrow() }}
+        </a>
+      {% endif %}
+    </div>
+  </div>
+</section>

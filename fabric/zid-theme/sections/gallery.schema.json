@@ -1,0 +1,102 @@
+{
+  "template": "sections/gallery.jinja",
+  "name": {
+    "ar": "معرض الصور",
+    "en": "Gallery"
+  },
+  "icon": "gallery-line",
+  "settings": [
+    {
+      "id": "title",
+      "type": "text",
+      "label": {
+        "ar": "العنوان",
+        "en": "Title"
+      },
+      "default": ""
+    },
+    {
+      "id": "gallery",
+      "type": "list",
+      "label": {
+        "ar": "الصور",
+        "en": "Images"
+      },
+      "max_items": 8,
+      "settings": [
+        {
+          "id": "src",
+          "type": "image",
+          "label": {
+            "ar": "الصورة (سطح المكتب)",
+            "en": "Image (Desktop)"
+          },
+          "info": {
+            "ar": "ارفع صورة بحجم 650 × 650 بكسل",
+            "en": "Upload image 650 × 650 pixels"
+          }
+        },
+        {
+          "id": "src_mobile",
+          "type": "image",
+          "label": {
+            "ar": "الصورة (موبايل)",
+            "en": "Image (Mobile)"
+          },
+          "info": {
+            "ar": "ارفع صورة بحجم 650 × 650 بكسل",
+            "en": "Upload image 650 × 650 pixels"
+          }
+        },
+        {
+          "id": "alt",
+          "type": "text",
+          "label": {
+            "ar": "النص البديل للصورة",
+            "en": "Image alt text"
+          }
+        },
+        {
+          "id": "image_title",
+          "type": "text",
+          "label": {
+            "ar": "عنوان الصورة",
+            "en": "Image title"
+          }
+        },
+        {
+          "id": "primary_button_text",
+          "type": "text",
+          "label": {
+            "ar": "نص الزر الأساسي",
+            "en": "Primary button text"
+          }
+        },
+        {
+          "id": "primary_button_url",
+          "type": "url",
+          "label": {
+            "ar": "رابط الزر الأساسي",
+            "en": "Primary button URL"
+          }
+        },
+        {
+          "id": "secondary_button_text",
+          "type": "text",
+          "label": {
+            "ar": "نص الزر الثانوي",
+            "en": "Secondary button text"
+          }
+        },
+        {
+          "id": "secondary_button_url",
+          "type": "url",
+          "label": {
+            "ar": "رابط الزر الثانوي",
+            "en": "Secondary button URL"
+          }
+        }
+      ]
+    }
+  ]
+}

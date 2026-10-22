@@ -1,0 +1,106 @@
+{% set is_lazy = (settings.order | default(3) | int) > 2 %}
+
+<section
+  section-id="{{ sectionId }}"
+  class="section-partners px-4 py-6 md:px-16 md:py-16"
+>
+  <div class="theme-container space-y-6">
+    {% if settings.title %}
+      <h2 class="text-foreground text-xl md:text-2xl font-semibold tracking-tight">{{ settings.title }}</h2>
+    {% endif %}
+    {% if settings.store_partners %}
+      <div
+        class="embla relative overflow-hidden"
+        data-carousel
+        data-carousel-loop="true"
+        data-carousel-dragfree="true"
+        data-carousel-autoscroll="0.5"
+      >
+        <div class="fade-left pointer-events-none absolute top-0 z-10 h-full w-20 ltr:left-0 rtl:right-0"></div>
+        <div class="fade-right pointer-events-none absolute top-0 z-10 h-full w-20 ltr:right-0 rtl:left-0"></div>
+        <div class="embla__viewport overflow-hidden" data-carousel-viewport>
+          <div class="embla__container">
+            {% for partner in settings.store_partners %}
+              <div class="embla__slide">
+                <div class="flex h-[72px] w-[138px] shrink-0 items-center justify-center">
+                  {% if partner.url %}
+                    <a
+                      href="{{ partner.url }}"
+                      class="flex h-full w-full items-center justify-center"
+                    >
+                      <picture>
+                        {% if partner.image_mobile %}
+                          <source
+                            media="(max-width: 767px)"
+                            srcset="{{ image_url(partner.image_mobile, w=160, q=75, f='auto') }}"
+                          />
+                        {% endif %}
+                        <img
+                          src="{{ image_url(partner.image, w=160, q=75, f='auto') }}"
+                          alt="{{ partner.name }}"
+                          width="160"
+                          height="40"
+                          class="h-10 w-auto object-contain"
+                          {% if is_lazy %}loading="lazy"{% endif %}
+                        />
+                      </picture>
+                    </a>
+                  {% else %}
+                    <picture>
+                      {% if partner.image_mobile %}
+                        <source
+                          media="(max-width: 767px)"
+                          srcset="{{ image_url(partner.image_mobile, w=160, q=75, f='auto') }}"
+                        />
+                      {% endif %}
+                      <img
+                        src="{{ image_url(partner.image, w=160, q=75, f='auto') }}"
+                        alt="{{ partner.name }}"
+                        width="160"
+                        height="40"
+                        class="h-10 w-auto object-contain"
+                        {% if is_lazy %}loading="lazy"{% endif %}
+                      />
+                    </picture>
+                  {% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+  <style>
+    .fade-left {
+      background: linear-gradient(to right, var(--color-background) 0%, transparent 100%);
+    }
+
+    .fade-right {
+      background: linear-gradient(to left, var(--color-background) 0%, transparent 100%);
+    }
+
+    [dir="rtl"] .fade-left {
+      background: linear-gradient(to left, var(--color-background) 0%, transparent 100%);
+    }
+
+    [dir="rtl"] .fade-right {
+      background: linear-gradient(to right, var(--color-background) 0%, transparent 100%);
+    }
+    [section-id="{{ sectionId }}"] .embla {
+      --slide-spacing: 2rem; /* gap-8 = 32px from Figma */
+    }
+
+    [section-id="{{ sectionId }}"] .embla__container {
+      display: flex;
+      touch-action: pan-y pinch-zoom;
+    }
+
+    [section-id="{{ sectionId }}"] .embla__slide {
+      transform: translate3d(0, 0, 0);
+      flex: 0 0 auto;
+      min-width: 0;
+      padding-left: var(--slide-spacing);
+    }
+  </style>
+</section>

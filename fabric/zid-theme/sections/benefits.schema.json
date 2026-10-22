@@ -1,0 +1,61 @@
+{
+  "template": "sections/benefits.jinja",
+  "name": {
+    "ar": "خصائص المتجر",
+    "en": "Store Benefits"
+  },
+  "icon": "award-line",
+  "settings": [
+    {
+      "id": "store_features",
+      "type": "list",
+      "label": {
+        "ar": "المزايا",
+        "en": "Features"
+      },
+      "max_items": 4,
+      "settings": [
+        {
+          "id": "image",
+          "type": "image",
+          "label": {
+            "ar": "الصورة (سطح المكتب)",
+            "en": "Image (Desktop)"
+          },
+          "info": {
+            "ar": "ارفع صورة بحجم 200 × 200 بكسل",
+            "en": "Upload image 200 × 200 pixels"
+          }
+        },
+        {
+          "id": "image_mobile",
+          "type": "image",
+          "label": {
+            "ar": "الصورة (موبايل)",
+            "en": "Image (Mobile)"
+          },
+          "info": {
+            "ar": "ارفع صورة بحجم 200 × 200 بكسل",
+            "en": "Upload image 200 × 200 pixels"
+          }
+        },
+        {
+          "id": "title",
+          "type": "text",
+          "label": {
+            "ar": "العنوان",
+            "en": "Title"
+          }
+        },
+        {
+          "id": "description",
+          "type": "text",
+          "label": {
+            "ar": "الوصف",
+            "en": "Description"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{% from 'components/naseej/macros.jinja' import icon %}
+
+{% set feats = namespace(items=[]) %}
+{% for item in settings.items or [] %}
+  {% if item.title and item.title | trim %}
+    {% set feats.items = feats.items + [item] %}
+  {% endif %}
+{% endfor %}
+{% if feats.items | length == 0 %}
+  {% set feats.items = [
+    {'icon': 'scissors', 'title': 'قصّ بالمتر', 'text': 'نقصّ لك المقدار الذي تحتاجه، من متر واحد.'},
+    {'icon': 'truck', 'title': 'شحن لكل المدن', 'text': 'يصلك طلبك خلال 1 – 3 أيام عمل.'},
+    {'icon': 'shield', 'title': 'أقمشة أصلية', 'text': 'خامات مختارة باليد، بمصدر واضح لكل قماش.'},
+    {'icon': 'card', 'title': 'دفع آمن', 'text': 'مدى، فيزا، آبل باي، والتقسيط.'}
+  ] %}
+{% endif %}
+
+<section
+  section-id="{{ sectionId }}"
+  class="nsj-section {{ 'nsj-tone-sand' if settings.tone == 'sand' }}"
+  style="padding-block: clamp(2.5rem, 2rem + 2vw, 4rem)"
+>
+  <div class="theme-container">
+    {% if settings.title and settings.title | trim %}
+      {% with title=settings.title %}
+        {% include 'components/naseej/section-head.jinja' %}
+      {% endwith %}
+    {% endif %}
+    <div
+      class="nsj-features"
+      style="--nsj-cols: {{ feats.items | length }}"
+    >
+      {% for item in feats.items %}
+        <div class="nsj-feature">
+          <span class="nsj-feature__icon">{{ icon(item.icon or 'star') }}</span>
+          <h3 class="nsj-feature__title">{{ item.title }}</h3>
+          {% if item.text %}
+            <p class="nsj-feature__text">{{ item.text }}</p>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>

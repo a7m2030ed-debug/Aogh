@@ -1,0 +1,58 @@
+{
+  "template": "sections/testimonials.jinja",
+  "name": {
+    "ar": "آراء العملاء",
+    "en": "Testimonials"
+  },
+  "icon": "double-quotes-l",
+  "settings": [
+    {
+      "id": "title",
+      "type": "text",
+      "label": {
+        "ar": "العنوان",
+        "en": "Title"
+      },
+      "default": "Customer Testimonials"
+    },
+    {
+      "id": "testimonials",
+      "type": "list",
+      "label": {
+        "ar": "رأي العميل",
+        "en": "Testimonial"
+      },
+      "max_items": 12,
+      "settings": [
+        {
+          "id": "rating",
+          "type": "range",
+          "label": {
+            "ar": "التقييم",
+            "en": "Rating"
+          },
+          "min": 1,
+          "max": 5,
+          "step": 1,
+          "default": 5
+        },
+        {
+          "id": "text",
+          "type": "textarea",
+          "label": {
+            "ar": "النص",
+            "en": "Text"
+          }
+        },
+        {
+          "id": "name",
+          "type": "text",
+          "label": {
+            "ar": "الاسم",
+            "en": "Name"
+          }
+        }
+      ]
+    }
+  ]
+}

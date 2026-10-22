@@ -1,0 +1,398 @@
+<footer
+  id="footer"
+  data-tone="{{ settings.footer_tone | default('dark') }}"
+  class="bg-secondary px-4 py-12 md:px-16 md:py-20"
+>
+  <div class="theme-container">
+    <div
+      class="nsj-ornament nsj-footer-ornament"
+      aria-hidden="true"
+    >
+      <i></i>
+    </div>
+    <div class="grid grid-cols-1 gap-8 md:grid-cols-[repeat(auto-fit,minmax(250px,1fr))]">
+      <div class="space-y-4">
+        {% if settings.logo_logo_desktop or settings.logo_logo_mobile %}
+          <img
+            width="106"
+            height="44"
+            src="{{ image_url(settings.logo_logo_desktop | default(settings.logo_logo_mobile) | default(store.logo), w=212, q=90, f='auto') }}"
+            class="hidden md:block"
+            alt="{{ store.name }}"
+          />
+          <img
+            width="106"
+            height="44"
+            src="{{ image_url(settings.logo_logo_mobile | default(settings.logo_logo_desktop) | default(store.logo), w=212, q=90, f='auto') }}"
+            class="block md:hidden"
+            alt="{{ store.name }}"
+          />
+        {% elif store.logo %}
+          <img
+            width="106"
+            height="44"
+            src="{{ image_url(store.logo, w=212, q=90, f='auto') }}"
+            alt="{{ store.name }}"
+          />
+        {% else %}
+          {% include 'components/naseej/wordmark.jinja' %}
+        {% endif %}
+        <p class="text-foreground text-sm text-balance">{{ settings.about_us_about_us|safe }}</p>
+        <h3 class="text-foreground text-sm font-medium">
+          {% if store.settings.contact.title %}
+            {{ store.settings.contact.title }}
+          {% else %}
+            {{ _("Follow us") }}
+          {% endif %}
+        </h3>
+        <div class="flex gap-3">
+          {% if store.settings.contact.facebook %}
+            <a
+              href="https://www.facebook.com/{{ store.settings.contact.facebook }}"
+              target="_blank"
+              class="text-foreground"
+            >
+              <span class="sr-only">Facebook</span>
+              <svg
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden="true"
+                class="size-6"
+              >
+                <path
+                  d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"
+                  clip-rule="evenodd"
+                  fill-rule="evenodd"
+                ></path>
+              </svg>
+            </a>
+          {% endif %}
+          {% if store.settings.contact.instagram %}
+            <a
+              href="https://www.instagram.com/{{ store.settings.contact.instagram }}"
+              target="_blank"
+              class="text-foreground"
+            >
+              <span class="sr-only">Instagram</span>
+              <svg
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden="true"
+                class="size-6"
+              >
+                <path
+                  d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772A4.902 4.902 0 015.45 2.525c.636-.247 1.363-.416 2.427-.465C8.901 2.013 9.256 2 11.685 2h.63zm-.081 1.802h-.468c-2.456 0-2.784.011-3.807.058-.975.045-1.504.207-1.857.344-.467.182-.8.398-1.15.748-.35.35-.566.683-.748 1.15-.137.353-.3.882-.344 1.857-.047 1.023-.058 1.351-.058 3.807v.468c0 2.456.011 2.784.058 3.807.045.975.207 1.504.344 1.857.182.466.399.8.748 1.15.35.35.683.566 1.15.748.353.137.882.3 1.857.344 1.054.048 1.37.058 4.041.058h.08c2.597 0 2.917-.01 3.96-.058.976-.045 1.505-.207 1.858-.344.466-.182.8-.398 1.15-.748.35-.35.566-.683.748-1.15.137-.353.3-.882.344-1.857.048-1.055.058-1.37.058-4.041v-.08c0-2.597-.01-2.917-.058-3.96-.045-.976-.207-1.505-.344-1.858a3.097 3.097 0 00-.748-1.15 3.098 3.098 0 00-1.15-.748c-.353-.137-.882-.3-1.857-.344-1.023-.047-1.351-.058-3.807-.058zM12 6.865a5.135 5.135 0 110 10.27 5.135 5.135 0 010-10.27zm0 1.802a3.333 3.333 0 100 6.666 3.333 3.333 0 000-6.666zm5.338-3.205a1.2 1.2 0 110 2.4 1.2 1.2 0 010-2.4z"
+                  clip-rule="evenodd"
+                  fill-rule="evenodd"
+                ></path>
+              </svg>
+            </a>
+          {% endif %}
+          {% if store.settings.contact.twitter %}
+            <a
+              href="https://twitter.com/{{ store.settings.contact.twitter }}"
+              target="_blank"
+              class="text-foreground"
+            >
+              <span class="sr-only">X</span>
+              <svg
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden="true"
+                class="size-6"
+              >
+                <path
+                  d="M13.6823 10.6218L20.2391 3H18.6854L12.9921 9.61788L8.44486 3H3.2002L10.0765 13.0074L3.2002 21H4.75404L10.7663 14.0113L15.5685 21H20.8131L13.6819 10.6218H13.6823ZM11.5541 13.0956L10.8574 12.0991L5.31391 4.16971H7.70053L12.1742 10.5689L12.8709 11.5655L18.6861 19.8835H16.2995L11.5541 13.096V13.0956Z"
+                ></path>
+              </svg>
+            </a>
+          {% endif %}
+          {% if store.settings.contact.snapchat %}
+            <a
+              href="https://www.snapchat.com/add/{{ store.settings.contact.snapchat }}"
+              target="_blank"
+              class="text-foreground"
+            >
+              <span class="sr-only">Snapchat</span>
+              <svg
+                viewBox="0 0 512.016 512.016"
+                fill="currentColor"
+                aria-hidden="true"
+                class="size-6"
+              >
+                <path
+                  d="M500.459,375.368c-64.521-10.633-93.918-75.887-97.058-83.294c-0.06-0.145-0.307-0.666-0.375-0.819c-3.234-6.571-4.036-11.904-2.347-15.838c3.388-8.013,17.741-12.553,26.931-15.462c2.586-0.836,5.009-1.604,6.938-2.372c18.586-7.339,27.913-16.717,27.716-27.895c-0.179-8.866-7.134-17.007-17.434-20.651c-3.55-1.485-7.774-2.295-11.887-2.295c-2.842,0-7.066,0.401-11.102,2.287c-7.868,3.678-14.865,5.658-20.156,5.888c-2.355-0.094-4.139-0.486-5.427-0.922c0.162-2.79,0.35-5.658,0.529-8.585l0.094-1.493c2.193-34.807,4.915-78.123-6.673-104.081c-34.27-76.834-106.999-82.807-128.478-82.807l-10.018,0.094c-21.436,0-94.029,5.965-128.265,82.756c-11.614,26.018-8.866,69.316-6.664,104.115c0.213,3.422,0.427,6.758,0.614,10.01c-1.468,0.503-3.584,0.947-6.46,0.947c-6.161,0-13.542-1.997-21.931-5.922c-12.126-5.683-34.295,1.911-37.291,17.647c-1.63,8.516,1.801,20.796,27.383,30.908c1.988,0.785,4.489,1.587,7.561,2.56c8.576,2.722,22.929,7.27,26.325,15.266c1.681,3.951,0.879,9.284-2.662,16.512c-1.263,2.944-31.65,72.124-98.765,83.174c-6.963,1.143-11.93,7.322-11.537,14.353c0.111,1.954,0.563,3.917,1.399,5.897c5.641,13.193,27.119,22.349,67.55,28.766c0.887,2.295,1.92,7.006,2.509,9.737c0.853,3.9,1.749,7.927,2.97,12.1c1.229,4.224,4.881,11.307,15.445,11.307c3.575,0,7.714-0.811,12.211-1.681c6.468-1.271,15.309-2.995,26.274-2.995c6.084,0,12.416,0.546,18.825,1.604c12.092,2.005,22.699,9.506,35.004,18.202c18.116,12.809,34.586,22.605,67.524,22.605c0.87,0,1.732-0.026,2.577-0.085c1.22,0.06,2.449,0.085,3.695,0.085c28.851,0,54.246-7.62,75.494-22.63c11.742-8.311,22.835-16.162,34.935-18.176c6.426-1.058,12.766-1.604,18.85-1.604c10.513,0,18.901,1.348,26.385,2.816c5.06,0.998,9.02,1.476,12.672,1.476c7.373,0,12.8-4.053,14.874-11.127c1.195-4.113,2.091-8.021,2.961-12.015c0.461-2.125,1.57-7.211,2.509-9.66c39.851-6.34,60.203-15.138,65.835-28.297c0.845-1.894,1.34-3.9,1.476-6.033C512.372,382.707,507.422,376.529,500.459,375.368z"
+                ></path>
+              </svg>
+            </a>
+          {% endif %}
+          {% if store.settings.contact.tiktok %}
+            <a
+              href="https://www.tiktok.com/@{{ store.settings.contact.tiktok }}"
+              target="_blank"
+              class="text-foreground"
+            >
+              <span class="sr-only">TikTok</span>
+              <svg
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden="true"
+                class="size-6"
+              >
+                <path
+                  d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"
+                ></path>
+              </svg>
+            </a>
+          {% endif %}
+        </div>
+        {% if store.settings.general.one_signal.ios_app_id %}
+          <a
+            href="https://apps.apple.com/app/id{{ store.settings.general.one_signal.ios_app_id }}"
+            target="_blank"
+            rel="noopener"
+            aria-label="Download on the App Store"
+            class="block"
+          >
+            <img
+              src="{{ "images/app-store-logo.svg" | asset_url }}"
+              alt="Download on the App Store"
+              class="h-12 w-auto"
+              loading="lazy"
+            />
+          </a>
+        {% endif %}
+        {% if store.settings.general.one_signal.android_package_name %}
+          <a
+            href="https://play.google.com/store/apps/details?id={{ store.settings.general.one_signal.android_package_name }}"
+            target="_blank"
+            rel="noopener"
+            aria-label="Get it on Google Play"
+            class="block"
+          >
+            <img
+              src="{{ "images/google-play-logo.svg" | asset_url }}"
+              alt="Get it on Google Play"
+              class="h-12 w-auto"
+              loading="lazy"
+            />
+          </a>
+        {% endif %}
+      </div>
+      {% for group in settings.link_groups_items or [] %}
+        {% if not group.hide and group.links %}
+          <div>
+            {% if group.title %}
+              <h3 class="text-foreground text-sm font-medium">{{ group.title }}</h3>
+            {% endif %}
+            <ul
+              role="list"
+              class="mt-4"
+            >
+              {% for link in group.links %}
+                <li class="py-2">
+                  <a
+                    href="{{ link.url }}"
+                    class="text-foreground text-sm hover:underline"
+                  >
+                    {{ link.title }}
+                  </a>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+      {% endfor %}
+      <div>
+        <div>
+          <h3 class="text-foreground text-sm font-medium">
+            {% if settings.contact_info_contact_info_title %}
+              {{ settings.contact_info_contact_info_title }}
+            {% else %}
+              {{ _("Contact us") }}
+            {% endif %}
+          </h3>
+          <ul
+            role="list"
+            class="mt-4 space-y-2"
+          >
+            {% if store.settings.contact.email %}
+              <li class="flex items-center">
+                <div class="shrink-0">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="1.5"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                    data-slot="icon"
+                    class="size-4"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"
+                    ></path>
+                  </svg>
+                </div>
+                <a
+                  href="mailto:{{ store.settings.contact.email }}"
+                  class="text-foreground text-sm ms-2"
+                >
+                  {{ store.settings.contact.email }}
+                </a>
+              </li>
+            {% endif %}
+            {% if store.settings.general.business_address.show_location %}
+              <li class="flex items-center">
+                <div class="text-foreground shrink-0">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                  >
+                    <path
+                      d="M7.9996 2.13086C9.30577 2.13086 10.4522 2.58386 11.4576 3.50879C12.434 4.4071 12.9371 5.61569 12.9371 7.18945C12.9371 7.82097 12.7983 8.45471 12.5123 9.09375C12.215 9.75799 11.8413 10.3945 11.3912 11.0039C10.9351 11.6215 10.4395 12.1976 9.90488 12.7324C9.35805 13.2796 8.84891 13.7629 8.37753 14.1826L8.36679 14.1934C8.32475 14.2331 8.27727 14.2614 8.21933 14.2803C8.15285 14.3018 8.09124 14.3108 8.03476 14.3145L8.33554 14.042C9.81628 12.6987 10.933 11.4671 11.6656 10.3486C12.3942 9.2361 12.7974 8.17836 12.7975 7.18945C12.7975 5.77661 12.3398 4.58295 11.4049 3.65332C10.4781 2.73207 9.33225 2.27051 7.9996 2.27051C6.66712 2.27056 5.52183 2.73218 4.59531 3.65332C3.66042 4.58295 3.20273 5.7766 3.20273 7.18945C3.2028 8.18171 3.61692 9.24048 4.36288 10.3516C5.1093 11.4632 6.21347 12.6927 7.65976 14.0381L7.95761 14.3145C7.9014 14.311 7.84187 14.3022 7.7789 14.2812C7.7257 14.2635 7.68228 14.2365 7.64316 14.1982L7.63437 14.1904L7.6246 14.1816C7.15102 13.7622 6.6408 13.2792 6.09433 12.7324C5.55983 12.1977 5.06499 11.6214 4.60898 11.0039C4.15903 10.3946 3.78667 9.75773 3.49081 9.09375C3.20602 8.45464 3.06702 7.82125 3.06699 7.18945C3.06699 5.61533 3.57017 4.40708 4.5455 3.50879C5.54935 2.58417 6.69365 2.13095 7.9996 2.13086ZM7.99863 6.36914C8.19888 6.36917 8.35484 6.43397 8.49472 6.57324C8.63395 6.71188 8.69882 6.86674 8.69882 7.06641C8.69881 7.26662 8.63403 7.4214 8.4957 7.55957C8.35729 7.69778 8.20211 7.76268 8.00156 7.7627C7.85056 7.7627 7.72514 7.72653 7.61386 7.65039L7.50742 7.56055C7.37006 7.42371 7.30527 7.26986 7.30527 7.06934C7.30527 6.86807 7.37023 6.71193 7.50839 6.57227C7.64544 6.43393 7.79905 6.36914 7.99863 6.36914Z"
+                      fill="currentColor"
+                      stroke="currentColor"
+                    ></path>
+                  </svg>
+                </div>
+                <a
+                  class="text-foreground text-sm ms-2"
+                  {% if store.settings.general.business_address.latitude %}
+                    target="_blank"
+                    href="https://maps.google.com/?q={{ store.settings.general.business_address.latitude }},{{ store.settings.general.business_address.longitude }}"
+                  {% endif %}
+                >
+                  {{ store.settings.general.business_address.street }}<br />
+                  {{ store.settings.general.business_address.city.country.name }},
+                  {{ store.settings.general.business_address.city.name }},
+                  {{ store.settings.general.business_address.district }},
+                  {{ store.settings.general.business_address.street }}
+                </a>
+              </li>
+            {% endif %}
+            {% if store.settings.contact.phone %}
+              <li class="flex items-center">
+                <div class="text-foreground shrink-0">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                  >
+                    <path
+                      d="M2.74603 2.32227H5.07904C5.27395 2.32227 5.43696 2.38407 5.5683 2.50781C5.66741 2.60115 5.74396 2.71701 5.79779 2.85547L5.84369 3.00195L6.29193 5.0293V5.03027C6.31987 5.21923 6.31605 5.38671 6.28119 5.5332C6.24657 5.6787 6.1753 5.8033 6.06635 5.90723L6.06537 5.9082L4.38666 7.56348L4.37299 7.57715L4.38275 7.59375C4.66144 8.06209 4.95717 8.50007 5.26947 8.90723C5.50372 9.21266 5.75691 9.50762 6.03021 9.79102L6.31049 10.0703C6.71156 10.485 7.13012 10.8604 7.56635 11.1963C8.00303 11.5325 8.45889 11.8268 8.93353 12.0781L8.95013 12.0869L8.96381 12.0732L10.5663 10.4277H10.5673C10.6944 10.2898 10.8393 10.1968 11.0019 10.1484C11.1245 10.1121 11.2479 10.0985 11.372 10.1074L11.496 10.124L13.3984 10.5439V10.5449C13.6027 10.6013 13.7668 10.7049 13.8915 10.8555C14.0162 11.006 14.079 11.1811 14.079 11.3809V13.6553C14.0789 13.8903 13.9994 14.0852 13.8417 14.2412C13.6839 14.3974 13.4896 14.4756 13.2578 14.4756C11.9569 14.4755 10.6328 14.1623 9.2851 13.5361C7.93722 12.9099 6.687 12.021 5.5351 10.8691C4.38343 9.71744 3.49366 8.46726 2.86615 7.11816C2.23857 5.76899 1.92572 4.44479 1.92572 3.14648C1.92579 2.91163 2.00418 2.71613 2.16107 2.55859C2.31789 2.401 2.51231 2.32227 2.74603 2.32227ZM8.29584 5.30176C8.40516 5.20388 8.53653 5.17319 8.6933 5.20996C9.27505 5.35132 9.77802 5.63354 10.2011 6.05762C10.5714 6.42884 10.8404 6.86173 11.0078 7.35645L11.0732 7.57227C11.1072 7.72539 11.0749 7.85655 10.9765 7.96777C10.8778 8.07938 10.7441 8.13566 10.5732 8.13574C10.4685 8.13574 10.3678 8.09958 10.2724 8.02637C10.2016 7.97197 10.1466 7.90372 10.1074 7.82129L10.0732 7.7334C9.96355 7.36181 9.772 7.03952 9.49896 6.7666C9.22603 6.49368 8.90376 6.30212 8.53217 6.19238H8.53314C8.40938 6.15239 8.31103 6.08956 8.23822 6.00391C8.16595 5.91889 8.12982 5.81912 8.12982 5.7041C8.12985 5.57628 8.16161 5.46972 8.22357 5.38281L8.29584 5.30176ZM8.63763 2.27441L8.63861 2.27539C10.0494 2.43686 11.2533 3.01635 12.2499 4.01465C13.2462 5.01258 13.8258 6.21619 13.9902 7.62598V7.62695L13.9911 7.62793C14.0121 7.76975 13.9721 7.88817 13.872 7.98633C13.7708 8.08545 13.645 8.13574 13.4931 8.13574C13.3721 8.13569 13.2643 8.09236 13.1699 8.00488C13.0991 7.93928 13.0477 7.86033 13.0165 7.76758L12.9921 7.66992C12.8357 6.52835 12.3496 5.54877 11.5331 4.73242C10.7168 3.91607 9.73723 3.42859 8.59564 3.26953C8.45957 3.24814 8.34819 3.18922 8.26068 3.09375C8.17362 2.99882 8.12982 2.88435 8.12982 2.74902C8.12984 2.60358 8.17935 2.4832 8.27826 2.38672C8.3763 2.291 8.49541 2.25342 8.63763 2.27441ZM3.01849 3.4375C3.03812 3.88998 3.10977 4.36864 3.23236 4.87305C3.35508 5.37785 3.54876 5.94138 3.81342 6.5625L3.82806 6.59668L3.85443 6.57031L5.20013 5.23145L5.2099 5.22266L5.20697 5.20898L4.82806 3.43164L4.82318 3.41211H3.01752L3.01849 3.4375ZM12.9892 11.5703L12.9697 11.5654L11.3124 11.2227L11.2988 11.2197L11.289 11.2305L9.98041 12.6016L9.95599 12.627L9.98822 12.6416C10.4319 12.848 10.915 13.0165 11.4374 13.1475C11.9603 13.2785 12.4691 13.3569 12.9628 13.3818L12.9892 13.3828V11.5703Z"
+                      fill="currentColor"
+                      stroke="currentColor"
+                      stroke-width="0.05"
+                    ></path>
+                  </svg>
+                </div>
+                <a
+                  href="tel:{{ store.settings.contact.phone }}"
+                  class="text-foreground text-sm ms-2"
+                >
+                  <span dir="ltr">{{ store.settings.contact.phone }}</span>
+                </a>
+              </li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="border-border-light mt-6 border-t pt-6">
+      <div class="flex flex-col items-center justify-between space-y-4 lg:flex-row lg:space-y-0">
+        <div class="text-foreground text-sm">
+          <span>{{ store.settings.branding.copyrights | safe }}</span>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-x-2">
+          {% for shipping_method in store.settings.checkout.shipping_methods %}
+            <a
+              class="py-1"
+              href="/shipping-and-payment"
+            >
+              <img
+                src="{{ image_url(shipping_method.icon, w=48, h=48, q=100) }}"
+                width="48"
+                height="24"
+                loading="lazy"
+                alt="{{ shipping_method.name }}"
+                class="h-6 max-w-13.5 rounded-sm object-contain"
+              />
+            </a>
+          {% endfor %}
+
+          {% for payment_method in store.settings.checkout.payment_methods %}
+            <a
+              class="py-1"
+              href="/shipping-and-payment"
+            >
+              <img
+                src="{{ image_url(payment_method.icon, w=48, h=48, q=100) }}"
+                width="48"
+                height="24"
+                loading="lazy"
+                alt="{{ payment_method.name }}"
+                class="h-6 max-w-13.5 rounded-sm object-contain"
+              />
+            </a>
+          {% endfor %}
+
+          {% if store.settings.general.tax_settings.is_certificate_visible %}
+            <a
+              {% if store.settings.general.tax_settings.tax_registration_certificate %}
+                href="{{ store.settings.general.tax_settings.tax_registration_certificate }}" target="_blank"
+              {% endif %}
+              class="py-1"
+            >
+              <img
+                src="{{ image_url(('images/vat-certificate.png' | asset_url), w=108, q=85, f='auto') }}"
+                width="54"
+                height="24"
+                loading="lazy"
+                alt="{{ _('VAT Certificate') }}"
+                class="h-6 max-w-13.5 rounded-sm object-contain"
+              />
+            </a>
+          {% endif %}
+
+          {% if store.settings.contact.business_center %}
+            <a
+              href="https://eauthenticate.saudibusiness.gov.sa/certificate-details/{{ store.settings.contact.business_center }}"
+              target="_blank"
+              class="flex flex-col items-center py-1"
+            >
+              <img
+                src="{{ image_url(('images/business_center.png' | asset_url), w=108, q=85, f='auto') }}"
+                width="54"
+                height="24"
+                loading="lazy"
+                alt="{{ _('Business Center') }}"
+                class="h-6 max-w-13.5 rounded-sm object-contain"
+              />
+              <div class="text-foreground text-xs">{{ store.settings.contact.business_center }}</div>
+            </a>
+          {% endif %}
+
+          {% if store.settings.general.tax_settings.tax_number %}
+            <span class="text-muted text-sm">
+              {{ _("VAT number:") }} {{ store.settings.general.tax_settings.tax_number }}
+            </span>
+          {% endif %}
+          {% if store.settings.general.commercial_registration_number %}
+            <span class="text-muted text-sm">
+              {{ _("The commercial register number:") }} {{ store.settings.general.commercial_registration_number }}
+            </span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>

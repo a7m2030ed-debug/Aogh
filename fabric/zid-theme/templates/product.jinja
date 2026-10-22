@@ -1,0 +1,826 @@
+{% extends "layout.jinja" %}
+
+{% block title %}{{ product.name }} – {{ store.name }}{% endblock %}
+
+{% block content %}
+
+  {% if product %}
+    {% set selected_product = selected_product if selected_product is defined else product.selected_product %}
+    {% set has_preorder = product.effective_preorder_campaign is not none %}
+    {% set can_preorder = product.can_be_preordered %}
+    {% set preorder_stock_behavior = product.preorder_stock_behavior %}
+    {% set can_buy = (selected_product and (selected_product.in_stock or can_preorder)) %}
+  {% else %}
+    {% set has_preorder = false %}
+    {% set can_preorder = false %}
+    {% set preorder_stock_behavior = '' %}
+    {% set can_buy = false %}
+  {% endif %}
+
+  {# Breadcrumb Section #}
+  <section class="px-4 py-6 md:px-16">
+    <div class="theme-container">
+      {% if product.categories and product.categories|length > 0 %}
+        {% set category = product.categories[0] %}
+        {%
+          with
+          items=[
+            {'href': url_for('home'), 'label': _("Home")},
+            {'href': url_for("category_details", category_id=category.id or "a", slug=category.slug or category.id), 'label': category.name},
+            {'label': product.name}
+          ]
+        %}
+          {% include 'components/ui/breadcrumb.jinja' %}
+        {% endwith %}
+      {% else %}
+        {%
+          with
+          items=[
+            {'href': url_for('home'), 'label': _("Home")},
+            {'label': product.name}
+          ]
+        %}
+          {% include 'components/ui/breadcrumb.jinja' %}
+        {% endwith %}
+      {% endif %}
+    </div>
+  </section>
+
+  {# Product Main Section #}
+  <section class="px-4 pb-6 md:px-16 md:pb-16" data-has-preorder="{{ 'true' if has_preorder else 'false' }}"
+           data-can-preorder="{{ 'true' if can_preorder else 'false' }}"
+           data-stock-behavior="{{ preorder_stock_behavior or '' }}">
+    <div class="theme-container">
+      {# 2-Column Layout: Gallery + Details #}
+      <div
+        id="product-main-section"
+        class="grid grid-cols-1 gap-6 sm:grid-cols-2"
+      >
+        {# Left Column: Product Gallery #}
+        <div class="product-gallery-column">
+          {% with product=product,gallery_id="product-gallery",show_bundle_badge=true %}
+            {% include 'components/products/product-gallery.jinja' %}
+          {% endwith %}
+        </div>
+
+        {# Right Column: Product Details #}
+        <div class="product-details-column flex flex-col gap-4">
+          {# Product Name #} {# Rating (if enabled) #}
+          <div
+            id="header"
+            class="space-y-4"
+          >
+            <div class="space-y-1">
+              {% include 'components/brands/product-brand.jinja' %}
+              <h1 class="text-foreground text-2xl leading-snug md:text-3xl">{{ product.name }}</h1>
+              {% if store.settings.products.reviews_enabled %}
+                {% if product.rating %}
+                  <div class="flex items-center gap-2">
+                    {% with  rating=product.rating.average %}
+                      {% include 'components/rating-stars.jinja' %}
+                    {% endwith %}
+                    <a
+                      href="#reviews"
+                      class="text-muted-foreground text-sm underline"
+                    >
+                      {{ _("See reviews") }}
+                    </a>
+                  </div>
+                {% endif %}
+              {% endif %}
+            </div>
+            {# Product Badges #}
+            <div
+              id="product-badges"
+              class="flex flex-wrap items-center gap-2"
+            >
+              {# Merchant Badge (custom product badge) #}
+              {% if product.badge %}
+                {% with product=product %}
+                  {% include 'components/products/merchant-badge.jinja' %}
+                {% endwith %}
+              {% endif %}
+
+              {% if product.preorder_campaign %}
+                {% include 'vitrin:products/preorder_badge.jinja' %}
+              {% endif %}
+
+              {# Sold Items Badge #}
+              {% set sold_count = product.sold_products_count or (product.selected_product and product.selected_product.sold_products_count) %}
+              <span
+                data-sold-count-badge
+                class="badge badge-outlined border-foreground {{ '!hidden' if not sold_count }}"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                >
+                  <path
+                    d="M9.35059 1.25488C10.0392 1.25488 10.6 1.52568 11.0342 2.06934C11.4687 2.61337 11.6367 3.23657 11.5381 3.94043L11.5342 3.96875H13.8164C14.1051 3.96876 14.344 4.07663 14.5342 4.29199C14.7243 4.50715 14.8017 4.75891 14.7666 5.04883L13.7197 13.5957C13.6752 13.9276 13.5338 14.201 13.2949 14.417C13.0559 14.6331 12.7711 14.7412 12.4404 14.7412H3.5127C3.21892 14.7412 2.98865 14.6304 2.81934 14.4092C2.65316 14.1922 2.56811 13.9412 2.56348 13.6553H12.6152L12.6182 13.6338V13.6328L12.6221 13.6338L13.0283 10.3213C13.0396 10.2451 13.0499 10.1759 13.0596 10.1143V10.1133L13.1074 9.69629L13.2344 8.67188C13.2846 8.26141 13.3261 7.91589 13.3594 7.63574L13.3584 7.63477L13.6729 5.08691L13.6719 5.08594L13.6729 5.08301L13.6758 5.05469H11.3965L11.3936 5.07617L11.2383 6.37305C11.2142 6.53302 11.1441 6.66525 11.0293 6.77148V6.77246C10.9143 6.87874 10.7807 6.93432 10.6279 6.93945C10.4774 6.94455 10.3554 6.89357 10.2598 6.78809C10.164 6.6826 10.1249 6.55764 10.1436 6.41113L10.3076 5.08301L10.3105 5.05469H7.39551L7.39355 5.07617L7.23828 6.37695C7.21418 6.53699 7.1441 6.66853 7.0293 6.77344C6.9143 6.87858 6.78096 6.93431 6.62793 6.93945C6.4787 6.94497 6.35704 6.89375 6.26074 6.78711C6.1645 6.6805 6.12643 6.55631 6.14746 6.41211L6.14844 6.41113L6.31152 5.08301L6.31543 5.05469H3.61719C3.66031 4.7436 3.79943 4.48658 4.03613 4.2832C4.27999 4.07366 4.56352 3.96882 4.8877 3.96875H6.43945L6.44336 3.94922L6.47656 3.78223H6.47754V3.78027C6.5903 2.96648 6.89476 2.34327 7.38965 1.9082C7.88472 1.47312 8.53768 1.25493 9.35059 1.25488ZM1.4834 10.8027H3.8252C3.97895 10.8028 4.10614 10.8558 4.20898 10.9619C4.31202 11.0684 4.36426 11.198 4.36426 11.3525C4.36421 11.5069 4.31246 11.6346 4.20996 11.7373C4.10718 11.84 3.97921 11.8916 3.8252 11.8916H1.4834C1.32969 11.8915 1.20183 11.8391 1.09766 11.7344C0.993475 11.6296 0.941449 11.5012 0.941406 11.3467C0.941406 11.1921 0.993443 11.0633 1.09766 10.959C1.2018 10.8547 1.32973 10.8028 1.4834 10.8027ZM2.81738 8.12012H5.8252C5.97907 8.12016 6.10772 8.17262 6.21191 8.27734C6.31577 8.38194 6.36806 8.51064 6.36816 8.66504C6.36816 8.81963 6.31588 8.94799 6.21191 9.05078C6.10775 9.15367 5.9792 9.20504 5.8252 9.20508H2.81738C2.66355 9.20508 2.5349 9.15262 2.43066 9.04785C2.32656 8.943 2.27441 8.81376 2.27441 8.65918C2.27452 8.50465 2.32675 8.37711 2.43066 8.27441C2.53487 8.17159 2.6634 8.12012 2.81738 8.12012ZM9.22363 2.34375C8.76196 2.34375 8.38493 2.46741 8.09473 2.71582C7.80464 2.96414 7.63033 3.31727 7.57129 3.77246L7.53809 3.93945L7.53223 3.96875H10.4414L10.4443 3.94727C10.498 3.5318 10.4062 3.16059 10.1699 2.83496C9.93317 2.50842 9.61726 2.34378 9.22363 2.34375Z"
+                    fill="currentColor"
+                    stroke="currentColor"
+                    stroke-width="0.05"
+                  ></path>
+                </svg>
+                <span data-sold-count-text>{{ _("Sold more than %s times") | format(sold_count) if sold_count }}</span>
+              </span>
+
+              {# Remaining Stock Badge #}
+              {% if store.settings.products.low_stock_label_enabled %}
+                {% set selected_product = selected_product if selected_product is defined else product.selected_product %}
+                {% set show_low_stock = not selected_product.is_infinite
+                  and selected_product.quantity < store.settings.products.low_stock_quantity_threshold %}
+              <span
+                data-low-stock-badge
+                class="badge badge-outlined border-foreground {{ '!hidden' if not show_low_stock }}"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                >
+                  <path
+                    d="M3.33333 2.66667V13.3333H12.6667V2.66667H3.33333ZM2.66667 1.33333H13.3333C13.687 1.33333 14 1.64638 14 2V14C14 14.3536 13.687 14.6667 13.3333 14.6667H2.66667C2.31304 14.6667 2 14.3536 2 14V2C2 1.64638 2.31304 1.33333 2.66667 1.33333ZM8 4.66667C8.36819 4.66667 8.66667 4.96514 8.66667 5.33333V9.33333C8.66667 9.70152 8.36819 10 8 10C7.63181 10 7.33333 9.70152 7.33333 9.33333V5.33333C7.33333 4.96514 7.63181 4.66667 8 4.66667ZM8 10.6667C8.36819 10.6667 8.66667 10.9651 8.66667 11.3333C8.66667 11.7015 8.36819 12 8 12C7.63181 12 7.33333 11.7015 7.33333 11.3333C7.33333 10.9651 7.63181 10.6667 8 10.6667Z"
+                    fill="currentColor"
+                  ></path>
+                </svg>
+                <span data-low-stock-text>{{ _("Remaining %s only") | format(selected_product.quantity) }}</span>
+              </span>
+              {% endif %}
+            </div>
+            {# Price Section #}
+            <div class="flex flex-wrap items-center justify-between gap-y-1">
+              <div class="flex flex-wrap items-center gap-2">
+                {# Current Price (sale or regular) #}
+                <p
+                  class="text-foreground text-xl font-semibold md:text-2xl"
+                  data-product-price
+                >
+                  {{ product.formatted_sale_price if product.formatted_sale_price else product.formatted_price }}
+                </p>
+                {# Old Price (if on sale) #}
+                <span
+                  class="text-muted-foreground text-sm {{ 'hidden' if not product.formatted_sale_price }} line-through"
+                  data-product-price-old
+                >
+                  {{ product.formatted_price if product.formatted_sale_price else '' }}
+                </span>
+                {# Discount Badge #}
+                <span
+                  class="nsj-chip-gold {{ 'hidden' if not (product.discount_percentage and product.discount_percentage > 0) }}"
+                  data-product-discount
+                >
+                  {% if product.discount_percentage and product.discount_percentage > 0 %}
+                    {{ _("Discount") }}
+                    {{ product.discount_percentage }}%
+                  {% endif %}
+                </span>
+              </div>
+              {# SKU #}
+              <span
+                class="text-muted-foreground text-sm {{ 'hidden' if not product.sku }}"
+                data-product-sku-wrapper
+              >
+                SKU <span data-product-sku>{{ product.sku }}</span>
+              </span>
+            </div>
+          </div>
+
+          {# Short Description #}
+          {% if product.short_description %}
+            <div class="prose prose-theme prose-sm max-w-none">{{ product.short_description|safe }}</div>
+          {% endif %}
+
+          <form
+            id="product-form"
+            class="space-y-4"
+          >
+            <input
+              type="hidden"
+              name="product_id"
+              id="product-id"
+              value="{{ product.selected_product.id }}"
+            />
+
+            {# Custom Input Fields #}
+            {% with product=product %}
+              {% include 'components/products/custom-input-fields.jinja' %}
+            {% endwith %}
+            {# Product Options (if available) #}
+            {% if product.has_options or product.has_fields %}
+              {% with options=product.options, product=product, style='list' %}
+                {% include 'components/products/product-options.jinja' %}
+              {% endwith %}
+            {% endif %}
+
+            {# Quantity Input #}
+            <div
+              class="grid w-full items-center gap-2 {{ "hidden" if not product.in_stock }}"
+              data-quantity-wrapper
+            >
+              <label
+                for="product-quantity"
+                class="form-label"
+                >{{ _('Quantity') }}</label>
+              {% with id='product-quantity', quantity=1, min=1, max=product.quantity if not product.is_infinite and product.quantity > 0 else (1 if can_preorder else none), sync_target='sticky-qty' %}
+                {% include 'components/ui/quantity-input.jinja' %}
+              {% endwith %}
+            </div>
+
+            {# Dynamic Bundle Product Selection #}
+            {% if product.product_class == 'dynamic_bundle' %}
+              {% include 'vitrin:products/bundle-products.jinja' %}
+            {% endif %}
+
+            {% if product.shipping_badges %}
+              <div class="flex flex-col gap-2">
+                {% for badge in product.shipping_badges %}
+                  {% with badge=badge, variant='details' %}
+                    {% include 'components/products/shipping-badge.jinja' %}
+                  {% endwith %}
+                {% endfor %}
+              </div>
+            {% endif %}
+
+            {# Action Buttons #}
+            <div
+              class="flex flex-col gap-3 pt-2"
+              data-product-actions
+            >
+              {# In Stock State #}
+              <div
+                class="{{ 'hidden' if not can_buy }} flex items-center gap-2"
+                data-in-stock
+              >
+                {# Add to Cart Button #}
+                <button
+                  type="button"
+                  data-add-to-cart-form="product-form"
+                  data-success-text="{{ _('Added!') }}"
+                  class="btn btn-filled btn-lg flex-1"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <circle
+                      cx="8"
+                      cy="21"
+                      r="1"
+                    ></circle>
+                    <circle
+                      cx="19"
+                      cy="21"
+                      r="1"
+                    ></circle>
+                    <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
+                  </svg>
+                  {% if product.preorder_campaign %}{{ _("Preorder now") }}{% else %} {{ _("Add to cart") }} {% endif %}
+                </button>
+                <span id="product-view-add-to-cart"></span>
+                {% if not safeget(store, 'settings.general.availability.closed_now') and store.settings.checkout.show_checkout_as_popup and not product.preorder_campaign and product.selected_product.in_stock %}
+                  <button
+                          type="button"
+                          data-buy-now-form="product-form"
+                          class="btn btn-filled btn-lg flex-1 btn-buy-now"
+                  >
+                    <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                    >
+                      <circle
+                              cx="8"
+                              cy="21"
+                              r="1"
+                      ></circle>
+                      <circle
+                              cx="19"
+                              cy="21"
+                              r="1"
+                      ></circle>
+                      <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
+                    </svg>
+                    {{ _("Buy now") }}
+                  </button>
+                {% endif %}
+                {# Wishlist Button #}
+                {% with product_id=product.id, class="btn-lg border-input border" %}
+                  {% include 'components/products/wishlist-button.jinja' %}
+                {% endwith %}
+              </div>
+
+              {# Out of Stock State #}
+              <div
+                class="flex flex-col gap-3 {{ "hidden" if can_buy }}"
+                data-out-of-stock
+              >
+                {# Disabled Add to Cart Button #}
+                <button
+                  type="button"
+                  disabled
+                  class="btn btn-lg bg-secondary text-muted-foreground w-full cursor-not-allowed border border-transparent"
+                >
+                  {% if product.preorder_campaign %}{{ _("Preorder now") }}{% else %} {{ _("Add to cart") }} {% endif %}
+                </button>
+
+                {# Notify Me & Wishlist Buttons #}
+                <div class="flex items-center gap-2">
+                  <button
+                    type="button"
+                    class="btn btn-filled btn-lg flex-1"
+                    data-notify-me-btn
+                    command="show-modal"
+                    commandfor="notify-me-dialog"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
+                      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>
+                    </svg>
+                    {{ _("Notify me when available") }}
+                  </button>
+                  {# Wishlist Button #}
+                  {% with product_id=product.id, class="btn-lg border-input border" %}
+                    {% include 'components/products/wishlist-button.jinja' %}
+                  {% endwith %}
+                </div>
+              </div>
+            </div>
+
+            {% include 'vitrin:checkout/checkout_dialog.jinja' %}
+            {% include 'vitrin:products/loyalty_points_widget.jinja' %}
+            {% if store.settings.checkout.gift_order_settings.is_gift_order_enabled == '1' and (settings.gifting_product_page | default(true)) %}
+              {% include 'components/products/gift-order-link.jinja' %}
+            {% endif %}
+            {% include 'vitrin:shared/bank_discounts.jinja' %}
+            {% include 'vitrin:products/payment_widgets.jinja' %}
+            {% include 'vitrin:products/preorder_countdown.jinja' %}
+            {% include 'vitrin:checkout/apple-pay-quick-checkout.jinja' %}
+
+            {# Naseej: how many meters for a thobe #}
+            {% if settings.naseej_meter_calculator | default(true) %}
+              <details class="nsj-pdp-calc">
+                <summary>
+                  <svg
+                    class="text-accent size-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.4"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M3 15.5 15.5 3 21 8.5 8.5 21z" />
+                    <path d="m7 11.5 2 2M10 8.5l1.5 1.5M13 5.5l2 2M16 9.5l-1.5-1.5" />
+                  </svg>
+                  <span>{{ _('How many meters do I need?') }}</span>
+                  <svg
+                    class="size-4"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M4 6L8 10L12 6"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </summary>
+                <div class="nsj-pdp-calc__body">
+                  {% with calc_rows_source=settings.naseej_meter_rows %}
+                    {% include 'components/naseej/meter-calculator.jinja' %}
+                  {% endwith %}
+                  {% if settings.naseej_wiqfa_guide_url %}
+                    <a
+                      href="{{ settings.naseej_wiqfa_guide_url }}"
+                      class="nsj-pdp-calc__guide"
+                    >
+                      {{ _('Not sure which wiqfa suits you? Read the guide') }}
+                    </a>
+                  {% endif %}
+                </div>
+              </details>
+            {% endif %}
+
+            {# Naseej: short reassurance notes #}
+            {% set pdp_notes = (settings.naseej_product_notes | default('')).split('|') | map('trim') | select | list %}
+            {% if pdp_notes %}
+              <p class="nsj-hero__note">
+                {% for note in pdp_notes %}
+                  <span>{{ note }}</span>
+                {% endfor %}
+              </p>
+            {% endif %}
+
+            {# Social Share Links #}
+            <div class="border-border-light flex items-center gap-4 border-t pt-4">
+              <span class="text-sm text-muted">{{ _("Share product") }}:</span>
+              <div class="flex items-center gap-3">
+                {# WhatsApp #}
+                <a
+                  href="https://api.whatsapp.com/send?text={{ _('Check Out this Product') }}: {{ product.name }} {{ product.html_url }}"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-muted-foreground transition-colors hover:text-[#25D366]"
+                  aria-label="{{ _('Share on WhatsApp') }}"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"
+                    />
+                  </svg>
+                </a>
+                {# Twitter/X #}
+                <a
+                  href="https://twitter.com/intent/tweet?text={{ product.name }}: {{ product.html_url }}"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="{{ _('Share on Twitter') }}"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"
+                    />
+                  </svg>
+                </a>
+                {# Facebook #}
+                <a
+                  href="https://www.facebook.com/sharer/sharer.php?u={{ product.html_url }}"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-muted-foreground transition-colors hover:text-[#1877F2]"
+                  aria-label="{{ _('Share on Facebook') }}"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"
+                    />
+                  </svg>
+                </a>
+                {# Copy Link #}
+                <button
+                  type="button"
+                  class="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="{{ _('Copy link') }}"
+                  onclick='navigator.clipboard.writeText(&apos;{{ product.html_url }}&apos;); this.innerHTML = &apos;<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>&apos;; setTimeout(() => this.innerHTML = &apos;<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>&apos;, 2000);'
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        {# Notify Me Dialog - inside product-main-section for quick view support #}
+        {% with product=product %}
+          {% include 'components/products/notify-me-dialog.jinja' %}
+        {% endwith %}
+      </div>
+      <div
+        id="additional-info"
+        class="mt-6 flex flex-col gap-4"
+      >
+        {% set has_weight = product.selected_product and product.selected_product.weight and product.selected_product.weight.value %}
+        {% set has_metafields = product and product.metafields and store and store.settings.products.is_metafields_enabled and product.metafields|length > 0 %}
+        {% set has_description = product.description %}
+
+        {# Features & Details Disclosure #}
+        {% if has_weight or has_metafields or has_description %}
+          <div>
+            <button
+              type="button"
+              command="--toggle"
+              commandfor="features-details"
+              class="bg-secondary group flex w-full items-center justify-between gap-3 rounded px-4 py-2"
+              aria-expanded="true"
+            >
+              <span class="text-foreground text-sm font-medium">{{ _("Features & details") }}</span>
+              <span
+                class="text-foreground inline-flex size-10 shrink-0 items-center justify-center rounded bg-white/10 p-2.5 backdrop-blur-sm"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  class="transition-transform duration-200 group-aria-expanded:rotate-180"
+                >
+                  <path
+                    d="M11.999 8.70312C12.0929 8.70312 12.1689 8.73142 12.249 8.81152L17.1924 13.7559C17.2744 13.8378 17.3008 13.9117 17.3008 13.999C17.3008 14.0863 17.2743 14.1602 17.1924 14.2422C17.1143 14.3202 17.0374 14.3506 16.9365 14.3506C16.8359 14.3505 16.7596 14.32 16.6816 14.2422L16.6807 14.2412L12.3516 9.9375L11.998 9.58594L7.31738 14.2666C7.23964 14.3443 7.17341 14.3662 7.09277 14.3633C6.99851 14.3598 6.91711 14.3282 6.83105 14.2422C6.75294 14.1641 6.72266 14.0872 6.72266 13.9863C6.72267 13.8854 6.75294 13.8086 6.83105 13.7305L11.75 8.81152C11.83 8.73152 11.9054 8.7032 11.999 8.70312Z"
+                    fill="currentColor"
+                    stroke="currentColor"
+                  ></path>
+                </svg>
+              </span>
+            </button>
+            <el-disclosure
+              id="features-details"
+              class="transition duration-200 data-closed:opacity-0"
+            >
+              <div class="mt-4 flex flex-col gap-4 px-4 pb-4">
+                {# Weight #}
+                <div
+                  class="{{ 'hidden' if not has_weight }} flex items-center gap-2"
+                  data-product-weight-wrapper
+                >
+                  <dt class="text-muted-foreground text-sm">{{ _("Weight") }}:</dt>
+                  <dd
+                    class="text-foreground text-sm"
+                    data-product-weight
+                  >
+                    {% if has_weight %}
+                      {{ product.selected_product.weight.value }}
+                      {{ product.selected_product.weight.unit }}
+                    {% endif %}
+                  </dd>
+                </div>
+
+                {# Metafields #}
+                {% if has_metafields %}
+                  {% with entity=product %}
+                    {% include 'components/shared/metafields.jinja' %}
+                  {% endwith %}
+                {% endif %}
+
+                {# Product Description #}
+                {% if has_description %}
+                  <div class="text-foreground prose prose-sm max-w-none">{{ product.description|safe }}</div>
+                {% endif %}
+              </div>
+            </el-disclosure>
+          </div>
+        {% endif %}
+
+        {# Bundle Offer Details Section - Disclosure with Carousel #}
+        {% if product.bundle_offer and product.bundle_offer.products and product.bundle_offer.products.results %}
+          <div>
+            <button
+              type="button"
+              command="--toggle"
+              commandfor="bundle-offer-products"
+              class="bg-secondary group flex w-full items-center justify-between gap-3 rounded px-4 py-2"
+              aria-expanded="false"
+            >
+              <div class="flex flex-col items-start gap-1">
+                <div class="flex items-center gap-3">
+                  <span class="text-foreground text-sm font-medium">{{ product.bundle_offer.name }}</span>
+                  <span class="badge badge-outlined text-destructive border-destructive">
+                    {{ product.bundle_offer.products.results|length }} {{ _("Products") }}
+                  </span>
+                </div>
+                {% if product.bundle_offer.description %}
+                  <p class="text-sm text-muted text-start">{{ product.bundle_offer.description }}</p>
+                {% endif %}
+              </div>
+              <span
+                class="text-foreground inline-flex size-10 shrink-0 items-center justify-center rounded bg-white/10 p-2.5 backdrop-blur-sm"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  class="transition-transform duration-200 group-aria-expanded:rotate-180"
+                >
+                  <path
+                    d="M11.999 8.70312C12.0929 8.70312 12.1689 8.73142 12.249 8.81152L17.1924 13.7559C17.2744 13.8378 17.3008 13.9117 17.3008 13.999C17.3008 14.0863 17.2743 14.1602 17.1924 14.2422C17.1143 14.3202 17.0374 14.3506 16.9365 14.3506C16.8359 14.3505 16.7596 14.32 16.6816 14.2422L16.6807 14.2412L12.3516 9.9375L11.998 9.58594L7.31738 14.2666C7.23964 14.3443 7.17341 14.3662 7.09277 14.3633C6.99851 14.3598 6.91711 14.3282 6.83105 14.2422C6.75294 14.1641 6.72266 14.0872 6.72266 13.9863C6.72267 13.8854 6.75294 13.8086 6.83105 13.7305L11.75 8.81152C11.83 8.73152 11.9054 8.7032 11.999 8.70312Z"
+                    fill="currentColor"
+                    stroke="currentColor"
+                  ></path>
+                </svg>
+              </span>
+            </button>
+            <el-disclosure
+              id="bundle-offer-products"
+              hidden
+              class="transition duration-200 data-closed:opacity-0"
+            >
+              <div class="mt-4 px-4 pb-4">
+                {%
+                  with
+                  products=product.bundle_offer.products.results,
+                  carousel_id="bundle-offer-carousel"
+                %}
+                  {% include 'components/products/products-carousel.jinja' %}
+                {% endwith %}
+              </div>
+            </el-disclosure>
+          </div>
+        {% endif %}
+
+        {# Grouped Products (products bundled together) #}
+        {% if product.group_products %}
+          {% include 'components/products/grouped-product.jinja' %}
+        {% endif %}
+
+        {# Product Options Disclosure #}
+        {% if product.variants and product.variants|length > 0 %}
+          {# Filter in-stock variants #}
+          {% set in_stock_variants = [] %}
+          {% for variant in product.variants %}
+            {% if variant.in_stock %}
+              {% set temp = in_stock_variants.append(variant) %}
+            {% endif %}
+          {% endfor %}
+
+          {% if in_stock_variants|length > 0 %}
+            <div>
+              <button
+                type="button"
+                command="--toggle"
+                commandfor="product-options"
+                class="bg-secondary group flex w-full items-center justify-between gap-3 rounded px-4 py-2"
+                aria-expanded="false"
+              >
+                <span class="text-foreground text-sm font-medium">{{ _("Product options") }}</span>
+                <span
+                  class="text-foreground inline-flex size-10 shrink-0 items-center justify-center rounded bg-white/10 p-2.5 backdrop-blur-sm"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    class="transition-transform duration-200 group-aria-expanded:rotate-180"
+                  >
+                    <path
+                      d="M11.999 8.70312C12.0929 8.70312 12.1689 8.73142 12.249 8.81152L17.1924 13.7559C17.2744 13.8378 17.3008 13.9117 17.3008 13.999C17.3008 14.0863 17.2743 14.1602 17.1924 14.2422C17.1143 14.3202 17.0374 14.3506 16.9365 14.3506C16.8359 14.3505 16.7596 14.32 16.6816 14.2422L16.6807 14.2412L12.3516 9.9375L11.998 9.58594L7.31738 14.2666C7.23964 14.3443 7.17341 14.3662 7.09277 14.3633C6.99851 14.3598 6.91711 14.3282 6.83105 14.2422C6.75294 14.1641 6.72266 14.0872 6.72266 13.9863C6.72267 13.8854 6.75294 13.8086 6.83105 13.7305L11.75 8.81152C11.83 8.73152 11.9054 8.7032 11.999 8.70312Z"
+                      fill="currentColor"
+                      stroke="currentColor"
+                    ></path>
+                  </svg>
+                </span>
+              </button>
+              <el-disclosure
+                id="product-options"
+                hidden
+                class="transition duration-200 data-closed:opacity-0"
+              >
+                {# Calculate split point (left column gets more if odd) #}
+                {% set total_variants = in_stock_variants | length %}
+                {% set left_count = ((total_variants + 1) / 2) | int %}
+                <div class="mt-4 grid grid-cols-1 gap-6 px-4 pb-4 md:grid-cols-2">
+                  {# Left Column #}
+                  <div class="flex flex-col gap-4">
+                    {% for variant in in_stock_variants[:left_count] %}
+                      {% include 'components/products/product-variant.jinja' %}
+                    {% endfor %}
+                  </div>
+
+                  {# Right Column #}
+                  <div class="flex flex-col gap-4">
+                    {% for variant in in_stock_variants[left_count:] %}
+                      {% include 'components/products/product-variant.jinja' %}
+                    {% endfor %}
+                  </div>
+                </div>
+              </el-disclosure>
+            </div>
+          {% endif %}
+        {% endif %}
+
+        {# FAQ Disclosure #}
+        {% if store.settings.products.questions_enabled %}
+          <div>
+            <button
+                    type="button"
+                    command="--toggle"
+                    commandfor="faq"
+                    class="bg-secondary group flex w-full items-center justify-between gap-3 rounded px-4 py-2"
+                    aria-expanded="false"
+            >
+              <span class="text-foreground text-sm font-medium">{{ _("FAQ") }}</span>
+              <span
+                      class="text-foreground inline-flex size-10 shrink-0 items-center justify-center rounded bg-white/10 p-2.5 backdrop-blur-sm"
+              >
+              <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      class="transition-transform duration-200 group-aria-expanded:rotate-180"
+              >
+                <path
+                        d="M11.999 8.70312C12.0929 8.70312 12.1689 8.73142 12.249 8.81152L17.1924 13.7559C17.2744 13.8378 17.3008 13.9117 17.3008 13.999C17.3008 14.0863 17.2743 14.1602 17.1924 14.2422C17.1143 14.3202 17.0374 14.3506 16.9365 14.3506C16.8359 14.3505 16.7596 14.32 16.6816 14.2422L16.6807 14.2412L12.3516 9.9375L11.998 9.58594L7.31738 14.2666C7.23964 14.3443 7.17341 14.3662 7.09277 14.3633C6.99851 14.3598 6.91711 14.3282 6.83105 14.2422C6.75294 14.1641 6.72266 14.0872 6.72266 13.9863C6.72267 13.8854 6.75294 13.8086 6.83105 13.7305L11.75 8.81152C11.83 8.73152 11.9054 8.7032 11.999 8.70312Z"
+                        fill="currentColor"
+                        stroke="currentColor"
+                ></path>
+              </svg>
+            </span>
+            </button>
+            <el-disclosure
+                    id="faq"
+                    hidden
+                    class="transition duration-200 data-closed:opacity-0"
+            >
+              <div class="mt-4 px-4 pb-4">
+                {% with questions=product.questions %}
+                  {% include 'components/products/product-questions.jinja' %}
+                {% endwith %}
+                {% include 'components/products/question-form.jinja' %}
+              </div>
+            </el-disclosure>
+          </div>
+        {% endif %}
+      </div>
+
+      {# Reviews Section #}
+      {% if store.settings.products.reviews_enabled %}
+        <div id="reviews">
+          {% with product=product, store=store, session=session %}
+            {% include 'components/products/product-reviews.jinja' %}
+          {% endwith %}
+        </div>
+      {% endif %}
+
+      {# Related Products Section #}
+      {% if product.related_products and product.related_products|length > 0 %}
+        <div class="mt-12">
+          {%
+            with
+            products=product.related_products,
+            title=_("You may also like"),
+            carousel_id="related-products"
+          %}
+            {% include 'components/products/products-carousel.jinja' %}
+          {% endwith %}
+        </div>
+      {% endif %}
+    </div>
+  </section>
+
+  {# Sticky Product Actions - shows when scrolling past the main add-to-cart button #}
+  {% with product=product %}
+    {% include 'components/products/sticky-product-actions.jinja' %}
+  {% endwith %}
+
+  <script src="{{ 'js/question-form.js' | asset_url }}"></script>
+{% endblock %}

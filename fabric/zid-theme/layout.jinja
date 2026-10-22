@@ -1,0 +1,194 @@
+{# Global Product Card Settings #}
+{% set card_columns_desktop = settings.product_card_columns_desktop | default('4') %}
+{% set card_columns_mobile = settings.product_card_columns_mobile | default('2') %}
+{% set card_image_aspect_ratio = settings.product_card_image_aspect_ratio | default('portrait') %}
+
+{# Fonts: body face + a display face for large headings ('same' reuses the body face) #}
+{% set body_font = settings.font_family | default('IBM+Plex+Sans+Arabic') %}
+{% set heading_font = settings.font_heading | default('El+Messiri') %}
+{% if heading_font == 'same' %}{% set heading_font = body_font %}{% endif %}
+
+<!DOCTYPE html>
+<html
+  class="no-js"
+  lang="{{ session.lang }}"
+  dir="{{ session.locale.language.direction }}"
+>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="x-ua-compatible"
+      content="ie=edge"
+    />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1"
+    />
+    {% vitrin_head %}
+    <link
+      rel="preconnect"
+      href="https://fonts.googleapis.com"
+    />
+    <link
+      rel="preconnect"
+      href="https://fonts.gstatic.com"
+      crossorigin
+    />
+
+    <link
+      rel="stylesheet"
+      media="print"
+      onload="this.onload=null;this.media='all'"
+      href="https://fonts.googleapis.com/css2?family={{ body_font }}:wght@300;400;500;700{% if heading_font != body_font %}&family={{ heading_font }}:wght@400;500;600;700{% endif %}&display=swap"
+    />
+    <meta
+      name="theme-color"
+      content="{{ settings.theme_background | default('#FAF7F1') }}"
+    />
+    {#
+      Prettier ignore is needed here because the CSS contains Jinja template variables
+      which cause Prettier's PostCSS parser to fail with "Cannot read properties of undefined (reading 'raw')"
+    #}
+    <!-- prettier-ignore-start -->
+    <style>
+      :root {
+        /* Font */
+        --font-family: {{ body_font.replace('+', ' ') }}, sans-serif;
+        --heading-family: {{ heading_font.replace('+', ' ') }}, {{ body_font.replace('+', ' ') }}, serif;
+
+        /* ========== LIGHT MODE COLORS (Default) ========== */
+        --background: {{ settings.theme_background | default('#FAF7F1') }};
+        --foreground: {{ settings.theme_foreground | default('#1B1A17') }};
+        --primary: {{ settings.theme_primary | default('#1B1A17') }};
+        --primary-foreground: {{ settings.theme_primary_foreground | default('#FAF7F1') }};
+        --secondary: {{ settings.theme_secondary | default('#F2ECE1') }};
+        --muted: {{ settings.theme_muted | default('#6F6A60') }};
+        --accent: {{ settings.theme_accent | default('#A98B4B') }};
+        --border: {{ settings.theme_border | default('#E4DCCD') }};
+        --input: {{ settings.theme_input | default('#B9AE9A') }};
+        --ring: {{ settings.theme_ring | default('#A98B4B') }};
+
+        /* ========== RADIUS ========== */
+        --radius: {{ settings.theme_radius | default(2) }}px;
+        --cols-mobile: {{ card_columns_mobile }};
+        --cols-desktop: {{ card_columns_desktop }};
+      }
+    </style>
+    <!-- prettier-ignore-end -->
+
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="{{ 'styles.css' | asset_url }}"
+    />
+
+    {# TailwindPlus Elements - pinned version for better caching #}
+    <script
+      src="https://cdn.jsdelivr.net/npm/@tailwindplus/elements@1.0.22"
+      type="module"
+    ></script>
+
+    {% if user_custom_css %}
+      <link
+        rel="stylesheet"
+        href="{{ user_custom_css }}"
+      />
+    {% endif %}
+  </head>
+  <body
+    data-template="{{ session.template }}"
+    class="min-h-dvh font-sans antialiased"
+  >
+    {% include 'header.jinja' %}
+    <main id="main">{% block content %}{% endblock %}</main>
+
+    {% include 'footer.jinja' %}
+    {% include 'components/naseej/whatsapp-float.jinja' %}
+    {% include "vitrin:shared/region_settings_dialog.jinja" %}
+    {# Global Notify Me Dialog - for product cards on any page #}
+    {% include 'components/products/notify-me-dialog.jinja' %}
+    {# Global Quick View Modal - for product cards on any page #}
+    {% include 'components/products/quick-view-modal.jinja' %}
+    <script>
+      window.zidOpenRegionSettingDialog = () => {
+        region_settings_dialog?.open();
+      };
+    </script>
+    {# Global config scripts (must run before theme bundle) #}
+    <!-- prettier-ignore-start -->
+    <script>
+      // Layout config for header functionality
+      window.layoutConfig = {
+        profileUrl: "{{ url_for('profile') }}"
+      };
+
+      // Product translations (used by variants.js for variant changes)
+      window.productTranslations = {
+        discount: "{{ _('Discount') }}",
+        remaining: "{{ _('Remaining %s only') }}",
+        sold: "{{ _('Sold more than %s times') }}"
+      };
+      window.storeLowStockEnabled = {{ 'true' if store.settings.products.low_stock_label_enabled else 'false' }};
+      window.storeLowStockThreshold = {{ store.settings.products.low_stock_quantity_threshold | default(10) }};
+
+      // Notify Me translations (used by notify-me.js for stock alerts)
+      window.notifyMeTranslations = {
+        success: "{{ _('You will be notified when this product is back in stock!') }}",
+        error: "{{ _('Failed to submit. Please try again.') }}",
+        required: "{{ _('Please fill in all required fields') }}",
+        phoneRequired: "{{ _('Phone number is required') }}",
+        phoneTooShort: "{{ _('Phone number is too short') }}",
+        phoneTooLong: "{{ _('Phone number is too long') }}",
+        phoneInvalid: "{{ _('Invalid phone number') }}"
+      };
+
+      // Custom styles for Vitrin Kit Components (bundle, gift, region dialogs)
+      // These override the default styles in platform widgets
+      window.zidCustomStyles = {
+        bundle_selection: {
+          fontFamily: "var(--font-family)",
+          fontSize: "14px"
+        },
+        gift_dialog: {
+          fontFamily: "var(--font-family)",
+          fontSize: "14px",
+          primaryColor: "var(--primary)",
+          primaryForeground: "var(--primary-foreground)",
+          backgroundColor: "var(--background)",
+          borderRadius: "var(--radius)"
+        },
+        region_settings_dialog: {
+          fontFamily: "var(--font-family)",
+          fontSize: "14px",
+          primaryColor: "var(--primary)",
+          primaryForeground: "var(--primary-foreground)",
+          backgroundColor: "var(--background)",
+          borderRadius: "var(--radius)"
+        }
+      };
+    </script>
+    <!-- prettier-ignore-end -->
+
+    {# Bundled theme JS (Vite output) - includes all feature modules #}
+    <script
+      defer
+      src="{{ 'dist/theme.js' | asset_url }}"
+    ></script>
+
+    {% vitrin_body %}
+
+    {# Loyalty Rewards floating button - opens the platform loyalty_rewards_dialog kit #}
+    {% if session.template not in ['product_details', 'cart_page', 'page_details'] and store.settings.checkout.is_loyalty_enabled %}
+      <script>
+        var loyalty_button_direction = "{{ session.locale.language.direction }}";
+        var text_loyalty_rewards = '{{ _("Rewards") }}';
+      </script>
+      <script
+        defer
+        src="{{ 'js/layout-loyalty.js' | asset_url }}"
+      ></script>
+    {% endif %}
+    {% block footer_scripts %}
+    {% endblock %}
+  </body>
+</html>

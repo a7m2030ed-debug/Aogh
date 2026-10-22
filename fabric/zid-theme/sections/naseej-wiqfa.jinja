@@ -1,0 +1,74 @@
+{% from 'components/naseej/macros.jinja' import wiqfa_glyph, arrow %}
+
+{# Merchant wiqfa types, or the four standard ones until some are added #}
+{% set guide = namespace(items=[]) %}
+{% for item in settings.items or [] %}
+  {% if item.name and item.name | trim %}
+    {% set guide.items = guide.items + [item] %}
+  {% endif %}
+{% endfor %}
+{% if guide.items | length == 0 %}
+  {% set guide.items = [
+    {'name': 'الطايح', 'level': 1, 'description': 'أطرى الأقمشة وأكثرها انسيابية. يسقط على الجسم بلا قوام، مناسب للحر الشديد وللمجالس.'},
+    {'name': 'ربع وقفة', 'level': 2, 'description': 'طري مع أثر خفيف من القوام. يحفظ شكل الثوب دون أن يبدو متيبسًا.'},
+    {'name': 'نصف واقف', 'level': 3, 'featured': true, 'description': 'الوسط الذهبي وأكثر الأنواع طلبًا. قوام واضح مع راحة في اللبس طوال اليوم.'},
+    {'name': 'واقف', 'level': 4, 'description': 'أقوى قوامًا. يعطي الثوب حِدّة في الكتف والصدر، ويُفضَّل للمناسبات والدوام الرسمي.'}
+  ] %}
+{% endif %}
+
+<section
+  section-id="{{ sectionId }}"
+  {% if settings.anchor and settings.anchor | trim %}id="{{ settings.anchor | trim }}"{% endif %}
+  class="nsj-section nsj-weave"
+  style="scroll-margin-top: var(--header-h)"
+>
+  <div class="theme-container">
+    {% with eyebrow=settings.eyebrow, title=settings.title, description=settings.description %}
+      {% include 'components/naseej/section-head.jinja' %}
+    {% endwith %}
+
+    <div class="nsj-wiqfa">
+      {% for item in guide.items %}
+        {% set level = (item.level or 2) | int %}
+        {% set tag = 'a' if item.url else 'div' %}
+        <{{ tag }}
+          {% if item.url %}href="{{ item.url }}"{% endif %}
+          class="nsj-wiqfa__card {{ 'is-featured' if item.featured }}"
+        >
+          {% if item.featured and settings.featured_label %}
+            <span class="nsj-wiqfa__flag">{{ settings.featured_label }}</span>
+          {% endif %}
+          {{ wiqfa_glyph(level, 'nsj-wiqfa__glyph') }}
+          <h3 class="nsj-wiqfa__name">{{ item.name }}</h3>
+          <span
+            class="nsj-stiff"
+            data-level="{{ level }}"
+            role="img"
+            aria-label="{{ _('Stiffness %s of 4') | format(level) }}"
+            ><i></i><i></i><i></i><i></i
+          ></span>
+          {% if item.description %}
+            <p class="nsj-wiqfa__desc">{{ item.description }}</p>
+          {% endif %}
+          {% if item.url %}
+            <span class="nsj-tile__cta text-foreground mt-auto">
+              {{ _('Browse fabrics') }}
+              {{ arrow() }}
+            </span>
+          {% endif %}
+        </{{ tag }}>
+      {% endfor %}
+    </div>
+
+    {% if settings.soft_label or settings.firm_label %}
+      <div
+        class="nsj-stiff-legend"
+        aria-hidden="true"
+      >
+        <b class="font-normal">{{ settings.soft_label }}</b>
+        <span></span>
+        <b class="font-normal">{{ settings.firm_label }}</b>
+      </div>
+    {% endif %}
+  </div>
+</section>

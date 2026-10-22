@@ -1,0 +1,17 @@
+{#
+  Section heading: gold eyebrow, display title, quiet lead.
+  Variables: eyebrow, title, description, align ('center' | 'start'), heading_tag ('h2')
+#}
+{% if (eyebrow and eyebrow | trim) or (title and title | trim) or (description and description | trim) %}
+  <div class="nsj-head {{ 'nsj-head--start' if align == 'start' }}">
+    {% if eyebrow and eyebrow | trim %}
+      <span class="nsj-eyebrow">{{ eyebrow }}</span>
+    {% endif %}
+    {% if title and title | trim %}
+      <h2 class="nsj-title">{{ title }}</h2>
+    {% endif %}
+    {% if description and description | trim %}
+      <p class="nsj-lead">{{ description }}</p>
+    {% endif %}
+  </div>
+{% endif %}

@@ -1,0 +1,169 @@
+{
+  "template": "sections/naseej-wiqfa.jinja",
+  "name": {
+    "ar": "نسيج · دليل الوقفة",
+    "en": "Naseej · Wiqfa guide"
+  },
+  "icon": "ruler-2-line",
+  "settings": [
+    {
+      "id": "anchor",
+      "type": "text",
+      "label": {
+        "ar": "معرّف القسم في الرابط",
+        "en": "Anchor id"
+      },
+      "info": {
+        "ar": "روابط مثل ‎#wiqfa تنزل لهذا القسم مباشرة",
+        "en": "Links like #wiqfa scroll here"
+      },
+      "default": "wiqfa"
+    },
+    {
+      "id": "eyebrow",
+      "type": "text",
+      "label": {
+        "ar": "سطر علوي صغير",
+        "en": "Eyebrow"
+      },
+      "default": "دليل الوقفة"
+    },
+    {
+      "id": "title",
+      "type": "text",
+      "label": {
+        "ar": "العنوان",
+        "en": "Title"
+      },
+      "default": "اختر وقفتك قبل لونك"
+    },
+    {
+      "id": "description",
+      "type": "textarea",
+      "label": {
+        "ar": "الوصف",
+        "en": "Description"
+      },
+      "default": "الوقفة هي قوام القماش: كم يحفظ الثوب شكله على الكتف والصدر. رتّبناها لك من الأطرى إلى الأقوى."
+    },
+    {
+      "id": "featured_label",
+      "type": "text",
+      "label": {
+        "ar": "نص شارة الأكثر طلبًا",
+        "en": "Featured badge text"
+      },
+      "default": "الأكثر طلبًا"
+    },
+    {
+      "id": "soft_label",
+      "type": "text",
+      "label": {
+        "ar": "طرف المقياس: الأطرى",
+        "en": "Scale start label"
+      },
+      "default": "أطرى وأكثر انسيابًا"
+    },
+    {
+      "id": "firm_label",
+      "type": "text",
+      "label": {
+        "ar": "طرف المقياس: الأقوى",
+        "en": "Scale end label"
+      },
+      "default": "أقوى قوامًا"
+    },
+    {
+      "id": "items",
+      "type": "list",
+      "label": {
+        "ar": "أنواع الوقفة",
+        "en": "Wiqfa types"
+      },
+      "item_label": {
+        "ar": "نوع",
+        "en": "Type"
+      },
+      "max_items": 6,
+      "settings": [
+        {
+          "id": "name",
+          "type": "text",
+          "label": {
+            "ar": "الاسم",
+            "en": "Name"
+          }
+        },
+        {
+          "id": "description",
+          "type": "textarea",
+          "label": {
+            "ar": "الوصف",
+            "en": "Description"
+          }
+        },
+        {
+          "id": "level",
+          "type": "select",
+          "label": {
+            "ar": "درجة القوام",
+            "en": "Stiffness"
+          },
+          "options": [
+            {
+              "value": "1",
+              "label": {
+                "ar": "1 — الأطرى",
+                "en": "1 — softest"
+              }
+            },
+            {
+              "value": "2",
+              "label": {
+                "ar": "2",
+                "en": "2"
+              }
+            },
+            {
+              "value": "3",
+              "label": {
+                "ar": "3",
+                "en": "3"
+              }
+            },
+            {
+              "value": "4",
+              "label": {
+                "ar": "4 — الأقوى",
+                "en": "4 — firmest"
+              }
+            }
+          ],
+          "default": "2"
+        },
+        {
+          "id": "url",
+          "type": "url",
+          "label": {
+            "ar": "رابط الأقمشة (مثل التصنيف مع فلتر الوقفة)",
+            "en": "Link (e.g. category filtered by wiqfa)"
+          },
+          "default": ""
+        },
+        {
+          "id": "featured",
+          "type": "checkbox",
+          "label": {
+            "ar": "تمييزه كالأكثر طلبًا",
+            "en": "Mark as most requested"
+          },
+          "default": false
+        }
+      ],
+      "info": {
+        "ar": "اتركها فارغة لعرض المحتوى الافتراضي المكتوب لنسيج",
+        "en": "Leave empty to show the built-in Naseej content"
+      }
+    }
+  ]
+}

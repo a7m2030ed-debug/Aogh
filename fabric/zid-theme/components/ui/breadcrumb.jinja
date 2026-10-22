@@ -1,0 +1,62 @@
+{# Breadcrumb Component - Displays navigation path #}
+<nav
+  aria-label="{{ aria_label|default('breadcrumb') }}"
+  class="{{ class|default('') }}"
+  {{ attrs|default('')|safe }}
+>
+  <ol
+    class="text-foreground text-sm flex flex-wrap items-center gap-2 break-words [&_a]:underline [&_a]:decoration-solid [&_a]:decoration-auto [&_a]:underline-offset-auto"
+  >
+    {% for item in items %}
+      {# Breadcrumb Item #}
+      <li class="{{ item.class|default('') }} inline-flex items-center gap-1.5">
+        {% if item.href %}
+          {# Link #}
+          <a
+            href="{{ item.href }}"
+            class="{{ item.link_class|default('') }}"
+          >
+            {{ item.label|safe }}
+          </a>
+        {% else %}
+          {# Current Page #}
+          <span
+            role="link"
+            aria-disabled="true"
+            aria-current="page"
+            class="{{ item.page_class|default('') }} font-semibold"
+          >
+            {{ item.label|safe }}
+          </span>
+        {% endif %}
+      </li>
+
+      {# Separator (not after last item) #}
+      {% if not loop.last %}
+        <li
+          role="presentation"
+          aria-hidden="true"
+          class="{{ separator_class|default('') }} [&>svg]:size-4 [&>svg]:rtl:rotate-180"
+        >
+          {% if separator_icon %}
+            {{ separator_icon|safe }}
+          {% else %}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="m9 18 6-6-6-6"></path>
+            </svg>
+          {% endif %}
+        </li>
+      {% endif %}
+    {% endfor %}
+  </ol>
+</nav>

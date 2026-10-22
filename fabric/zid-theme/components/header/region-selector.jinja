@@ -1,0 +1,78 @@
+{# Desktop Region Selector - Opens Vitrin's shared region dialog #}
+{% set multiple_countries = store.countries | length > 1 %}
+{% set multiple_languages = store.languages | length > 1 %}
+{% set show_country = multiple_countries and not safeget(settings, "header_hide_country", false) %}
+{% set show_language = multiple_languages and not safeget(settings, "header_hide_language", false) %}
+{% set modern_location_enabled = safeget(store, "settings.zones.selection_enabled", false) %}
+{% set legacy_location_enabled = safeget(store, "settings.products.filter_by_nearest_inventory", false) %}
+{% set show_location = modern_location_enabled or legacy_location_enabled %}
+{% set show_coordinate_location = (modern_location_enabled and safeget(store, "settings.zones.precision", "city") == "coordinates") or (not modern_location_enabled and legacy_location_enabled) %}
+
+{% if show_location or show_country or show_language %}
+  <li class="hidden lg:block">
+    <button
+      type="button"
+      onclick="zidOpenRegionSettingDialog()"
+      class="text-foreground text-sm flex items-center gap-1.5 py-2 hover:underline"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+      >
+        <circle
+          cx="12"
+          cy="12"
+          r="10"
+        />
+        <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+      </svg>
+      <span class="nav-country-text">
+        {% if show_country %}
+          {{ session.country.name }}{% if show_language %}|{% endif %}
+        {% elif show_location %}
+          {{ _("Select your location") }}{% if show_language %}|{% endif %}
+        {% endif %}
+      </span>
+
+      {% if show_language %}{{ session.lang | upper }}{% endif %}
+    </button>
+  </li>
+{% endif %}
+
+<script>
+{% if show_coordinate_location %}
+  document.addEventListener('DOMContentLoaded', function() {
+    const storedData = localStorage.getItem('zid_kit_select_branch');
+    if (!storedData) return;
+
+    const lang = '{{ session.lang }}';
+    const data = JSON.parse(storedData);
+    const branchData = data.branchData;
+    if (!branchData) return;
+    const buttons = document.querySelectorAll('.nav-country-text');
+    
+    if (!buttons) return;
+
+    let displayText = '';
+    const deliveryToText = '{{ _("Delivery to:") }}';
+    const pickupFromText = '{{ _("Pickup from:") }}';
+
+    if (branchData.type === 'pickup' && branchData.pickup) {
+        displayText = `${pickupFromText} ${branchData.pickup.name}`;
+    } else if (branchData.type === 'delivery' && branchData.address) {
+        const addr = branchData.address;
+        const cityName = lang === 'ar' ? addr.city_name_ar : addr.city_name_en;
+        displayText = `${deliveryToText} ${cityName || ''}`;
+    }
+
+    if (displayText) {
+      buttons.forEach(btn => btn.textContent = `${displayText} | `);
+    }
+  });
+{% endif %}
+</script>

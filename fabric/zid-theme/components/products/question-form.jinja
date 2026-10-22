@@ -1,0 +1,124 @@
+{#
+  Product Question Form Component
+
+  Parameters:
+  - product: Product object for API submission
+#}
+{% if product %}
+  <div class="border-border mt-4 border-t pt-4">
+    <h3 class="text-foreground text-sm font-semibold mb-4">{{ _("Ask your question") }}</h3>
+
+    <form
+      id="question-form"
+      data-product-id="{{ product.id }}"
+      data-sending-text="{{ _('Sending...') }}"
+      data-success-message="{{ _('Your question has been sent successfully. You will receive a notification if it is answered.') }}"
+      data-success-title="{{ _('Sent Successfully') }}"
+      data-error-message="{{ _('Failed to send your question. Please try again.') }}"
+      data-error-title="{{ _('Error') }}"
+      class="flex flex-col gap-4"
+    >
+      {# Email and Name Row #}
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {# Email Input #}
+        <div class="grid w-full items-center gap-2">
+          <label
+            for="question_email"
+            class="form-label"
+          >
+            {{ _('Email') }}<span class="form-label-required">*</span>
+          </label>
+          <input
+            type="email"
+            id="question_email"
+            name="question_email"
+            required
+            autocomplete="email"
+            class="form-input"
+          />
+          <p
+            id="email-error"
+            class="text-destructive text-xs hidden"
+          >
+            {{ _("Email is incorrect") }}
+          </p>
+        </div>
+
+        {# Name Input #}
+        <div class="grid w-full items-center gap-2">
+          <label
+            for="question_name"
+            class="form-label"
+          >
+            {{ _('Name') }}<span class="form-label-required">*</span>
+          </label>
+          <input
+            type="text"
+            id="question_name"
+            name="question_name"
+            required
+            autocomplete="name"
+            class="form-input"
+          />
+          <p
+            id="name-error"
+            class="text-destructive text-xs hidden"
+          >
+            {{ _("This field is required") }}
+          </p>
+        </div>
+      </div>
+
+      {# Question Textarea #}
+      <div class="grid w-full items-center gap-2">
+        <label
+          for="question_text"
+          class="form-label"
+        >
+          {{ _('Your question') }}<span class="form-label-required">*</span>
+        </label>
+        <textarea
+          id="question_text"
+          name="question_text"
+          placeholder="{{ _('Enter your question here') }}"
+          rows="3"
+          required
+          class="form-textarea"
+        ></textarea>
+        <p
+          id="question-error"
+          class="text-destructive text-xs hidden"
+        >
+          {{ _("This field is required") }}
+        </p>
+      </div>
+
+      {# Anonymous Checkbox #}
+      <label class="form-control">
+        <input
+          type="checkbox"
+          id="is_anonymous"
+          name="is_anonymous"
+          class="form-checkbox"
+        />
+        {{ _('Do not show my name in the comments') }}
+      </label>
+
+      {# Submit Button #}
+      <button
+        type="submit"
+        id="submit-question-btn"
+        class="btn btn-filled btn-md self-start"
+      >
+        {{ _('Ask question') }}
+      </button>
+
+      {# Success/Error Message #}
+      <div
+        id="question-form-message"
+        class="hidden rounded-lg px-4 py-3 text-sm"
+        role="alert"
+      ></div>
+    </form>
+  </div>
+{% endif %}

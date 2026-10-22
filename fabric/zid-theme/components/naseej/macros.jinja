@@ -1,0 +1,293 @@
+{#
+  Naseej drawing macros — pure SVG, no context needed.
+
+  {% from 'components/naseej/macros.jinja' import drape_art, wiqfa_glyph, icon, arrow %}
+#}
+
+{#
+  Fabric drape artwork, shown wherever an image has not been uploaded yet.
+  - uid: unique per page (SVG gradient ids are document-global)
+  - tone: 'ivory' | 'sand' | 'ink'
+#}
+{% macro drape_art(uid, tone='ivory') %}
+  {% set palettes = {
+    'ivory': ['#FBF8F2', '#EFE6D6', '#D9C9AD', '#8A6F37'],
+    'sand': ['#F3EADB', '#E4D5BC', '#C9B28B', '#7A6232'],
+    'ink': ['#2A2823', '#1B1A17', '#0F0E0C', '#C8AA6A']
+  } %}
+  {% set c = palettes.get(tone, palettes['ivory']) %}
+  <svg
+    viewBox="0 0 400 500"
+    preserveAspectRatio="xMidYMid slice"
+    aria-hidden="true"
+    focusable="false"
+  >
+    <defs>
+      <linearGradient
+        id="{{ uid }}-bg"
+        x1="0"
+        y1="0"
+        x2="1"
+        y2="1"
+      >
+        <stop
+          offset="0"
+          stop-color="{{ c[0] }}"
+        />
+        <stop
+          offset=".55"
+          stop-color="{{ c[1] }}"
+        />
+        <stop
+          offset="1"
+          stop-color="{{ c[2] }}"
+        />
+      </linearGradient>
+      <linearGradient
+        id="{{ uid }}-shade"
+        x1="0"
+        x2="1"
+      >
+        <stop
+          offset="0"
+          stop-color="#000"
+          stop-opacity="0"
+        />
+        <stop
+          offset=".5"
+          stop-color="#000"
+          stop-opacity=".22"
+        />
+        <stop
+          offset="1"
+          stop-color="#000"
+          stop-opacity="0"
+        />
+      </linearGradient>
+      <linearGradient
+        id="{{ uid }}-light"
+        x1="0"
+        x2="1"
+      >
+        <stop
+          offset="0"
+          stop-color="#fff"
+          stop-opacity="0"
+        />
+        <stop
+          offset=".5"
+          stop-color="#fff"
+          stop-opacity=".55"
+        />
+        <stop
+          offset="1"
+          stop-color="#fff"
+          stop-opacity="0"
+        />
+      </linearGradient>
+      <pattern
+        id="{{ uid }}-weave"
+        width="5"
+        height="5"
+        patternUnits="userSpaceOnUse"
+      >
+        <rect
+          width="2.5"
+          height="5"
+          fill="#fff"
+          opacity=".09"
+        />
+        <rect
+          width="5"
+          height="2.5"
+          fill="#000"
+          opacity=".02"
+        />
+      </pattern>
+    </defs>
+    <rect
+      width="400"
+      height="500"
+      fill="url(#{{ uid }}-bg)"
+    />
+    <path
+      d="M38 0C70 120 10 260 52 500H118C84 300 140 150 104 0Z"
+      fill="url(#{{ uid }}-shade)"
+      opacity=".55"
+    />
+    <path
+      d="M104 0C140 150 84 300 118 500H178C150 320 196 160 164 0Z"
+      fill="url(#{{ uid }}-light)"
+      opacity=".7"
+    />
+    <path
+      d="M164 0C196 160 150 320 178 500H250C226 330 268 170 236 0Z"
+      fill="url(#{{ uid }}-shade)"
+      opacity=".7"
+    />
+    <path
+      d="M236 0C268 170 226 330 250 500H312C296 330 330 180 300 0Z"
+      fill="url(#{{ uid }}-light)"
+      opacity=".6"
+    />
+    <path
+      d="M300 0C330 180 296 330 312 500H372C362 340 388 190 362 0Z"
+      fill="url(#{{ uid }}-shade)"
+      opacity=".5"
+    />
+    <path
+      d="M-10 380C90 330 170 420 260 360S380 300 420 320"
+      fill="none"
+      stroke="{{ c[3] }}"
+      stroke-width="1.2"
+      opacity=".55"
+    />
+    <path
+      d="M-10 392C90 342 170 432 260 372S380 312 420 332"
+      fill="none"
+      stroke="{{ c[3] }}"
+      stroke-width=".6"
+      opacity=".4"
+    />
+    <rect
+      width="400"
+      height="500"
+      fill="url(#{{ uid }}-weave)"
+    />
+  </svg>
+{% endmacro %}
+
+{#
+  How a fabric falls for a given stiffness (1 = flowing … 4 = structured).
+  Ported from the Naseej storefront's wiqfa guide.
+#}
+{% macro wiqfa_glyph(level, class='') %}
+  {% set k = level | int %}
+  {% if k < 1 %}{% set k = 1 %}{% elif k > 4 %}{% set k = 4 %}{% endif %}
+  {% set spread = 26 - k * 5 %}
+  {% set curve = 30 - k * 7 %}
+  <svg
+    class="{{ class }}"
+    viewBox="0 0 64 100"
+    aria-hidden="true"
+    focusable="false"
+  >
+    <path
+      d="M32 6 L18 22 Q{{ 18 - curve }} 56 {{ 32 - spread - 6 }} 92 L{{ 32 + spread + 6 }} 92 Q{{ 46 + curve }} 56 46 22 Z"
+      style="fill: var(--gold-soft); stroke: var(--accent)"
+      stroke-width="1.6"
+      stroke-linejoin="round"
+    />
+    <path
+      d="M32 8 L32 92"
+      style="stroke: var(--accent)"
+      stroke-width="1"
+      opacity=".35"
+    />
+    <path
+      d="M25 20 Q{{ 24 - curve / 2 }} 56 {{ 28 - spread / 1.6 }} 90"
+      style="stroke: var(--accent)"
+      stroke-width="1"
+      fill="none"
+      opacity=".4"
+    />
+    <path
+      d="M39 20 Q{{ 40 + curve / 2 }} 56 {{ 36 + spread / 1.6 }} 90"
+      style="stroke: var(--accent)"
+      stroke-width="1"
+      fill="none"
+      opacity=".4"
+    />
+    <circle
+      cx="32"
+      cy="6"
+      r="2.2"
+      style="fill: var(--accent)"
+    />
+  </svg>
+{% endmacro %}
+
+{# Line icons for the features section #}
+{% macro icon(name) %}
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.4"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+    focusable="false"
+  >
+    {% if name == 'truck' %}
+      <path d="M3 7h11v9H3zM14 10h4l3 3v3h-7" />
+      <circle
+        cx="7"
+        cy="17.5"
+        r="1.8"
+      />
+      <circle
+        cx="17.5"
+        cy="17.5"
+        r="1.8"
+      />
+    {% elif name == 'scissors' %}
+      <circle
+        cx="6"
+        cy="7"
+        r="2.6"
+      />
+      <circle
+        cx="6"
+        cy="17"
+        r="2.6"
+      />
+      <path d="M8.2 8.4 20 17M8.2 15.6 20 7" />
+    {% elif name == 'ruler' %}
+      <path d="M3 15.5 15.5 3 21 8.5 8.5 21z" />
+      <path d="m7 11.5 2 2M10 8.5l1.5 1.5M13 5.5l2 2M16 9.5l-1.5-1.5" />
+    {% elif name == 'shield' %}
+      <path d="M12 3 4.5 6v6c0 4.5 3.2 7.8 7.5 9 4.3-1.2 7.5-4.5 7.5-9V6z" />
+      <path d="m8.8 12 2.2 2.2 4.2-4.4" />
+    {% elif name == 'return' %}
+      <path d="M4 9h11a5 5 0 0 1 0 10H8" />
+      <path d="M8 5 4 9l4 4" />
+    {% elif name == 'card' %}
+      <rect
+        x="3"
+        y="5.5"
+        width="18"
+        height="13"
+        rx="2"
+      />
+      <path d="M3 10h18M7 15h3" />
+    {% elif name == 'gift' %}
+      <path d="M4 11h16v9H4zM3 7.5h18V11H3zM12 7.5V20" />
+      <path d="M12 7.5C10 3.5 6.5 4.5 7.5 6.5S12 7.5 12 7.5zM12 7.5c2-4 5.5-3 4.5-1S12 7.5 12 7.5z" />
+    {% elif name == 'chat' %}
+      <path d="M4 18.5V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H7z" />
+      <path d="M8.5 9.5h7M8.5 12.5h4.5" />
+    {% elif name == 'thread' %}
+      <path d="M7 4h10M7 20h10M8 4v16M16 4v16" />
+      <path d="M8 8c3 1 5-1 8 0M8 12c3 1 5-1 8 0M8 16c3 1 5-1 8 0" />
+    {% else %}
+      <path d="m12 3 2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7z" />
+    {% endif %}
+  </svg>
+{% endmacro %}
+
+{# Forward arrow that flips with reading direction #}
+{% macro arrow(class='size-4') %}
+  <svg
+    class="{{ class }} rtl:rotate-180"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M4 12h16M14 6l6 6-6 6" />
+  </svg>
+{% endmacro %}

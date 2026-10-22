@@ -1,0 +1,94 @@
+{
+  "template": "sections/naseej-meter.jinja",
+  "name": {
+    "ar": "نسيج · حاسبة الأمتار",
+    "en": "Naseej · Meter calculator"
+  },
+  "icon": "calculator-line",
+  "settings": [
+    {
+      "id": "eyebrow",
+      "type": "text",
+      "label": {
+        "ar": "سطر علوي صغير",
+        "en": "Eyebrow"
+      },
+      "default": "قبل أن تطلب"
+    },
+    {
+      "id": "title",
+      "type": "text",
+      "label": {
+        "ar": "العنوان",
+        "en": "Title"
+      },
+      "default": "كم مترًا أحتاج؟"
+    },
+    {
+      "id": "description",
+      "type": "textarea",
+      "label": {
+        "ar": "الوصف",
+        "en": "Description"
+      },
+      "default": "اختر طولك وعدد الأثواب ونحسب لك المقدار المناسب. وإن احترت، راسلنا ونقيس معك."
+    },
+    {
+      "id": "whatsapp",
+      "type": "text",
+      "label": {
+        "ar": "رقم واتساب لزر الاستفسار",
+        "en": "WhatsApp number for the help button"
+      },
+      "info": {
+        "ar": "بالصيغة الدولية مثل 966500000000. اتركه فارغًا لإخفاء الزر",
+        "en": "International format; empty hides the button"
+      },
+      "default": ""
+    },
+    {
+      "id": "whatsapp_text",
+      "type": "text",
+      "label": {
+        "ar": "نص زر واتساب",
+        "en": "WhatsApp button text"
+      },
+      "default": "اسألنا على واتساب"
+    },
+    {
+      "id": "rows",
+      "type": "list",
+      "label": {
+        "ar": "جدول الأمتار حسب الطول",
+        "en": "Meters by height"
+      },
+      "item_label": {
+        "ar": "صف",
+        "en": "Row"
+      },
+      "max_items": 6,
+      "settings": [
+        {
+          "id": "label",
+          "type": "text",
+          "label": {
+            "ar": "الطول",
+            "en": "Height"
+          }
+        },
+        {
+          "id": "meters",
+          "type": "text",
+          "label": {
+            "ar": "الأمتار لثوب واحد",
+            "en": "Meters per thobe"
+          }
+        }
+      ],
+      "info": {
+        "ar": "اتركه فارغًا لاستعمال الجدول المعتاد: 3 · 3.5 · 4 · 4.5 م",
+        "en": "Leave empty for 3 / 3.5 / 4 / 4.5 m"
+      }
+    }
+  ]
+}

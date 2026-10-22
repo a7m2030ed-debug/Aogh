@@ -1,0 +1,160 @@
+{
+  "template": "sections/naseej-features.jinja",
+  "name": {
+    "ar": "نسيج · المزايا",
+    "en": "Naseej · Features"
+  },
+  "icon": "award-line",
+  "settings": [
+    {
+      "id": "tone",
+      "type": "select",
+      "label": {
+        "ar": "الخلفية",
+        "en": "Background"
+      },
+      "options": [
+        {
+          "value": "background",
+          "label": {
+            "ar": "لون الصفحة",
+            "en": "Page"
+          }
+        },
+        {
+          "value": "sand",
+          "label": {
+            "ar": "رملي",
+            "en": "Sand"
+          }
+        }
+      ],
+      "default": "background"
+    },
+    {
+      "id": "title",
+      "type": "text",
+      "label": {
+        "ar": "العنوان (اختياري)",
+        "en": "Title (optional)"
+      },
+      "default": ""
+    },
+    {
+      "id": "items",
+      "type": "list",
+      "label": {
+        "ar": "المزايا",
+        "en": "Features"
+      },
+      "item_label": {
+        "ar": "ميزة",
+        "en": "Feature"
+      },
+      "max_items": 4,
+      "settings": [
+        {
+          "id": "icon",
+          "type": "select",
+          "label": {
+            "ar": "الأيقونة",
+            "en": "Icon"
+          },
+          "options": [
+            {
+              "value": "scissors",
+              "label": {
+                "ar": "مقص",
+                "en": "Scissors"
+              }
+            },
+            {
+              "value": "truck",
+              "label": {
+                "ar": "شحن",
+                "en": "Truck"
+              }
+            },
+            {
+              "value": "shield",
+              "label": {
+                "ar": "ضمان",
+                "en": "Shield"
+              }
+            },
+            {
+              "value": "card",
+              "label": {
+                "ar": "دفع",
+                "en": "Card"
+              }
+            },
+            {
+              "value": "return",
+              "label": {
+                "ar": "استرجاع",
+                "en": "Return"
+              }
+            },
+            {
+              "value": "ruler",
+              "label": {
+                "ar": "قياس",
+                "en": "Ruler"
+              }
+            },
+            {
+              "value": "gift",
+              "label": {
+                "ar": "هدية",
+                "en": "Gift"
+              }
+            },
+            {
+              "value": "chat",
+              "label": {
+                "ar": "محادثة",
+                "en": "Chat"
+              }
+            },
+            {
+              "value": "thread",
+              "label": {
+                "ar": "خيط",
+                "en": "Thread"
+              }
+            },
+            {
+              "value": "star",
+              "label": {
+                "ar": "نجمة",
+                "en": "Star"
+              }
+            }
+          ],
+          "default": "scissors"
+        },
+        {
+          "id": "title",
+          "type": "text",
+          "label": {
+            "ar": "العنوان",
+            "en": "Title"
+          }
+        },
+        {
+          "id": "text",
+          "type": "text",
+          "label": {
+            "ar": "النص",
+            "en": "Text"
+          }
+        }
+      ],
+      "info": {
+        "ar": "اتركها فارغة لعرض المحتوى الافتراضي المكتوب لنسيج",
+        "en": "Leave empty to show the built-in Naseej content"
+      }
+    }
+  ]
+}

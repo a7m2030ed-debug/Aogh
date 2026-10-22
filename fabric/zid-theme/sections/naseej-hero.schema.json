@@ -1,0 +1,207 @@
+{
+  "template": "sections/naseej-hero.jinja",
+  "name": {
+    "ar": "نسيج · البانر الفاخر",
+    "en": "Naseej · Hero"
+  },
+  "icon": "home-2-line",
+  "settings": [
+    {
+      "id": "is_primary_hero",
+      "type": "checkbox",
+      "label": {
+        "ar": "البانر الرئيسي (عنوان H1)",
+        "en": "Primary hero (H1)"
+      },
+      "default": true
+    },
+    {
+      "id": "layout",
+      "type": "select",
+      "label": {
+        "ar": "نمط العرض",
+        "en": "Layout"
+      },
+      "options": [
+        {
+          "value": "split",
+          "label": {
+            "ar": "نص بجانب صورة",
+            "en": "Split"
+          }
+        },
+        {
+          "value": "full",
+          "label": {
+            "ar": "صورة بعرض الشاشة",
+            "en": "Full-bleed"
+          }
+        }
+      ],
+      "default": "split"
+    },
+    {
+      "id": "image",
+      "type": "image",
+      "label": {
+        "ar": "الصورة",
+        "en": "Image"
+      },
+      "info": {
+        "ar": "طولية 1200 × 1500 بكسل للنمط الجانبي، أو عرضية 2200 × 1200 للعرض الكامل. بدونها تظهر لوحة قماش مرسومة",
+        "en": "Portrait 1200×1500 for split, 2200×1200 for full-bleed. A drawn fabric artwork shows without it"
+      }
+    },
+    {
+      "id": "image_mobile",
+      "type": "image",
+      "label": {
+        "ar": "صورة الجوال (اختياري)",
+        "en": "Mobile image (optional)"
+      },
+      "info": {
+        "ar": "طولية 900 × 1200 بكسل",
+        "en": "Portrait 900×1200"
+      }
+    },
+    {
+      "id": "art_tone",
+      "type": "select",
+      "label": {
+        "ar": "لون اللوحة المرسومة (بلا صورة)",
+        "en": "Artwork tone (no image)"
+      },
+      "options": [
+        {
+          "value": "ivory",
+          "label": {
+            "ar": "عاجي",
+            "en": "Ivory"
+          }
+        },
+        {
+          "value": "sand",
+          "label": {
+            "ar": "رملي",
+            "en": "Sand"
+          }
+        },
+        {
+          "value": "ink",
+          "label": {
+            "ar": "داكن",
+            "en": "Ink"
+          }
+        }
+      ],
+      "default": "ivory"
+    },
+    {
+      "id": "eyebrow",
+      "type": "text",
+      "label": {
+        "ar": "سطر علوي صغير",
+        "en": "Eyebrow"
+      },
+      "default": "أقمشة رجالية مختارة"
+    },
+    {
+      "id": "heading",
+      "type": "text",
+      "label": {
+        "ar": "العنوان",
+        "en": "Heading"
+      },
+      "default": "قماشٌ يليق بثوبك"
+    },
+    {
+      "id": "heading_highlight",
+      "type": "text",
+      "label": {
+        "ar": "كلمة بالذهبي من العنوان",
+        "en": "Gold word from the heading"
+      },
+      "info": {
+        "ar": "اكتب كلمة موجودة في العنوان لتظهر باللون الذهبي",
+        "en": "A word from the heading to color gold"
+      },
+      "default": "ثوبك"
+    },
+    {
+      "id": "description",
+      "type": "textarea",
+      "label": {
+        "ar": "الوصف",
+        "en": "Description"
+      },
+      "default": "أقمشة صيفية مصنّفة بالوقفة، وشتوية دافئة، وطاقات كاملة للجملة. نقيس ونقصّ ونشحن لكل مدن المملكة."
+    },
+    {
+      "id": "button_text",
+      "type": "text",
+      "label": {
+        "ar": "نص الزر الأساسي",
+        "en": "Primary button text"
+      },
+      "default": "تسوّق الأقمشة الصيفية"
+    },
+    {
+      "id": "button_url",
+      "type": "url",
+      "label": {
+        "ar": "رابط الزر الأساسي",
+        "en": "Primary button link"
+      },
+      "default": ""
+    },
+    {
+      "id": "button2_text",
+      "type": "text",
+      "label": {
+        "ar": "نص الزر الثانوي",
+        "en": "Secondary button text"
+      },
+      "default": "دليل الوقفة"
+    },
+    {
+      "id": "button2_url",
+      "type": "url",
+      "label": {
+        "ar": "رابط الزر الثانوي",
+        "en": "Secondary button link"
+      },
+      "default": "#wiqfa"
+    },
+    {
+      "id": "notes",
+      "type": "text",
+      "label": {
+        "ar": "مزايا قصيرة تحت الأزرار",
+        "en": "Short notes under the buttons"
+      },
+      "info": {
+        "ar": "افصل بينها بالرمز |",
+        "en": "Separate with |"
+      },
+      "default": "قصّ بالمتر حسب طلبك|شحن لكل مدن المملكة|أقمشة أصلية مختارة"
+    },
+    {
+      "id": "seal_title",
+      "type": "text",
+      "label": {
+        "ar": "بطاقة على الصورة: العنوان",
+        "en": "Image card: title"
+      },
+      "default": "الموسم الجديد"
+    },
+    {
+      "id": "seal_text",
+      "type": "text",
+      "label": {
+        "ar": "بطاقة على الصورة: النص",
+        "en": "Image card: text"
+      },
+      "default": "أقمشة صيفية وصلت حديثًا"
+    }
+  ]
+}

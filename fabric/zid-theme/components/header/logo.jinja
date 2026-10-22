@@ -1,0 +1,33 @@
+{# Header Logo Component #}
+{# Displays responsive logo with separate desktop/mobile variants #}
+
+{% if settings.logo_desktop or settings.logo_mobile %}
+{% if settings.logo_desktop %}
+  <img
+    width="106"
+    height="44"
+    src="{{ image_url(settings.logo_desktop | default(settings.logo_mobile) | default(store.logo), w=212, q=90, f='auto') }}"
+    class="absolute md:relative md:top-auto left-1/2 md:left-auto -translate-x-1/2 md:translate-x-0 -translate-y-1/2 md:translate-y-0 max-h-[44px] md:max-h-[66px] w-auto object-contain {% if settings.logo_mobile %} hidden md:block {% endif %}"
+    alt="{{ store.name }}"
+  />
+{% endif %}
+{% if settings.logo_mobile %}
+  <img
+    width="106"
+    height="44"
+    src="{{ image_url(settings.logo_mobile | default(settings.logo_desktop) | default(store.logo), w=212, q=90, f='auto') }}"
+    class="absolute md:relative md:top-auto left-1/2 md:left-auto -translate-x-1/2 md:translate-x-0 -translate-y-1/2 md:translate-y-0 h-[44px] w-auto object-contain {% if settings.logo_desktop %} block md:hidden {% endif %}"
+    alt="{{ store.name }}"
+  />
+{% endif %}
+{% elif store.logo %}
+  <img
+    width="106"
+    height="44"
+    src="{{ image_url(store.logo, w=212, q=90, f='auto') }}"
+    alt="{{ store.name }}"
+    class="absolute md:relative md:top-auto left-1/2 md:left-auto -translate-x-1/2 md:translate-x-0 -translate-y-1/2 md:translate-y-0 max-h-[44px] md:max-h-[66px] w-auto object-contain"
+  />
+{% else %}
+  {% include 'components/naseej/wordmark.jinja' %}
+{% endif %}

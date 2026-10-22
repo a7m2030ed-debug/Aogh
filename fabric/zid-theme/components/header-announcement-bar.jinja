@@ -1,0 +1,56 @@
+{% if settings.announcement_bar_display %}
+  {% if not settings.announcement_bar_page_display or (session.template == 'home' and settings.announcement_bar_page_display == 'home') or settings.announcement_bar_page_display == 'all' %}
+    {% set enable_marquee = settings.announcement_bar_enable_marquee | default(false) %}
+    {% set marquee_speed = settings.announcement_bar_marquee_speed | default(30) %}
+    {% set ns = namespace(texts=[]) %}
+    {% for item in settings.announcement_bar_texts or [] %}
+      {% if item.text %}
+        {% set ns.texts = ns.texts + [item.text] %}
+      {% endif %}
+    {% endfor %}
+
+    <div
+      class="nsj-announce overflow-hidden"
+      data-announcement-bar
+    >
+      {% if enable_marquee and ns.texts | length > 0 %}
+        {# Marquee Animation Mode #}
+        <div class="announcement-marquee py-2">
+          <div
+            class="announcement-marquee__content"
+            style="--marquee-speed: {{ marquee_speed }}s"
+          >
+            {% for _ in range(2) %}
+              {% for text in ns.texts %}
+                {% if settings.announcement_bar_url %}
+                  <a
+                    href="{{ settings.announcement_bar_url }}"
+                    class="text-sm px-8 whitespace-nowrap underline"
+                  >
+                    {{ text }}
+                  </a>
+                {% else %}
+                  <span class="text-sm px-8 whitespace-nowrap">{{ text }}</span>
+                {% endif %}
+              {% endfor %}
+            {% endfor %}
+          </div>
+        </div>
+      {% elif ns.texts | length > 0 %}
+        {# Static Mode #}
+        <div class="theme-container flex items-center justify-center p-2">
+          {% if settings.announcement_bar_url %}
+            <a
+              href="{{ settings.announcement_bar_url }}"
+              class="text-sm text-center underline"
+            >
+              {{ ns.texts[0] }}
+            </a>
+          {% else %}
+            <p class="text-sm text-center">{{ ns.texts[0] }}</p>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
+{% endif %}

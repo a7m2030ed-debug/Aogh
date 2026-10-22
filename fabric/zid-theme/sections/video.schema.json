@@ -1,0 +1,61 @@
+{
+  "template": "sections/video.jinja",
+  "name": {
+    "ar": "فيديو",
+    "en": "Video"
+  },
+  "icon": "movie-line",
+  "settings": [
+    {
+      "id": "title",
+      "type": "text",
+      "label": {
+        "ar": "العنوان",
+        "en": "Title"
+      },
+      "default": ""
+    },
+    {
+      "id": "poster_image",
+      "type": "image",
+      "label": {
+        "ar": "صورة الغلاف",
+        "en": "Cover Image"
+      },
+      "info": {
+        "ar": "ارفع صورة بحجم 1500 × 700 بكسل",
+        "en": "Upload image 1500 × 700 pixels"
+      }
+    },
+    {
+      "id": "video",
+      "type": "video",
+      "label": {
+        "ar": "الفيديو",
+        "en": "Video"
+      },
+      "info": {
+        "ar": "يدعم mp4, webm, ogg - الحد الأقصى 10MB",
+        "en": "Supports mp4, webm, ogg - Maximum 10MB"
+      }
+    },
+    {
+      "id": "autoplay",
+      "type": "checkbox",
+      "label": {
+        "ar": "تشغيل الفيديو بشكل مباشر",
+        "en": "Autoplay"
+      },
+      "default": false
+    },
+    {
+      "id": "controls",
+      "type": "checkbox",
+      "label": {
+        "ar": "عرض ازرار التحكم",
+        "en": "Controls"
+      },
+      "default": false
+    }
+  ]
+}

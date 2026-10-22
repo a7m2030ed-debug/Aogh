@@ -1,0 +1,235 @@
+{# Product Gallery Component - Embla Carousel #}
+{# Parameters: product (object with images/media array), badges (optional array), gallery_id (optional unique id) #}
+{% set gallery_id = gallery_id|default('product-gallery-' ~ range(1000, 9999)|random) %}
+
+{# Use media array if available (includes videos), otherwise fall back to images #}
+{% set gallery_media = product.selected_product.media if product.selected_product and product.selected_product.media and product.selected_product.media|length > 0 else product.images %}
+{% set has_multiple_items = gallery_media and gallery_media|length > 1 %}
+
+{# Hidden lightbox gallery for PhotoSwipe (images only, not videos) #}
+<div
+  id="product-gallery-lightbox"
+  class="hidden"
+>
+  {% if gallery_media and gallery_media|length > 0 %}
+    {% for item in gallery_media %}
+      {# Only include images in lightbox, not videos #}
+      {% if not (item.provider and item.link) %}
+        {% set full_src = item.image.full_size if item.image else item %}
+        <a
+          href="{{ image_url(full_src, w=1600, q=90, f='auto') }}"
+          data-pswp-width="1600"
+          data-pswp-height="2133"
+        >
+          <img
+            src="{{ image_url(full_src, w=1600, q=85, f='auto') }}"
+            alt="{{ product.name }} - {{ _('Image') }} {{ loop.index }}"
+            data-lightbox-item
+            data-lightbox-src="{{ image_url(full_src, w=1600, q=90, f='auto') }}"
+            data-lightbox-width="1600"
+            data-lightbox-height="2133"
+          />
+        </a>
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+</div>
+
+<div class="space-y-3">
+  {# Main Gallery #}
+  <div class="relative">
+    <div
+      class="product-gallery overflow-hidden rounded"
+      data-gallery-id="{{ gallery_id }}"
+    >
+      <div class="product-gallery__container flex gap-2">
+        {% if gallery_media and gallery_media|length > 0 %}
+          {% for item in gallery_media %}
+            {% set img_src = item.image.large if item.image else item %}
+
+            <div class="product-gallery__slide relative min-w-0 flex-[0_0_100%]">
+              {# Image (thumbnail for videos) #}
+              <img
+                src="{{ image_url(img_src, w=750, q=90, f='auto') }}"
+                srcset="
+                  {{ image_url(img_src, w=400, q=90, f='auto') }}  400w,
+                  {{ image_url(img_src, w=640, q=90, f='auto') }}  640w,
+                  {{ image_url(img_src, w=750, q=90, f='auto') }}  750w,
+                  {{ image_url(img_src, w=960, q=90, f='auto') }}  960w,
+                  {{ image_url(img_src, w=1200, q=90, f='auto') }} 1200w
+                "
+                sizes="(max-width: 640px) 100vw, 50vw"
+                alt="{{ item.alt_text|default(product.name ~ ' - ' ~ _('Image') ~ ' ' ~ loop.index) }}"
+                class="{{ 'cursor-zoom-in' if not is_video else '' }} h-[500px] w-full md:h-[650px] rounded object-contain"
+                {% if not is_video %}data-lightbox-trigger="{{ loop.index0 }}"{% endif %}
+                {% if loop.index > 1 %}loading="lazy"{% endif %}
+              />
+
+              {% if is_video %}
+                {# Video play button overlay #}
+                <button
+                  type="button"
+                  class="absolute inset-0 flex cursor-pointer items-center justify-center bg-black/20 transition-colors hover:bg-black/30"
+                  data-video-play
+                  data-video-src="{{ item.link }}"
+                  aria-label="{{ _('Play video') }}"
+                >
+                  <span class="bg-background/90 flex size-16 items-center justify-center rounded-full shadow-lg">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      class="text-foreground size-8 rtl:rotate-180"
+                    >
+                      <path d="M8 5.14v14l11-7-11-7z" />
+                    </svg>
+                  </span>
+                </button>
+
+                {# Video iframe container (hidden by default) #}
+                <div
+                  class="absolute inset-0 hidden rounded bg-black"
+                  data-video-container
+                >
+                  <button
+                    type="button"
+                    class="bg-background/80 text-foreground absolute end-2 top-2 z-10 flex size-8 items-center justify-center rounded-full"
+                    data-video-close
+                    aria-label="{{ _('Close video') }}"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      class="size-5"
+                    >
+                      <path d="M18 6L6 18M6 6l12 12" />
+                    </svg>
+                  </button>
+                  <iframe
+                    class="size-full rounded"
+                    src=""
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen
+                  ></iframe>
+                </div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        {% else %}
+          {# Fallback if no images #}
+          <div class="product-gallery__slide min-w-0 flex-[0_0_100%]">
+            <img
+              src="{{ image_url(('images/placeholder.png' | asset_url), w=750, q=85, f='auto') }}"
+              alt="{{ product.name }}"
+              class="h-[500px] w-full md:h-[650px] rounded object-contain"
+            />
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {# Navigation Buttons - Overlaid on desktop only #}
+    {% if has_multiple_items %}
+      <button
+        class="product-gallery__prev bg-background/30 absolute start-4 top-1/2 flex -translate-y-1/2 rounded p-2.5 backdrop-blur-xs disabled:opacity-30"
+        aria-label="{{ _('Previous image') }}"
+        data-gallery-id="{{ gallery_id }}"
+        type="button"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          class="rtl:rotate-180"
+        >
+          <path
+            d="M14.0381 6.17383C14.2674 6.17383 14.4645 6.25562 14.6299 6.4209C14.7953 6.5863 14.8779 6.78329 14.8779 7.0127C14.8779 7.2421 14.7953 7.43909 14.6299 7.60449L10.2764 11.957L10.2588 11.9756L10.2764 11.9932L14.6299 16.3457C14.7952 16.511 14.8732 16.7035 14.8652 16.9238C14.8572 17.1448 14.771 17.3382 14.6055 17.5039C14.4401 17.6693 14.243 17.7519 14.0137 17.752C13.7843 17.752 13.5873 17.6693 13.4219 17.5039L8.47754 12.5605C8.38808 12.4711 8.32403 12.378 8.28418 12.2822C8.24425 12.1864 8.22466 12.0842 8.22461 11.9756C8.22461 11.8667 8.24417 11.764 8.28418 11.668C8.32403 11.5722 8.38807 11.4791 8.47754 11.3896L13.4473 6.4209C13.6125 6.25578 13.809 6.17392 14.0381 6.17383Z"
+            fill="currentColor"
+          ></path>
+        </svg>
+      </button>
+      <button
+        class="product-gallery__next bg-background/30 absolute end-4 top-1/2 flex -translate-y-1/2 rounded p-2.5 backdrop-blur-xs disabled:opacity-30"
+        aria-label="{{ _('Next image') }}"
+        data-gallery-id="{{ gallery_id }}"
+        type="button"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          class="rtl:rotate-180"
+        >
+          <path
+            d="M9.38672 6.19922C9.61604 6.19922 9.81315 6.28101 9.97852 6.44629L14.9229 11.3906C15.0121 11.4799 15.0764 11.5724 15.1162 11.668C15.1562 11.764 15.1768 11.8667 15.1768 11.9756C15.1768 12.0843 15.1561 12.1864 15.1162 12.2822V12.2832C15.0764 12.3788 15.0121 12.4712 14.9229 12.5605L9.9541 17.5293C9.78883 17.6946 9.59626 17.7726 9.37598 17.7646C9.15496 17.7566 8.96163 17.6705 8.7959 17.5049C8.63049 17.3395 8.54785 17.1425 8.54785 16.9131C8.54785 16.6837 8.63049 16.4867 8.7959 16.3213L13.1416 11.9756L8.77051 7.60449C8.60518 7.43912 8.52709 7.2468 8.53516 7.02637C8.54327 6.80526 8.63013 6.61206 8.7959 6.44629C8.96115 6.28117 9.15761 6.19931 9.38672 6.19922Z"
+            fill="currentColor"
+          ></path>
+        </svg>
+      </button>
+    {% endif %}
+
+    {# Badges Overlay #}
+    {% if badges or show_bundle_badge %}
+      <div class="absolute start-4 top-4 z-10 flex flex-col items-start gap-2">
+        {% for badge in badges or [] %}
+          <span class="bg-background text-sm w-fit rounded px-2 [font-variant:all-small-caps]"> {{ badge }} </span>
+        {% endfor %}
+        {% if show_bundle_badge %}
+          {# Bundle offer badge - loaded via client-side JS #}
+          <span
+            class="bundle-offer-badge hidden"
+            data-bundle-offer-product-id="{{ product.id }}"
+          ></span>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+
+  {# Thumbnails #}
+  {% if has_multiple_items %}
+    <div
+      class="product-gallery-thumbs flex overflow-hidden"
+      data-gallery-id="{{ gallery_id }}"
+    >
+      <div class="product-gallery-thumbs__container flex gap-2">
+        {% for item in gallery_media %}
+          {% set thumb_src = item.image.thumbnail if item.image else item %}
+          {% set is_video = item.provider and item.link %}
+          <button
+            class="product-gallery-thumbs__slide hover:border-primary relative min-w-0 flex-[0_0_calc(25%-8px)] overflow-hidden rounded border-1 border-transparent transition-colors"
+            data-gallery-id="{{ gallery_id }}"
+            type="button"
+          >
+            <img
+              src="{{ image_url(thumb_src, f='auto') }}"
+              alt="{{ _('Thumbnail') }} {{ loop.index }}"
+              class="aspect-square w-full object-cover"
+              loading="lazy"
+            />
+            {% if is_video %}
+              {# Video indicator on thumbnail #}
+              <span class="bg-background/80 absolute inset-0 flex items-center justify-center">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  class="text-foreground size-6 rtl:rotate-180"
+                >
+                  <path d="M8 5.14v14l11-7-11-7z" />
+                </svg>
+              </span>
+            {% endif %}
+          </button>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+</div>

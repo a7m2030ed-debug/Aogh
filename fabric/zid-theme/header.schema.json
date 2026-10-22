@@ -1,0 +1,181 @@
+{
+  "icon": "fa fa-square",
+  "name": {
+    "ar": "أعلى الصفحة",
+    "en": "Header"
+  },
+  "groups": [
+    {
+      "id": "header",
+      "icon": "fa fa-cog",
+      "name": {
+        "ar": "إعدادات الرأس",
+        "en": "Header Settings"
+      },
+      "settings": [
+        {
+          "id": "hide_language",
+          "type": "checkbox",
+          "label": {
+            "ar": "إخفاء اللغة",
+            "en": "Hide language"
+          },
+          "default": false
+        },
+        {
+          "id": "hide_country",
+          "type": "checkbox",
+          "label": {
+            "ar": "إخفاء اسم الدولة",
+            "en": "Hide country"
+          },
+          "default": false
+        }
+      ]
+    },
+    {
+      "id": "logo",
+      "icon": "fa fa-image",
+      "name": {
+        "ar": "الشعار",
+        "en": "Logo"
+      },
+      "settings": [
+        {
+          "id": "desktop",
+          "type": "image",
+          "label": {
+            "ar": "شعار سطح المكتب",
+            "en": "Desktop Logo"
+          },
+          "info": {
+            "ar": "ارفع صورة بحجم 200 × 80 بكسل (اختياري)",
+            "en": "Upload image 200 × 80 pixels (optional)"
+          }
+        },
+        {
+          "id": "mobile",
+          "type": "image",
+          "label": {
+            "ar": "شعار الجوال",
+            "en": "Mobile Logo"
+          },
+          "info": {
+            "ar": "ارفع صورة بحجم 150 × 60 بكسل (اختياري)",
+            "en": "Upload image 150 × 60 pixels (optional)"
+          }
+        },
+        {
+          "id": "tagline",
+          "type": "text",
+          "label": {
+            "ar": "سطر تحت اسم المتجر",
+            "en": "Tagline under the store name"
+          },
+          "info": {
+            "ar": "يظهر حين لا يوجد شعار مرفوع",
+            "en": "Shown when no logo image is uploaded"
+          },
+          "default": "أقمشة رجالية"
+        }
+      ]
+    },
+    {
+      "id": "announcement_bar",
+      "icon": "fa fa-bullhorn",
+      "name": {
+        "ar": "شريط الإعلانات",
+        "en": "Announcement Bar"
+      },
+      "settings": [
+        {
+          "id": "display",
+          "type": "checkbox",
+          "label": {
+            "ar": "إظهار شريط الإعلانات",
+            "en": "Display Announcement Bar"
+          },
+          "default": false
+        },
+        {
+          "id": "enable_marquee",
+          "type": "checkbox",
+          "label": {
+            "ar": "تفعيل التمرير المتحرك",
+            "en": "Enable Marquee Animation"
+          },
+          "default": false
+        },
+        {
+          "id": "marquee_speed",
+          "type": "range",
+          "label": {
+            "ar": "سرعة التمرير",
+            "en": "Marquee Speed"
+          },
+          "min": 10,
+          "max": 60,
+          "step": 5,
+          "unit": "s",
+          "default": 30
+        },
+        {
+          "id": "texts",
+          "type": "list",
+          "label": {
+            "ar": "النصوص",
+            "en": "Texts"
+          },
+          "item_label": {
+            "ar": "نص",
+            "en": "Text"
+          },
+          "settings": [
+            {
+              "id": "text",
+              "type": "text",
+              "label": {
+                "ar": "النص",
+                "en": "Text"
+              }
+            }
+          ]
+        },
+        {
+          "id": "url",
+          "type": "text",
+          "label": {
+            "ar": "الرابط",
+            "en": "Link URL"
+          },
+          "default": ""
+        },
+        {
+          "id": "page_display",
+          "type": "select",
+          "label": {
+            "ar": "عرض شريط الإعلانات في",
+            "en": "Display Announcement Bar In"
+          },
+          "default": "all",
+          "options": [
+            {
+              "label": {
+                "ar": "جميع الصفحات",
+                "en": "All pages"
+              },
+              "value": "all"
+            },
+            {
+              "label": {
+                "ar": "الصفحة الرئيسية فقط",
+                "en": "Home page only"
+              },
+              "value": "home"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

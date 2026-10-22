@@ -1,0 +1,180 @@
+{
+  "icon": "fa fa-square",
+  "name": {
+    "ar": "أسفل الصفحة",
+    "en": "Footer"
+  },
+  "groups": [
+    {
+      "id": "footer",
+      "icon": "fa fa-adjust",
+      "name": {
+        "ar": "مظهر التذييل",
+        "en": "Footer appearance"
+      },
+      "settings": [
+        {
+          "id": "tone",
+          "type": "select",
+          "label": {
+            "ar": "لون التذييل",
+            "en": "Footer tone"
+          },
+          "default": "dark",
+          "options": [
+            {
+              "value": "dark",
+              "label": {
+                "ar": "داكن",
+                "en": "Dark"
+              }
+            },
+            {
+              "value": "light",
+              "label": {
+                "ar": "فاتح",
+                "en": "Light"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "logo",
+      "icon": "fa fa-image",
+      "name": {
+        "ar": "الشعار",
+        "en": "Logo"
+      },
+      "settings": [
+        {
+          "id": "logo_desktop",
+          "type": "image",
+          "label": {
+            "ar": "شعار سطح المكتب",
+            "en": "Desktop Logo"
+          },
+          "info": {
+            "ar": "سيتم عرضه على الشاشات الكبيرة",
+            "en": "Will be displayed on large screens"
+          }
+        },
+        {
+          "id": "logo_mobile",
+          "type": "image",
+          "label": {
+            "ar": "شعار الجوال",
+            "en": "Mobile Logo"
+          },
+          "info": {
+            "ar": "سيتم عرضه على الشاشات الصغيرة",
+            "en": "Will be displayed on small screens"
+          }
+        }
+      ]
+    },
+    {
+      "id": "link_groups",
+      "icon": "fa fa-link",
+      "name": {
+        "ar": "مجموعات الروابط",
+        "en": "Link Groups"
+      },
+      "settings": [
+        {
+          "id": "items",
+          "type": "list",
+          "label": {
+            "ar": "مجموعات الروابط",
+            "en": "Link Groups"
+          },
+          "settings": [
+            {
+              "id": "hide",
+              "type": "checkbox",
+              "label": {
+                "ar": "إخفاء",
+                "en": "Hide"
+              }
+            },
+            {
+              "id": "title",
+              "type": "text",
+              "label": {
+                "ar": "العنوان",
+                "en": "Title"
+              }
+            },
+            {
+              "id": "links",
+              "type": "list",
+              "label": {
+                "ar": "الروابط",
+                "en": "Links"
+              },
+              "settings": [
+                {
+                  "id": "title",
+                  "type": "text",
+                  "label": {
+                    "ar": "العنوان",
+                    "en": "Title"
+                  }
+                },
+                {
+                  "id": "url",
+                  "type": "url",
+                  "label": {
+                    "ar": "الرابط",
+                    "en": "URL"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "about_us",
+      "icon": "fa fa-info-circle",
+      "name": {
+        "ar": "عن المتجر",
+        "en": "About us"
+      },
+      "settings": [
+        {
+          "id": "about_us",
+          "type": "richtext",
+          "label": {
+            "ar": "النص",
+            "en": "Description"
+          }
+        }
+      ]
+    },
+    {
+      "id": "contact_info",
+      "icon": "fa fa-address-book",
+      "name": {
+        "ar": "معلومات الاتصال",
+        "en": "Contact Information"
+      },
+      "settings": [
+        {
+          "id": "contact_info_title",
+          "type": "text",
+          "label": {
+            "ar": "عنوان القسم",
+            "en": "Section Title"
+          },
+          "info": {
+            "ar": "اتركه فارغًا ليظهر «تواصل معنا» بلغة الزائر",
+            "en": "Leave empty to show “Contact us” in the visitor’s language"
+          }
+        }
+      ]
+    }
+  ]
+}

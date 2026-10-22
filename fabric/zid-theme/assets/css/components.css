@@ -1,0 +1,611 @@
+@layer components {
+  /* ========== BUTTON COMPONENT ========== */
+  /* Base styles */
+  .btn {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded border border-transparent font-normal whitespace-nowrap transition-all outline-none;
+  }
+
+  .btn:focus-visible {
+    @apply border-ring ring-ring/50 ring-[3px];
+  }
+
+  .btn:disabled {
+    @apply pointer-events-none cursor-not-allowed;
+  }
+
+  .btn svg {
+    @apply pointer-events-none shrink-0;
+  }
+
+  /* ---------- Button Variants ---------- */
+  .btn-filled {
+    @apply bg-primary text-primary-foreground border-primary;
+  }
+
+  .btn-filled:hover {
+    @apply opacity-90;
+  }
+
+  .btn-filled:active {
+    @apply bg-muted text-primary-foreground border-primary;
+  }
+
+  .btn-filled:disabled {
+    @apply bg-secondary text-muted-foreground border-transparent opacity-60;
+  }
+
+  .btn-outlined {
+    @apply text-foreground border-foreground bg-transparent;
+  }
+
+  .btn-outlined:hover {
+    @apply ring-foreground ring-1;
+  }
+
+  .btn-outlined:active {
+    @apply bg-secondary ring-foreground ring-1;
+  }
+
+  .btn-outlined:disabled {
+    @apply text-muted-foreground border-border/50 opacity-60;
+  }
+
+  .btn-text {
+    @apply text-foreground border-transparent bg-transparent;
+  }
+
+  .btn-text:hover {
+    @apply border-foreground;
+  }
+
+  .btn-text:active {
+    @apply bg-secondary border-foreground;
+  }
+
+  .btn-text:disabled {
+    @apply text-muted-foreground opacity-60;
+  }
+
+  /* Destructive */
+  .btn-destructive {
+    @apply bg-destructive text-destructive-foreground border-destructive;
+  }
+
+  .btn-destructive:hover {
+    @apply opacity-90;
+  }
+
+  .btn-destructive:active {
+    @apply opacity-80;
+  }
+
+  .btn-destructive:disabled {
+    @apply opacity-50;
+  }
+
+  /* ---------- Button Sizes ---------- */
+  /* old: @apply px-4 py-3; */
+  .btn-lg {
+    @apply h-12 px-4;
+    font-size: var(--font-body1--size);
+    line-height: var(--font-body1--line-height);
+  }
+
+  .btn-md {
+    @apply px-4 py-2;
+    font-size: var(--font-body2--size);
+    line-height: var(--font-body2--line-height);
+  }
+
+  .btn-sm {
+    @apply px-3 py-1.5;
+    font-size: var(--font-caption--size);
+    line-height: var(--font-caption--line-height);
+  }
+
+  /* ---------- Icon Buttons ---------- */
+  .btn-icon {
+    @apply text-foreground border-none bg-transparent p-0;
+  }
+
+  .btn-icon:hover {
+    @apply text-muted;
+  }
+
+  .btn-icon:disabled {
+    @apply text-muted-foreground opacity-60;
+  }
+
+  .btn-icon-lg {
+    @apply size-10;
+  }
+
+  .btn-icon-lg svg {
+    @apply size-6;
+  }
+
+  .btn-icon-md {
+    @apply size-8;
+  }
+
+  .btn-icon-md svg {
+    @apply size-4;
+  }
+
+  .btn-icon-sm {
+    @apply size-6;
+  }
+
+  .btn-icon-sm svg {
+    @apply size-3;
+  }
+
+  /* ========== BADGE/TAG COMPONENT ========== */
+  /* Base badge styles */
+  .badge {
+    @apply inline-flex w-fit items-center gap-1 rounded px-2 py-1;
+    font-size: var(--font-tagline--size);
+    line-height: var(--font-tagline--line-height);
+    font-weight: var(--font-tagline--weight);
+    font-variant: all-small-caps;
+  }
+
+  .badge svg {
+    @apply pointer-events-none size-4 shrink-0;
+  }
+
+  /* ---------- Badge Variants ---------- */
+  /* Filled */
+  .badge-filled {
+    @apply bg-secondary text-foreground;
+  }
+
+  /* Outlined */
+  .badge-outlined {
+    @apply border-border text-foreground border bg-transparent;
+  }
+
+  /* Dark */
+  .badge-dark {
+    @apply bg-black text-white;
+  }
+
+  /* ========== FORM COMPONENTS ========== */
+  /* ---------- Form Label ---------- */
+  .form-label {
+    @apply text-muted-foreground inline-flex items-center gap-1;
+    font-size: var(--font-tagline--size);
+    line-height: var(--font-tagline--line-height);
+    font-weight: var(--font-tagline--weight);
+    font-variant: all-small-caps;
+  }
+
+  .form-label[data-disabled="true"] {
+    @apply opacity-50;
+  }
+
+  .form-label-required {
+    @apply text-destructive;
+  }
+
+  /* ---------- Form Input ---------- */
+  .form-input {
+    @apply text-foreground border-input h-12 w-full rounded border bg-transparent px-3 transition-[border-color,border-width] outline-none;
+    font-size: var(--font-body1--size);
+    line-height: var(--font-body1--line-height);
+  }
+
+  .form-input::placeholder {
+    @apply text-muted-foreground;
+  }
+
+  .form-input:hover:not(:disabled):not([aria-invalid="true"]) {
+    @apply ring-input ring-1;
+  }
+
+  .form-input:focus:not([aria-invalid="true"]) {
+    @apply border-foreground border-2;
+  }
+
+  .form-input:disabled {
+    @apply bg-secondary border-border/50 text-muted-foreground/60 cursor-not-allowed;
+  }
+
+  .form-input[aria-invalid="true"] {
+    @apply border-destructive border-2;
+  }
+
+  /* Input with wrapper (for icons) */
+  .form-input-wrapper {
+    @apply border-input relative flex h-12 items-center gap-3 rounded border px-3 transition-[border-color,border-width];
+  }
+
+  .form-input-wrapper:hover:not([data-disabled="true"]):not([data-error="true"]) {
+    @apply ring-input ring-1;
+  }
+
+  .form-input-wrapper:focus-within:not([data-error="true"]) {
+    @apply border-foreground border-2;
+  }
+
+  .form-input-wrapper[data-disabled="true"] {
+    @apply bg-secondary border-border/50;
+  }
+
+  .form-input-wrapper[data-error="true"] {
+    @apply border-destructive border-2;
+  }
+
+  .form-input-wrapper input {
+    @apply text-foreground h-full w-full flex-1 bg-transparent outline-none;
+    font-size: var(--font-body1--size);
+    line-height: var(--font-body1--line-height);
+  }
+
+  .form-input-wrapper input::placeholder {
+    @apply text-muted-foreground;
+  }
+
+  .form-input-wrapper input:disabled {
+    @apply text-muted-foreground/60 cursor-not-allowed;
+  }
+
+  .form-input-wrapper [data-slot="icon"] {
+    @apply text-foreground shrink-0;
+  }
+
+  .form-input-wrapper [data-slot="icon"] svg {
+    @apply size-6;
+  }
+
+  .form-input-wrapper[data-disabled="true"] [data-slot="icon"] {
+    @apply text-muted-foreground/60;
+  }
+
+  /* ---------- Form Textarea ---------- */
+  .form-textarea {
+    @apply text-foreground border-input w-full resize-none rounded border bg-transparent px-3 py-3 transition-[border-color,border-width] outline-none;
+    font-size: var(--font-body1--size);
+    line-height: var(--font-body1--line-height);
+  }
+
+  .form-textarea::placeholder {
+    @apply text-muted-foreground;
+  }
+
+  .form-textarea:hover:not(:disabled):not([aria-invalid="true"]) {
+    @apply ring-input ring-1;
+  }
+
+  .form-textarea:focus:not([aria-invalid="true"]) {
+    @apply border-foreground border-2;
+  }
+
+  .form-textarea:disabled {
+    @apply bg-secondary border-border/50 text-muted-foreground/60 cursor-not-allowed;
+  }
+
+  .form-textarea[aria-invalid="true"] {
+    @apply border-destructive border-2;
+  }
+
+  /* ---------- Form Select ---------- */
+  .form-select-wrapper {
+    @apply border-input relative flex h-12 items-center gap-3 rounded border px-3 transition-[border-color,border-width];
+  }
+
+  .form-select-wrapper:hover:not([data-disabled="true"]):not([data-error="true"]) {
+    @apply ring-input ring-1;
+  }
+
+  .form-select-wrapper:focus-within:not([data-error="true"]) {
+    @apply border-foreground border-2;
+  }
+
+  .form-select-wrapper[data-disabled="true"] {
+    @apply bg-secondary border-border/50;
+  }
+
+  .form-select-wrapper[data-error="true"] {
+    @apply border-destructive border-2;
+  }
+
+  .form-select-wrapper select {
+    @apply text-foreground h-full w-full flex-1 appearance-none bg-transparent outline-none;
+    font-size: var(--font-body1--size);
+    line-height: var(--font-body1--line-height);
+  }
+
+  .form-select-wrapper select:disabled {
+    @apply text-muted-foreground/60 cursor-not-allowed;
+  }
+
+  .form-select-wrapper [data-slot="icon"] {
+    @apply text-foreground pointer-events-none shrink-0;
+  }
+
+  .form-select-wrapper[data-disabled="true"] [data-slot="icon"] {
+    @apply text-muted-foreground/60;
+  }
+
+  /* ---------- Form Caption/Helper ---------- */
+  .form-caption {
+    @apply text-muted-foreground mt-2;
+    font-size: var(--font-caption--size);
+    line-height: var(--font-caption--line-height);
+  }
+
+  .form-caption[data-error="true"] {
+    @apply text-destructive;
+  }
+
+  /* ---------- Form Checkbox ---------- */
+  .form-checkbox {
+    @apply border-primary bg-background relative cursor-pointer appearance-none border transition-all;
+    width: 18px;
+    height: 18px;
+  }
+
+  .form-checkbox:checked {
+    @apply bg-primary border-primary;
+  }
+
+  /* Checkmark using pseudo-element */
+  .form-checkbox::before {
+    content: "";
+    @apply absolute inset-[2.5px] block rotate-45 bg-current opacity-0 transition-all duration-300;
+    clip-path: polygon(20% 100%, 20% 80%, 50% 80%, 50% 80%, 70% 80%, 70% 100%);
+  }
+
+  .form-checkbox:checked::before {
+    @apply text-primary-foreground opacity-100;
+    clip-path: polygon(20% 100%, 20% 80%, 50% 80%, 50% 0%, 70% 0%, 70% 100%);
+  }
+
+  .form-checkbox:disabled {
+    @apply border-border/50 bg-secondary cursor-not-allowed opacity-50;
+  }
+
+  .form-checkbox:focus-visible {
+    @apply ring-ring/50 ring-[3px];
+  }
+
+  /* ---------- Form Radio ---------- */
+  .form-radio {
+    @apply border-primary bg-background relative cursor-pointer appearance-none rounded-full border transition-all;
+    width: 18px;
+    height: 18px;
+  }
+
+  .form-radio:checked {
+    @apply bg-primary border-primary;
+  }
+
+  /* Inner dot using pseudo-element */
+  .form-radio::before {
+    content: "";
+    @apply bg-primary-foreground absolute inset-0 m-auto block rounded-full opacity-0 transition-all duration-300;
+    width: 8px;
+    height: 8px;
+  }
+
+  .form-radio:checked::before {
+    @apply opacity-100;
+  }
+
+  .form-radio:disabled {
+    @apply border-border/50 bg-secondary cursor-not-allowed opacity-50;
+  }
+
+  .form-radio:focus-visible {
+    @apply ring-ring/50 ring-[3px];
+  }
+
+  /* ---------- Form Toggle/Switch ---------- */
+  /* Hidden input that powers the toggle */
+  .form-toggle {
+    @apply sr-only;
+  }
+
+  /* The visible toggle track */
+  .form-toggle-track {
+    @apply bg-border relative shrink-0 cursor-pointer rounded-full p-1 transition-all;
+    width: 40px;
+    height: 24px;
+  }
+
+  .form-toggle:checked + .form-toggle-track {
+    @apply bg-primary;
+  }
+
+  .form-toggle:disabled + .form-toggle-track {
+    @apply cursor-not-allowed opacity-50;
+  }
+
+  .form-toggle:focus-visible + .form-toggle-track {
+    @apply ring-ring/50 ring-[3px];
+  }
+
+  /* The toggle thumb/knob */
+  .form-toggle-thumb {
+    @apply bg-background block rounded-full transition-transform duration-300;
+    width: 16px;
+    height: 16px;
+  }
+
+  .form-toggle:checked + .form-toggle-track .form-toggle-thumb {
+    @apply translate-x-4 rtl:-translate-x-4;
+  }
+
+  /* ---------- Form Control Wrapper (checkbox/radio/toggle with label) ---------- */
+  .form-control {
+    @apply text-foreground flex cursor-pointer items-center gap-2;
+    font-size: var(--font-body1--size);
+    line-height: var(--font-body1--line-height);
+  }
+
+  .form-control:has(input:disabled) {
+    @apply cursor-not-allowed;
+  }
+
+  /* ========== BUTTON GROUP COMPONENT ========== */
+  /* Button Group Container */
+  .btn-group {
+    @apply flex w-fit items-center;
+  }
+
+  /* Button Group Item (label wrapping hidden input) */
+  .btn-group-item {
+    @apply text-foreground border-input inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 border bg-transparent font-normal whitespace-nowrap transition-all;
+    padding: 8px 16px;
+    font-size: var(--font-body1--size);
+    line-height: var(--font-body1--line-height);
+  }
+
+  .btn-group-item svg {
+    @apply pointer-events-none size-6 shrink-0;
+  }
+
+  /* Connected style (default) - first/last get rounded corners */
+  .btn-group .btn-group-item:first-child {
+    @apply rounded-s;
+  }
+
+  .btn-group .btn-group-item:last-child {
+    @apply rounded-e;
+  }
+
+  .btn-group .btn-group-item:not(:first-child) {
+    @apply -ms-px;
+  }
+
+  /* Separated modifier */
+  .btn-group-separated {
+    @apply gap-2;
+  }
+
+  .btn-group-separated .btn-group-item {
+    @apply rounded;
+  }
+
+  .btn-group-separated .btn-group-item:not(:first-child) {
+    @apply ms-0;
+  }
+
+  /* ---------- Button Group States ---------- */
+  /* Hover */
+  .btn-group-item:hover:not(:has(:checked)):not(:has(:disabled)) {
+    @apply border-2;
+  }
+
+  /* Selected/Checked */
+  .btn-group-item:has(:checked) {
+    @apply border-primary bg-primary text-primary-foreground;
+  }
+
+  .btn-group-item:has(:checked) svg {
+    @apply text-primary-foreground;
+  }
+
+  /* Disabled */
+  .btn-group-item:has(:disabled) {
+    @apply border-border/50 text-muted-foreground/60 cursor-not-allowed line-through;
+  }
+
+  .btn-group-item:has(:disabled) svg {
+    @apply text-muted-foreground/60;
+  }
+
+  /* Selected & Disabled */
+  .btn-group-item:has(:checked:disabled) {
+    @apply border-primary bg-primary text-muted-foreground/60;
+  }
+
+  .btn-group-item:has(:checked:disabled) svg {
+    @apply text-muted-foreground/60;
+  }
+
+  /* Focus visible */
+  .btn-group-item:focus-within {
+    @apply border-ring ring-ring/50 relative z-10 ring-[3px];
+  }
+
+  /* ---------- Icon-only Button Group Item ---------- */
+  .btn-group-item-icon {
+    @apply size-10 p-0;
+  }
+
+  /* ========== QUANTITY INPUT COMPONENT ========== */
+  /* Container */
+  .qty-input {
+    @apply border-foreground inline-flex h-12 items-center gap-2 rounded border px-3 transition-all;
+  }
+
+  .qty-input:hover {
+    @apply ring-foreground ring-1;
+  }
+
+  .qty-input:focus-within {
+    @apply ring-foreground ring-1;
+  }
+
+  /* Full width modifier (for product cards) */
+  .qty-input-full {
+    @apply w-full;
+  }
+
+  /* Cart page: below lg the quantity input shares a horizontal row with the
+     wishlist and delete buttons. qty-input-full (w-full) would consume the row
+     and push the delete button off-screen (off the start edge in RTL), so cap
+     the box width on mobile. The desktop layout stacks (lg:flex-col), where full
+     width is intended. */
+  @media (width < 1024px) {
+    .cart-product-item .qty-input-full {
+      max-width: 200px;
+    }
+  }
+
+  /* Icon button */
+  .qty-input-btn {
+    @apply text-foreground flex size-8 shrink-0 cursor-pointer items-center justify-center rounded bg-white/10 backdrop-blur-sm transition-all;
+  }
+
+  .qty-input-btn:hover {
+    @apply bg-secondary;
+  }
+
+  .qty-input-btn:disabled {
+    @apply text-muted-foreground/60 cursor-not-allowed;
+  }
+
+  .qty-input-btn svg {
+    @apply size-4;
+  }
+
+  /* Display (span for cards) */
+  .qty-input-display {
+    @apply text-foreground inline-flex min-w-12 shrink-0 items-center justify-center font-medium;
+    font-size: var(--font-body2--size);
+    line-height: var(--font-body2--line-height);
+  }
+
+  /* Input field (for product page) */
+  .qty-input-field {
+    @apply text-foreground h-full min-w-12 shrink-0 bg-transparent text-center font-medium outline-none;
+    font-size: var(--font-body2--size);
+    line-height: var(--font-body2--line-height);
+    -moz-appearance: textfield;
+  }
+
+  /* Full width variant - make display/field grow */
+  .qty-input-full .qty-input-display,
+  .qty-input-full .qty-input-field {
+    @apply flex-1;
+  }
+
+  .qty-input-field::-webkit-outer-spin-button,
+  .qty-input-field::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+} /* end @layer components */

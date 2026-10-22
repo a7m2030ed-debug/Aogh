@@ -1,0 +1,117 @@
+{
+  "template": "sections/naseej-story.jinja",
+  "name": {
+    "ar": "نسيج · حكايتنا",
+    "en": "Naseej · Story"
+  },
+  "icon": "book-open-line",
+  "settings": [
+    {
+      "id": "image",
+      "type": "image",
+      "label": {
+        "ar": "الصورة",
+        "en": "Image"
+      },
+      "info": {
+        "ar": "5:4 مثل 1500 × 1200 بكسل. بدونها تظهر لوحة قماش مرسومة",
+        "en": "5:4, e.g. 1500×1200; a drawn artwork shows without it"
+      }
+    },
+    {
+      "id": "art_tone",
+      "type": "select",
+      "label": {
+        "ar": "لون اللوحة المرسومة (بلا صورة)",
+        "en": "Artwork tone (no image)"
+      },
+      "options": [
+        {
+          "value": "ivory",
+          "label": {
+            "ar": "عاجي",
+            "en": "Ivory"
+          }
+        },
+        {
+          "value": "sand",
+          "label": {
+            "ar": "رملي",
+            "en": "Sand"
+          }
+        },
+        {
+          "value": "ink",
+          "label": {
+            "ar": "داكن",
+            "en": "Ink"
+          }
+        }
+      ],
+      "default": "sand"
+    },
+    {
+      "id": "flip",
+      "type": "checkbox",
+      "label": {
+        "ar": "الصورة على الطرف الآخر",
+        "en": "Image on the other side"
+      },
+      "default": false
+    },
+    {
+      "id": "eyebrow",
+      "type": "text",
+      "label": {
+        "ar": "سطر علوي صغير",
+        "en": "Eyebrow"
+      },
+      "default": "حكاية نسيج"
+    },
+    {
+      "id": "title",
+      "type": "text",
+      "label": {
+        "ar": "العنوان",
+        "en": "Title"
+      },
+      "default": "نختار القماش كأنه لنا"
+    },
+    {
+      "id": "text",
+      "type": "textarea",
+      "label": {
+        "ar": "النص",
+        "en": "Text"
+      },
+      "default": "بدأنا من سوق الأقمشة، نلمس القماش بأيدينا قبل أن نعرضه. نختار كل خامة لقوامها وسقوطها وثبات لونها بعد الغسيل، ثم نقصّها بالمتر حسب طلبك ونرسلها لك جاهزة للخياط."
+    },
+    {
+      "id": "signature",
+      "type": "text",
+      "label": {
+        "ar": "التوقيع",
+        "en": "Signature"
+      },
+      "default": "— فريق نسيج"
+    },
+    {
+      "id": "button_text",
+      "type": "text",
+      "label": {
+        "ar": "نص الزر",
+        "en": "Button text"
+      },
+      "default": ""
+    },
+    {
+      "id": "button_url",
+      "type": "url",
+      "label": {
+        "ar": "رابط الزر",
+        "en": "Button link"
+      },
+      "default": ""
+    }
+  ]
+}

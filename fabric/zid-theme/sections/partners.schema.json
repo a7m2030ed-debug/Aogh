@@ -1,0 +1,66 @@
+{
+  "template": "sections/partners.jinja",
+  "name": {
+    "ar": "شركائنا",
+    "en": "Partners"
+  },
+  "icon": "group-line",
+  "settings": [
+    {
+      "id": "title",
+      "type": "text",
+      "label": {
+        "ar": "العنوان",
+        "en": "Title"
+      },
+      "default": "Our Partners"
+    },
+    {
+      "id": "store_partners",
+      "type": "list",
+      "label": {
+        "ar": "الشركاء",
+        "en": "Partners"
+      },
+      "max_items": 20,
+      "settings": [
+        {
+          "id": "image",
+          "type": "image",
+          "label": {
+            "ar": "الصورة (سطح المكتب)",
+            "en": "Image (Desktop)"
+          }
+        },
+        {
+          "id": "image_mobile",
+          "type": "image",
+          "label": {
+            "ar": "الصورة (موبايل)",
+            "en": "Image (Mobile)"
+          },
+          "info": {
+            "ar": "اختياري - يستخدم صورة سطح المكتب إذا لم يتم تحديده",
+            "en": "Optional - Falls back to desktop image"
+          }
+        },
+        {
+          "id": "url",
+          "type": "url",
+          "label": {
+            "ar": "الرابط",
+            "en": "Link"
+          }
+        },
+        {
+          "id": "name",
+          "type": "text",
+          "label": {
+            "ar": "اسم الشريك",
+            "en": "Partner Name"
+          }
+        }
+      ]
+    }
+  ]
+}

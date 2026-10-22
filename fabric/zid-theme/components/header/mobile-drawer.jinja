@@ -1,0 +1,207 @@
+{# Mobile Navigation Drawer #}
+<el-dialog
+        id="mobile-drawer-dialog"
+        class="group contents">
+  <button
+    type="button"
+    onclick="document.getElementById('mobile-drawer-dialog')?.show();"
+    class="text-foreground relative h-10 w-10 p-2 group-data-[transition]:pointer-events-none focus:outline-none lg:hidden"
+    aria-label="Toggle menu"
+  >
+    <span
+      aria-hidden="true"
+      class="absolute block h-0.5 w-5 transform bg-current transition duration-500 ease-in-out group-data-[closed]:-translate-y-1.5 group-data-[enter]:rotate-45 group-data-[leave]:!rotate-0 group-[:not([open])]:-translate-y-1.5 group-[[open]]:rotate-45"
+    ></span>
+    <span
+      aria-hidden="true"
+      class="absolute block h-0.5 w-5 transform bg-current transition duration-500 ease-in-out group-data-[enter]:opacity-0 group-data-[leave]:!opacity-100 group-[[open]]:opacity-0"
+    ></span>
+    <span
+      aria-hidden="true"
+      class="absolute block h-0.5 w-5 transform bg-current transition duration-500 ease-in-out group-data-[closed]:translate-y-1.5 group-data-[enter]:-rotate-45 group-data-[leave]:!-rotate-0 group-[:not([open])]:translate-y-1.5 group-[[open]]:-rotate-45"
+    ></span>
+  </button>
+  <dialog
+    id="mobile-drawer"
+    aria-labelledby="drawer-title"
+    class="fixed top-[var(--header-h)] right-0 bottom-0 left-0 size-auto max-h-none max-w-none overflow-hidden bg-transparent not-open:hidden backdrop:bg-transparent"
+  >
+    <el-dialog-backdrop
+      class="absolute inset-0 bg-black/10 backdrop-blur-sm transition-opacity duration-500 ease-in-out data-closed:opacity-0"
+    ></el-dialog-backdrop>
+    <div
+      tabindex="0"
+      class="absolute inset-0 focus:outline-none"
+    >
+      <el-dialog-panel
+        class="group/dialog-panel relative block size-full transform transition duration-500 ease-in-out data-closed:translate-x-full sm:duration-700"
+      >
+        <div class="bg-background relative flex h-full flex-col">
+          <div class="flex h-full flex-col items-start gap-8 overflow-y-auto pt-4">
+            {# Navigation Menu #}
+            <div class="flex w-full flex-col">
+              {% for menu in store.settings.menus.main_menu.items %}
+                {% if menu.items | length > 0 %}
+                  <details class="group w-full">
+                    <summary
+                      class="text-foreground text-sm flex w-full cursor-pointer items-center justify-between gap-1 px-6 py-3 select-none"
+                    >
+                      <span class="text-foreground text-sm min-h-px min-w-px flex-1 text-start">
+                        {{ menu.label }}
+                      </span>
+                      <svg
+                        class="text-foreground size-4 transition-transform group-open:rotate-90 rtl:rotate-180 rtl:group-open:-rotate-90"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                      >
+                        <path
+                          d="M6 4L10 8L6 12"
+                          stroke="currentColor"
+                          stroke-width="1.5"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </summary>
+                    <div class="mt-1 space-y-1 ps-4">
+                      {% for submenu in menu.items %}
+                        {% if submenu.items | length > 0 %}
+                          {# Level 2 with children (Level 3) #}
+                          <details class="group/sub w-full">
+                            <summary
+                              class="text-foreground text-sm flex w-full cursor-pointer items-center justify-between gap-1 px-6 py-3 select-none"
+                            >
+                              <span class="min-h-px min-w-px flex-1 text-start"> {{ submenu.label }} </span>
+                              <svg
+                                class="text-foreground size-4 transition-transform group-open/sub:rotate-90 rtl:rotate-180 rtl:group-open/sub:-rotate-90"
+                                viewBox="0 0 16 16"
+                                fill="none"
+                              >
+                                <path
+                                  d="M6 4L10 8L6 12"
+                                  stroke="currentColor"
+                                  stroke-width="1.5"
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                />
+                              </svg>
+                            </summary>
+                            <div class="mt-1 space-y-1 ps-4">
+                              {# Link to parent category #}
+                              <a
+                                href="{{ submenu.url | localized_url if submenu.resource_type != 'url' else submenu.url }}"
+                                class="text-foreground text-sm block px-6 py-3"
+                              >
+                                {{ _("All") }} {{ submenu.label }}
+                              </a>
+                              {# Level 3 items #}
+                              {% for subsubmenu in submenu.items %}
+                                <a
+                                  href="{{ subsubmenu.url | localized_url if subsubmenu.resource_type != 'url' else subsubmenu.url }}"
+                                  class="text-foreground text-sm block px-6 py-3"
+                                >
+                                  {{ subsubmenu.label }}
+                                </a>
+                              {% endfor %}
+                            </div>
+                          </details>
+                        {% else %}
+                          {# Level 2 without children #}
+                          <a
+                            href="{{ submenu.url | localized_url if submenu.resource_type != 'url' else submenu.url }}"
+                            class="text-foreground text-sm block px-6 py-3"
+                          >
+                            {{ submenu.label }}
+                          </a>
+                        {% endif %}
+                      {% endfor %}
+                    </div>
+                  </details>
+                {% else %}
+                  <a
+                    href="{{ menu.url | localized_url if menu.resource_type != 'url' else menu.url }}"
+                    class="text-foreground text-sm min-h-px w-full min-w-px px-6 py-3 text-start"
+                  >
+                    {{ menu.label }}
+                  </a>
+                {% endif %}
+              {% endfor %}
+            </div>
+            {# Footer: Login/Account + Region #}
+            <div class="border-border-light flex w-full flex-col items-start gap-[3px] border-t pt-4 pb-6">
+              {# Logged out state #}
+              <button
+                id="mobile-login-btn"
+                type="button"
+                onclick="handleLoginAction(); document.getElementById('mobile-drawer-dialog')?.hide();"
+                class="text-foreground text-sm min-h-px w-full min-w-px px-6 py-3 text-start"
+              >
+                {{ _("Login") }}
+              </button>
+              {# Logged in state #}
+              <div
+                id="mobile-logged-in-links"
+                class="hidden w-full flex-col"
+              >
+                <a
+                  href="{{ url_for('profile') }}"
+                  class="text-foreground text-sm min-h-px w-full min-w-px px-6 py-3 text-start"
+                >
+                  {{ _("Account") }}
+                </a>
+                <button
+                  type="button"
+                  onclick="zid.customer.logout()"
+                  class="text-foreground text-sm min-h-px w-full min-w-px px-6 py-3 text-start"
+                >
+                  {{ _("Log out") }}
+                </button>
+              </div>
+              {# Mobile Region Selector - Opens Vitrin's shared region dialog #}
+              {% set multiple_countries = store.countries | length > 1 %}
+              {% set multiple_languages = store.languages | length > 1 %}
+              {% set show_country = multiple_countries and not safeget(settings, "header_hide_country", false) %}
+              {% set show_language = multiple_languages and not safeget(settings, "header_hide_language", false) %}
+              {% set show_location = safeget(store, "settings.zones.selection_enabled", false) or safeget(store, "settings.products.filter_by_nearest_inventory", false) %}
+              {% if show_location or show_country or show_language %}
+                <button
+                  type="button"
+                  onclick="document.getElementById('mobile-drawer-dialog')?.hide(); zidOpenRegionSettingDialog();"
+                  class="text-foreground text-sm flex w-full items-center gap-2 px-6 py-3 text-start"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                  >
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="10"
+                    />
+                    <path
+                      d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
+                    />
+                  </svg>
+                  <span class="nav-country-text">
+                    {% if show_country %}
+                      {{ session.country.name }}{% if show_language %}|{% endif %}
+                    {% elif show_location %}
+                      {{ _("Select your location") }}{% if show_language %}|{% endif %}
+                    {% endif %}
+                  </span>
+
+                  {% if show_language %}{{ session.lang | upper }}{% endif %}
+                </button>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </el-dialog-panel>
+    </div>
+  </dialog>
+</el-dialog>

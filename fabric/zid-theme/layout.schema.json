@@ -1,0 +1,523 @@
+{
+  "name": {
+    "ar": "إعدادات التخطيط",
+    "en": "Layout Settings"
+  },
+  "groups": [
+    {
+      "id": "product_card",
+      "icon": "fa fa-th-large",
+      "name": {
+        "ar": "بطاقة المنتج",
+        "en": "Product Card"
+      },
+      "settings": [
+        {
+          "id": "columns_desktop",
+          "type": "select",
+          "label": {
+            "ar": "عدد الأعمدة (سطح المكتب)",
+            "en": "Columns (Desktop)"
+          },
+          "options": [
+            {
+              "value": "2",
+              "label": {
+                "ar": "2 أعمدة",
+                "en": "2 Columns"
+              }
+            },
+            {
+              "value": "3",
+              "label": {
+                "ar": "3 أعمدة",
+                "en": "3 Columns"
+              }
+            },
+            {
+              "value": "4",
+              "label": {
+                "ar": "4 أعمدة",
+                "en": "4 Columns"
+              }
+            },
+            {
+              "value": "5",
+              "label": {
+                "ar": "5 أعمدة",
+                "en": "5 Columns"
+              }
+            },
+            {
+              "value": "6",
+              "label": {
+                "ar": "6 أعمدة",
+                "en": "6 Columns"
+              }
+            }
+          ],
+          "default": "4"
+        },
+        {
+          "id": "columns_mobile",
+          "type": "select",
+          "label": {
+            "ar": "عدد الأعمدة (موبايل)",
+            "en": "Columns (Mobile)"
+          },
+          "options": [
+            {
+              "value": "1",
+              "label": {
+                "ar": "1 عمود",
+                "en": "1 Column"
+              }
+            },
+            {
+              "value": "2",
+              "label": {
+                "ar": "2 أعمدة",
+                "en": "2 Columns"
+              }
+            }
+          ],
+          "default": "2"
+        },
+        {
+          "id": "image_aspect_ratio",
+          "type": "select",
+          "label": {
+            "ar": "نسبة أبعاد الصورة",
+            "en": "Image Aspect Ratio"
+          },
+          "options": [
+            {
+              "value": "adapt",
+              "label": {
+                "ar": "تكيّف مع الصورة",
+                "en": "Adapt to image"
+              }
+            },
+            {
+              "value": "portrait",
+              "label": {
+                "ar": "طولي (3:4)",
+                "en": "Portrait (3:4)"
+              }
+            },
+            {
+              "value": "square",
+              "label": {
+                "ar": "مربع (1:1)",
+                "en": "Square (1:1)"
+              }
+            }
+          ],
+          "default": "portrait"
+        }
+      ]
+    },
+    {
+      "id": "font",
+      "icon": "fa fa-font",
+      "name": {
+        "ar": "الخط",
+        "en": "Font"
+      },
+      "settings": [
+        {
+          "id": "family",
+          "type": "select",
+          "label": {
+            "ar": "خط النصوص",
+            "en": "Body Font"
+          },
+          "default": "IBM+Plex+Sans+Arabic",
+          "options": [
+            {
+              "label": {
+                "ar": "IBM Arabic",
+                "en": "IBM Arabic"
+              },
+              "value": "IBM+Plex+Sans+Arabic"
+            },
+            {
+              "label": {
+                "ar": "Roboto",
+                "en": "Roboto"
+              },
+              "value": "Roboto"
+            },
+            {
+              "label": {
+                "ar": "Cairo",
+                "en": "Cairo"
+              },
+              "value": "Cairo"
+            },
+            {
+              "label": {
+                "ar": "Changa",
+                "en": "Changa"
+              },
+              "value": "Changa"
+            },
+            {
+              "label": {
+                "ar": "Tajawal",
+                "en": "Tajawal"
+              },
+              "value": "Tajawal"
+            },
+            {
+              "label": {
+                "ar": "Almarai",
+                "en": "Almarai"
+              },
+              "value": "Almarai"
+            },
+            {
+              "label": {
+                "ar": "Amiri",
+                "en": "Amiri"
+              },
+              "value": "Amiri"
+            },
+            {
+              "label": {
+                "ar": "Mada",
+                "en": "Mada"
+              },
+              "value": "Mada"
+            },
+            {
+              "label": {
+                "ar": "Noto Kufi",
+                "en": "Noto Kufi"
+              },
+              "value": "Noto+Kufi+Arabic"
+            },
+            {
+              "label": {
+                "ar": "Readex Pro",
+                "en": "Readex Pro"
+              },
+              "value": "Readex+Pro"
+            }
+          ]
+        },
+        {
+          "id": "heading",
+          "type": "select",
+          "label": {
+            "ar": "خط العناوين",
+            "en": "Heading Font"
+          },
+          "info": {
+            "ar": "يظهر في العناوين الكبيرة فقط، والنصوص تبقى بخط النصوص",
+            "en": "Used for large headings only"
+          },
+          "default": "El+Messiri",
+          "options": [
+            {
+              "label": {
+                "ar": "المسيري (فخم عصري)",
+                "en": "El Messiri"
+              },
+              "value": "El+Messiri"
+            },
+            {
+              "label": {
+                "ar": "أميري (نسخ كلاسيكي)",
+                "en": "Amiri"
+              },
+              "value": "Amiri"
+            },
+            {
+              "label": {
+                "ar": "ريم كوفي (هندسي)",
+                "en": "Reem Kufi"
+              },
+              "value": "Reem+Kufi"
+            },
+            {
+              "label": {
+                "ar": "نوتو نسخ",
+                "en": "Noto Naskh"
+              },
+              "value": "Noto+Naskh+Arabic"
+            },
+            {
+              "label": {
+                "ar": "نفس خط النصوص",
+                "en": "Same as body"
+              },
+              "value": "same"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "theme",
+      "icon": "fa fa-paint-brush",
+      "name": {
+        "ar": "ألوان الثيم",
+        "en": "Theme Colors"
+      },
+      "settings": [
+        {
+          "id": "primary",
+          "type": "color",
+          "label": {
+            "ar": "اللون الأساسي",
+            "en": "Primary Color"
+          },
+          "default": "#1B1A17"
+        },
+        {
+          "id": "primary_foreground",
+          "type": "color",
+          "label": {
+            "ar": "نص اللون الأساسي",
+            "en": "Primary Text Color"
+          },
+          "default": "#FAF7F1"
+        },
+        {
+          "id": "secondary",
+          "type": "color",
+          "label": {
+            "ar": "لون السطح",
+            "en": "Surface Color"
+          },
+          "default": "#F2ECE1"
+        },
+        {
+          "id": "accent",
+          "type": "color",
+          "label": {
+            "ar": "لون التمييز",
+            "en": "Accent Color"
+          },
+          "default": "#A98B4B"
+        },
+        {
+          "id": "background",
+          "type": "color",
+          "label": {
+            "ar": "خلفية الصفحة",
+            "en": "Page Background"
+          },
+          "default": "#FAF7F1"
+        },
+        {
+          "id": "foreground",
+          "type": "color",
+          "label": {
+            "ar": "لون النص",
+            "en": "Text Color"
+          },
+          "default": "#1B1A17"
+        },
+        {
+          "id": "muted",
+          "type": "color",
+          "label": {
+            "ar": "لون النص الثانوي",
+            "en": "Muted Text Color"
+          },
+          "default": "#6F6A60"
+        },
+        {
+          "id": "border",
+          "type": "color",
+          "label": {
+            "ar": "لون الحدود",
+            "en": "Border Color"
+          },
+          "default": "#E4DCCD"
+        },
+        {
+          "id": "input",
+          "type": "color",
+          "label": {
+            "ar": "لون حدود الإدخال",
+            "en": "Input Border Color"
+          },
+          "default": "#B9AE9A"
+        },
+        {
+          "id": "ring",
+          "type": "color",
+          "label": {
+            "ar": "لون حلقة التركيز",
+            "en": "Focus Ring Color"
+          },
+          "default": "#A98B4B"
+        },
+        {
+          "id": "radius",
+          "type": "range",
+          "label": {
+            "ar": "نصف قطر الحواف",
+            "en": "Border Radius"
+          },
+          "min": 0,
+          "max": 16,
+          "step": 1,
+          "unit": "px",
+          "default": 2
+        }
+      ]
+    },
+    {
+      "id": "naseej",
+      "icon": "fa fa-scissors",
+      "name": {
+        "ar": "هوية نسيج",
+        "en": "Naseej"
+      },
+      "settings": [
+        {
+          "id": "whatsapp",
+          "type": "text",
+          "label": {
+            "ar": "رقم واتساب",
+            "en": "WhatsApp number"
+          },
+          "info": {
+            "ar": "بالصيغة الدولية بلا + ولا مسافات، مثل 966500000000",
+            "en": "International format, digits only"
+          },
+          "default": ""
+        },
+        {
+          "id": "whatsapp_message",
+          "type": "text",
+          "label": {
+            "ar": "الرسالة الافتراضية",
+            "en": "Default message"
+          },
+          "default": "السلام عليكم، أبي أستفسر عن الأقمشة"
+        },
+        {
+          "id": "whatsapp_float",
+          "type": "checkbox",
+          "label": {
+            "ar": "إظهار زر واتساب العائم",
+            "en": "Show floating WhatsApp button"
+          },
+          "default": true
+        },
+        {
+          "id": "meter_calculator",
+          "type": "checkbox",
+          "label": {
+            "ar": "إظهار حاسبة «كم مترًا أحتاج؟» في صفحة المنتج",
+            "en": "Show the meter calculator on product pages"
+          },
+          "default": true
+        },
+        {
+          "id": "meter_rows",
+          "type": "list",
+          "label": {
+            "ar": "جدول الأمتار حسب الطول",
+            "en": "Meters by height"
+          },
+          "info": {
+            "ar": "اتركه فارغًا لاستعمال الجدول المعتاد: حتى 165 سم = 3 م، 166–178 = 3.5 م، 179–188 = 4 م، أطول = 4.5 م",
+            "en": "Leave empty for the standard table (3 / 3.5 / 4 / 4.5 m)"
+          },
+          "item_label": {
+            "ar": "صف",
+            "en": "Row"
+          },
+          "max_items": 6,
+          "settings": [
+            {
+              "id": "label",
+              "type": "text",
+              "label": {
+                "ar": "الطول",
+                "en": "Height"
+              }
+            },
+            {
+              "id": "meters",
+              "type": "text",
+              "label": {
+                "ar": "الأمتار لثوب واحد",
+                "en": "Meters per thobe"
+              }
+            }
+          ]
+        },
+        {
+          "id": "wiqfa_guide_url",
+          "type": "url",
+          "label": {
+            "ar": "رابط دليل الوقفة",
+            "en": "Wiqfa guide link"
+          },
+          "info": {
+            "ar": "يظهر تحت الحاسبة في صفحة المنتج. اتركه فارغًا لإخفائه",
+            "en": "Shown under the calculator; leave empty to hide"
+          },
+          "default": ""
+        },
+        {
+          "id": "product_notes",
+          "type": "text",
+          "label": {
+            "ar": "مزايا قصيرة في صفحة المنتج",
+            "en": "Short notes on product pages"
+          },
+          "info": {
+            "ar": "افصل بينها بالرمز | واتركه فارغًا لإخفائها",
+            "en": "Separate with |; empty hides them"
+          },
+          "default": "قصّ بالمتر حسب طلبك|شحن لكل مدن المملكة|دفع آمن"
+        }
+      ]
+    },
+    {
+      "id": "gifting",
+      "icon": "fa fa-gift",
+      "name": {
+        "ar": "الإهداء",
+        "en": "Gifting"
+      },
+      "settings": [
+        {
+          "id": "cart_page",
+          "type": "checkbox",
+          "label": {
+            "ar": "إظهار زر الإهداء في صفحة السلة",
+            "en": "Show the gift widget on the cart page"
+          },
+          "default": true
+        },
+        {
+          "id": "product_page",
+          "type": "checkbox",
+          "label": {
+            "ar": "إظهار زر الإهداء في صفحة المنتج",
+            "en": "Show the gift widget on the product page"
+          },
+          "default": true
+        },
+        {
+          "id": "add_to_cart_popup",
+          "type": "checkbox",
+          "label": {
+            "ar": "إظهار تنبيه الإهداء بعد الإضافة إلى السلة",
+            "en": "Show a gifting hint after adding to cart"
+          },
+          "default": true
+        }
+      ]
+    }
+  ]
+}

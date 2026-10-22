@@ -1,0 +1,146 @@
+{
+  "template": "sections/naseej-wholesale.jinja",
+  "name": {
+    "ar": "نسيج · الجملة والطاقات",
+    "en": "Naseej · Wholesale"
+  },
+  "icon": "store-2-line",
+  "settings": [
+    {
+      "id": "tone",
+      "type": "select",
+      "label": {
+        "ar": "الخلفية",
+        "en": "Background"
+      },
+      "options": [
+        {
+          "value": "ink",
+          "label": {
+            "ar": "داكن",
+            "en": "Ink"
+          }
+        },
+        {
+          "value": "sand",
+          "label": {
+            "ar": "رملي",
+            "en": "Sand"
+          }
+        }
+      ],
+      "default": "ink"
+    },
+    {
+      "id": "eyebrow",
+      "type": "text",
+      "label": {
+        "ar": "سطر علوي صغير",
+        "en": "Eyebrow"
+      },
+      "default": "للخياطين والمحلات"
+    },
+    {
+      "id": "title",
+      "type": "text",
+      "label": {
+        "ar": "العنوان",
+        "en": "Title"
+      },
+      "default": "طاقات كاملة بسعر الجملة"
+    },
+    {
+      "id": "description",
+      "type": "textarea",
+      "label": {
+        "ar": "الوصف",
+        "en": "Description"
+      },
+      "default": "طاقات من 45 إلى 50 مترًا من أقمشتنا الأكثر طلبًا، بأسعار جملة تبدأ من ثلاث طاقات، وشحن مرتّب لمحلك في كل مدن المملكة."
+    },
+    {
+      "id": "button_text",
+      "type": "text",
+      "label": {
+        "ar": "نص الزر",
+        "en": "Button text"
+      },
+      "default": "تسوّق الطاقات"
+    },
+    {
+      "id": "button_url",
+      "type": "url",
+      "label": {
+        "ar": "رابط الزر",
+        "en": "Button link"
+      },
+      "default": ""
+    },
+    {
+      "id": "whatsapp",
+      "type": "text",
+      "label": {
+        "ar": "رقم واتساب لطلب عرض سعر",
+        "en": "WhatsApp number for quotes"
+      },
+      "info": {
+        "ar": "بالصيغة الدولية مثل 966500000000. اتركه فارغًا لإخفاء الزر",
+        "en": "International format; empty hides the button"
+      },
+      "default": ""
+    },
+    {
+      "id": "whatsapp_text",
+      "type": "text",
+      "label": {
+        "ar": "نص زر واتساب",
+        "en": "WhatsApp button text"
+      },
+      "default": "اطلب عرض سعر"
+    },
+    {
+      "id": "whatsapp_message",
+      "type": "text",
+      "label": {
+        "ar": "رسالة واتساب",
+        "en": "WhatsApp message"
+      },
+      "default": "السلام عليكم، أبي عرض سعر جملة للطاقات"
+    },
+    {
+      "id": "stats",
+      "type": "list",
+      "label": {
+        "ar": "أرقام بارزة",
+        "en": "Highlights"
+      },
+      "item_label": {
+        "ar": "رقم",
+        "en": "Highlight"
+      },
+      "max_items": 3,
+      "settings": [
+        {
+          "id": "value",
+          "type": "text",
+          "label": {
+            "ar": "الرقم",
+            "en": "Value"
+          }
+        },
+        {
+          "id": "label",
+          "type": "text",
+          "label": {
+            "ar": "الوصف",
+            "en": "Label"
+          }
+        }
+      ],
+      "info": {
+        "ar": "اتركها فارغة لعرض المحتوى الافتراضي المكتوب لنسيج",
+        "en": "Leave empty to show the built-in Naseej content"
+      }
+    }
+  ]
+}

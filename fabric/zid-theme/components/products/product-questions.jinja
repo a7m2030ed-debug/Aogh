@@ -1,0 +1,63 @@
+{#
+  Product Questions Component
+
+  Parameters:
+  - questions: Questions object from the API
+  - product: Product object (for URL generation)
+#}
+{% if product %}
+  <div class="divide-border divide-y">
+    {% if questions and questions.results %}
+      {# Loop through questions #}
+      {% for question in questions.results %}
+        <div class="space-y-2 py-4 first:pt-0">
+          {# Question Text #}
+          <h3 class="text-foreground text-sm font-semibold">{{ question.question }}</h3>
+
+          {# Customer Name (if not anonymous) #}
+          {% if not question.is_anonymous and question.name %}
+            <p class="text-muted-foreground text-sm">{{ _("By") }}: {{ question.name }}</p>
+          {% endif %}
+
+          {# Answer (if exists) #}
+          {% if question.answers and question.answers[0] and question.answers[0].answer %}
+            <p class="text-foreground text-sm">{{ question.answers[0].answer }}</p>
+
+            {# Answer Images (if exists) #}
+            {% if question.answers[0].images %}
+              <div class="flex items-center gap-2">
+                {% for image in question.answers[0].images %}
+                  <div class="size-20 shrink-0 overflow-hidden rounded">
+                    <img
+                      src="{{ image_url(image.image.medium, w=160, q=85, f='auto') if image.image else image_url(('images/placeholder-image.svg' | asset_url), w=160, q=85, f='auto') }}"
+                      alt="{{ question.question }}"
+                      class="size-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          {% endif %}
+        </div>
+      {% endfor %}
+
+      {# View All Questions Link #}
+      {% if questions.count >= 5 %}
+        <div class="pt-4 text-center">
+          <a
+            href="{{ url_for('product_questions', slug=product.id) }}"
+            class="text-foreground text-sm font-semibold hover:underline"
+          >
+            {{ _("View all questions") }}
+          </a>
+        </div>
+      {% endif %}
+    {% else %}
+      {# Empty State #}
+      <p class="text-muted text-sm">
+        {{ _("There are no questions yet. Be the first one who asks about this product") }}
+      </p>
+    {% endif %}
+  </div>
+{% endif %}
