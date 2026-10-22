@@ -1,4 +1,4 @@
-{% from 'components/naseej/macros.jinja' import wiqfa_glyph, arrow %}
+{% from 'components/malbousak/macros.jinja' import wiqfa_glyph, arrow %}
 
 {# Merchant wiqfa types, or the four standard ones until some are added #}
 {% set guide = namespace(items=[]) %}
@@ -19,39 +19,39 @@
 <section
   section-id="{{ sectionId }}"
   {% if settings.anchor and settings.anchor | trim %}id="{{ settings.anchor | trim }}"{% endif %}
-  class="nsj-section nsj-weave"
+  class="mlb-section mlb-weave"
   style="scroll-margin-top: var(--header-h)"
 >
   <div class="theme-container">
     {% with eyebrow=settings.eyebrow, title=settings.title, description=settings.description %}
-      {% include 'components/naseej/section-head.jinja' %}
+      {% include 'components/malbousak/section-head.jinja' %}
     {% endwith %}
 
-    <div class="nsj-wiqfa">
+    <div class="mlb-wiqfa">
       {% for item in guide.items %}
         {% set level = (item.level or 2) | int %}
         {% set tag = 'a' if item.url else 'div' %}
         <{{ tag }}
           {% if item.url %}href="{{ item.url }}"{% endif %}
-          class="nsj-wiqfa__card {{ 'is-featured' if item.featured }}"
+          class="mlb-wiqfa__card {{ 'is-featured' if item.featured }}"
         >
           {% if item.featured and settings.featured_label %}
-            <span class="nsj-wiqfa__flag">{{ settings.featured_label }}</span>
+            <span class="mlb-wiqfa__flag">{{ settings.featured_label }}</span>
           {% endif %}
-          {{ wiqfa_glyph(level, 'nsj-wiqfa__glyph') }}
-          <h3 class="nsj-wiqfa__name">{{ item.name }}</h3>
+          {{ wiqfa_glyph(level, 'mlb-wiqfa__glyph') }}
+          <h3 class="mlb-wiqfa__name">{{ item.name }}</h3>
           <span
-            class="nsj-stiff"
+            class="mlb-stiff"
             data-level="{{ level }}"
             role="img"
             aria-label="{{ _('Stiffness %s of 4') | format(level) }}"
             ><i></i><i></i><i></i><i></i
           ></span>
           {% if item.description %}
-            <p class="nsj-wiqfa__desc">{{ item.description }}</p>
+            <p class="mlb-wiqfa__desc">{{ item.description }}</p>
           {% endif %}
           {% if item.url %}
-            <span class="nsj-tile__cta text-foreground mt-auto">
+            <span class="mlb-tile__cta text-foreground mt-auto">
               {{ _('Browse fabrics') }}
               {{ arrow() }}
             </span>
@@ -62,7 +62,7 @@
 
     {% if settings.soft_label or settings.firm_label %}
       <div
-        class="nsj-stiff-legend"
+        class="mlb-stiff-legend"
         aria-hidden="true"
       >
         <b class="font-normal">{{ settings.soft_label }}</b>

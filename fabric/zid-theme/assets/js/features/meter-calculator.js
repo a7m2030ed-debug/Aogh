@@ -1,11 +1,11 @@
 /**
- * Meter Calculator Module (Naseej)
+ * Meter Calculator Module (Malbousak)
  *
  * "How many meters do I need?" — multiplies the meters for the chosen
  * height by the number of thobes.
  *
  * Data attributes:
- *   - data-nsj-calc       : Wrapper
+ *   - data-mlb-calc       : Wrapper
  *   - data-meters="<n>"   : Height option button (aria-pressed marks the choice)
  *   - data-step="-1|1"    : Thobe count stepper buttons
  *   - data-count          : Thobe count output
@@ -67,7 +67,7 @@ function initCalc(calc) {
 }
 
 function initAll() {
-  document.querySelectorAll("[data-nsj-calc]").forEach(initCalc);
+  document.querySelectorAll("[data-mlb-calc]").forEach(initCalc);
 }
 
 export function init() {

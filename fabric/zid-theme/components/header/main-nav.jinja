@@ -99,7 +99,7 @@
           <button
             type="button"
             popovertarget="{{ menu_popover_id }}"
-            class="nsj-navlink text-foreground text-sm flex items-center gap-1 py-2"
+            class="mlb-navlink text-foreground text-sm flex items-center gap-1 py-2"
           >
             {{ menu.label }}
             {{ chevron_down }}
@@ -177,7 +177,7 @@
       {% else %}
         {# Top level: regular dropdown #}
         <el-dropdown class="inline-block">
-          <button class="nsj-navlink text-foreground text-sm flex items-center gap-1 py-2">
+          <button class="mlb-navlink text-foreground text-sm flex items-center gap-1 py-2">
             {{ menu.label }}
             {{ chevron_down }}
           </button>
@@ -210,7 +210,7 @@
     {% else %}
       <a
         href="{{ menu.url | localized_url if menu.resource_type != 'url' else menu.url }}"
-        class="nsj-navlink text-foreground text-sm py-2"
+        class="mlb-navlink text-foreground text-sm py-2"
       >
         {{ menu.label }}
       </a>
@@ -232,7 +232,7 @@
         <button
           type="button"
           popovertarget="more-menu-popover"
-          class="nsj-navlink text-foreground text-sm flex items-center gap-1 py-2"
+          class="mlb-navlink text-foreground text-sm flex items-center gap-1 py-2"
         >
           {{ _("More") }}
           {{ chevron_down }}

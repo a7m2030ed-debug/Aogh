@@ -2,13 +2,13 @@
 
 <section
   section-id="{{ sectionId }}"
-  class="nsj-section"
+  class="mlb-section"
 >
   <div class="theme-container">
-    <div class="nsj-calc-panel">
+    <div class="mlb-calc-panel">
       <div class="flex flex-col items-start gap-5">
         {% with eyebrow=settings.eyebrow, title=settings.title, description=settings.description, align='start' %}
-          {% include 'components/naseej/section-head.jinja' %}
+          {% include 'components/malbousak/section-head.jinja' %}
         {% endwith %}
         {% if wa_number and settings.whatsapp_text %}
           <a
@@ -22,7 +22,7 @@
         {% endif %}
       </div>
       {% with calc_rows_source=settings.rows %}
-        {% include 'components/naseej/meter-calculator.jinja' %}
+        {% include 'components/malbousak/meter-calculator.jinja' %}
       {% endwith %}
     </div>
   </div>

@@ -1,7 +1,7 @@
-{% from 'components/naseej/macros.jinja' import drape_art, arrow %}
+{% from 'components/malbousak/macros.jinja' import drape_art, arrow %}
 {% set is_lazy = (settings.order | default(3) | int) > 2 %}
 
-{# Merchant tiles, or the three Naseej departments until some are added #}
+{# Merchant tiles, or the three Malbousak departments until some are added #}
 {% set tiles = namespace(items=[]) %}
 {% for item in settings.items or [] %}
   {% if item.title and item.title | trim %}
@@ -18,24 +18,24 @@
 
 <section
   section-id="{{ sectionId }}"
-  class="nsj-section"
+  class="mlb-section"
 >
   <div class="theme-container">
     {% with eyebrow=settings.eyebrow, title=settings.title, description=settings.description %}
-      {% include 'components/naseej/section-head.jinja' %}
+      {% include 'components/malbousak/section-head.jinja' %}
     {% endwith %}
 
     <div
-      class="nsj-collections"
-      style="--nsj-cols: {{ tiles.items | length }}"
+      class="mlb-collections"
+      style="--mlb-cols: {{ tiles.items | length }}"
     >
       {% for tile in tiles.items %}
         {% set tone = tile.tone or 'sand' %}
         <a
           href="{{ tile.url or url_for('list_categories') }}"
-          class="nsj-tile {{ 'nsj-tile--image' if tile.image else 'nsj-tile--art nsj-tile--' ~ tone }} {{ 'nsj-tone-ink' if tone == 'ink' and not tile.image }}"
+          class="mlb-tile {{ 'mlb-tile--image' if tile.image else 'mlb-tile--art mlb-tile--' ~ tone }} {{ 'mlb-tone-ink' if tone == 'ink' and not tile.image }}"
         >
-          <div class="nsj-tile__media">
+          <div class="mlb-tile__media">
             {% if tile.image %}
               <img
                 src="{{ image_url(tile.image, w=900, q=85, f='auto') }}"
@@ -46,12 +46,12 @@
               {{ drape_art(sectionId ~ '-t' ~ loop.index, tone) }}
             {% endif %}
           </div>
-          <span class="nsj-tile__index">{{ '%02d' | format(loop.index) }}</span>
-          <h3 class="nsj-tile__title">{{ tile.title }}</h3>
+          <span class="mlb-tile__index">{{ '%02d' | format(loop.index) }}</span>
+          <h3 class="mlb-tile__title">{{ tile.title }}</h3>
           {% if tile.text %}
-            <p class="nsj-tile__text">{{ tile.text }}</p>
+            <p class="mlb-tile__text">{{ tile.text }}</p>
           {% endif %}
-          <span class="nsj-tile__cta">
+          <span class="mlb-tile__cta">
             {{ tile.button_text or _('Shop now') }}
             {{ arrow() }}
           </span>

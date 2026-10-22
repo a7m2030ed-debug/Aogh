@@ -1,4 +1,4 @@
-{% from 'components/naseej/macros.jinja' import drape_art, arrow %}
+{% from 'components/malbousak/macros.jinja' import drape_art, arrow %}
 {% set layout = settings.layout | default('split') %}
 {% set is_lazy = (settings.order | default(3) | int) > 2 %}
 {% set heading = settings.heading | default('') | trim %}
@@ -30,23 +30,23 @@
 
 <section
   section-id="{{ sectionId }}"
-  class="nsj-hero {{ 'nsj-hero--full' if layout == 'full' }}"
+  class="mlb-hero {{ 'mlb-hero--full' if layout == 'full' }}"
 >
   {% if layout == 'full' %}
-    <div class="nsj-hero__bg">{{ hero_media() }}</div>
+    <div class="mlb-hero__bg">{{ hero_media() }}</div>
   {% endif %}
 
-  <div class="theme-container {{ 'nsj-hero__grid' if layout != 'full' }}">
-    <div class="nsj-hero__copy">
+  <div class="theme-container {{ 'mlb-hero__grid' if layout != 'full' }}">
+    <div class="mlb-hero__copy">
       {% if settings.eyebrow and settings.eyebrow | trim %}
-        <span class="nsj-eyebrow">{{ settings.eyebrow }}</span>
+        <span class="mlb-eyebrow">{{ settings.eyebrow }}</span>
       {% endif %}
 
       {% if heading %}
         {# Optional gold word: split around it rather than building HTML strings #}
         {% set parts = heading.split(highlight, 1) if highlight and highlight in heading else [heading] %}
         {% set tag = 'h1' if settings.is_primary_hero else 'h2' %}
-        <{{ tag }} class="nsj-hero__title">
+        <{{ tag }} class="mlb-hero__title">
           {%- if parts | length == 2 -%}
             {{ parts[0] }}<em>{{ highlight }}</em>{{ parts[1] }}
           {%- else -%}
@@ -56,11 +56,11 @@
       {% endif %}
 
       {% if settings.description and settings.description | trim %}
-        <p class="nsj-hero__lead">{{ settings.description }}</p>
+        <p class="mlb-hero__lead">{{ settings.description }}</p>
       {% endif %}
 
       {% if (settings.button_text and settings.button_text | trim) or (settings.button2_text and settings.button2_text | trim) %}
-        <div class="nsj-hero__actions">
+        <div class="mlb-hero__actions">
           {% if settings.button_text and settings.button_text | trim %}
             <a
               href="{{ settings.button_url or url_for('list_products') }}"
@@ -82,7 +82,7 @@
       {% endif %}
 
       {% if notes %}
-        <p class="nsj-hero__note">
+        <p class="mlb-hero__note">
           {% for note in notes %}
             <span>{{ note }}</span>
           {% endfor %}
@@ -91,10 +91,10 @@
     </div>
 
     {% if layout != 'full' %}
-      <div class="nsj-hero__art">
-        <div class="nsj-hero__frame">{{ hero_media() }}</div>
+      <div class="mlb-hero__art">
+        <div class="mlb-hero__frame">{{ hero_media() }}</div>
         {% if settings.seal_title and settings.seal_title | trim %}
-          <div class="nsj-hero__seal">
+          <div class="mlb-hero__seal">
             <strong>{{ settings.seal_title }}</strong>
             {% if settings.seal_text %}<span>{{ settings.seal_text }}</span>{% endif %}
           </div>

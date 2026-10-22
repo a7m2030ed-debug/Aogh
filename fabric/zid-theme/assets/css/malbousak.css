@@ -1,5 +1,5 @@
 /* ========================================
-   NASEEJ — identity layer
+   MALBOUSAK — identity layer
    Ivory paper, ink text, a single gold accent.
    Every color comes from the merchant palette in layout.jinja,
    so changing the colors in the Theme Editor re-tints all of this.
@@ -86,18 +86,18 @@ h2,
 
 /* ---------- Header ---------- */
 
-.nsj-header {
+.mlb-header {
   background-color: color-mix(in oklab, var(--background) 94%, transparent);
   backdrop-filter: saturate(1.2) blur(10px);
   -webkit-backdrop-filter: saturate(1.2) blur(10px);
   border-bottom: 1px solid var(--border);
 }
 
-.nsj-navlink {
+.mlb-navlink {
   position: relative;
 }
 
-.nsj-navlink::after {
+.mlb-navlink::after {
   content: "";
   position: absolute;
   inset-inline: 0;
@@ -108,12 +108,12 @@ h2,
   transition: transform 0.35s var(--ease-silk);
 }
 
-.nsj-navlink:hover::after {
+.mlb-navlink:hover::after {
   transform: scaleX(1);
 }
 
 /* Wordmark — shown when no logo image is uploaded */
-.nsj-wordmark {
+.mlb-wordmark {
   display: inline-flex;
   align-items: center;
   gap: 0.85rem;
@@ -121,7 +121,7 @@ h2,
   white-space: nowrap;
 }
 
-.nsj-wordmark__mark {
+.mlb-wordmark__mark {
   display: grid;
   place-items: center;
   width: 30px;
@@ -132,7 +132,7 @@ h2,
   flex-shrink: 0;
 }
 
-.nsj-wordmark__mark span {
+.mlb-wordmark__mark span {
   transform: rotate(-45deg);
   color: var(--accent);
   font-family: var(--heading-family);
@@ -140,7 +140,7 @@ h2,
   line-height: 1;
 }
 
-.nsj-wordmark__name {
+.mlb-wordmark__name {
   display: block;
   font-family: var(--heading-family);
   font-size: 1.45rem;
@@ -148,7 +148,7 @@ h2,
   line-height: 1.1;
 }
 
-.nsj-wordmark__tag {
+.mlb-wordmark__tag {
   display: block;
   margin-top: 2px;
   font-size: 0.7rem;
@@ -157,16 +157,16 @@ h2,
 
 /* ---------- Announcement bar ---------- */
 
-.nsj-announce {
+.mlb-announce {
   background-color: var(--primary);
   color: color-mix(in oklab, var(--accent) 45%, var(--primary-foreground));
 }
 
-.nsj-announce .announcement-marquee__content > * {
+.mlb-announce .announcement-marquee__content > * {
   position: relative;
 }
 
-.nsj-announce .announcement-marquee__content > *::after {
+.mlb-announce .announcement-marquee__content > *::after {
   content: "";
   position: absolute;
   inset-inline-end: 0;
@@ -177,23 +177,23 @@ h2,
   transform: translate(50%, -50%) rotate(45deg);
 }
 
-[dir="rtl"] .nsj-announce .announcement-marquee__content > *::after {
+[dir="rtl"] .mlb-announce .announcement-marquee__content > *::after {
   transform: translate(-50%, -50%) rotate(45deg);
 }
 
 /* ---------- Section scaffolding ---------- */
 
-.nsj-section {
+.mlb-section {
   padding: 3.5rem 1rem;
 }
 
 @media (min-width: 768px) {
-  .nsj-section {
+  .mlb-section {
     padding: 6rem 4rem;
   }
 }
 
-.nsj-head {
+.mlb-head {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -204,24 +204,24 @@ h2,
 }
 
 @media (min-width: 768px) {
-  .nsj-head {
+  .mlb-head {
     margin-bottom: 3.5rem;
   }
 }
 
-.nsj-head--start {
+.mlb-head--start {
   align-items: flex-start;
   margin-inline: 0;
   text-align: start;
 }
 
 /* Inside panels and bands the heading sits in a column with its own gap */
-.nsj-calc-panel .nsj-head,
-.nsj-band .nsj-head {
+.mlb-calc-panel .mlb-head,
+.mlb-band .mlb-head {
   margin-bottom: 0;
 }
 
-.nsj-eyebrow {
+.mlb-eyebrow {
   display: inline-flex;
   align-items: center;
   gap: 0.65rem;
@@ -230,8 +230,8 @@ h2,
   font-weight: 500;
 }
 
-.nsj-eyebrow::before,
-.nsj-head:not(.nsj-head--start) .nsj-eyebrow::after {
+.mlb-eyebrow::before,
+.mlb-head:not(.mlb-head--start) .mlb-eyebrow::after {
   content: "";
   width: 26px;
   height: 1px;
@@ -239,7 +239,7 @@ h2,
   opacity: 0.7;
 }
 
-.nsj-title {
+.mlb-title {
   font-family: var(--heading-family);
   font-weight: 600;
   font-size: clamp(1.65rem, 1.2rem + 1.5vw, 2.6rem);
@@ -248,14 +248,14 @@ h2,
   text-wrap: balance;
 }
 
-.nsj-lead {
+.mlb-lead {
   color: var(--muted);
   font-size: 1rem;
   line-height: 1.9;
   text-wrap: pretty;
 }
 
-.nsj-ornament {
+.mlb-ornament {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -263,8 +263,8 @@ h2,
   color: var(--accent);
 }
 
-.nsj-ornament::before,
-.nsj-ornament::after {
+.mlb-ornament::before,
+.mlb-ornament::after {
   content: "";
   width: 44px;
   height: 1px;
@@ -272,7 +272,7 @@ h2,
   opacity: 0.6;
 }
 
-.nsj-ornament i {
+.mlb-ornament i {
   width: 6px;
   height: 6px;
   background: currentColor;
@@ -280,26 +280,26 @@ h2,
 }
 
 /* Woven surfaces — used where a merchant has not uploaded an image yet */
-.nsj-weave {
+.mlb-weave {
   background-color: var(--secondary);
   background-image:
     repeating-linear-gradient(90deg, rgb(255 255 255 / 0.4) 0 2px, transparent 2px 6px),
     repeating-linear-gradient(0deg, rgb(27 26 23 / 0.035) 0 2px, transparent 2px 6px);
 }
 
-.nsj-tone-ivory {
+.mlb-tone-ivory {
   background-color: color-mix(in oklab, var(--background) 70%, #fff);
 }
 
-.nsj-tone-sand {
+.mlb-tone-sand {
   background-color: var(--secondary);
 }
 
-.nsj-tone-gold {
+.mlb-tone-gold {
   background-color: var(--gold-soft);
 }
 
-.nsj-tone-ink {
+.mlb-tone-ink {
   background-color: var(--primary);
   background-image:
     repeating-linear-gradient(90deg, rgb(255 255 255 / 0.03) 0 2px, transparent 2px 6px),
@@ -309,39 +309,39 @@ h2,
 
 /* ---------- Hero ---------- */
 
-.nsj-hero {
+.mlb-hero {
   position: relative;
   overflow: hidden;
   padding: 2.5rem 1rem 3rem;
 }
 
 @media (min-width: 768px) {
-  .nsj-hero {
+  .mlb-hero {
     padding: 4.5rem 4rem 5rem;
   }
 }
 
-.nsj-hero__grid {
+.mlb-hero__grid {
   display: grid;
   gap: 2.5rem;
   align-items: center;
 }
 
 @media (min-width: 1024px) {
-  .nsj-hero__grid {
+  .mlb-hero__grid {
     grid-template-columns: 1.05fr 1fr;
     gap: 4rem;
   }
 }
 
-.nsj-hero__copy {
+.mlb-hero__copy {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 1.4rem;
 }
 
-.nsj-hero__title {
+.mlb-hero__title {
   font-family: var(--heading-family);
   font-weight: 600;
   font-size: clamp(2.2rem, 1.4rem + 3.6vw, 4.4rem);
@@ -350,25 +350,25 @@ h2,
   text-wrap: balance;
 }
 
-.nsj-hero__title em {
+.mlb-hero__title em {
   font-style: normal;
   color: var(--accent);
 }
 
-.nsj-hero__lead {
+.mlb-hero__lead {
   max-width: 32rem;
   color: var(--muted);
   font-size: 1.05rem;
   line-height: 1.95;
 }
 
-.nsj-hero__actions {
+.mlb-hero__actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
 }
 
-.nsj-hero__note {
+.mlb-hero__note {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem 1.25rem;
@@ -376,13 +376,13 @@ h2,
   font-size: 0.82rem;
 }
 
-.nsj-hero__note span {
+.mlb-hero__note span {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
 }
 
-.nsj-hero__note span::before {
+.mlb-hero__note span::before {
   content: "";
   width: 5px;
   height: 5px;
@@ -390,14 +390,14 @@ h2,
   transform: rotate(45deg);
 }
 
-.nsj-hero__art {
+.mlb-hero__art {
   position: relative;
   aspect-ratio: 4 / 5;
   max-height: 640px;
   width: 100%;
 }
 
-.nsj-hero__art::before {
+.mlb-hero__art::before {
   content: "";
   position: absolute;
   inset: 0.75rem -0.75rem -0.75rem 0.75rem;
@@ -405,36 +405,36 @@ h2,
   pointer-events: none;
 }
 
-[dir="rtl"] .nsj-hero__art::before {
+[dir="rtl"] .mlb-hero__art::before {
   inset: 0.75rem 0.75rem -0.75rem -0.75rem;
 }
 
 @media (min-width: 768px) {
-  .nsj-hero__art::before {
+  .mlb-hero__art::before {
     inset: 1.25rem -1.25rem -1.25rem 1.25rem;
   }
 
-  [dir="rtl"] .nsj-hero__art::before {
+  [dir="rtl"] .mlb-hero__art::before {
     inset: 1.25rem 1.25rem -1.25rem -1.25rem;
   }
 }
 
-.nsj-hero__frame {
+.mlb-hero__frame {
   position: relative;
   height: 100%;
   overflow: hidden;
   border-radius: var(--radius);
 }
 
-.nsj-hero__frame img,
-.nsj-hero__frame svg {
+.mlb-hero__frame img,
+.mlb-hero__frame svg {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 }
 
-.nsj-hero__seal {
+.mlb-hero__seal {
   position: absolute;
   bottom: 1.5rem;
   inset-inline-start: -0.5rem;
@@ -449,7 +449,7 @@ h2,
   color: var(--muted);
 }
 
-.nsj-hero__seal strong {
+.mlb-hero__seal strong {
   font-family: var(--heading-family);
   font-size: 1.15rem;
   color: var(--foreground);
@@ -457,7 +457,7 @@ h2,
 }
 
 /* Full-bleed variant */
-.nsj-hero--full {
+.mlb-hero--full {
   display: flex;
   align-items: flex-end;
   min-height: 78vh;
@@ -465,24 +465,24 @@ h2,
 }
 
 @media (min-width: 768px) {
-  .nsj-hero--full {
+  .mlb-hero--full {
     align-items: center;
   }
 }
 
-.nsj-hero--full .nsj-hero__bg {
+.mlb-hero--full .mlb-hero__bg {
   position: absolute;
   inset: 0;
 }
 
-.nsj-hero--full .nsj-hero__bg img,
-.nsj-hero--full .nsj-hero__bg svg {
+.mlb-hero--full .mlb-hero__bg img,
+.mlb-hero--full .mlb-hero__bg svg {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.nsj-hero--full .nsj-hero__bg::after {
+.mlb-hero--full .mlb-hero__bg::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -490,44 +490,44 @@ h2,
 }
 
 @media (min-width: 768px) {
-  [dir="rtl"] .nsj-hero--full .nsj-hero__bg::after {
+  [dir="rtl"] .mlb-hero--full .mlb-hero__bg::after {
     background: linear-gradient(to left, rgb(20 18 15 / 0.7), rgb(20 18 15 / 0.05) 70%);
   }
 
-  [dir="ltr"] .nsj-hero--full .nsj-hero__bg::after {
+  [dir="ltr"] .mlb-hero--full .mlb-hero__bg::after {
     background: linear-gradient(to right, rgb(20 18 15 / 0.7), rgb(20 18 15 / 0.05) 70%);
   }
 }
 
-.nsj-hero--full .nsj-hero__copy {
+.mlb-hero--full .mlb-hero__copy {
   position: relative;
   max-width: 36rem;
 }
 
-.nsj-hero--full .nsj-hero__title {
+.mlb-hero--full .mlb-hero__title {
   color: #fff;
 }
 
-.nsj-hero--full .nsj-hero__lead,
-.nsj-hero--full .nsj-hero__note {
+.mlb-hero--full .mlb-hero__lead,
+.mlb-hero--full .mlb-hero__note {
   color: rgb(255 255 255 / 0.82);
 }
 
 /* ---------- Collections ---------- */
 
-.nsj-collections {
+.mlb-collections {
   display: grid;
   gap: 1rem;
 }
 
 @media (min-width: 768px) {
-  .nsj-collections {
-    grid-template-columns: repeat(var(--nsj-cols, 3), minmax(0, 1fr));
+  .mlb-collections {
+    grid-template-columns: repeat(var(--mlb-cols, 3), minmax(0, 1fr));
     gap: 1.25rem;
   }
 }
 
-.nsj-tile {
+.mlb-tile {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -541,45 +541,45 @@ h2,
 }
 
 @media (min-width: 768px) {
-  .nsj-tile {
+  .mlb-tile {
     min-height: 460px;
     padding: 2.25rem;
   }
 }
 
-.nsj-tile__media {
+.mlb-tile__media {
   position: absolute;
   inset: 0;
   z-index: -1;
 }
 
-.nsj-tile__media img {
+.mlb-tile__media img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   transition: transform 1.2s var(--ease-silk);
 }
 
-.nsj-tile:hover .nsj-tile__media img {
+.mlb-tile:hover .mlb-tile__media img {
   transform: scale(1.05);
 }
 
-.nsj-tile--image {
+.mlb-tile--image {
   color: #fff;
 }
 
-.nsj-tile--image .nsj-tile__media::after {
+.mlb-tile--image .mlb-tile__media::after {
   content: "";
   position: absolute;
   inset: 0;
   background: linear-gradient(to top, rgb(20 18 15 / 0.72), rgb(20 18 15 / 0) 60%);
 }
 
-.nsj-tile.nsj-tone-ink {
+.mlb-tile.mlb-tone-ink {
   color: var(--primary-foreground);
 }
 
-.nsj-tile__glyph {
+.mlb-tile__glyph {
   position: absolute;
   top: 1.5rem;
   inset-inline-end: 1.5rem;
@@ -588,31 +588,31 @@ h2,
   transition: transform 0.8s var(--ease-silk);
 }
 
-.nsj-tile:hover .nsj-tile__glyph {
+.mlb-tile:hover .mlb-tile__glyph {
   transform: translateY(-6px);
 }
 
-.nsj-tile__index {
+.mlb-tile__index {
   font-family: var(--heading-family);
   font-size: 0.85rem;
   color: var(--accent);
   margin-bottom: auto;
 }
 
-.nsj-tile__title {
+.mlb-tile__title {
   font-family: var(--heading-family);
   font-size: clamp(1.6rem, 1.2rem + 1.2vw, 2.2rem);
   font-weight: 600;
   line-height: 1.25;
 }
 
-.nsj-tile__text {
+.mlb-tile__text {
   margin-top: 0.4rem;
   font-size: 0.92rem;
   opacity: 0.78;
 }
 
-.nsj-tile__cta {
+.mlb-tile__cta {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -621,34 +621,34 @@ h2,
   font-weight: 500;
 }
 
-.nsj-tile__cta svg {
+.mlb-tile__cta svg {
   transition: transform 0.35s var(--ease-silk);
 }
 
-[dir="rtl"] .nsj-tile:hover .nsj-tile__cta svg {
+[dir="rtl"] .mlb-tile:hover .mlb-tile__cta svg {
   transform: translateX(-5px);
 }
 
-[dir="ltr"] .nsj-tile:hover .nsj-tile__cta svg {
+[dir="ltr"] .mlb-tile:hover .mlb-tile__cta svg {
   transform: translateX(5px);
 }
 
 /* ---------- Wiqfa guide ---------- */
 
-.nsj-wiqfa {
+.mlb-wiqfa {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
 }
 
 @media (min-width: 1024px) {
-  .nsj-wiqfa {
+  .mlb-wiqfa {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 1.25rem;
   }
 }
 
-.nsj-wiqfa__card {
+.mlb-wiqfa__card {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -666,23 +666,23 @@ h2,
 }
 
 @media (min-width: 768px) {
-  .nsj-wiqfa__card {
+  .mlb-wiqfa__card {
     padding: 2.25rem 1.5rem 1.75rem;
   }
 }
 
-a.nsj-wiqfa__card:hover {
+a.mlb-wiqfa__card:hover {
   border-color: var(--accent);
   transform: translateY(-4px);
   box-shadow: var(--shadow-soft);
 }
 
-.nsj-wiqfa__card.is-featured {
+.mlb-wiqfa__card.is-featured {
   border-color: var(--accent);
   background: color-mix(in oklab, var(--gold-soft) 55%, var(--background));
 }
 
-.nsj-wiqfa__flag {
+.mlb-wiqfa__flag {
   position: absolute;
   top: -0.7rem;
   padding: 0.1rem 0.7rem;
@@ -692,57 +692,57 @@ a.nsj-wiqfa__card:hover {
   border-radius: 999px;
 }
 
-.nsj-wiqfa__glyph {
+.mlb-wiqfa__glyph {
   width: 64px;
   height: 100px;
 }
 
 @media (min-width: 768px) {
-  .nsj-wiqfa__glyph {
+  .mlb-wiqfa__glyph {
     width: 76px;
     height: 118px;
   }
 }
 
-.nsj-wiqfa__name {
+.mlb-wiqfa__name {
   font-family: var(--heading-family);
   font-size: 1.3rem;
   font-weight: 600;
   color: var(--foreground);
 }
 
-.nsj-wiqfa__desc {
+.mlb-wiqfa__desc {
   color: var(--muted);
   font-size: 0.85rem;
   line-height: 1.8;
 }
 
-.nsj-stiff {
+.mlb-stiff {
   display: flex;
   align-items: flex-end;
   gap: 4px;
   height: 18px;
 }
 
-.nsj-stiff i {
+.mlb-stiff i {
   width: 6px;
   background: var(--border);
   border-radius: 1px;
 }
 
-.nsj-stiff i:nth-child(1) { height: 30%; }
-.nsj-stiff i:nth-child(2) { height: 55%; }
-.nsj-stiff i:nth-child(3) { height: 78%; }
-.nsj-stiff i:nth-child(4) { height: 100%; }
+.mlb-stiff i:nth-child(1) { height: 30%; }
+.mlb-stiff i:nth-child(2) { height: 55%; }
+.mlb-stiff i:nth-child(3) { height: 78%; }
+.mlb-stiff i:nth-child(4) { height: 100%; }
 
-.nsj-stiff[data-level="1"] i:nth-child(-n + 1),
-.nsj-stiff[data-level="2"] i:nth-child(-n + 2),
-.nsj-stiff[data-level="3"] i:nth-child(-n + 3),
-.nsj-stiff[data-level="4"] i:nth-child(-n + 4) {
+.mlb-stiff[data-level="1"] i:nth-child(-n + 1),
+.mlb-stiff[data-level="2"] i:nth-child(-n + 2),
+.mlb-stiff[data-level="3"] i:nth-child(-n + 3),
+.mlb-stiff[data-level="4"] i:nth-child(-n + 4) {
   background: var(--accent);
 }
 
-.nsj-stiff-legend {
+.mlb-stiff-legend {
   display: flex;
   justify-content: space-between;
   width: 100%;
@@ -752,43 +752,43 @@ a.nsj-wiqfa__card:hover {
   font-size: 0.8rem;
 }
 
-.nsj-stiff-legend span {
+.mlb-stiff-legend span {
   flex: 1;
   height: 1px;
   margin: auto 0.75rem;
   background: linear-gradient(to left, var(--border), var(--accent));
 }
 
-[dir="ltr"] .nsj-stiff-legend span {
+[dir="ltr"] .mlb-stiff-legend span {
   background: linear-gradient(to right, var(--border), var(--accent));
 }
 
 /* ---------- Meter calculator ---------- */
 
-.nsj-calc {
+.mlb-calc {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-.nsj-calc__label {
+.mlb-calc__label {
   color: var(--muted);
   font-size: 0.85rem;
 }
 
-.nsj-calc__opts {
+.mlb-calc__opts {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.5rem;
 }
 
 @media (min-width: 640px) {
-  .nsj-calc__opts {
-    grid-template-columns: repeat(var(--nsj-opts, 4), minmax(0, 1fr));
+  .mlb-calc__opts {
+    grid-template-columns: repeat(var(--mlb-opts, 4), minmax(0, 1fr));
   }
 }
 
-.nsj-calc__opt {
+.mlb-calc__opt {
   padding: 0.75rem 0.5rem;
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -801,17 +801,17 @@ a.nsj-wiqfa__card:hover {
     background-color 0.25s var(--ease-silk);
 }
 
-.nsj-calc__opt:hover {
+.mlb-calc__opt:hover {
   border-color: var(--accent);
 }
 
-.nsj-calc__opt[aria-pressed="true"] {
+.mlb-calc__opt[aria-pressed="true"] {
   border-color: var(--foreground);
   background: var(--foreground);
   color: var(--background);
 }
 
-.nsj-calc__row {
+.mlb-calc__row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -819,14 +819,14 @@ a.nsj-wiqfa__card:hover {
   gap: 0.75rem;
 }
 
-.nsj-calc__stepper {
+.mlb-calc__stepper {
   display: inline-flex;
   align-items: center;
   border: 1px solid var(--border);
   border-radius: var(--radius);
 }
 
-.nsj-calc__stepper button {
+.mlb-calc__stepper button {
   width: 2.5rem;
   height: 2.5rem;
   color: var(--foreground);
@@ -834,13 +834,13 @@ a.nsj-wiqfa__card:hover {
   cursor: pointer;
 }
 
-.nsj-calc__stepper output {
+.mlb-calc__stepper output {
   min-width: 2rem;
   text-align: center;
   font-weight: 600;
 }
 
-.nsj-calc__result {
+.mlb-calc__result {
   display: flex;
   align-items: baseline;
   gap: 0.6rem;
@@ -850,20 +850,20 @@ a.nsj-wiqfa__card:hover {
   color: var(--foreground);
 }
 
-.nsj-calc__result strong {
+.mlb-calc__result strong {
   font-family: var(--heading-family);
   font-size: 1.9rem;
   line-height: 1;
   color: var(--gold-deep);
 }
 
-.nsj-calc__hint {
+.mlb-calc__hint {
   color: var(--muted);
   font-size: 0.78rem;
   line-height: 1.8;
 }
 
-.nsj-calc-panel {
+.mlb-calc-panel {
   display: grid;
   gap: 2.5rem;
   align-items: center;
@@ -874,7 +874,7 @@ a.nsj-wiqfa__card:hover {
 }
 
 @media (min-width: 1024px) {
-  .nsj-calc-panel {
+  .mlb-calc-panel {
     grid-template-columns: 0.9fr 1.1fr;
     padding: 3rem;
     gap: 4rem;
@@ -882,13 +882,13 @@ a.nsj-wiqfa__card:hover {
 }
 
 /* Product page: the calculator sits in a quiet disclosure */
-.nsj-pdp-calc {
+.mlb-pdp-calc {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: color-mix(in oklab, var(--secondary) 45%, var(--background));
 }
 
-.nsj-pdp-calc > summary {
+.mlb-pdp-calc > summary {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -899,28 +899,28 @@ a.nsj-wiqfa__card:hover {
   font-weight: 500;
 }
 
-.nsj-pdp-calc > summary::-webkit-details-marker {
+.mlb-pdp-calc > summary::-webkit-details-marker {
   display: none;
 }
 
-.nsj-pdp-calc > summary svg:last-child {
+.mlb-pdp-calc > summary svg:last-child {
   margin-inline-start: auto;
   transition: transform 0.25s var(--ease-silk);
 }
 
-.nsj-pdp-calc[open] > summary svg:last-child {
+.mlb-pdp-calc[open] > summary svg:last-child {
   transform: rotate(180deg);
 }
 
-.nsj-pdp-calc__body {
+.mlb-pdp-calc__body {
   padding: 0 1rem 1rem;
 }
 
-.nsj-pdp-calc__body .nsj-calc__opts {
+.mlb-pdp-calc__body .mlb-calc__opts {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.nsj-pdp-calc__guide {
+.mlb-pdp-calc__guide {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -933,23 +933,23 @@ a.nsj-wiqfa__card:hover {
 
 /* ---------- Features (trust bar) ---------- */
 
-.nsj-features {
+.mlb-features {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 2rem 1rem;
 }
 
 @media (min-width: 1024px) {
-  .nsj-features {
-    grid-template-columns: repeat(var(--nsj-cols, 4), minmax(0, 1fr));
+  .mlb-features {
+    grid-template-columns: repeat(var(--mlb-cols, 4), minmax(0, 1fr));
   }
 
-  .nsj-features > * + * {
+  .mlb-features > * + * {
     border-inline-start: 1px solid var(--border);
   }
 }
 
-.nsj-feature {
+.mlb-feature {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -958,7 +958,7 @@ a.nsj-wiqfa__card:hover {
   text-align: center;
 }
 
-.nsj-feature__icon {
+.mlb-feature__icon {
   display: grid;
   place-items: center;
   width: 3.25rem;
@@ -968,18 +968,18 @@ a.nsj-wiqfa__card:hover {
   color: var(--accent);
 }
 
-.nsj-feature__icon svg {
+.mlb-feature__icon svg {
   width: 1.4rem;
   height: 1.4rem;
 }
 
-.nsj-feature__title {
+.mlb-feature__title {
   font-size: 0.98rem;
   font-weight: 600;
   color: var(--foreground);
 }
 
-.nsj-feature__text {
+.mlb-feature__text {
   color: var(--muted);
   font-size: 0.82rem;
   line-height: 1.8;
@@ -987,48 +987,48 @@ a.nsj-wiqfa__card:hover {
 
 /* ---------- Wholesale band ---------- */
 
-.nsj-band {
+.mlb-band {
   position: relative;
   overflow: hidden;
 }
 
-.nsj-band__inner {
+.mlb-band__inner {
   display: grid;
   gap: 2.5rem;
   align-items: center;
 }
 
 @media (min-width: 1024px) {
-  .nsj-band__inner {
+  .mlb-band__inner {
     grid-template-columns: 1.2fr 1fr;
     gap: 5rem;
   }
 }
 
-.nsj-band .nsj-title {
+.mlb-band .mlb-title {
   color: inherit;
 }
 
-.nsj-band .nsj-lead {
+.mlb-band .mlb-lead {
   color: color-mix(in oklab, currentColor 72%, transparent);
 }
 
-.nsj-stats {
+.mlb-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   border-block: 1px solid color-mix(in oklab, currentColor 18%, transparent);
 }
 
-.nsj-stat {
+.mlb-stat {
   padding: 1.5rem 0.75rem;
   text-align: center;
 }
 
-.nsj-stat + .nsj-stat {
+.mlb-stat + .mlb-stat {
   border-inline-start: 1px solid color-mix(in oklab, currentColor 18%, transparent);
 }
 
-.nsj-stat strong {
+.mlb-stat strong {
   display: block;
   font-family: var(--heading-family);
   font-size: clamp(1.4rem, 1.1rem + 1vw, 2rem);
@@ -1037,7 +1037,7 @@ a.nsj-wiqfa__card:hover {
   line-height: 1.3;
 }
 
-.nsj-stat span {
+.mlb-stat span {
   display: block;
   margin-top: 0.3rem;
   font-size: 0.8rem;
@@ -1046,50 +1046,50 @@ a.nsj-wiqfa__card:hover {
 
 /* ---------- Story ---------- */
 
-.nsj-story {
+.mlb-story {
   display: grid;
   gap: 2.5rem;
   align-items: center;
 }
 
 @media (min-width: 1024px) {
-  .nsj-story {
+  .mlb-story {
     grid-template-columns: 1fr 1fr;
     gap: 5rem;
   }
 
-  .nsj-story--flip .nsj-story__media {
+  .mlb-story--flip .mlb-story__media {
     order: 2;
   }
 }
 
-.nsj-story__media {
+.mlb-story__media {
   position: relative;
   aspect-ratio: 5 / 4;
   overflow: hidden;
   border-radius: var(--radius);
 }
 
-.nsj-story__media img,
-.nsj-story__media svg {
+.mlb-story__media img,
+.mlb-story__media svg {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.nsj-story__body {
+.mlb-story__body {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 1.1rem;
 }
 
-.nsj-story__text {
+.mlb-story__text {
   color: var(--muted);
   line-height: 2;
 }
 
-.nsj-story__sign {
+.mlb-story__sign {
   font-family: var(--heading-family);
   font-size: 1.15rem;
   color: var(--gold-deep);
@@ -1097,30 +1097,30 @@ a.nsj-wiqfa__card:hover {
 
 /* ---------- Product card ---------- */
 
-.nsj-card .nsj-card__media {
+.mlb-card .mlb-card__media {
   background-color: var(--secondary);
 }
 
-.nsj-card .nsj-card__media img {
+.mlb-card .mlb-card__media img {
   transition: transform 1s var(--ease-silk);
 }
 
-.nsj-card:hover .nsj-card__media img {
+.mlb-card:hover .mlb-card__media img {
   transform: scale(1.04);
 }
 
-.nsj-card__name {
+.mlb-card__name {
   font-size: 0.95rem;
   font-weight: 500;
   line-height: 1.6;
 }
 
-.nsj-card__price {
+.mlb-card__price {
   font-size: 0.95rem;
   font-weight: 600;
 }
 
-.nsj-chip-gold {
+.mlb-chip-gold {
   display: inline-flex;
   align-items: center;
   padding: 0.1rem 0.5rem;
@@ -1153,13 +1153,13 @@ a.nsj-wiqfa__card:hover {
   color: var(--accent);
 }
 
-.nsj-footer-ornament {
+.mlb-footer-ornament {
   margin-bottom: 2.5rem;
 }
 
 /* ---------- Floating WhatsApp ---------- */
 
-.nsj-wa {
+.mlb-wa {
   position: fixed;
   z-index: 40;
   bottom: 1.25rem;
@@ -1178,59 +1178,59 @@ a.nsj-wiqfa__card:hover {
     background-color 0.3s var(--ease-silk);
 }
 
-.nsj-wa:hover {
+.mlb-wa:hover {
   transform: translateY(-3px);
   background: var(--accent);
 }
 
-.nsj-wa svg {
+.mlb-wa svg {
   width: 1.5rem;
   height: 1.5rem;
 }
 
 /* Clear the sticky add-to-cart bar on product pages */
-body[data-template="product_details"] .nsj-wa {
+body[data-template="product_details"] .mlb-wa {
   bottom: 6rem;
 }
 
 /* ---------- Motion preference ---------- */
 
 @media (prefers-reduced-motion: reduce) {
-  .nsj-card .nsj-card__media img,
-  .nsj-tile__media img,
-  .nsj-tile__glyph,
-  a.nsj-wiqfa__card,
-  .nsj-wa {
+  .mlb-card .mlb-card__media img,
+  .mlb-tile__media img,
+  .mlb-tile__glyph,
+  a.mlb-wiqfa__card,
+  .mlb-wa {
     transition: none;
   }
 }
 
 /* Collection tiles drawn without an image: a veil keeps the text legible */
-.nsj-tile__media svg {
+.mlb-tile__media svg {
   width: 100%;
   height: 100%;
   transition: transform 1.2s var(--ease-silk);
 }
 
-.nsj-tile:hover .nsj-tile__media svg {
+.mlb-tile:hover .mlb-tile__media svg {
   transform: scale(1.05);
 }
 
-.nsj-tile--art .nsj-tile__media::after {
+.mlb-tile--art .mlb-tile__media::after {
   content: "";
   position: absolute;
   inset: 0;
   background: linear-gradient(to top, var(--tile-veil), transparent 62%);
 }
 
-.nsj-tile--sand {
+.mlb-tile--sand {
   --tile-veil: color-mix(in oklab, var(--secondary) 94%, transparent);
 }
 
-.nsj-tile--ivory {
+.mlb-tile--ivory {
   --tile-veil: color-mix(in oklab, var(--background) 94%, transparent);
 }
 
-.nsj-tile--ink {
+.mlb-tile--ink {
   --tile-veil: rgb(20 18 15 / 0.82);
 }

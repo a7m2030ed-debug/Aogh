@@ -1,8 +1,8 @@
 {
-  "template": "sections/naseej-meter.jinja",
+  "template": "sections/malbousak-meter.jinja",
   "name": {
-    "ar": "نسيج · حاسبة الأمتار",
-    "en": "Naseej · Meter calculator"
+    "ar": "ملبوسك · حاسبة الأمتار",
+    "en": "Malbousak · Meter calculator"
   },
   "icon": "calculator-line",
   "settings": [

@@ -13,12 +13,12 @@
 {% set is_out_of_stock = (product.is_infinite == false and product.quantity <= 0) and not can_preorder  %}
 
 <div
-  class="nsj-card group relative flex h-full flex-col gap-4 group-data-[grid=list]/grid:grid group-data-[grid=list]/grid:grid-cols-2 group-data-[grid=list]/grid:grid-rows-[1fr_auto] group-data-[grid=list]/grid:gap-4 md:group-data-[grid=list]/grid:grid-cols-[auto_1fr] md:group-data-[grid=list]/grid:grid-rows-[auto_auto]"
+  class="mlb-card group relative flex h-full flex-col gap-4 group-data-[grid=list]/grid:grid group-data-[grid=list]/grid:grid-cols-2 group-data-[grid=list]/grid:grid-rows-[1fr_auto] group-data-[grid=list]/grid:gap-4 md:group-data-[grid=list]/grid:grid-cols-[auto_1fr] md:group-data-[grid=list]/grid:grid-rows-[auto_auto]"
   data-product-card="{{ product.id }}"
 >
   <a
     href="{{ url_for('product_details', slug=product.slug) }}"
-    class="{{ aspect_class }} nsj-card__media relative block w-full overflow-hidden rounded group-data-[grid=list]/grid:col-span-1 group-data-[grid=list]/grid:row-span-1 group-data-[grid=list]/grid:aspect-square md:group-data-[grid=list]/grid:row-span-2 md:group-data-[grid=list]/grid:h-80"
+    class="{{ aspect_class }} mlb-card__media relative block w-full overflow-hidden rounded group-data-[grid=list]/grid:col-span-1 group-data-[grid=list]/grid:row-span-1 group-data-[grid=list]/grid:aspect-square md:group-data-[grid=list]/grid:row-span-2 md:group-data-[grid=list]/grid:h-80"
   >
     <img
       {% if product.main_image and product.main_image.image %}
@@ -72,7 +72,7 @@
     class="flex flex-1 flex-col gap-3 group-data-[grid=list]/grid:col-span-1 group-data-[grid=list]/grid:row-span-1 group-data-[grid=list]/grid:min-w-0 group-data-[grid=list]/grid:self-start"
   >
     <div class="flex flex-col gap-2">
-      <h3 class="nsj-card__name text-foreground">
+      <h3 class="mlb-card__name text-foreground">
         <a href="{{ url_for('product_details', slug=product.slug) }}"> {{ product.name }} </a>
       </h3>
       {% if store.settings.products.reviews_enabled %}
@@ -91,14 +91,14 @@
     {% if product.formatted_sale_price is not none %}
       {# Product on sale - show sale price, old price crossed out, and discount #}
       <div class="flex flex-col gap-1">
-        <p class="nsj-card__price text-foreground">
+        <p class="mlb-card__price text-foreground">
           {% if product.has_options %}{{ _("From") }}{% endif %}
           {{ product.formatted_sale_price }}
         </p>
         <div class="flex flex-wrap items-center gap-2">
           <span class="text-muted-foreground text-sm line-through"> {{ product.formatted_price }} </span>
           {% if product.discount_percentage and product.discount_percentage > 0 %}
-            <span class="nsj-chip-gold">
+            <span class="mlb-chip-gold">
               {{ _("Discount") }} {{ product.discount_percentage }}%
             </span>
           {% endif %}
@@ -106,7 +106,7 @@
       </div>
     {% else %}
       {# Regular price - no sale #}
-      <p class="nsj-card__price text-foreground">
+      <p class="mlb-card__price text-foreground">
         {% if product.has_options %}{{ _("From") }}{% endif %}
         {{ product.formatted_price }}
       </p>

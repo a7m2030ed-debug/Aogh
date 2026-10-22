@@ -1,4 +1,4 @@
-{% from 'components/naseej/macros.jinja' import icon %}
+{% from 'components/malbousak/macros.jinja' import icon %}
 
 {% set feats = namespace(items=[]) %}
 {% for item in settings.items or [] %}
@@ -17,25 +17,25 @@
 
 <section
   section-id="{{ sectionId }}"
-  class="nsj-section {{ 'nsj-tone-sand' if settings.tone == 'sand' }}"
+  class="mlb-section {{ 'mlb-tone-sand' if settings.tone == 'sand' }}"
   style="padding-block: clamp(2.5rem, 2rem + 2vw, 4rem)"
 >
   <div class="theme-container">
     {% if settings.title and settings.title | trim %}
       {% with title=settings.title %}
-        {% include 'components/naseej/section-head.jinja' %}
+        {% include 'components/malbousak/section-head.jinja' %}
       {% endwith %}
     {% endif %}
     <div
-      class="nsj-features"
-      style="--nsj-cols: {{ feats.items | length }}"
+      class="mlb-features"
+      style="--mlb-cols: {{ feats.items | length }}"
     >
       {% for item in feats.items %}
-        <div class="nsj-feature">
-          <span class="nsj-feature__icon">{{ icon(item.icon or 'star') }}</span>
-          <h3 class="nsj-feature__title">{{ item.title }}</h3>
+        <div class="mlb-feature">
+          <span class="mlb-feature__icon">{{ icon(item.icon or 'star') }}</span>
+          <h3 class="mlb-feature__title">{{ item.title }}</h3>
           {% if item.text %}
-            <p class="nsj-feature__text">{{ item.text }}</p>
+            <p class="mlb-feature__text">{{ item.text }}</p>
           {% endif %}
         </div>
       {% endfor %}

@@ -26,18 +26,18 @@
 {% set calc_selected = 1 if calc_rows | length > 1 else 0 %}
 
 <div
-  class="nsj-calc"
-  data-nsj-calc
+  class="mlb-calc"
+  data-mlb-calc
 >
-  <p class="nsj-calc__label">{{ _('Your height') }}</p>
+  <p class="mlb-calc__label">{{ _('Your height') }}</p>
   <div
-    class="nsj-calc__opts"
-    style="--nsj-opts: {{ calc_rows | length }}"
+    class="mlb-calc__opts"
+    style="--mlb-opts: {{ calc_rows | length }}"
   >
     {% for row in calc_rows %}
       <button
         type="button"
-        class="nsj-calc__opt"
+        class="mlb-calc__opt"
         data-meters="{{ row.meters }}"
         aria-pressed="{{ 'true' if loop.index0 == calc_selected else 'false' }}"
       >
@@ -45,9 +45,9 @@
       </button>
     {% endfor %}
   </div>
-  <div class="nsj-calc__row">
-    <span class="nsj-calc__label">{{ _('Number of thobes') }}</span>
-    <div class="nsj-calc__stepper">
+  <div class="mlb-calc__row">
+    <span class="mlb-calc__label">{{ _('Number of thobes') }}</span>
+    <div class="mlb-calc__stepper">
       <button
         type="button"
         data-step="-1"
@@ -66,11 +66,11 @@
     </div>
   </div>
   <div
-    class="nsj-calc__result"
+    class="mlb-calc__result"
     aria-live="polite"
   >
     <strong data-total>{{ calc_rows[calc_selected].meters }}</strong>
     <span>{{ _('meters') }}</span>
   </div>
-  <p class="nsj-calc__hint">{{ _('An estimate for a standard thobe. Your tailor may add half a meter for wide sleeves or a longer cut.') }}</p>
+  <p class="mlb-calc__hint">{{ _('An estimate for a standard thobe. Your tailor may add half a meter for wide sleeves or a longer cut.') }}</p>
 </div>

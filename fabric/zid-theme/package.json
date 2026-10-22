@@ -1,7 +1,7 @@
 {
-  "name": "naseej-zid-theme",
+  "name": "malbousak-zid-theme",
   "version": "1.0.0",
-  "description": "Naseej — men's fabric store theme for Zid (Vitrin), built on Zid's Growth theme",
+  "description": "Malbousak — men's fabric store theme for Zid (Vitrin), built on Zid's Growth theme",
   "type": "module",
   "scripts": {
     "pretest": "npm run build:js",

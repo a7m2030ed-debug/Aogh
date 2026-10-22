@@ -3,15 +3,15 @@
   Variables: eyebrow, title, description, align ('center' | 'start'), heading_tag ('h2')
 #}
 {% if (eyebrow and eyebrow | trim) or (title and title | trim) or (description and description | trim) %}
-  <div class="nsj-head {{ 'nsj-head--start' if align == 'start' }}">
+  <div class="mlb-head {{ 'mlb-head--start' if align == 'start' }}">
     {% if eyebrow and eyebrow | trim %}
-      <span class="nsj-eyebrow">{{ eyebrow }}</span>
+      <span class="mlb-eyebrow">{{ eyebrow }}</span>
     {% endif %}
     {% if title and title | trim %}
-      <h2 class="nsj-title">{{ title }}</h2>
+      <h2 class="mlb-title">{{ title }}</h2>
     {% endif %}
     {% if description and description | trim %}
-      <p class="nsj-lead">{{ description }}</p>
+      <p class="mlb-lead">{{ description }}</p>
     {% endif %}
   </div>
 {% endif %}

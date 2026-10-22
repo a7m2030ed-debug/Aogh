@@ -1,12 +1,12 @@
-{% from 'components/naseej/macros.jinja' import drape_art, arrow %}
+{% from 'components/malbousak/macros.jinja' import drape_art, arrow %}
 {% set is_lazy = (settings.order | default(3) | int) > 2 %}
 
 <section
   section-id="{{ sectionId }}"
-  class="nsj-section"
+  class="mlb-section"
 >
-  <div class="theme-container nsj-story {{ 'nsj-story--flip' if settings.flip }}">
-    <div class="nsj-story__media">
+  <div class="theme-container mlb-story {{ 'mlb-story--flip' if settings.flip }}">
+    <div class="mlb-story__media">
       {% if settings.image %}
         <img
           src="{{ image_url(settings.image, w=1500, q=85, f='auto') }}"
@@ -17,18 +17,18 @@
         {{ drape_art(sectionId ~ '-art', settings.art_tone | default('sand')) }}
       {% endif %}
     </div>
-    <div class="nsj-story__body">
+    <div class="mlb-story__body">
       {% if settings.eyebrow %}
-        <span class="nsj-eyebrow">{{ settings.eyebrow }}</span>
+        <span class="mlb-eyebrow">{{ settings.eyebrow }}</span>
       {% endif %}
       {% if settings.title %}
-        <h2 class="nsj-title">{{ settings.title }}</h2>
+        <h2 class="mlb-title">{{ settings.title }}</h2>
       {% endif %}
       {% if settings.text %}
-        <p class="nsj-story__text">{{ settings.text }}</p>
+        <p class="mlb-story__text">{{ settings.text }}</p>
       {% endif %}
       {% if settings.signature %}
-        <p class="nsj-story__sign">{{ settings.signature }}</p>
+        <p class="mlb-story__sign">{{ settings.signature }}</p>
       {% endif %}
       {% if settings.button_text and settings.button_text | trim %}
         <a

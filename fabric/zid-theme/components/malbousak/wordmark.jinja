@@ -1,0 +1,16 @@
+{#
+  Malbousak wordmark — the store name set in the heading face beside a gold
+  diamond carrying its first letter. Used when no logo image is uploaded.
+
+  Optional: tagline (string)
+#}
+{% set wm_tagline = tagline if tagline is defined else settings.logo_tagline | default('') %}
+<span class="mlb-wordmark">
+  <span class="mlb-wordmark__mark"><span>{{ store.name[:1] }}</span></span>
+  <span>
+    <span class="mlb-wordmark__name">{{ store.name }}</span>
+    {% if wm_tagline and wm_tagline | trim %}
+      <span class="mlb-wordmark__tag">{{ wm_tagline }}</span>
+    {% endif %}
+  </span>
+</span>

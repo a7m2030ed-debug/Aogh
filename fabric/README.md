@@ -26,8 +26,8 @@ cd fabric/server && node server.js      # بلا npm install
 | `fabric/index.html` | واجهة العميل: تصفّح، سلة، دفع، تتبّع |
 | `fabric/admin.html` | المنتجات، الطلبات، المخزون، الإعدادات |
 
-**على منصة زد:** ثيم نسيج لزد في [`fabric/zid-theme`](zid-theme/README.md)، والملف الجاهز للرفع
-[`naseej-zid-theme.zip`](naseej-zid-theme.zip).
+**على منصة زد:** ثيم متجر **ملبوسك** على زد، بنفس أقسام نسيج وهويته، في
+[`fabric/zid-theme`](zid-theme/README.md)، والملف الجاهز للرفع [`malbousak-zid-theme.zip`](malbousak-zid-theme.zip).
 
 ---
 

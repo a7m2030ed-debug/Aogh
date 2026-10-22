@@ -1,9 +1,9 @@
-{# Floating WhatsApp button — Theme Editor › Layout › Naseej #}
-{% set wa_number = (settings.naseej_whatsapp | default('') | string).replace('+', '').replace(' ', '') %}
-{% if wa_number and settings.naseej_whatsapp_float | default(true) %}
+{# Floating WhatsApp button — Theme Editor › Layout › Malbousak #}
+{% set wa_number = (settings.malbousak_whatsapp | default('') | string).replace('+', '').replace(' ', '') %}
+{% if wa_number and settings.malbousak_whatsapp_float | default(true) %}
   <a
-    class="nsj-wa"
-    href="https://wa.me/{{ wa_number }}?text={{ settings.naseej_whatsapp_message | default('') | urlencode }}"
+    class="mlb-wa"
+    href="https://wa.me/{{ wa_number }}?text={{ settings.malbousak_whatsapp_message | default('') | urlencode }}"
     target="_blank"
     rel="noopener"
     aria-label="{{ _('Chat with us on WhatsApp') }}"

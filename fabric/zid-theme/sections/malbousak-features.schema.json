@@ -1,8 +1,8 @@
 {
-  "template": "sections/naseej-features.jinja",
+  "template": "sections/malbousak-features.jinja",
   "name": {
-    "ar": "نسيج · المزايا",
-    "en": "Naseej · Features"
+    "ar": "ملبوسك · المزايا",
+    "en": "Malbousak · Features"
   },
   "icon": "award-line",
   "settings": [
@@ -152,8 +152,8 @@
         }
       ],
       "info": {
-        "ar": "اتركها فارغة لعرض المحتوى الافتراضي المكتوب لنسيج",
-        "en": "Leave empty to show the built-in Naseej content"
+        "ar": "اتركها فارغة لعرض المحتوى الافتراضي المكتوب لملبوسك",
+        "en": "Leave empty to show the built-in Malbousak content"
       }
     }
   ]

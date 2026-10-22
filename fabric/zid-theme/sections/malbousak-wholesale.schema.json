@@ -1,8 +1,8 @@
 {
-  "template": "sections/naseej-wholesale.jinja",
+  "template": "sections/malbousak-wholesale.jinja",
   "name": {
-    "ar": "نسيج · الجملة والطاقات",
-    "en": "Naseej · Wholesale"
+    "ar": "ملبوسك · الجملة والطاقات",
+    "en": "Malbousak · Wholesale"
   },
   "icon": "store-2-line",
   "settings": [
@@ -138,8 +138,8 @@
         }
       ],
       "info": {
-        "ar": "اتركها فارغة لعرض المحتوى الافتراضي المكتوب لنسيج",
-        "en": "Leave empty to show the built-in Naseej content"
+        "ar": "اتركها فارغة لعرض المحتوى الافتراضي المكتوب لملبوسك",
+        "en": "Leave empty to show the built-in Malbousak content"
       }
     }
   ]

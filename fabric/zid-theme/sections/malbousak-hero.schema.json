@@ -1,8 +1,8 @@
 {
-  "template": "sections/naseej-hero.jinja",
+  "template": "sections/malbousak-hero.jinja",
   "name": {
-    "ar": "نسيج · البانر الفاخر",
-    "en": "Naseej · Hero"
+    "ar": "ملبوسك · البانر الفاخر",
+    "en": "Malbousak · Hero"
   },
   "icon": "home-2-line",
   "settings": [

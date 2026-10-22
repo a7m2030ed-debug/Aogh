@@ -172,7 +172,7 @@
                 </span>
                 {# Discount Badge #}
                 <span
-                  class="nsj-chip-gold {{ 'hidden' if not (product.discount_percentage and product.discount_percentage > 0) }}"
+                  class="mlb-chip-gold {{ 'hidden' if not (product.discount_percentage and product.discount_percentage > 0) }}"
                   data-product-discount
                 >
                   {% if product.discount_percentage and product.discount_percentage > 0 %}
@@ -385,9 +385,9 @@
             {% include 'vitrin:products/preorder_countdown.jinja' %}
             {% include 'vitrin:checkout/apple-pay-quick-checkout.jinja' %}
 
-            {# Naseej: how many meters for a thobe #}
-            {% if settings.naseej_meter_calculator | default(true) %}
-              <details class="nsj-pdp-calc">
+            {# Malbousak: how many meters for a thobe #}
+            {% if settings.malbousak_meter_calculator | default(true) %}
+              <details class="mlb-pdp-calc">
                 <summary>
                   <svg
                     class="text-accent size-5"
@@ -418,14 +418,14 @@
                     />
                   </svg>
                 </summary>
-                <div class="nsj-pdp-calc__body">
-                  {% with calc_rows_source=settings.naseej_meter_rows %}
-                    {% include 'components/naseej/meter-calculator.jinja' %}
+                <div class="mlb-pdp-calc__body">
+                  {% with calc_rows_source=settings.malbousak_meter_rows %}
+                    {% include 'components/malbousak/meter-calculator.jinja' %}
                   {% endwith %}
-                  {% if settings.naseej_wiqfa_guide_url %}
+                  {% if settings.malbousak_wiqfa_guide_url %}
                     <a
-                      href="{{ settings.naseej_wiqfa_guide_url }}"
-                      class="nsj-pdp-calc__guide"
+                      href="{{ settings.malbousak_wiqfa_guide_url }}"
+                      class="mlb-pdp-calc__guide"
                     >
                       {{ _('Not sure which wiqfa suits you? Read the guide') }}
                     </a>
@@ -434,10 +434,10 @@
               </details>
             {% endif %}
 
-            {# Naseej: short reassurance notes #}
-            {% set pdp_notes = (settings.naseej_product_notes | default('')).split('|') | map('trim') | select | list %}
+            {# Malbousak: short reassurance notes #}
+            {% set pdp_notes = (settings.malbousak_product_notes | default('')).split('|') | map('trim') | select | list %}
             {% if pdp_notes %}
-              <p class="nsj-hero__note">
+              <p class="mlb-hero__note">
                 {% for note in pdp_notes %}
                   <span>{{ note }}</span>
                 {% endfor %}

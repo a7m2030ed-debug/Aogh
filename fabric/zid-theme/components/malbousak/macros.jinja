@@ -1,7 +1,7 @@
 {#
-  Naseej drawing macros — pure SVG, no context needed.
+  Malbousak drawing macros — pure SVG, no context needed.
 
-  {% from 'components/naseej/macros.jinja' import drape_art, wiqfa_glyph, icon, arrow %}
+  {% from 'components/malbousak/macros.jinja' import drape_art, wiqfa_glyph, icon, arrow %}
 #}
 
 {#
@@ -159,7 +159,7 @@
 
 {#
   How a fabric falls for a given stiffness (1 = flowing … 4 = structured).
-  Ported from the Naseej storefront's wiqfa guide.
+  Ported from the wiqfa guide of the fabric/ storefront.
 #}
 {% macro wiqfa_glyph(level, class='') %}
   {% set k = level | int %}

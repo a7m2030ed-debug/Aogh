@@ -6,10 +6,10 @@ default: package
 # `npm run build`); dev-only files are left out.
 package:
 	mkdir -p build
-	rm -f build/naseej-theme.zip
-	zip -qr build/naseej-theme.zip . \
+	rm -f build/malbousak-theme.zip
+	zip -qr build/malbousak-theme.zip . \
 		-x 'node_modules/*' 'build/*' 'tests/*' 'test-results/*' 'playwright-report/*' \
 		   '.vitrin/*' '*.zip' '*.DS_Store' 'playwright.config.js' 'package-lock.json'
-	@echo "build/naseej-theme.zip"
+	@echo "build/malbousak-theme.zip"
 
 build: package

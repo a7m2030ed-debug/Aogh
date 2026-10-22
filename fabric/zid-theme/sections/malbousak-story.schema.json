@@ -1,8 +1,8 @@
 {
-  "template": "sections/naseej-story.jinja",
+  "template": "sections/malbousak-story.jinja",
   "name": {
-    "ar": "نسيج · حكايتنا",
-    "en": "Naseej · Story"
+    "ar": "ملبوسك · حكايتنا",
+    "en": "Malbousak · Story"
   },
   "icon": "book-open-line",
   "settings": [
@@ -66,7 +66,7 @@
         "ar": "سطر علوي صغير",
         "en": "Eyebrow"
       },
-      "default": "حكاية نسيج"
+      "default": "حكاية ملبوسك"
     },
     {
       "id": "title",
@@ -93,7 +93,7 @@
         "ar": "التوقيع",
         "en": "Signature"
       },
-      "default": "— فريق نسيج"
+      "default": "— فريق ملبوسك"
     },
     {
       "id": "button_text",

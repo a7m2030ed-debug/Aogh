@@ -1,8 +1,8 @@
 {
-  "template": "sections/naseej-collections.jinja",
+  "template": "sections/malbousak-collections.jinja",
   "name": {
-    "ar": "نسيج · الأقسام",
-    "en": "Naseej · Collections"
+    "ar": "ملبوسك · الأقسام",
+    "en": "Malbousak · Collections"
   },
   "icon": "layout-grid-line",
   "settings": [
@@ -126,8 +126,8 @@
         }
       ],
       "info": {
-        "ar": "اتركها فارغة لعرض المحتوى الافتراضي المكتوب لنسيج",
-        "en": "Leave empty to show the built-in Naseej content"
+        "ar": "اتركها فارغة لعرض المحتوى الافتراضي المكتوب لملبوسك",
+        "en": "Leave empty to show the built-in Malbousak content"
       }
     }
   ]

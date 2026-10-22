@@ -1,4 +1,4 @@
-{% from 'components/naseej/macros.jinja' import arrow %}
+{% from 'components/malbousak/macros.jinja' import arrow %}
 {% set wa_number = (settings.whatsapp | default('') | string).replace('+', '').replace(' ', '') %}
 {% set dark = (settings.tone | default('ink')) == 'ink' %}
 
@@ -18,12 +18,12 @@
 
 <section
   section-id="{{ sectionId }}"
-  class="nsj-section nsj-band {{ 'nsj-tone-ink' if dark else 'nsj-weave' }}"
+  class="mlb-section mlb-band {{ 'mlb-tone-ink' if dark else 'mlb-weave' }}"
 >
-  <div class="theme-container nsj-band__inner">
+  <div class="theme-container mlb-band__inner">
     <div class="flex flex-col items-start gap-6">
       {% with eyebrow=settings.eyebrow, title=settings.title, description=settings.description, align='start' %}
-        {% include 'components/naseej/section-head.jinja' %}
+        {% include 'components/malbousak/section-head.jinja' %}
       {% endwith %}
       <div class="flex flex-wrap gap-3">
         {% if settings.button_text and settings.button_text | trim %}
@@ -47,9 +47,9 @@
         {% endif %}
       </div>
     </div>
-    <div class="nsj-stats">
+    <div class="mlb-stats">
       {% for stat in band.stats %}
-        <div class="nsj-stat">
+        <div class="mlb-stat">
           <strong>{{ stat.value }}</strong>
           {% if stat.label %}<span>{{ stat.label }}</span>{% endif %}
         </div>
