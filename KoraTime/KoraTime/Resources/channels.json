@@ -14,20 +14,6 @@
     "logo": "https://i.imgur.com/fBpLsbC.png"
   },
   {
-    "name": "البحرين الرياضية ٢",
-    "group": "رياضة",
-    "url": "https://5c7b683162943.streamlock.net/live/ngrp:bahrainsportstwo_all/playlist.m3u8",
-    "note": "قناة مفتوحة — البحرين",
-    "logo": "https://i.imgur.com/ZkuZmIo.png"
-  },
-  {
-    "name": "الرياضية المغربية",
-    "group": "رياضة",
-    "url": "http://149.100.11.252:8000/play/a065/index.m3u8",
-    "note": "قناة مفتوحة — المغرب",
-    "logo": "https://i.imgur.com/XjzK3gZ.png"
-  },
-  {
     "name": "الشارقة الرياضية",
     "group": "رياضة",
     "url": "https://svs.itworkscdn.net/smc4sportslive/smc4tv.smil/playlist.m3u8",
@@ -151,11 +137,11 @@
     "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/72/%C4%8CT_sport_logo.png/960px-%C4%8CT_sport_logo.png"
   },
   {
-    "name": "Canal+ Sport",
+    "name": "DiviSport",
     "group": "رياضة أوروبية",
-    "url": "http://tv.streambox.fr/live/testlivestream/testlivestream/31.m3u8",
-    "note": "قناة مفتوحة — فرنسا",
-    "logo": "https://i.imgur.com/EOXnU15.png"
+    "url": "http://stream.mcquack.net/457/index.m3u8",
+    "note": "قناة مفتوحة — أوكرانيا",
+    "logo": "https://i.logos-download.com/114030/29915-s5120-904df224e4c030fefcc45adda448b6e8.png/DiviSport_Logo_2023-s5120.png"
   },
   {
     "name": "Dynamo Kyiv TV",
@@ -163,14 +149,6 @@
     "url": "http://stream.mcquack.net/396/index.m3u8",
     "note": "قناة مفتوحة — أوكرانيا",
     "logo": "https://i.imgur.com/ymxmyyG.png",
-    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
-  },
-  {
-    "name": "Equalympic",
-    "group": "رياضة أوروبية",
-    "url": "http://stream.mcquack.net/485/index.m3u8",
-    "note": "قناة مفتوحة — أوكرانيا",
-    "logo": "https://i.imgur.com/ixSj4H7.png",
     "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
   },
   {
@@ -296,20 +274,6 @@
     "logo": "https://i.imgur.com/47X44DD.png"
   },
   {
-    "name": "Maincast Cybersport",
-    "group": "رياضة أوروبية",
-    "url": "http://stream.mcquack.net/487/index.m3u8",
-    "note": "قناة مفتوحة — أوكرانيا",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/5/57/Maincast_%28HD_Logo%29_2024.png"
-  },
-  {
-    "name": "Maincast Sport",
-    "group": "رياضة أوروبية",
-    "url": "http://stream.mcquack.net/490/index.m3u8",
-    "note": "قناة مفتوحة — أوكرانيا",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/5/57/Maincast_%28HD_Logo%29_2024.png"
-  },
-  {
     "name": "Match4",
     "group": "رياضة أوروبية",
     "url": "http://141.94.193.53:80/Match4_HD/index.m3u8",
@@ -409,6 +373,14 @@
     "note": "قناة مفتوحة — المجر",
     "logo": "https://i.imgur.com/UxflVoU.png",
     "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  },
+  {
+    "name": "Sport 5",
+    "group": "رياضة أوروبية",
+    "url": "http://stream.mcquack.net/212/index.m3u8",
+    "note": "قناة مفتوحة — أوكرانيا",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/c/c5/Sport5UA.jpg",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
   },
   {
     "name": "Sport1",
