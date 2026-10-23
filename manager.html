@@ -322,13 +322,14 @@ details.map > div{padding:4px 12px 12px; display:flex; flex-direction:column; ga
       <input type="file" id="fileX" accept=".xlsx,.xlsm,.csv,.pdf,application/pdf" multiple hidden>
       <div class="note">
         <span class="m"></span>
-        <span>ارفع الملفات الخمسة:
+        <span>ارفع الملفات الستة:
           <ul>
             <li><b>Appt slot</b></li>
             <li><b>Appointment Statistics – Department Wise</b></li>
             <li><b>Appointment Statistics – Detailed</b></li>
             <li><b>Appointment Statistics – Doctor Wise</b></li>
             <li><b>Service wise Count – Detailed Category Wise</b></li>
+            <li><b>Pending CPOE Orders – Consolidated</b></li>
           </ul></span>
       </div>
       <div class="chips" id="daily"></div>
@@ -1326,6 +1327,23 @@ function shapeDetail(sheet) {
   return { sheet, headerRow: h, col: { type: pick(head, /^type$/), mrno: pick(head, /^mrno$|^mrn$/), dept: pick(head, /^department( name)?$/) } };
 }
 
+/* "Pending CPOE Orders – Consolidated": a line per item a doctor ordered that
+   is not billed yet — tests, scans and procedures with their amount, and
+   medicines with none — "Order By" naming the doctor and their staff number */
+const CPOE_WANT = [/^order(ed)? by$/, /^amount$/];
+function shapeCpoe(sheet) {
+  const h = findHeader(sheet.grid, CPOE_WANT);
+  if (h < 0) return null;
+  const head = sheet.grid[h];
+  const col = {
+    by: pick(head, /^order(ed)? by$/), amount: pick(head, /^amount$/),
+    mrno: pick(head, /^mrno$|^mrn$|^mr no$|^patient no$|^patient id$|^file no$/),
+    patient: pick(head, /^name$|^patient name$|^patient$/), date: pick(head, /^order date$|^date$/),
+  };
+  if (col.mrno < 0 && col.patient < 0) return null;
+  return { sheet, headerRow: h, col };
+}
+
 /* "Appointment Statistics – Doctor Wise": a row per doctor. Its columns are
    not fixed in code — each report figure is guessed from the header text, and
    the guess can be corrected in the page and is remembered per header. */
@@ -1792,6 +1810,32 @@ function readDetails(list) {
   return { by, lines, walkins, hasFollow, hasStatus, strict, left, noshowSeen, cancelSeen, erNew, erLines };
 }
 
+/* The pending orders a doctor at a time: the patients they ordered for —
+   each file number once a day, as the order columns count them — and what
+   the priced lines come to. "Order By" carries the staff number after the
+   name ("Fahad Mesfer Alghamdi  - 00102140"), which is dropped. */
+const staffless = s => clean(String(s ?? "").replace(/\s*-\s*\d{3,}\s*$/, ""));
+function readCpoe(list) {
+  const by = new Map(), all = new Set();
+  let lines = 0, priced = 0, net = 0;
+  for (const s of list) {
+    const g = s.sheet.grid, c = s.col;
+    for (let i = s.headerRow + 1; i < g.length; i++) {
+      const row = g[i] || [], name = staffless(str(row, c.by));
+      const who = mrnKey(str(row, c.mrno)) || norm(str(row, c.patient));
+      if (!name || !who) continue;
+      const k = nameKey(name);
+      let p = by.get(k);
+      if (!p) { p = { name, net: 0, pts: new Set() }; by.set(k, p); }
+      const day = parseDate(str(row, c.date)), visit = who + "\u0000" + iso(day);
+      p.pts.add(visit); all.add(visit);
+      lines++;
+      if (isNum(row[c.amount])) { const n = num(row[c.amount]); p.net += n; net += n; priced++; }
+    }
+  }
+  return { by, lines, priced, net, pts: all.size };
+}
+
 /* ═════════════════ the report's arithmetic ═════════════════ */
 const add = (a, b) => b == null ? a : (a ?? 0) + b;
 function aggregate(opts) {
@@ -1888,6 +1932,33 @@ function aggregate(opts) {
     if (det && det.cancelSeen && !has.cancel) d.cancel = d.dCancel ?? 0;
     d.visits = visitsOf(d);
   }
+
+  /* 3b — pending orders, from Pending CPOE Orders: kept apart from the
+     billed income, so the branch's Net Revenue and the department cards
+     never see them — only the doctors table adds them */
+  const cpoe = state.cpoes.length ? readCpoe(state.cpoes) : null;
+  const cpoeOf = new Map();          // pending orders → the doctor they joined
+  if (cpoe) {
+    const prim = primary();
+    const links = linkNames([...cpoe.by.keys()], [...prim.keys()]);
+    for (const [k, p] of cpoe.by) {
+      const hit = links.get(k);
+      const d = hit ? prim.get(hit.to) : null;
+      if (!d) { if (isSystem(p.name) && !systems.includes(p.name)) systems.push(p.name); continue; }
+      if (hit.fuzzy) fuzzy.push(p.name + " ← " + d.name);
+      d.pend = add(d.pend, p.net);
+      d.pendPts = d.pendPts || new Set();
+      p.pts.forEach(x => d.pendPts.add(x));
+      cpoeOf.set(p, d);
+    }
+  }
+  /* the Pending column counts patients; Revenue is the billed income and,
+     with the file, the pending orders on top — never the pending orders
+     alone, so without the services export it stays a dash */
+  const withPend = d => ({
+    pend: cpoe ? (d.pendPts ? d.pendPts.size : 0) : null,
+    billed: d.net, net: d.net == null ? null : d.net + (d.pend || 0),
+  });
 
   /* 4 — the department figures, from Department Wise */
   const depFig = new Map(), hasD = {};
@@ -1988,12 +2059,16 @@ function aggregate(opts) {
   const listed = all.filter(d => !isErDoc(d) && !isSystem(d.name) && booked(d));
   const unbooked = all.filter(d => !isErDoc(d) && !isSystem(d.name) && d.appt && !booked(d)).map(d => d.name);
   const unlisted = all.filter(d => !isErDoc(d) && !isSystem(d.name) && !d.appt).map(d => d.name);
-  const table = listed.map(d => ({
-    name: d.name, spec: d.dept === "—" ? "" : d.dept,
-    seen: d.visits, newv: d.newv ?? null,
-    lab: d.cnt ? (d.cnt.lab || 0) : null, rad: d.cnt ? (d.cnt.rad || 0) : null, proc: d.cnt ? (d.cnt.proc || 0) : null,
-    net: d.net, rpv: d.net != null && d.visits > 0 ? d.net / d.visits : null,
-  })).sort((a, b) => (b.seen ?? -1) - (a.seen ?? -1) || (b.net || 0) - (a.net || 0) || a.name.localeCompare(b.name));
+  const table = listed.map(d => {
+    const r = {
+      name: d.name, spec: d.dept === "—" ? "" : d.dept,
+      seen: d.visits, newv: d.newv ?? null,
+      lab: d.cnt ? (d.cnt.lab || 0) : null, rad: d.cnt ? (d.cnt.rad || 0) : null, proc: d.cnt ? (d.cnt.proc || 0) : null,
+      ...withPend(d), doc: d,
+    };
+    r.rpv = r.net != null && d.visits > 0 ? r.net / d.visits : null;
+    return r;
+  }).sort((a, b) => (b.seen ?? -1) - (a.seen ?? -1) || (b.net || 0) - (a.net || 0) || a.name.localeCompare(b.name));
 
   /* The emergency room books its visits under the registration account, so
      each doctor who worked under it is read off the services export and
@@ -2011,12 +2086,14 @@ function aggregate(opts) {
   };
   const erRows = erDocs.filter(d => !isSystem(d.name) && d.cnt).map(d => {
     const seen = d.pts && d.pts.size ? d.pts.size : null;
-    return {
+    const r = {
       name: d.name, spec: d.dept, er: true, seen, newv: erNewOf(d),
       lab: d.cnt.lab || 0, rad: d.cnt.rad || 0, proc: d.cnt.proc || 0,
-      net: d.net, rpv: d.net != null && seen > 0 ? d.net / seen : null,
+      ...withPend(d), doc: d,
     };
-  }).filter(r => (r.seen || 0) > 0 || (r.net || 0) > 0)
+    r.rpv = r.net != null && seen > 0 ? r.net / seen : null;
+    return r;
+  }).filter(r => (r.seen || 0) > 0 || (r.billed || 0) > 0)
     .sort((a, b) => (b.seen ?? -1) - (a.seen ?? -1) || (b.net || 0) - (a.net || 0) || a.name.localeCompare(b.name));
   if (erRows.length) { erRows[0].erFirst = true; table.push(...erRows); }
   const erDesk = erDocs.filter(d => isSystem(d.name) && d.pts && d.pts.size);
@@ -2049,6 +2126,16 @@ function aggregate(opts) {
         + " وإجراءات الأسنان (فئة Dental) تُحسب Procedure لطبيب الأسنان نفسه، والكشف لا يُحسب."
       : "لا يوجد عمود MRNO في تصدير الخدمات، فأعمدة الطلبات تعدّ البنود المفوترة لا المرضى." });
   }
+  if (!cpoe) notices.push({ kind: "warn", text: "لا يوجد «Pending CPOE Orders – Consolidated» — جدول الأطباء بلا عمود Pending، وRevenue فيه المفوتر وحده." });
+  else {
+    notices.push({ kind: "", text: "الطلبات المعلّقة من «Pending CPOE Orders»: " + nf(cpoe.lines) + " طلبًا لـ" + nf(cpoe.pts) + " مريضًا، "
+      + nf(cpoe.priced) + " منها بمبلغ مجموعه " + nf(cpoe.net) + " ريالًا و" + nf(cpoe.lines - cpoe.priced) + " بلا مبلغ."
+      + " عمود Pending عدد المرضى عند كل طبيب (المريض مرة في اليوم)، والمبلغ يُضاف إلى Revenue وRev/Visit في جدول الأطباء فقط — لا يدخل في Net Revenue ولا في دخل الفرع." });
+    const shown = new Set(table.map(r => r.doc));
+    const off = [...cpoe.by.values()].filter(p => cpoeOf.has(p) ? !shown.has(cpoeOf.get(p)) : !isSystem(p.name));
+    if (off.length) notices.push({ kind: "warn", text: "طلبات معلّقة لأطباء بلا صفّ في جدول الأطباء، فلا تظهر: "
+      + off.map(p => p.name + " (" + nf(p.pts.size) + " مريضًا، " + nf(p.net) + " ريالًا)").join("، ") });
+  }
   if (!known.newv) notices.push({ kind: "warn", text: "لا يوجد «Appointment Statistics – Detailed» — عمود New Visit وتقسيم New / Follow-up يخرجان شرطات." });
   if (det) {
     const left = [...det.left].map(([s, n]) => nf(n) + " بحالة " + s).join("، ");
@@ -2074,7 +2161,7 @@ function aggregate(opts) {
   /* the branch's net income: every line of the services export, outpatient,
      emergency and the registration account alike */
   const revenue = svc ? [...svc.by.values()].reduce((n, p) => n + p.net, 0) : null;
-  return { O, E, er: E.present, apptSeen, cap, revenue, slots, known, depts, table, listed: table.length, notices, svc, det,
+  return { O, E, er: E.present, apptSeen, cap, revenue, slots, known, depts, table, listed: table.length, notices, svc, det, cpoe,
            billSpan: svc && svc.dates.length ? { from: new Date(Math.min(...svc.dates)), to: new Date(Math.max(...svc.dates)) } : null };
 }
 
@@ -2210,29 +2297,33 @@ function deptGrid(data) {
   return box;
 }
 
-/* column widths are the template's own, in millimetres */
+/* column widths are the template's own, in millimetres. The Pending column
+   (pending CPOE orders) is there only with its file, and makes room from the
+   number columns (wp) — the names keep their widths */
 const COLS = [
   { key: "name", head: "Doctor",    w: 35.6, left: true },
   { key: "spec", head: "Specialty", w: 37.1, left: true },
   { key: "seen", head: "Seen",      w: 11.2 },
   { key: "newv", head: "New Visit", w: 14.2 },
-  { key: "lab",  head: "Lab",       w: 14.7 },
-  { key: "rad",  head: "Radiology", w: 21.8 },
-  { key: "proc", head: "Procedure", w: 17.8 },
-  { key: "net",  head: "Revenue",   w: 17.3 },
-  { key: "rpv",  head: "Rev/Visit", w: 17.8 },
+  { key: "lab",  head: "Lab",       w: 14.7, wp: 11.6 },
+  { key: "rad",  head: "Radiology", w: 21.8, wp: 16.2 },
+  { key: "proc", head: "Procedure", w: 17.8, wp: 16.4 },
+  { key: "pend", head: "Pending",   wp: 13.6 },
+  { key: "net",  head: "Revenue",   w: 17.3, wp: 15.8 },
+  { key: "rpv",  head: "Rev/Visit", w: 17.8, wp: 15.8 },
 ];
-function doctorTable(rows) {
+const colsFor = pend => COLS.filter(c => pend || c.w).map(c => ({ ...c, w: pend ? c.wp ?? c.w : c.w }));
+function doctorTable(rows, cols) {
   const t = el("table", "tbl");
   const cg = el("colgroup");
-  COLS.forEach(c => { const col = el("col"); col.style.width = c.w + "mm"; cg.append(col); });
+  cols.forEach(c => { const col = el("col"); col.style.width = c.w + "mm"; cg.append(col); });
   const thead = el("thead"), htr = el("tr");
-  COLS.forEach(c => htr.append(el("th", c.left ? "l" : null, c.head)));
+  cols.forEach(c => htr.append(el("th", c.left ? "l" : null, c.head)));
   thead.append(htr);
   const tb = el("tbody");
   rows.forEach((r, i) => {
     const tr = el("tr", [i % 2 ? "alt" : "", r.erFirst ? "er-first" : ""].join(" ").trim() || null);
-    COLS.forEach(c => {
+    cols.forEach(c => {
       const v = r[c.key];
       if (c.left) { tr.append(el("td", "l clip", v || "")); return; }
       const txt = v == null ? DASH : c.key === "net" ? kFmt(v) : nf(v);
@@ -2244,7 +2335,7 @@ function doctorTable(rows) {
   });
   if (!rows.length) {
     const tr = el("tr"), td = el("td", "none", "No doctor rows in the uploaded files");
-    td.colSpan = COLS.length; tr.append(td); tb.append(tr);
+    td.colSpan = cols.length; tr.append(td); tb.append(tr);
   }
   t.append(cg, thead, tb);
   return t;
@@ -2260,7 +2351,7 @@ function buildPage({ meta, data, first, rows, pageNo, pages }) {
     main.append(section(T.g), glance(data));
     if (data.depts.length) main.append(section(T.d), deptGrid(data));
   }
-  main.append(section(T.r, !first), doctorTable(rows));
+  main.append(section(T.r, !first), doctorTable(rows, colsFor(!!data.cpoe)));
   page.append(main);
   footer(page, meta, pageNo, pages);
   return page;
@@ -2607,8 +2698,8 @@ window.__makePdf = makePdf;       // the repo's browser checks build a file with
 window.__readWorkbook = readWorkbook;   // and read a file the way an upload does
 
 /* ═════════════════ state and wiring ═════════════════ */
-const state = { files: [], sheets: [], sigs: new Set(), counts: [], slots: [], svcs: [], dets: [], err: null,
-                data: null, touched: {}, pages: 0, wbBranch: "", wbFrom: null, wbTo: null, detSpan: null };
+const state = { files: [], sheets: [], sigs: new Set(), counts: [], slots: [], svcs: [], dets: [], cpoes: [], err: null,
+                data: null, touched: {}, pages: 0, wbBranch: "", wbFrom: null, wbTo: null, detSpan: null, cpoeSpan: null };
 
 const val = id => $(id).value.trim();
 const pad = n => String(n).padStart(2, "0");
@@ -2704,13 +2795,14 @@ function paintMap() {
   });
 }
 
-/* the five daily exports, and which of them the page has */
+/* the six daily exports, and which of them the page has */
 const DAILY = [
   { key: "slot",   name: "Appt slot",                                   has: () => state.slots.length > 0 },
   { key: "dept",   name: "Appointment Statistics – Department Wise",    has: () => state.counts.some(a => a.level === "dept") },
   { key: "det",    name: "Appointment Statistics – Detailed",           has: () => state.dets.length > 0 },
   { key: "doctor", name: "Appointment Statistics – Doctor Wise",        has: () => state.counts.some(a => a.level === "doctor") },
   { key: "svc",    name: "Service wise Count – Detailed Category Wise", has: () => state.svcs.length > 0 },
+  { key: "cpoe",   name: "Pending CPOE Orders – Consolidated",          has: () => state.cpoes.length > 0 },
 ];
 function paintDaily() {
   const box = $("#daily");
@@ -2728,7 +2820,7 @@ function refresh() {
   const host = $("#notices"), tiles = $("#tiles");
   host.textContent = ""; tiles.textContent = "";
   if (state.err) host.append(noticeBox("bad", state.err));
-  const any = state.counts.length || state.svcs.length || state.dets.length || state.slots.length;
+  const any = state.counts.length || state.svcs.length || state.dets.length || state.slots.length || state.cpoes.length;
   if (!any) {
     $("#stage").hidden = true; $("#noPreview").hidden = false;
     $("#bPdf").disabled = true; $("#bSave").disabled = true; $("#bClear").disabled = !state.files.length;
@@ -2752,6 +2844,9 @@ function refresh() {
   if (state.detSpan && m.from && (+state.detSpan.from !== +m.from || +state.detSpan.to !== +m.to))
     host.append(noticeBox("warn", "الكشف المفصّل لمدة أخرى: " + longDate(state.detSpan.from, state.detSpan.to)
       + " — أرقام New / Follow-up لتلك المدة لا لهذه."));
+  if (state.cpoeSpan && m.from && (+state.cpoeSpan.from !== +m.from || +state.cpoeSpan.to !== +m.to))
+    host.append(noticeBox("warn", "ملف الطلبات المعلّقة لمدة أخرى: " + longDate(state.cpoeSpan.from, state.cpoeSpan.to)
+      + " — عمود Pending ومبالغه في Revenue لتلك المدة لا لهذه."));
   d.notices.forEach(n => host.append(noticeBox(n.kind, n.text)));
 
   $("#stage").hidden = false; $("#noPreview").hidden = true;
@@ -2765,7 +2860,7 @@ function refresh() {
     tile("زيارات العيادات", d.O.visits == null ? DASH : nf(d.O.visits)),
     tile("الطوارئ", d.er && d.E.visits != null ? nf(d.E.visits) : DASH),
     tile("المواعيد", d.O.sched == null ? DASH : nf(d.O.sched)),
-    tile("دخل العيادات — SAR", d.svc ? nf(d.table.filter(r => !r.er).reduce((n, r) => n + (r.net || 0), 0)) : DASH),
+    tile("دخل العيادات — SAR", d.svc ? nf(d.table.filter(r => !r.er).reduce((n, r) => n + (r.billed || 0), 0)) : DASH),
     tile("صفحات الـPDF", String(state.pages)),
   );
 }
@@ -2794,12 +2889,13 @@ async function takeFiles(files) {
     let shaped;
     if ((shaped = shapeSvc(s))) { s.role = "svc"; state.svcs.push(shaped); }
     else if ((shaped = shapeDetail(s))) { s.role = "det"; state.dets.push(shaped); }
+    else if ((shaped = shapeCpoe(s))) { s.role = "cpoe"; state.cpoes.push(shaped); }
     else if ((shaped = shapeSlots(s))) { s.role = "slot"; state.slots.push(shaped); }
     else if ((shaped = shapeCounts(s))) { s.role = shaped.level; state.counts.push(shaped); }
     else s.role = null;
   }
-  state.err = state.counts.length || state.svcs.length || state.dets.length || state.slots.length ? null
-    : "لم تُعرف أي ورقة: لا كشف مواعيد بعمود Totalseen أو Scheduled، ولا تصدير خدمات بأعمدة Provider وDepartment وCount، ولا Appt slot بعمودَي Normal وFrozen. "
+  state.err = state.counts.length || state.svcs.length || state.dets.length || state.slots.length || state.cpoes.length ? null
+    : "لم تُعرف أي ورقة: لا كشف مواعيد بعمود Totalseen أو Scheduled، ولا تصدير خدمات بأعمدة Provider وDepartment وCount، ولا Appt slot بعمودَي Normal وFrozen، ولا طلبات معلّقة بعمودَي Order By وAmount. "
       + "الأوراق المقروءة: " + state.sheets.map(x => x.name || x.file).join("، ");
 
   /* the branch and the date, read off the title blocks */
@@ -2810,11 +2906,13 @@ async function takeFiles(files) {
             || spanOf(state.slots.map(x => periodOf(x.sheet)))
             || spanOf(main.map(s => { const d = dateFromName(s.file); return d && { from: d, to: d }; }));
   state.detSpan = spanOf(state.dets.map(x => periodOf(x.sheet)));
+  state.cpoeSpan = spanOf(state.cpoes.map(x => periodOf(x.sheet)));
   if (span) { state.wbFrom = span.from; state.wbTo = span.to; }
   else if (state.detSpan && !state.wbFrom) { state.wbFrom = state.detSpan.from; state.wbTo = state.detSpan.to; }
+  else if (state.cpoeSpan && !state.wbFrom) { state.wbFrom = state.cpoeSpan.from; state.wbTo = state.cpoeSpan.to; }
 
   const ROLE = { doctor: "Doctor Wise — أرقام الأطباء", dept: "Department Wise — أرقام الأقسام", slot: "Appt slot — السعة",
-                 svc: "Service wise — الطلبات والدخل", det: "Detailed — New / Follow-up" };
+                 svc: "Service wise — الطلبات والدخل", det: "Detailed — New / Follow-up", cpoe: "Pending CPOE — الطلبات المعلّقة" };
   const chips = el("div", "chips");
   state.sheets.forEach(s => {
     const c = el("span", "chip" + (s.role ? " ok" : ""));
@@ -2832,7 +2930,7 @@ async function takeFiles(files) {
   if (state.data) {
     const missing = DAILY.filter(x => !x.has()).length;
     toast("جاهز: " + state.data.listed + " طبيبًا في " + state.data.depts.length + " أقسام"
-      + (missing ? " — ينقص " + missing + " من الملفات الخمسة" : "") + " — اضغط «فتح الـPDF».", missing ? "" : "ok");
+      + (missing ? " — ينقص " + missing + " من الملفات الستة" : "") + " — اضغط «فتح الـPDF».", missing ? "" : "ok");
     if (!had) $("#s3").scrollIntoView({ behavior: "smooth", block: "start" });
   } else toast("لم تُعرف أوراق الملف — راجع التنبيه في المعاينة.", "bad");
 }
@@ -2862,8 +2960,8 @@ Object.entries(FIELDS).forEach(([id, key]) => {
 $("#chkWalk").addEventListener("change", refresh);
 
 $("#bClear").onclick = () => {
-  Object.assign(state, { files: [], sheets: [], sigs: new Set(), counts: [], slots: [], svcs: [], dets: [], err: null, data: null,
-                         touched: {}, pages: 0, wbBranch: "", wbFrom: null, wbTo: null, detSpan: null });
+  Object.assign(state, { files: [], sheets: [], sigs: new Set(), counts: [], slots: [], svcs: [], dets: [], cpoes: [], err: null, data: null,
+                         touched: {}, pages: 0, wbBranch: "", wbFrom: null, wbTo: null, detSpan: null, cpoeSpan: null });
   ["#inBranch", "#inFrom", "#inTo", "#inCap", "#inName"].forEach(id => $(id).value = "");
   $("#fileInfo").textContent = ""; $("#doc").textContent = "";
   $("#st1").textContent = "لم تُرفع بعد"; $("#s1").classList.remove("done");
