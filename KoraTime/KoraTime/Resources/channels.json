@@ -14,6 +14,20 @@
     "logo": "https://i.imgur.com/fBpLsbC.png"
   },
   {
+    "name": "البحرين الرياضية ٢",
+    "group": "رياضة",
+    "url": "https://5c7b683162943.streamlock.net/live/ngrp:bahrainsportstwo_all/playlist.m3u8",
+    "note": "قناة مفتوحة — البحرين",
+    "logo": "https://i.imgur.com/ZkuZmIo.png"
+  },
+  {
+    "name": "الرياضية المغربية",
+    "group": "رياضة",
+    "url": "http://149.100.11.252:8000/play/a065/index.m3u8",
+    "note": "قناة مفتوحة — المغرب",
+    "logo": "https://i.imgur.com/XjzK3gZ.png"
+  },
+  {
     "name": "الشارقة الرياضية",
     "group": "رياضة",
     "url": "https://svs.itworkscdn.net/smc4sportslive/smc4tv.smil/playlist.m3u8",
@@ -63,20 +77,6 @@
     "url": "https://db34cc6127ac459db55cab5f97cd66b9.mediatailor.us-west-2.amazonaws.com/v1/master/ba62fe743df0fe93366eba3a257d792884136c7f/LINEAR-680-WORBAUENFAST-WHALETVPLUS/680/whaletvplus/hls/master/playlist.m3u8",
     "note": "قناة مفتوحة — النمسا",
     "logo": "https://images.pluto.tv/channels/5e7cb84a172a0f0007da69e4/colorLogoPNG.png"
-  },
-  {
-    "name": "عُمان الرياضية",
-    "group": "رياضة",
-    "url": "https://partneta.cdn.mgmlcdn.com/omsport/smil:omsport.stream.smil/chunklist.m3u8",
-    "note": "قناة مفتوحة — عُمان",
-    "logo": "https://i.imgur.com/1omi7p8.png"
-  },
-  {
-    "name": "ACI Sport TV",
-    "group": "رياضة",
-    "url": "https://webstream.multistream.it/memfs/e2cb3629-c1a2-495b-b43a-9eb386f04ed8.m3u8",
-    "note": "قناة مفتوحة — إيطاليا",
-    "logo": "https://i.imgur.com/U8cHMOt.png"
   },
   {
     "name": "AS3 Sport TV",
@@ -137,18 +137,19 @@
     "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/72/%C4%8CT_sport_logo.png/960px-%C4%8CT_sport_logo.png"
   },
   {
-    "name": "DiviSport",
-    "group": "رياضة أوروبية",
-    "url": "http://stream.mcquack.net/457/index.m3u8",
-    "note": "قناة مفتوحة — أوكرانيا",
-    "logo": "https://i.logos-download.com/114030/29915-s5120-904df224e4c030fefcc45adda448b6e8.png/DiviSport_Logo_2023-s5120.png"
-  },
-  {
     "name": "Dynamo Kyiv TV",
     "group": "رياضة أوروبية",
     "url": "http://stream.mcquack.net/396/index.m3u8",
     "note": "قناة مفتوحة — أوكرانيا",
     "logo": "https://i.imgur.com/ymxmyyG.png",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+  },
+  {
+    "name": "Equalympic",
+    "group": "رياضة أوروبية",
+    "url": "http://stream.mcquack.net/485/index.m3u8",
+    "note": "قناة مفتوحة — أوكرانيا",
+    "logo": "https://i.imgur.com/ixSj4H7.png",
     "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
   },
   {
@@ -192,14 +193,6 @@
     "url": "https://dash3.antik.sk/live/test_fast_and_funbox_medium_atk/playlist.m3u8",
     "note": "قناة مفتوحة — هولندا",
     "logo": "https://i.imgur.com/a9ZtP17.png"
-  },
-  {
-    "name": "FightBox",
-    "group": "رياضة أوروبية",
-    "url": "https://webtvstream.bhtelecom.ba/fightbox.m3u8",
-    "note": "قناة مفتوحة — هولندا",
-    "logo": "https://i.imgur.com/mRsnztA.png",
-    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.3"
   },
   {
     "name": "Formula 1 AntenaPlay",
@@ -259,6 +252,13 @@
     "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
   },
   {
+    "name": "LRT Plius",
+    "group": "رياضة أوروبية",
+    "url": "http://stream.mcquack.net/353/index.m3u8",
+    "note": "قناة مفتوحة — ليتوانيا",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/LRT_Plius_Logo_2022.svg/960px-LRT_Plius_Logo_2022.svg.png"
+  },
+  {
     "name": "M4 Sport",
     "group": "رياضة أوروبية",
     "url": "http://88.212.15.17/live/uatlmvixrr/index.m3u8",
@@ -274,11 +274,25 @@
     "logo": "https://i.imgur.com/47X44DD.png"
   },
   {
+    "name": "Maincast Cybersport",
+    "group": "رياضة أوروبية",
+    "url": "http://stream.mcquack.net/487/index.m3u8",
+    "note": "قناة مفتوحة — أوكرانيا",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/5/57/Maincast_%28HD_Logo%29_2024.png"
+  },
+  {
     "name": "Match4",
     "group": "رياضة أوروبية",
     "url": "http://141.94.193.53:80/Match4_HD/index.m3u8",
     "note": "قناة مفتوحة — المجر",
     "logo": "https://i.imgur.com/hzexBLX.png"
+  },
+  {
+    "name": "Milan TV",
+    "group": "رياضة أوروبية",
+    "url": "http://team-tv.co:81/milan/index.m3u8",
+    "note": "قناة مفتوحة — إيطاليا",
+    "logo": "https://i.imgur.com/gAMQfUw.png"
   },
   {
     "name": "More Than Sports TV",
@@ -329,11 +343,20 @@
     "logo": "https://i.imgur.com/5pMo7dL.png"
   },
   {
-    "name": "Realitatea Sportiva",
+    "name": "Setanta Sports 1 Eurasia",
     "group": "رياضة أوروبية",
-    "url": "https://stream.realitatea.net/realitatea/sportiva_md/ts:playlist.m3u8",
-    "note": "قناة مفتوحة — رومانيا",
-    "logo": "https://i.imgur.com/BaEyZto.png"
+    "url": "http://stream.mcquack.net/234/index.m3u8",
+    "note": "قناة مفتوحة — أيرلندا",
+    "logo": "https://i.imgur.com/zlJK7ca.png",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+  },
+  {
+    "name": "Setanta Sports 2 Eurasia",
+    "group": "رياضة أوروبية",
+    "url": "http://stream.mcquack.net/235/index.m3u8",
+    "note": "قناة مفتوحة — أيرلندا",
+    "logo": "https://i.imgur.com/ouHunnK.png",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
   },
   {
     "name": "Spiler 1",
@@ -373,6 +396,22 @@
     "note": "قناة مفتوحة — المجر",
     "logo": "https://i.imgur.com/UxflVoU.png",
     "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  },
+  {
+    "name": "Sport 3",
+    "group": "رياضة أوروبية",
+    "url": "http://stream.mcquack.net/393/index.m3u8",
+    "note": "قناة مفتوحة — أوكرانيا",
+    "logo": "https://i.imgur.com/qkvavfH.png",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+  },
+  {
+    "name": "Sport 4",
+    "group": "رياضة أوروبية",
+    "url": "http://stream.mcquack.net/394/index.m3u8",
+    "note": "قناة مفتوحة — أوكرانيا",
+    "logo": "https://i.imgur.com/xW6oGIx.png",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
   },
   {
     "name": "Sport 5",
@@ -420,14 +459,6 @@
     "logo": "https://i.imgur.com/Wz5bQKx.jpeg"
   },
   {
-    "name": "Suspilne. Sport",
-    "group": "رياضة أوروبية",
-    "url": "http://stream.mcquack.net/444/index.m3u8",
-    "note": "قناة مفتوحة — أوكرانيا",
-    "logo": "https://i.imgur.com/16IhU0M.png",
-    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
-  },
-  {
     "name": "TJK TV",
     "group": "رياضة أوروبية",
     "url": "https://tjktv-live.tjk.org/tjktv.m3u8",
@@ -447,6 +478,13 @@
     "url": "https://tvr-sport.lg.mncdn.com/tvrsport/smil:tvrsport.smil/playlist.m3u8",
     "note": "قناة مفتوحة — رومانيا",
     "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/TVR_Sport_Logo_2023.svg/960px-TVR_Sport_Logo_2023.svg.png"
+  },
+  {
+    "name": "Trace Sport Stars",
+    "group": "رياضة أوروبية",
+    "url": "https://lightning-tracesport-samsungau.amagi.tv/playlist.m3u8",
+    "note": "قناة مفتوحة — فرنسا",
+    "logo": "https://i.imgur.com/FabFP5A.png"
   },
   {
     "name": "الجزيرة",
