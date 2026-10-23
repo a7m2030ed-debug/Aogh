@@ -1325,7 +1325,8 @@ function shapeDetail(sheet) {
   if (h < 0) return null;
   if (!sheet.grid.some(r => /^doctor\s*name\s*:/i.test(String(r?.[0] ?? "")))) return null;
   const head = sheet.grid[h];
-  return { sheet, headerRow: h, col: { type: pick(head, /^type$/), mrno: pick(head, /^mrno$|^mrn$/), dept: pick(head, /^department( name)?$/) } };
+  return { sheet, headerRow: h, col: { type: pick(head, /^type$/), mrno: pick(head, /^mrno$|^mrn$/), dept: pick(head, /^department( name)?$/),
+                                       visit: pick(head, /^date of visit$/) } };
 }
 
 /* "Pending CPOE Orders – Consolidated": a line per item a doctor ordered that
@@ -1759,6 +1760,9 @@ const ST_COUNT = /^reported?\b/i;          // "Not Reported" is not Reported
 const ST_SKIP = /pending|cancel|no\s*-?\s*show|missed|absent|not\s*arrived|did\s*not|\bdna\b/i;
 const ST_CANCEL = /cancel/i;
 const ST_NOSHOW = /no\s*-?\s*show|missed|absent|not\s*arrived|did\s*not|\bdna\b/i;
+/* an appointment the patient did not come to, as the No-Show Follow-up page
+   reads it: Booked and Pending, and the plain no-show words */
+const ST_MISSED = /book|pend|confirm|schedul|no\s*-?\s*show|missed|absent|not\s*(arrived|reported)|did\s*not|\bdna\b/i;
 /* one file number however an export spells it: "0025099864" and 25099864 */
 const mrnKey = s => clean(s).toUpperCase().replace(/\s+/g, "").replace(/^([A-Z]*)0+(?=\d)/, "$1");
 function readDetails(list) {
@@ -1768,10 +1772,16 @@ function readDetails(list) {
   const erNew = new Set();
   let erLines = 0;
   let lines = 0, walkins = 0, hasFollow = false, hasStatus = false, noshowSeen = false, cancelSeen = false;
+  /* for the no-shows: every missed appointment, every file number seen
+     (Reported) and on which day, and the clinics' appointments kept */
+  const missed = [], seenOn = new Map();
+  let seenAppt = 0;
   const DOC_LINE = /^doctor\s*name\s*:/i, STATUS_LINE = /^status\s*:/i;
   for (const nv of list) {
     const g = nv.sheet.grid;
     const strict = g.some(r => /^status\s*:\s*reported?\b/i.test(clean(r?.[0])));
+    /* a Booked line carries no visit date; a one-day export's day is its own */
+    const span = periodOf(nv.sheet), oneDay = span && +span.from === +span.to ? span.from : null;
     /* whichever heading comes first is the outer one, and a new outer
        heading clears the inner */
     let outer = "doctor";
@@ -1793,6 +1803,14 @@ function readDetails(list) {
       let p = by.get(k);
       if (!p) { p = { raw: doc, dept: "", newv: 0, follow: 0, walk: 0, noshow: 0, cancel: 0 }; by.set(k, p); }
       if (!p.dept && nv.col.dept >= 0) p.dept = clean(str(r, nv.col.dept));
+      const file = mrnKey(str(r, nv.col.mrno)), dept = clean(str(r, nv.col.dept)) || p.dept;
+      const day = parseDate(str(r, nv.col.visit)) || oneDay, dk = day ? iso(day) : "";
+      if (file && status && !ST_CANCEL.test(status)) {
+        if (ST_COUNT.test(status)) {
+          (seenOn.get(file) || seenOn.set(file, new Set()).get(file)).add(dk);
+          if (!isER(dept) && !TYPE_WALKIN.test(str(r, nv.col.type))) seenAppt++;
+        } else if (ST_MISSED.test(status)) missed.push({ file, dk, dept, status });
+      }
       if (status && (strict ? !ST_COUNT.test(status) : ST_SKIP.test(status))) {
         left.set(status, (left.get(status) || 0) + 1);
         if (ST_CANCEL.test(status)) { p.cancel++; cancelSeen = true; }
@@ -1811,7 +1829,24 @@ function readDetails(list) {
     }
   }
   const strict = list.some(nv => nv.sheet.grid.some(r => /^status\s*:\s*reported?\b/i.test(clean(r?.[0]))));
-  return { by, lines, walkins, hasFollow, hasStatus, strict, left, noshowSeen, cancelSeen, erNew, erLines };
+  /* The clinics' no-shows: a missed appointment counts unless the same file
+     number was seen (Reported) the same day — in any department, the
+     emergency room too. The appointments are those seen plus those missed,
+     so a patient who missed a slot and came back is one appointment. */
+  let ns = null;
+  if (strict) {
+    ns = { total: 0, back: 0, seenAppt, byDept: new Map(), statuses: new Map() };
+    for (const m of missed) {
+      if (isER(m.dept)) continue;
+      ns.statuses.set(m.status, (ns.statuses.get(m.status) || 0) + 1);
+      const days = seenOn.get(m.file);
+      if (days && (!m.dk || days.has("") || days.has(m.dk))) { ns.back++; continue; }
+      ns.total++;
+      const card = shortDept(m.dept || "—");
+      ns.byDept.set(card, (ns.byDept.get(card) || 0) + 1);
+    }
+  }
+  return { by, lines, walkins, hasFollow, hasStatus, strict, left, noshowSeen, cancelSeen, erNew, erLines, ns };
 }
 
 /* The pending orders a doctor at a time: each line with its patient — the
@@ -2031,6 +2066,14 @@ function aggregate(opts) {
     };
   };
   const O = side(false), E = side(true);
+  /* with the detailed export's statuses the clinics' no-shows and
+     appointments are read off its lines, not off the totals' columns */
+  const ns = det && det.ns;
+  const colSeen = O.success;
+  if (ns) {
+    O.noshow = ns.total; O.sched = ns.seenAppt + ns.total; O.success = ns.seenAppt;
+    known.noshow = known.sched = known.success = true;
+  }
   const apptSeen = O.success != null ? O.success : O.visits == null ? null : O.visits - (O.walkin || 0);
   const slots = state.slots.length ? readSlots(state.slots) : null;
   const cap = opts.cap > 0 ? opts.cap : (slots && slots.total) || O.slot || null;
@@ -2071,6 +2114,7 @@ function aggregate(opts) {
       if (booked(d)) c.booked.add(nameKey(d.name));
     }
   }
+  if (ns) for (const c of cards.values()) c.noshow = c.name === "EMERGENCY" ? null : ns.byDept.get(c.name) || 0;
   const depts = [...cards.values()].map(c => ({
     name: c.name, er: c.name === "EMERGENCY",
     visits: c.visits, walkin: c.walkin, noshow: c.noshow, slots: c.slots,
@@ -2174,6 +2218,16 @@ function aggregate(opts) {
       + (det.strict ? " بحالة Reported" : "") + " لـ" + det.by.size + " طبيبًا"
       + (det.walkins ? "، منها " + nf(det.walkins) + " Walk-in محسوبة New" : "")
       + (left ? "، ولم يُحسب " + left : "") + "." });
+  }
+  if (ns) {
+    const missedN = [...ns.statuses.values()].reduce((a, b) => a + b, 0);
+    notices.push({ kind: "", text: "No-Shows من الكشف المفصّل: " + [...ns.statuses].map(([st, n]) => st + " " + nf(n)).join(" + ")
+      + (ns.statuses.size > 1 ? " = " + nf(missedN) : "") + " موعدًا لم يُحضر، "
+      + (ns.back ? "حضر منهم " + nf(ns.back) + " في اليوم نفسه (رقم ملفه تحت Reported في أي قسم، والطوارئ منها) فلا يُحسبون — " : "")
+      + "No-Show = " + nf(ns.total) + ". وAppointments = من حضر بموعد (" + nf(ns.seenAppt) + ") + No-Show = " + nf(O.sched) + "." });
+    if (colSeen != null && colSeen !== ns.seenAppt)
+      notices.push({ kind: "warn", text: "Success في كشف المواعيد " + nf(colSeen) + " ومن حضر بموعد في الكشف المفصّل " + nf(ns.seenAppt)
+        + " — بطاقتا Appointments وCapacity Used تأخذان الكشف المفصّل." });
   }
   if (det && det.hasStatus && !det.strict)
     notices.push({ kind: "warn", text: "الكشف المفصّل بلا حالة «Reported» — حُسبت كل الحالات ما عدا Pending والملغاة وعدم الحضور." });
@@ -2873,7 +2927,7 @@ function refresh() {
   if (!state.wbBranch && !state.touched.branch) host.append(noticeBox("warn", "لم يُعرف اسم الفرع من الملفات — اكتبه في الإعدادات."));
   if (state.detSpan && m.from && (+state.detSpan.from !== +m.from || +state.detSpan.to !== +m.to))
     host.append(noticeBox("warn", "الكشف المفصّل لمدة أخرى: " + longDate(state.detSpan.from, state.detSpan.to)
-      + " — أرقام New / Follow-up لتلك المدة لا لهذه."));
+      + " — أرقام New / Follow-up وAppointments وNo-Shows لتلك المدة لا لهذه."));
   if (state.cpoeSpan && m.from && (+state.cpoeSpan.from !== +m.from || +state.cpoeSpan.to !== +m.to))
     host.append(noticeBox("warn", "ملف الطلبات المعلّقة لمدة أخرى: " + longDate(state.cpoeSpan.from, state.cpoeSpan.to)
       + " — عمود Pending ومبالغه في Revenue لتلك المدة لا لهذه."));

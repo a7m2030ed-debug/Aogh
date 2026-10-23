@@ -462,7 +462,7 @@ python3 build_pages.py
 |---|---|
 | `Appt_Slot_Count` | **السعة**: مجموع `Normal Slot` + `Freeze Slot` = إجمالي الـSlots (و`Block Slot` لا يدخل) |
 | `Appointment Statistics – Department Wise` | **أرقام الأقسام**: `Scheduled` · `Success` · `Missed` (= No Show) · `Walkin` · `Totalseen` — ومنها بطاقات اليوم وبطاقات الأقسام |
-| `Appointment Statistics – Detailed` | **New Visit وFollow-up** لكل طبيب — من أسطر `Status: Reported` فقط، و`Pending` لا يُحسب. والـ`Walk-in` يُحسب New |
+| `Appointment Statistics – Detailed` | **New Visit وFollow-up** لكل طبيب — من أسطر `Status: Reported` فقط، و`Pending` لا يُحسب. والـ`Walk-in` يُحسب New. ومنه أيضًا **No-Shows** و**Appointments** (أسطر `Booked` و`Pending`) |
 | `Appointment Statistics – Doctor Wise` | **Total Seen لكل طبيب** (عمود Seen في الجدول) وعدد أطباء كل قسم |
 | `Service wise Count – Detailed Category Wise` | **Lab وRadiology وProcedure** لكل طبيب — لكل مريض لا لكل فحص — و**Revenue** |
 | `Pending CPOE Orders – Consolidated` | **الطلبات المعلّقة** (ما طلبه الطبيب ولم يُفوتر بعد): بخط باهت **بجانب** أرقام Lab وRadiology وProcedure في جدول الأطباء، ومبالغها تُضاف إلى **Revenue** الطبيب — ولا تدخل في Net Revenue |
@@ -491,8 +491,8 @@ python3 build_pages.py
 
 - **Total OPD Visits** = مجموع `Totalseen` في أقسام Department Wise غير الطوارئ، وتحته `New / Follow-up` من الكشف المفصّل: New = ‏`New` + `Walk-in`، وFollow-up = ‏`Follow-up`، فيصير مجموعهما Totalseen — في ملفات 24 سبتمبر ‎2026‎: ‏‎155‎ New + ‏‎23‎ Walk-in = ‏‎178‎، و‎73‎ Follow-up، والمجموع ‎251‎، كما في القالب.
 - **EMERGENCY** = `Totalseen` لأي قسم فيه كلمة `Emergency`، وتحته New / Follow-up لأطبائه. والفرع الذي لا طوارئ فيه **تُحذف بطاقته كاملةً** (لا شرطة ولا «Not reported»)، وتبقى البطاقات الأربع الأخرى.
-- **Appointments** = مجموع `Scheduled`، وتحته `Seen` = مجموع `Success` (من حضر بموعد) و`Show rate` = ‏Success ÷ Scheduled.
-- **No-Shows** = مجموع `Missed`، و`Rate` = ‏Missed ÷ Scheduled. وإن وُجد عمود `Cancelled` في أحد الكشوف ظهر بجانبه.
+- **No-Shows** من الكشف المفصّل (`Appointment Statistics – Detailed`) كما في صفحة متابعة عدم الحضور: كل موعد في العيادات تحت `Status: Booked` أو `Status: Pending` (وكذلك `No Show` و`Missed` و`Not Reported`) — **إلا من حضر في اليوم نفسه**: رقم ملفه نفسه تحت `Status: Reported` في اليوم نفسه، **في أي قسم والطوارئ منها**، بموعد جديد أو Walk-in. والملغى لا يُحسب. و`Rate` = ‏No-Show ÷ Appointments. وإن وُجد عمود `Cancelled` في أحد الكشوف ظهر بجانبه.
+- **Appointments** = من حضر بموعد (أسطر `Reported` في العيادات غير الـWalk-in) + No-Show — فالمريض الذي فاته موعده ثم حضر بموعد آخر في اليوم نفسه موعدٌ واحد لا اثنان. وتحته `Seen` = من حضر بموعد، و`Show rate` = ‏Seen ÷ Appointments. في ملف 22 أكتوبر ‎2026‎: ‏Booked ‎25‎ + Pending ‎7‎ = ‎32‎، حضر منهم ‎5‎ في اليوم نفسه (اثنان بموعد آخر في القسم نفسه، وواحد Walk-in، واثنان في الطوارئ) ← **No-Show ‎27‎**، و**Appointments** = ‎180‎ + ‎27‎ = **‎207‎** (بدل ‎212‎ من عمود Scheduled)، وShow rate ‎87%‎. و`No Show` في بطاقة كل قسم بالقاعدة نفسها، بقسم الموعد الفائت. **بلا الكشف المفصّل** (أو بكشف بلا حالة `Reported`) تبقى من كشوف المواعيد كما كانت: Appointments = مجموع `Scheduled` وSeen = مجموع `Success`، وNo-Shows = مجموع `Missed`. وإن اختلف `Success` عن من حضر بموعد في الكشف المفصّل ظهر تنبيه.
 - **Capacity Used** = الزيارات ÷ (Normal Slot + Freeze Slot) من ملف `Appt_Slot_Count`، أو ÷ السعة المكتوبة في الإعدادات إن لم يُرفع — ‏‎251 ÷ 300 = 84%‎.
 - **Net Revenue** (البطاقة السادسة) = مجموع `Net Amount` لكل سطور «Service wise Count» — العيادات والطوارئ وحساب التسجيل — بصيغة القالب (`84K`) — بلا الطلبات المعلّقة — وتحته بالأخضر `Per visit` = الدخل ÷ زيارات اليوم كلها (Total OPD Visits + EMERGENCY). في ملفات 24 سبتمبر: ‏‎83,977‎ ريالًا ← `84K`، و‎83,977 ÷ 328‎ = `Per visit: 256`. وبلا ملف الخدمات لا تظهر البطاقة.
 - **`Totalseen` يشمل الـWalk-in** كما في تصدير MIS (‏`Totalseen = Success + Walkin`). وإن كان تصديرك يفصلهما فأزل العلامة من الإعدادات.
