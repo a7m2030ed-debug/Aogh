@@ -264,6 +264,7 @@ details.map > div{padding:4px 12px 12px; display:flex; flex-direction:column; ga
 .tbl .l{text-align:left}
 .tbl tr.er-first td{border-top:.6pt solid var(--pur)}
 .tbl .nil{color:var(--dash)}
+.tbl .pend{display:inline-block; width:5.4mm; padding-left:1mm; text-align:left; color:var(--dash)}
 .tbl td.none{text-align:center; color:var(--mut)}
 
 .ft-line{position:absolute; left:0; right:0; top:288.8mm; height:.4mm; background:var(--gold)}
@@ -1339,6 +1340,7 @@ function shapeCpoe(sheet) {
     by: pick(head, /^order(ed)? by$/), amount: pick(head, /^amount$/),
     mrno: pick(head, /^mrno$|^mrn$|^mr no$|^patient no$|^patient id$|^file no$/),
     patient: pick(head, /^name$|^patient name$|^patient$/), date: pick(head, /^order date$|^date$/),
+    item: pick(head, /^item name$|^item$|^service( name)?$|^test procedurename$|^test procedure name$/),
   };
   if (col.mrno < 0 && col.patient < 0) return null;
   return { sheet, headerRow: h, col };
@@ -1692,7 +1694,7 @@ const catOf = (cat, dept) => {
 /* the three order columns the template prints */
 const ORDER_KEYS = ["lab", "rad", "proc"];
 function readServices(list) {
-  const by = new Map(), dates = [];
+  const by = new Map(), dates = [], kinds = new Map();   // item name → the column it was billed in
   let byMrn = false, tests = 0, cats = 0;
   for (const s of list) {
     const g = s.sheet.grid, c = s.col;
@@ -1720,6 +1722,8 @@ function readServices(list) {
       /* a consultation is the visit itself wherever it is filed — "Dental
          consultation" sits in the Dental category — so never an order */
       if (/consult/i.test(str(row, c.name))) placed = { key: "fee", pack: false };
+      const item = norm(str(row, c.name));
+      if (item && !kinds.has(item)) kinds.set(item, placed.key);
       if (placed.key === "fee") continue;
       if (ORDER_KEYS.includes(placed.key)) tests += cnt;
       const file = str(row, c.mrno);
@@ -1735,7 +1739,7 @@ function readServices(list) {
     p.cnt[k] = (p.cnt[k] || 0) + p.mrn[k].size;
     if (ORDER_KEYS.includes(k)) orders += p.mrn[k].size;
   }
-  return { by, dates, byMrn, tests, cats, orders };
+  return { by, dates, byMrn, tests, cats, orders, kinds };
 }
 
 /* New and follow-up visits, counted line by line under each doctor — only
@@ -1810,13 +1814,13 @@ function readDetails(list) {
   return { by, lines, walkins, hasFollow, hasStatus, strict, left, noshowSeen, cancelSeen, erNew, erLines };
 }
 
-/* The pending orders a doctor at a time: the patients they ordered for —
-   each file number once a day, as the order columns count them — and what
-   the priced lines come to. "Order By" carries the staff number after the
-   name ("Fahad Mesfer Alghamdi  - 00102140"), which is dropped. */
+/* The pending orders a doctor at a time: each line with its patient — the
+   file number and the day, as the order columns count them — and what the
+   priced lines come to. "Order By" carries the staff number after the name
+   ("Fahad Mesfer Alghamdi  - 00102140"), which is dropped. */
 const staffless = s => clean(String(s ?? "").replace(/\s*-\s*\d{3,}\s*$/, ""));
 function readCpoe(list) {
-  const by = new Map(), all = new Set();
+  const by = new Map();
   let lines = 0, priced = 0, net = 0;
   for (const s of list) {
     const g = s.sheet.grid, c = s.col;
@@ -1826,14 +1830,32 @@ function readCpoe(list) {
       if (!name || !who) continue;
       const k = nameKey(name);
       let p = by.get(k);
-      if (!p) { p = { name, net: 0, pts: new Set() }; by.set(k, p); }
+      if (!p) { p = { name, net: 0, pts: new Set(), lines: [] }; by.set(k, p); }
       const day = parseDate(str(row, c.date)), visit = who + "\u0000" + iso(day);
-      p.pts.add(visit); all.add(visit);
+      const amt = isNum(row[c.amount]);
+      p.pts.add(visit);
+      p.lines.push({ visit, item: str(row, c.item), priced: amt });
       lines++;
-      if (isNum(row[c.amount])) { const n = num(row[c.amount]); p.net += n; net += n; priced++; }
+      if (amt) { const n = num(row[c.amount]); p.net += n; net += n; priced++; }
     }
   }
-  return { by, lines, priced, net, pts: all.size };
+  return { by, lines, priced, net };
+}
+
+/* Which order column a pending line belongs to: the column the services
+   export billed the same item in; else the dentist's own work is their
+   Procedure, as when billed; else the item's name says. A line without an
+   amount is a medicine and goes in none. */
+const RAD_ITEM = /\b(us|ultrasound|sonograph\w*|x ?ray|radiograph\w*|mammo\w*|ct|mri|doppler|echo\w*|dexa|fluoroscop\w*|scan)\b/;
+const PHYS_ITEM = /physio|rehab/;
+const PROC_ITEM = /administration|injection|infusion|intervention|restoration|extraction|scaling|filling|root canal|pulp|crown|dressing|sutur|nebuli[sz]ation|ecg|electrocardiogra|removal|insertion|incision|drainage|biopsy|cauteri|procedure|irrigation|catheter|polishing|prophyla|tooth|teeth/;
+const LAB_ITEM = /blood|serum|plasma|urin|stool|test|assay|count|profile|panel|hormone|vitamin|antibod|antigen|\bab\b|\babs\b|\bag\b|\big[gmae]\b|culture|glucose|h(a)?emoglobin|hba1c|ferritin|\biron\b|lipid|creatinine|cholesterol|virus|viral|pcr|molecular|factor|thyroid|\btsh\b|\bt3\b|\bt4\b|hepatitis|rubella|toxoplasma|syphilis|\babo\b|calcium|\balt\b|\bast\b|sgpt|sgot|\besr\b|\bcrp\b|electrolyte|sodium|potassium|urea|albumin|bilirubin|marker|\bcbc\b|hcg|estradiol|\blh\b|\bfsh\b|prolactin|testosterone|insulin|aminotransferase|phosphatase|\bana\b|rheumatoid/;
+function cpoeKind(line, dept, kinds) {
+  const n = norm(line.item);
+  if (kinds && kinds.has(n)) return kinds.get(n);
+  if (!line.priced) return null;
+  if (/dental|dentist/.test(norm(dept))) return "proc";
+  return RAD_ITEM.test(n) ? "rad" : PHYS_ITEM.test(n) ? "phys" : PROC_ITEM.test(n) ? "proc" : LAB_ITEM.test(n) ? "lab" : "other";
 }
 
 /* ═════════════════ the report's arithmetic ═════════════════ */
@@ -1938,6 +1960,7 @@ function aggregate(opts) {
      never see them — only the doctors table adds them */
   const cpoe = state.cpoes.length ? readCpoe(state.cpoes) : null;
   const cpoeOf = new Map();          // pending orders → the doctor they joined
+  const unsorted = new Set();        // priced items no column could be found for
   if (cpoe) {
     const prim = primary();
     const links = linkNames([...cpoe.by.keys()], [...prim.keys()]);
@@ -1947,16 +1970,21 @@ function aggregate(opts) {
       if (!d) { if (isSystem(p.name) && !systems.includes(p.name)) systems.push(p.name); continue; }
       if (hit.fuzzy) fuzzy.push(p.name + " ← " + d.name);
       d.pend = add(d.pend, p.net);
-      d.pendPts = d.pendPts || new Set();
-      p.pts.forEach(x => d.pendPts.add(x));
+      d.pendMrn = d.pendMrn || {};
+      for (const line of p.lines) {
+        const kind = cpoeKind(line, d.dept, svc && svc.kinds);
+        if (kind === "other") unsorted.add(line.item);
+        if (ORDER_KEYS.includes(kind)) (d.pendMrn[kind] || (d.pendMrn[kind] = new Set())).add(line.visit);
+      }
       cpoeOf.set(p, d);
     }
   }
-  /* the Pending column counts patients; Revenue is the billed income and,
-     with the file, the pending orders on top — never the pending orders
-     alone, so without the services export it stays a dash */
+  /* each order column's pending patients, printed faint beside its figure;
+     Revenue is the billed income and, with the file, the pending orders on
+     top — never the pending orders alone, so without the services export it
+     stays a dash */
   const withPend = d => ({
-    pend: cpoe ? (d.pendPts ? d.pendPts.size : 0) : null,
+    pc: cpoe ? Object.fromEntries(ORDER_KEYS.map(k => [k, d.pendMrn && d.pendMrn[k] ? d.pendMrn[k].size : 0])) : null,
     billed: d.net, net: d.net == null ? null : d.net + (d.pend || 0),
   });
 
@@ -2126,11 +2154,14 @@ function aggregate(opts) {
         + " وإجراءات الأسنان (فئة Dental) تُحسب Procedure لطبيب الأسنان نفسه، والكشف لا يُحسب."
       : "لا يوجد عمود MRNO في تصدير الخدمات، فأعمدة الطلبات تعدّ البنود المفوترة لا المرضى." });
   }
-  if (!cpoe) notices.push({ kind: "warn", text: "لا يوجد «Pending CPOE Orders – Consolidated» — جدول الأطباء بلا عمود Pending، وRevenue فيه المفوتر وحده." });
+  if (!cpoe) notices.push({ kind: "warn", text: "لا يوجد «Pending CPOE Orders – Consolidated» — Lab وRadiology وProcedure بلا الطلبات المعلّقة، وRevenue فيه المفوتر وحده." });
   else {
-    notices.push({ kind: "", text: "الطلبات المعلّقة من «Pending CPOE Orders»: " + nf(cpoe.lines) + " طلبًا لـ" + nf(cpoe.pts) + " مريضًا، "
-      + nf(cpoe.priced) + " منها بمبلغ مجموعه " + nf(cpoe.net) + " ريالًا و" + nf(cpoe.lines - cpoe.priced) + " بلا مبلغ."
-      + " عمود Pending عدد المرضى عند كل طبيب (المريض مرة في اليوم)، والمبلغ يُضاف إلى Revenue وRev/Visit في جدول الأطباء فقط — لا يدخل في Net Revenue ولا في دخل الفرع." });
+    notices.push({ kind: "", text: "الطلبات المعلّقة من «Pending CPOE Orders»: " + nf(cpoe.lines) + " طلبًا، "
+      + nf(cpoe.priced) + " منها بمبلغ مجموعه " + nf(cpoe.net) + " ريالًا و" + nf(cpoe.lines - cpoe.priced) + " بلا مبلغ (أدوية) لا تظهر في الأعمدة."
+      + " بجانب كل رقم في Lab وRadiology وProcedure بخط باهت عدد المرضى الذين لهم طلبات معلّقة من النوع نفسه (المريض مرة في اليوم)، والعلاج الطبيعي بلا عمود كما في الفوترة."
+      + " والمبلغ يُضاف إلى Revenue وRev/Visit في جدول الأطباء فقط — لا يدخل في Net Revenue ولا في دخل الفرع." });
+    if (unsorted.size) notices.push({ kind: "warn", text: "طلبات معلّقة بمبلغ لم يُعرف عمودها فلم تُحسب في Lab ولا Radiology ولا Procedure (ومبلغها في Revenue): "
+      + [...unsorted].join("، ") });
     const shown = new Set(table.map(r => r.doc));
     const off = [...cpoe.by.values()].filter(p => cpoeOf.has(p) ? !shown.has(cpoeOf.get(p)) : !isSystem(p.name));
     if (off.length) notices.push({ kind: "warn", text: "طلبات معلّقة لأطباء بلا صفّ في جدول الأطباء، فلا تظهر: "
@@ -2297,45 +2328,44 @@ function deptGrid(data) {
   return box;
 }
 
-/* column widths are the template's own, in millimetres. The Pending column
-   (pending CPOE orders) is there only with its file, and makes room from the
-   number columns (wp) — the names keep their widths */
+/* column widths are the template's own, in millimetres */
 const COLS = [
   { key: "name", head: "Doctor",    w: 35.6, left: true },
   { key: "spec", head: "Specialty", w: 37.1, left: true },
   { key: "seen", head: "Seen",      w: 11.2 },
   { key: "newv", head: "New Visit", w: 14.2 },
-  { key: "lab",  head: "Lab",       w: 14.7, wp: 11.6 },
-  { key: "rad",  head: "Radiology", w: 21.8, wp: 16.2 },
-  { key: "proc", head: "Procedure", w: 17.8, wp: 16.4 },
-  { key: "pend", head: "Pending",   wp: 13.6 },
-  { key: "net",  head: "Revenue",   w: 17.3, wp: 15.8 },
-  { key: "rpv",  head: "Rev/Visit", w: 17.8, wp: 15.8 },
+  { key: "lab",  head: "Lab",       w: 14.7 },
+  { key: "rad",  head: "Radiology", w: 21.8 },
+  { key: "proc", head: "Procedure", w: 17.8 },
+  { key: "net",  head: "Revenue",   w: 17.3 },
+  { key: "rpv",  head: "Rev/Visit", w: 17.8 },
 ];
-const colsFor = pend => COLS.filter(c => pend || c.w).map(c => ({ ...c, w: pend ? c.wp ?? c.w : c.w }));
-function doctorTable(rows, cols) {
+function doctorTable(rows) {
   const t = el("table", "tbl");
   const cg = el("colgroup");
-  cols.forEach(c => { const col = el("col"); col.style.width = c.w + "mm"; cg.append(col); });
+  COLS.forEach(c => { const col = el("col"); col.style.width = c.w + "mm"; cg.append(col); });
   const thead = el("thead"), htr = el("tr");
-  cols.forEach(c => htr.append(el("th", c.left ? "l" : null, c.head)));
+  COLS.forEach(c => htr.append(el("th", c.left ? "l" : null, c.head)));
   thead.append(htr);
   const tb = el("tbody");
   rows.forEach((r, i) => {
     const tr = el("tr", [i % 2 ? "alt" : "", r.erFirst ? "er-first" : ""].join(" ").trim() || null);
-    cols.forEach(c => {
+    COLS.forEach(c => {
       const v = r[c.key];
       if (c.left) { tr.append(el("td", "l clip", v || "")); return; }
       const txt = v == null ? DASH : c.key === "net" ? kFmt(v) : nf(v);
       const td = el("td");
       if (v == null) td.append(el("span", "nil", DASH)); else td.textContent = txt;
+      /* the pending orders, faint beside the billed figure — a blank of the
+         same width where there are none, so the figures stay in line */
+      if (r.pc && c.key in r.pc) td.append(el("span", "pend", r.pc[c.key] ? "+" + nf(r.pc[c.key]) : ""));
       tr.append(td);
     });
     tb.append(tr);
   });
   if (!rows.length) {
     const tr = el("tr"), td = el("td", "none", "No doctor rows in the uploaded files");
-    td.colSpan = cols.length; tr.append(td); tb.append(tr);
+    td.colSpan = COLS.length; tr.append(td); tb.append(tr);
   }
   t.append(cg, thead, tb);
   return t;
@@ -2351,7 +2381,7 @@ function buildPage({ meta, data, first, rows, pageNo, pages }) {
     main.append(section(T.g), glance(data));
     if (data.depts.length) main.append(section(T.d), deptGrid(data));
   }
-  main.append(section(T.r, !first), doctorTable(rows, colsFor(!!data.cpoe)));
+  main.append(section(T.r, !first), doctorTable(rows));
   page.append(main);
   footer(page, meta, pageNo, pages);
   return page;
