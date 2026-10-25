@@ -72,13 +72,6 @@
     "logo": "https://i.imgur.com/1omi7p8.png"
   },
   {
-    "name": "ACI Sport TV",
-    "group": "رياضة",
-    "url": "https://webstream.multistream.it/memfs/e2cb3629-c1a2-495b-b43a-9eb386f04ed8.m3u8",
-    "note": "قناة مفتوحة — إيطاليا",
-    "logo": "https://i.imgur.com/U8cHMOt.png"
-  },
-  {
     "name": "AS3 Sport TV",
     "group": "رياضة",
     "url": "https://streamtv.as3sport.online:3394/hybrid/play.m3u8",
@@ -199,11 +192,26 @@
     "logo": "https://i.imgur.com/a9ZtP17.png"
   },
   {
+    "name": "FightBox",
+    "group": "رياضة أوروبية",
+    "url": "https://webtvstream.bhtelecom.ba/fightbox.m3u8",
+    "note": "قناة مفتوحة — هولندا",
+    "logo": "https://i.imgur.com/mRsnztA.png",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.3"
+  },
+  {
     "name": "Formula 1 AntenaPlay",
     "group": "رياضة أوروبية",
     "url": "https://live4dai.antenaplay.ro/live2_sdi09/live2_sdi09_600k.m3u8",
     "note": "قناة مفتوحة — رومانيا",
     "logo": "https://assets.antenaplay.ro/2024/02/23/XUKfJwir4MxNeP4nHtG7.png"
+  },
+  {
+    "name": "Golf Channel",
+    "group": "رياضة أوروبية",
+    "url": "https://dash4.antik.sk/live/test_golf_channel/playlist.m3u8",
+    "note": "قناة مفتوحة — التشيك",
+    "logo": "https://www.sms.cz/kategorie/televize/bmp/loga/velka/golfchannel.png"
   },
   {
     "name": "HTSpor TV",
@@ -318,11 +326,26 @@
     "logo": "https://i.imgur.com/5pMo7dL.png"
   },
   {
+    "name": "Realitatea Sportiva",
+    "group": "رياضة أوروبية",
+    "url": "https://stream.realitatea.net/realitatea/sportiva_md/ts:playlist.m3u8",
+    "note": "قناة مفتوحة — رومانيا",
+    "logo": "https://i.imgur.com/BaEyZto.png"
+  },
+  {
     "name": "Sport 1",
     "group": "رياضة أوروبية",
     "url": "http://stream.mcquack.net/391/index.m3u8",
     "note": "قناة مفتوحة — أوكرانيا",
     "logo": "https://i.imgur.com/Zjb8awW.png",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+  },
+  {
+    "name": "Sport 2",
+    "group": "رياضة أوروبية",
+    "url": "http://stream.mcquack.net/392/index.m3u8",
+    "note": "قناة مفتوحة — أوكرانيا",
+    "logo": "https://i.imgur.com/vk0j1mY.png",
     "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
   },
   {
