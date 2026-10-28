@@ -21,13 +21,6 @@
     "logo": "https://i.imgur.com/ZkuZmIo.png"
   },
   {
-    "name": "الرياضية المغربية",
-    "group": "رياضة",
-    "url": "http://149.100.11.252:8000/play/a065/index.m3u8",
-    "note": "قناة مفتوحة — المغرب",
-    "logo": "https://i.imgur.com/XjzK3gZ.png"
-  },
-  {
     "name": "الشارقة الرياضية",
     "group": "رياضة",
     "url": "https://svs.itworkscdn.net/smc4sportslive/smc4tv.smil/playlist.m3u8",
@@ -58,13 +51,6 @@
     "logo": "https://i.imgur.com/R1hGX1d.png"
   },
   {
-    "name": "الكويت الرياضية بلس",
-    "group": "رياضة",
-    "url": "https://kwtsplta.cdn.mangomolo.com/spl/smil:spl.stream.smil/chunklist.m3u8",
-    "note": "قناة مفتوحة — الكويت",
-    "logo": "https://i.imgur.com/l4oX0gf.png"
-  },
-  {
     "name": "ريد بُل",
     "group": "رياضة",
     "url": "https://db34cc6127ac459db55cab5f97cd66b9.mediatailor.us-west-2.amazonaws.com/v1/master/ba62fe743df0fe93366eba3a257d792884136c7f/LINEAR-680-WORBAUENFAST-WHALETVPLUS/680/whaletvplus/hls/master/playlist.m3u8",
@@ -79,13 +65,6 @@
     "logo": "https://i.imgur.com/1omi7p8.png"
   },
   {
-    "name": "ACI Sport TV",
-    "group": "رياضة",
-    "url": "https://webstream.multistream.it/memfs/e2cb3629-c1a2-495b-b43a-9eb386f04ed8.m3u8",
-    "note": "قناة مفتوحة — إيطاليا",
-    "logo": "https://i.imgur.com/U8cHMOt.png"
-  },
-  {
     "name": "AS3 Sport TV",
     "group": "رياضة",
     "url": "https://streamtv.as3sport.online:3394/hybrid/play.m3u8",
@@ -98,70 +77,6 @@
     "url": "https://cdn.bestream.io/prime/prime.m3u8",
     "note": "قناة مفتوحة — سوريا",
     "logo": "https://prime1tv.com/wp-content/uploads/2025/12/7-1.png"
-  },
-  {
-    "name": "beIN Sports 1",
-    "group": "رياضة",
-    "url": "http://primetv.cc.cd/beinfhd11/tracks-v1a1/mono.tbin.m3u8",
-    "note": "قناة مفتوحة — قطر قد تعمل داخل المنطقة فقط — تعذّر التحقّق من خارجها.",
-    "logo": "https://i.imgur.com/Vtk2cGI.png",
-    "geoRestricted": true
-  },
-  {
-    "name": "beIN Sports 2",
-    "group": "رياضة",
-    "url": "http://primetv.cc.cd/beinfhd22/index.m3u8",
-    "note": "قناة مفتوحة — قطر قد تعمل داخل المنطقة فقط — تعذّر التحقّق من خارجها.",
-    "logo": "https://i.imgur.com/vUJZSvs.png",
-    "geoRestricted": true
-  },
-  {
-    "name": "beIN Sports 3",
-    "group": "رياضة",
-    "url": "http://primetv.cc.cd/beinfhd33/index.m3u8",
-    "note": "قناة مفتوحة — قطر قد تعمل داخل المنطقة فقط — تعذّر التحقّق من خارجها.",
-    "logo": "https://i.imgur.com/UYSMao3.png",
-    "geoRestricted": true
-  },
-  {
-    "name": "beIN Sports 4",
-    "group": "رياضة",
-    "url": "http://primetv.cc.cd/beinfhd44/tracks-v1a1/mono.tbin.m3u8",
-    "note": "قناة مفتوحة — قطر قد تعمل داخل المنطقة فقط — تعذّر التحقّق من خارجها.",
-    "logo": "https://i.imgur.com/vwAgJNi.png",
-    "geoRestricted": true
-  },
-  {
-    "name": "beIN Sports 5",
-    "group": "رياضة",
-    "url": "http://primetv.cc.cd/beinfhd55/tracks-v1a1/mono.tbin.m3u8",
-    "note": "قناة مفتوحة — قطر قد تعمل داخل المنطقة فقط — تعذّر التحقّق من خارجها.",
-    "logo": "https://i.imgur.com/2Rha5aY.png",
-    "geoRestricted": true
-  },
-  {
-    "name": "beIN Sports 6",
-    "group": "رياضة",
-    "url": "http://primetv.cc.cd/beinfhd66/index.m3u8",
-    "note": "قناة مفتوحة — قطر قد تعمل داخل المنطقة فقط — تعذّر التحقّق من خارجها.",
-    "logo": "https://i.imgur.com/0wBdLYb.png",
-    "geoRestricted": true
-  },
-  {
-    "name": "beIN Sports 7",
-    "group": "رياضة",
-    "url": "http://primetv.cc.cd/beinfhd77/index.m3u8",
-    "note": "قناة مفتوحة — قطر قد تعمل داخل المنطقة فقط — تعذّر التحقّق من خارجها.",
-    "logo": "https://i.imgur.com/iODFwZi.png",
-    "geoRestricted": true
-  },
-  {
-    "name": "beIN Sports 8",
-    "group": "رياضة",
-    "url": "http://primetv.cc.cd/beinfhd88/index.m3u8",
-    "note": "قناة مفتوحة — قطر قد تعمل داخل المنطقة فقط — تعذّر التحقّق من خارجها.",
-    "logo": "https://i.imgur.com/CaFEyVn.png",
-    "geoRestricted": true
   },
   {
     "name": "A Spor",
@@ -206,13 +121,6 @@
     "url": "http://88.212.15.50/live/test_ctsport_25p/playlist.m3u8",
     "note": "قناة مفتوحة — التشيك",
     "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/72/%C4%8CT_sport_logo.png/960px-%C4%8CT_sport_logo.png"
-  },
-  {
-    "name": "DiviSport",
-    "group": "رياضة أوروبية",
-    "url": "http://stream.mcquack.net/457/index.m3u8",
-    "note": "قناة مفتوحة — أوكرانيا",
-    "logo": "https://i.logos-download.com/114030/29915-s5120-904df224e4c030fefcc45adda448b6e8.png/DiviSport_Logo_2023-s5120.png"
   },
   {
     "name": "Equidia",
@@ -265,13 +173,6 @@
     "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.3"
   },
   {
-    "name": "Formula 1 AntenaPlay",
-    "group": "رياضة أوروبية",
-    "url": "https://live4dai.antenaplay.ro/live2_sdi09/live2_sdi09_600k.m3u8",
-    "note": "قناة مفتوحة — رومانيا",
-    "logo": "https://assets.antenaplay.ro/2024/02/23/XUKfJwir4MxNeP4nHtG7.png"
-  },
-  {
     "name": "Golf Channel",
     "group": "رياضة أوروبية",
     "url": "https://dash4.antik.sk/live/test_golf_channel/playlist.m3u8",
@@ -322,13 +223,6 @@
     "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
   },
   {
-    "name": "LRT Plius",
-    "group": "رياضة أوروبية",
-    "url": "http://stream.mcquack.net/353/index.m3u8",
-    "note": "قناة مفتوحة — ليتوانيا",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/LRT_Plius_Logo_2022.svg/960px-LRT_Plius_Logo_2022.svg.png"
-  },
-  {
     "name": "M4 Sport",
     "group": "رياضة أوروبية",
     "url": "http://88.212.7.14/live/uatlmvixrr/index.m3u8",
@@ -342,13 +236,6 @@
     "url": "https://srvx1.selftv.video/dmchannel/live/playlist.m3u8",
     "note": "قناة مفتوحة — إيطاليا",
     "logo": "https://i.imgur.com/47X44DD.png"
-  },
-  {
-    "name": "Maincast Sport",
-    "group": "رياضة أوروبية",
-    "url": "http://stream.mcquack.net/490/index.m3u8",
-    "note": "قناة مفتوحة — أوكرانيا",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/5/57/Maincast_%28HD_Logo%29_2024.png"
   },
   {
     "name": "Match4",
@@ -444,28 +331,12 @@
     "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
   },
   {
-    "name": "Sport 1 Baltic",
-    "group": "رياضة أوروبية",
-    "url": "http://stream.mcquack.net/461/index.m3u8",
-    "note": "قناة مفتوحة — أوكرانيا",
-    "logo": "https://i.imgur.com/aBY7QK4.png",
-    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
-  },
-  {
     "name": "Sport 2",
     "group": "رياضة أوروبية",
     "url": "http://88.212.7.14/live/sport2_hun/index.m3u8",
     "note": "قناة مفتوحة — المجر",
     "logo": "https://i.imgur.com/UxflVoU.png",
     "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-  },
-  {
-    "name": "Sport 3",
-    "group": "رياضة أوروبية",
-    "url": "http://stream.mcquack.net/393/index.m3u8",
-    "note": "قناة مفتوحة — أوكرانيا",
-    "logo": "https://i.imgur.com/qkvavfH.png",
-    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
   },
   {
     "name": "Sport1",
@@ -498,13 +369,6 @@
     "logo": "https://i.imgur.com/hu56Ya5.png"
   },
   {
-    "name": "Sporty TV",
-    "group": "رياضة أوروبية",
-    "url": "https://dash2.antik.sk/live/sporty_tv/index.m3u8",
-    "note": "قناة مفتوحة — التشيك",
-    "logo": "https://i.imgur.com/Wz5bQKx.jpeg"
-  },
-  {
     "name": "TJK TV",
     "group": "رياضة أوروبية",
     "url": "https://tjktv-live.tjk.org/tjktv.m3u8",
@@ -531,6 +395,13 @@
     "url": "https://lightning-tracesport-samsungau.amagi.tv/playlist.m3u8",
     "note": "قناة مفتوحة — فرنسا",
     "logo": "https://i.imgur.com/FabFP5A.png"
+  },
+  {
+    "name": "World of Freesports",
+    "group": "رياضة أوروبية",
+    "url": "https://mainstreammedia-worldoffreesportsintl-rakuten.amagi.tv/hls/amagi_hls_data_rakutenAA-mainstreammediafreesportsintl-rakuten/CDN/master.m3u8",
+    "note": "قناة مفتوحة — ألمانيا",
+    "logo": "https://i.imgur.com/lta5Mog.png"
   },
   {
     "name": "الجزيرة",
