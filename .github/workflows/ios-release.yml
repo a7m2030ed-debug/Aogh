@@ -1,0 +1,164 @@
+name: نشر كورة تايم على App Store Connect
+
+# لا يعمل من نفسه: يُشغَّل بالضغط على «Run workflow» في تبويب Actions.
+# قبل أول تشغيل تلزم أربعة أسرار في:
+#   Settings ← Secrets and variables ← Actions ← New repository secret
+#
+#   APP_STORE_CONNECT_ISSUER_ID    من App Store Connect ← Users and Access ← Integrations ← Keys
+#   APP_STORE_CONNECT_KEY_ID       رقم المفتاح نفسه
+#   APP_STORE_CONNECT_PRIVATE_KEY  محتوى ملف ‎.p8 كاملاً بما فيه سطرا BEGIN و END
+#   APPLE_TEAM_ID                  من developer.apple.com ← Membership
+#
+# تُدخَل في صفحة الأسرار مباشرة ولا تُرسل في أي محادثة.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "رقم الإصدار المعروض (مثل 1.0)"
+        required: false
+        default: "1.0"
+      upload:
+        description: "الرفع إلى App Store Connect بعد البناء"
+        type: boolean
+        required: false
+        default: true
+
+concurrency:
+  group: ios-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: أرشفة وتوقيع ورفع
+    runs-on: macos-latest
+    timeout-minutes: 60
+
+    env:
+      ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+      TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: التأكّد من وجود الأسرار الأربعة
+        env:
+          PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+        run: |
+          missing=""
+          if [ -z "$ISSUER_ID" ]; then missing="$missing APP_STORE_CONNECT_ISSUER_ID"; fi
+          if [ -z "$KEY_ID" ]; then missing="$missing APP_STORE_CONNECT_KEY_ID"; fi
+          if [ -z "$TEAM_ID" ]; then missing="$missing APPLE_TEAM_ID"; fi
+          if [ -z "$PRIVATE_KEY" ]; then missing="$missing APP_STORE_CONNECT_PRIVATE_KEY"; fi
+          if [ -n "$missing" ]; then
+            echo "::error::تنقص هذه الأسرار:$missing — أضفها من Settings ← Secrets and variables ← Actions"
+            exit 1
+          fi
+          echo "الأسرار الأربعة موجودة."
+
+      # المفتاح يُكتب في المسار الذي يبحث فيه xcodebuild، ويُمحى في كل حال.
+      - name: تهيئة مفتاح App Store Connect
+        env:
+          PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/private_keys
+          printf '%s\n' "$PRIVATE_KEY" > ~/private_keys/AuthKey_${KEY_ID}.p8
+          chmod 600 ~/private_keys/AuthKey_${KEY_ID}.p8
+          # نسخة في المسار القياسي أيضاً لأدوات الرفع القديمة
+          mkdir -p ~/.appstoreconnect/private_keys
+          cp ~/private_keys/AuthKey_${KEY_ID}.p8 ~/.appstoreconnect/private_keys/
+
+      # رقم البناء يجب أن يزيد مع كل رفع، ورقم تشغيل الإجراء يضمن ذلك.
+      - name: أرشفة التطبيق
+        working-directory: KoraTime
+        run: |
+          set -o pipefail
+          xcodebuild archive \
+            -project KoraTime.xcodeproj \
+            -scheme KoraTime \
+            -configuration Release \
+            -destination "generic/platform=iOS" \
+            -archivePath "$RUNNER_TEMP/KoraTime.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_${KEY_ID}.p8 \
+            -authenticationKeyID "$KEY_ID" \
+            -authenticationKeyIssuerID "$ISSUER_ID" \
+            DEVELOPMENT_TEAM="$TEAM_ID" \
+            CODE_SIGN_STYLE=Automatic \
+            MARKETING_VERSION="${{ inputs.version }}" \
+            CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
+            2>&1 | tee "$RUNNER_TEMP/archive.log"
+
+      - name: أخطاء الأرشفة
+        if: failure()
+        run: |
+          echo "— أخطاء —"
+          grep -E "(error|Provisioning|Signing|No profiles|not available): " "$RUNNER_TEMP/archive.log" \
+            | sort -u | head -40 || echo "لا سطور خطأ واضحة."
+
+      # destination = upload يجعل xcodebuild يرفع بنفسه، فلا حاجة لأداة منفصلة.
+      - name: تصدير ورفع
+        working-directory: KoraTime
+        run: |
+          set -euo pipefail
+          if [ "${{ inputs.upload }}" = "true" ]; then DEST=upload; else DEST=export; fi
+          python3 - "$RUNNER_TEMP/ExportOptions.plist" "$DEST" "$TEAM_ID" <<'PY'
+          import sys
+          path, destination, team = sys.argv[1], sys.argv[2], sys.argv[3]
+          open(path, "w").write(f'''<?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>{destination}</string>
+            <key>teamID</key><string>{team}</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>uploadSymbols</key><true/>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+          </dict>
+          </plist>
+          ''')
+          PY
+          cat "$RUNNER_TEMP/ExportOptions.plist"
+
+          set -o pipefail
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/KoraTime.xcarchive" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_${KEY_ID}.p8 \
+            -authenticationKeyID "$KEY_ID" \
+            -authenticationKeyIssuerID "$ISSUER_ID" \
+            2>&1 | tee "$RUNNER_TEMP/export.log"
+
+      - name: أخطاء التصدير
+        if: failure()
+        run: |
+          echo "— أخطاء —"
+          grep -E "error|Error Domain|ITMS-" "$RUNNER_TEMP/export.log" | sort -u | head -40 || true
+
+      - name: حفظ الحزمة
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: koratime-ipa
+          path: ${{ runner.temp }}/export/*.ipa
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: محو المفتاح
+        if: always()
+        run: rm -rf ~/private_keys ~/.appstoreconnect/private_keys
+
+      - name: الخلاصة
+        if: success()
+        run: |
+          if [ "${{ inputs.upload }}" = "true" ]; then
+            echo "رُفعت النسخة إلى App Store Connect. تظهر في TestFlight بعد المعالجة (عادة ٥–٣٠ دقيقة)،" >> $GITHUB_STEP_SUMMARY
+            echo "ثم تُرسل للمراجعة من App Store Connect ← التطبيق ← الإصدار." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "بُنيت الحزمة بلا رفع. حمّلها من Artifacts أعلاه." >> $GITHUB_STEP_SUMMARY
+          fi
