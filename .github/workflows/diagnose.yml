@@ -1,0 +1,111 @@
+name: قياس جودة البثّ
+
+on:
+  push:
+    branches: [claude/kora-time-ios-app-q9dalt]
+    paths:
+      - ".github/scripts/measure_channels.py"
+      - ".github/scripts/measure_startup.py"
+      - ".github/scripts/probe_matches.py"
+      - ".github/scripts/probe_sources.py"
+      - ".github/scripts/probe_arabic.py"
+      - ".github/scripts/probe_arab_leagues.py"
+      - ".github/scripts/probe_arab_depth.py"
+      - ".github/workflows/diagnose.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: diagnose-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  measure:
+    name: قياس كل قناة
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: قياس جودة البثّ
+        run: python3 .github/scripts/measure_channels.py
+
+      - name: قياس زمن أول صورة
+        run: python3 .github/scripts/measure_startup.py
+
+      - name: فحص مصدر المباريات
+        run: python3 .github/scripts/probe_matches.py
+
+      - name: البحث عن مصدر بديل
+        run: python3 .github/scripts/probe_sources.py
+
+      # طُلب أخذ الجدول من مصادر عربية. السؤال ليس لغة الموقع بل: هل يعطي
+      # بيانات منظّمة تُقرأ آلياً، وهل يغطّي الدوريات العربية فعلاً.
+      - name: فحص المصادر العربية
+        run: python3 .github/scripts/probe_arabic.py
+
+      - name: حفظ التقرير
+        run: |
+          set -euo pipefail
+          cat docs/stream-report.md docs/startup-report.md docs/matches-report.md docs/sources-report.md docs/arabic-sources-report.md >> "$GITHUB_STEP_SUMMARY"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/stream-report.md docs/startup-report.md docs/matches-report.md docs/sources-report.md docs/arabic-sources-report.md
+          # --cached يلتقط الملف الجديد أيضاً، بخلاف git diff وحدها
+          if git diff --cached --quiet; then
+            echo "لا جديد في التقرير"
+            exit 0
+          fi
+          git commit -m "تقرير جودة البثّ [skip ci]"
+          # مهمّة «تغطية الدوريات العربية» تدفع إلى الفرع نفسه وقد تسبقنا.
+          for attempt in 1 2 3; do
+            if git push; then exit 0; fi
+            echo "الدفع تعثّر (محاولة $attempt) — نعيد الأساس"
+            git pull --rebase origin "${GITHUB_REF_NAME}"
+          done
+          echo "::error::تعذّر دفع التقرير بعد ثلاث محاولات"
+          exit 1
+
+  # مهمّة منفصلة عمداً: جواب «هل تُغطّي الدوريات العربية؟» هو نقطة القرار،
+  # فلا ينبغي أن ينتظر قياس ثلاثين قناة.
+  arab-leagues:
+    name: تغطية الدوريات العربية
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # المسح العريض (probe_arab_leagues.py) استنفد معدّل المفتاح بنفسه
+      # فأعطى أصفاراً كاذبة بعد أوّل أربعة دوريات. نتيجته محفوظة في
+      # arab-leagues-report.md، ولا يُعاد تشغيله هنا كي لا يسمّم القياس
+      # الذي يليه. يُشغَّل يدوياً عند الحاجة.
+      - name: عزل حدّ المعدّل عن التغطية
+        run: python3 .github/scripts/probe_arab_depth.py
+
+      - name: حفظ التقرير
+        run: |
+          set -euo pipefail
+          cat docs/arab-fixtures-report.md >> "$GITHUB_STEP_SUMMARY"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/arab-fixtures-report.md
+          if git diff --cached --quiet; then
+            echo "لا جديد في التقرير"
+            exit 0
+          fi
+          git commit -m "تقرير تغطية الدوريات العربية [skip ci]"
+          # المهمّة الأخرى تدفع إلى الفرع نفسه، فقد تسبقنا. نعيد الأساس ونحاول.
+          for attempt in 1 2 3; do
+            if git push; then exit 0; fi
+            echo "الدفع تعثّر (محاولة $attempt) — نعيد الأساس"
+            git pull --rebase origin "${GITHUB_REF_NAME}"
+          done
+          echo "::error::تعذّر دفع التقرير بعد ثلاث محاولات"
+          exit 1

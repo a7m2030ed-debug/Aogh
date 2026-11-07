@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="kt_background">#04120E</color>
+    <color name="kt_accent">#00D68F</color>
+
+    <!-- AppCompat شرط لزرّ البثّ إلى الشاشات الذكية؛ والسمة داكنة كالتطبيق -->
+    <style name="Theme.KoraTime" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">@color/kt_background</item>
+        <item name="android:statusBarColor">@color/kt_background</item>
+        <item name="android:navigationBarColor">@color/kt_background</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>
