@@ -1,0 +1,10 @@
+name = "koratime-matches"
+main = "worker.js"
+compatibility_date = "2026-08-01"
+
+# المفتاح لا يُكتب هنا. يُضاف مرّة واحدة سرّاً:
+#   npx wrangler secret put API_FOOTBALL_KEY
+# أو من إجراء النشر في GitHub، فيُقرأ من أسرار المستودع.
+#
+# الخطة المجانية من Cloudflare تكفي: ١٠٠ ألف طلب يومياً، والوسيط يخزّن
+# فلا يمسّ API-Football إلا مرّة لكل يوم معروض.
