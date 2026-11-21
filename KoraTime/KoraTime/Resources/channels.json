@@ -21,13 +21,6 @@
     "logo": "https://i.imgur.com/ZkuZmIo.png"
   },
   {
-    "name": "الرياضية المغربية",
-    "group": "رياضة",
-    "url": "http://149.100.11.252:8000/play/a065/index.m3u8",
-    "note": "قناة مفتوحة — المغرب",
-    "logo": "https://i.imgur.com/XjzK3gZ.png"
-  },
-  {
     "name": "الشارقة الرياضية",
     "group": "رياضة",
     "url": "https://svs.itworkscdn.net/smc4sportslive/smc4tv.smil/playlist.m3u8",
@@ -58,18 +51,18 @@
     "logo": "https://i.imgur.com/R1hGX1d.png"
   },
   {
-    "name": "الكويت الرياضية بلس",
-    "group": "رياضة",
-    "url": "https://kwtsplta.cdn.mangomolo.com/spl/smil:spl.stream.smil/chunklist.m3u8",
-    "note": "قناة مفتوحة — الكويت",
-    "logo": "https://i.imgur.com/l4oX0gf.png"
-  },
-  {
     "name": "ريد بُل",
     "group": "رياضة",
     "url": "https://db34cc6127ac459db55cab5f97cd66b9.mediatailor.us-west-2.amazonaws.com/v1/master/ba62fe743df0fe93366eba3a257d792884136c7f/LINEAR-680-WORBAUENFAST-WHALETVPLUS/680/whaletvplus/hls/master/playlist.m3u8",
     "note": "قناة مفتوحة — النمسا",
     "logo": "https://images.pluto.tv/channels/5e7cb84a172a0f0007da69e4/colorLogoPNG.png"
+  },
+  {
+    "name": "عُمان الرياضية",
+    "group": "رياضة",
+    "url": "https://partneta.cdn.mgmlcdn.com/omsport/smil:omsport.stream.smil/chunklist.m3u8",
+    "note": "قناة مفتوحة — عُمان",
+    "logo": "https://i.imgur.com/1omi7p8.png"
   },
   {
     "name": "ACI Sport TV",
@@ -91,13 +84,6 @@
     "url": "https://cdn.bestream.io/prime/prime.m3u8",
     "note": "قناة مفتوحة — سوريا",
     "logo": "https://prime1tv.com/wp-content/uploads/2025/12/7-1.png"
-  },
-  {
-    "name": "Sport TV",
-    "group": "رياضة",
-    "url": "http://media1.skifnet.by/sporttv/index.m3u8",
-    "note": "قناة مفتوحة — دولية",
-    "logo": "https://www.beltelecom.by/sites/default/files/styles/200200/public/tv-channels/2025-10/sporttv.png"
   },
   {
     "name": "beIN Sports 1",
@@ -127,13 +113,6 @@
     "url": "https://live77cdn2.antenaplay.ro/live2_sdi03/live2_sdi03_3000k.m3u8",
     "note": "قناة مفتوحة — رومانيا",
     "logo": "https://static.wikia.nocookie.net/logopedia/images/8/87/Antena_Play_symbol_white_2022.svg/revision/latest/scale-to-width-down/1000?cb=20251128201145"
-  },
-  {
-    "name": "AntenaSport",
-    "group": "رياضة أوروبية",
-    "url": "https://stream1.antenaplay.ro/as/AS.ro/chunklist.m3u8",
-    "note": "قناة مفتوحة — رومانيا",
-    "logo": "https://cdn.as.ro/wp-content/themes/antenasport/images/icons-as/as.svg"
   },
   {
     "name": "Arena Sport 1",
@@ -171,13 +150,6 @@
     "url": "https://raw.githubusercontent.com/Paradise-91/ParaTV/main/streams/equidia/live2.m3u8",
     "note": "قناة مفتوحة — فرنسا",
     "logo": "https://i.imgur.com/QPpbRcZ.png"
-  },
-  {
-    "name": "Esport3",
-    "group": "رياضة أوروبية",
-    "url": "https://directes-tv-int.3catdirectes.cat/live-content/esport3-hls/master.m3u8",
-    "note": "قناة مفتوحة — إسبانيا",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Esport3.svg/960px-Esport3.svg.png"
   },
   {
     "name": "Eurosport 1",
@@ -236,13 +208,6 @@
     "logo": "https://assets.antenaplay.ro/2024/02/28/1o8H6fCMh1DSC2vuLjo8.png"
   },
   {
-    "name": "Golf +",
-    "group": "رياضة أوروبية",
-    "url": "http://tv.streambox.fr/live/testlivestream/testlivestream/49.m3u8",
-    "note": "قناة مفتوحة — فرنسا",
-    "logo": "https://i.imgur.com/WHnddkg.png"
-  },
-  {
     "name": "Golf Channel",
     "group": "رياضة أوروبية",
     "url": "https://dash4.antik.sk/live/test_golf_channel/playlist.m3u8",
@@ -291,13 +256,6 @@
     "note": "قناة مفتوحة — فرنسا",
     "logo": "https://i.imgur.com/t35zhM9.png",
     "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
-  },
-  {
-    "name": "Lazio Style Channel",
-    "group": "رياضة أوروبية",
-    "url": "https://distribution.sportitalialive.it/origin/laziostyle_abr/playlist.m3u8",
-    "note": "قناة مفتوحة — إيطاليا",
-    "logo": "https://i.imgur.com/vDB8HFq.png"
   },
   {
     "name": "M4 Sport",
@@ -443,6 +401,13 @@
     "url": "http://88.212.7.14/live/sport2_cz_avc_25p/playlist.m3u8",
     "note": "قناة مفتوحة — التشيك",
     "logo": "https://i.imgur.com/UxflVoU.png"
+  },
+  {
+    "name": "Sportitalia",
+    "group": "رياضة أوروبية",
+    "url": "https://amg01370-italiansportcom-sportitalia-rakuten-3hmdb.amagi.tv/hls/amagi_hls_data_rakutenAA-sportitalia-rakuten/CDN/master.m3u8",
+    "note": "قناة مفتوحة — إيطاليا",
+    "logo": "https://i.imgur.com/0CJGGgd.png"
   },
   {
     "name": "الجزيرة",
