@@ -51,6 +51,13 @@
     "logo": "https://i.imgur.com/R1hGX1d.png"
   },
   {
+    "name": "الكويت الرياضية بلس",
+    "group": "رياضة",
+    "url": "https://kwtsplta.cdn.mangomolo.com/spl/smil:spl.stream.smil/chunklist.m3u8",
+    "note": "قناة مفتوحة — الكويت",
+    "logo": "https://i.imgur.com/l4oX0gf.png"
+  },
+  {
     "name": "ريد بُل",
     "group": "رياضة",
     "url": "https://db34cc6127ac459db55cab5f97cd66b9.mediatailor.us-west-2.amazonaws.com/v1/master/ba62fe743df0fe93366eba3a257d792884136c7f/LINEAR-680-WORBAUENFAST-WHALETVPLUS/680/whaletvplus/hls/master/playlist.m3u8",
@@ -86,6 +93,13 @@
     "logo": "https://prime1tv.com/wp-content/uploads/2025/12/7-1.png"
   },
   {
+    "name": "Sport TV",
+    "group": "رياضة",
+    "url": "http://media1.skifnet.by/sporttv/index.m3u8",
+    "note": "قناة مفتوحة — دولية",
+    "logo": "https://www.beltelecom.by/sites/default/files/styles/200200/public/tv-channels/2025-10/sporttv.png"
+  },
+  {
     "name": "beIN Sports 1",
     "group": "رياضة",
     "url": "https://vg162.adcdsd123321.shop/7.m3u8",
@@ -113,6 +127,13 @@
     "url": "https://live77cdn2.antenaplay.ro/live2_sdi03/live2_sdi03_3000k.m3u8",
     "note": "قناة مفتوحة — رومانيا",
     "logo": "https://static.wikia.nocookie.net/logopedia/images/8/87/Antena_Play_symbol_white_2022.svg/revision/latest/scale-to-width-down/1000?cb=20251128201145"
+  },
+  {
+    "name": "AntenaSport",
+    "group": "رياضة أوروبية",
+    "url": "https://stream1.antenaplay.ro/as/AS.ro/chunklist.m3u8",
+    "note": "قناة مفتوحة — رومانيا",
+    "logo": "https://cdn.as.ro/wp-content/themes/antenasport/images/icons-as/as.svg"
   },
   {
     "name": "Arena Sport 1",
@@ -143,6 +164,13 @@
     "url": "http://88.212.15.50/live/test_ctsport_25p/playlist.m3u8",
     "note": "قناة مفتوحة — التشيك",
     "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/72/%C4%8CT_sport_logo.png/960px-%C4%8CT_sport_logo.png"
+  },
+  {
+    "name": "Canal+ Sport",
+    "group": "رياضة أوروبية",
+    "url": "http://tv.streambox.fr/live/testlivestream/testlivestream/31.m3u8",
+    "note": "قناة مفتوحة — فرنسا",
+    "logo": "https://i.imgur.com/EOXnU15.png"
   },
   {
     "name": "Equidia",
@@ -258,6 +286,13 @@
     "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
   },
   {
+    "name": "Lazio Style Channel",
+    "group": "رياضة أوروبية",
+    "url": "https://distribution.sportitalialive.it/origin/laziostyle_abr/playlist.m3u8",
+    "note": "قناة مفتوحة — إيطاليا",
+    "logo": "https://i.imgur.com/vDB8HFq.png"
+  },
+  {
     "name": "M4 Sport",
     "group": "رياضة أوروبية",
     "url": "http://88.212.7.14/live/uatlmvixrr/index.m3u8",
@@ -271,13 +306,6 @@
     "url": "https://srvx1.selftv.video/dmchannel/live/playlist.m3u8",
     "note": "قناة مفتوحة — إيطاليا",
     "logo": "https://i.imgur.com/47X44DD.png"
-  },
-  {
-    "name": "Match4",
-    "group": "رياضة أوروبية",
-    "url": "http://141.94.193.53/Match4_HD/index.m3u8",
-    "note": "قناة مفتوحة — المجر",
-    "logo": "https://i.imgur.com/hzexBLX.png"
   },
   {
     "name": "Milan TV",
