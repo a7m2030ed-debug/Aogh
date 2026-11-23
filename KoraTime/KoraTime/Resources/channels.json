@@ -93,13 +93,6 @@
     "logo": "https://prime1tv.com/wp-content/uploads/2025/12/7-1.png"
   },
   {
-    "name": "Sport TV",
-    "group": "رياضة",
-    "url": "http://media1.skifnet.by/sporttv/index.m3u8",
-    "note": "قناة مفتوحة — دولية",
-    "logo": "https://www.beltelecom.by/sites/default/files/styles/200200/public/tv-channels/2025-10/sporttv.png"
-  },
-  {
     "name": "beIN Sports 1",
     "group": "رياضة",
     "url": "https://vg162.adcdsd123321.shop/7.m3u8",
@@ -215,11 +208,11 @@
     "logo": "https://i.imgur.com/a9ZtP17.png"
   },
   {
-    "name": "Formula 1 AntenaPlay",
+    "name": "FightBox",
     "group": "رياضة أوروبية",
-    "url": "https://stream1.antenaplay.ro/promo/formula-1-las-vegas-20-2211/chunklist.m3u8",
-    "note": "قناة مفتوحة — رومانيا",
-    "logo": "https://assets.antenaplay.ro/2024/02/23/XUKfJwir4MxNeP4nHtG7.png"
+    "url": "https://nosignal1.antenaplay.ro/hls/fightbox-hd/index.m3u8",
+    "note": "قناة مفتوحة — هولندا",
+    "logo": "https://i.imgur.com/mRsnztA.png"
   },
   {
     "name": "Formula 2 AntenaPlay",
@@ -229,11 +222,11 @@
     "logo": "https://assets.antenaplay.ro/2024/02/28/YW9VML2K4hpFUKMHme97.png"
   },
   {
-    "name": "Formula Academy AntenaPlay",
+    "name": "Golf +",
     "group": "رياضة أوروبية",
-    "url": "https://stream1.antenaplay.ro/promo/f1-academy-las-vegas-20-2211/chunklist.m3u8",
-    "note": "قناة مفتوحة — رومانيا",
-    "logo": "https://assets.antenaplay.ro/2024/02/28/1o8H6fCMh1DSC2vuLjo8.png"
+    "url": "http://tv.streambox.fr/live/testlivestream/testlivestream/49.m3u8",
+    "note": "قناة مفتوحة — فرنسا",
+    "logo": "https://i.imgur.com/WHnddkg.png"
   },
   {
     "name": "Golf Channel",
@@ -334,6 +327,13 @@
     "url": "https://cdn78-at.azotosolutions.com/cdnedge39/Canale2/master.m3u8",
     "note": "قناة مفتوحة — إيطاليا",
     "logo": "https://i.imgur.com/2ByDyzL.png"
+  },
+  {
+    "name": "ORF Sport+",
+    "group": "رياضة أوروبية",
+    "url": "https://test02.mdn.ors.at/orf/orfs/qxa/manifest.m3u8",
+    "note": "قناة مفتوحة — النمسا",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/ORF_Sport%2B.svg/960px-ORF_Sport%2B.svg.png"
   },
   {
     "name": "Persiana Fight",
