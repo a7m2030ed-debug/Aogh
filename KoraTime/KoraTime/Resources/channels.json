@@ -72,20 +72,6 @@
     "logo": "https://i.imgur.com/1omi7p8.png"
   },
   {
-    "name": "ACI Sport TV",
-    "group": "رياضة",
-    "url": "https://webstream.multistream.it/memfs/e2cb3629-c1a2-495b-b43a-9eb386f04ed8.m3u8",
-    "note": "قناة مفتوحة — إيطاليا",
-    "logo": "https://i.imgur.com/U8cHMOt.png"
-  },
-  {
-    "name": "AS3 Sport TV",
-    "group": "رياضة",
-    "url": "https://streamtv.as3sport.online:3394/hybrid/play.m3u8",
-    "note": "قناة مفتوحة — دولية",
-    "logo": "https://i.ibb.co/bRmGbsyV/A3-SPORTTV.jpg"
-  },
-  {
     "name": "Prime",
     "group": "رياضة",
     "url": "https://cdn.bestream.io/prime/prime.m3u8",
@@ -145,25 +131,11 @@
     "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.3"
   },
   {
-    "name": "Arena4",
-    "group": "رياضة أوروبية",
-    "url": "http://88.212.7.14/live/arena4/index.m3u8",
-    "note": "قناة مفتوحة — المجر",
-    "logo": "https://i.imgur.com/uAaQDr6.png"
-  },
-  {
     "name": "CT Sport",
     "group": "رياضة أوروبية",
     "url": "http://88.212.15.50/live/test_ctsport_25p/playlist.m3u8",
     "note": "قناة مفتوحة — التشيك",
     "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/72/%C4%8CT_sport_logo.png/960px-%C4%8CT_sport_logo.png"
-  },
-  {
-    "name": "Canal+ Sport",
-    "group": "رياضة أوروبية",
-    "url": "http://tv.streambox.fr/live/testlivestream/testlivestream/31.m3u8",
-    "note": "قناة مفتوحة — فرنسا",
-    "logo": "https://i.imgur.com/EOXnU15.png"
   },
   {
     "name": "Equidia",
@@ -185,14 +157,6 @@
     "url": "http://88.212.7.14/live/test_esp2_hevc_tizen/playlist.m3u8",
     "note": "قناة مفتوحة — فرنسا",
     "logo": "https://i.imgur.com/f56dHgR.png"
-  },
-  {
-    "name": "Eurosport 4K Czechia",
-    "group": "رياضة أوروبية",
-    "url": "http://88.212.15.50/live/esp_4k_atk/playlist.m3u8",
-    "note": "قناة مفتوحة — التشيك",
-    "logo": "https://i.imgur.com/0o3zjC7.png",
-    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
   },
   {
     "name": "F1 Channel",
@@ -223,13 +187,6 @@
     "logo": "https://assets.antenaplay.ro/2024/02/23/XUKfJwir4MxNeP4nHtG7.png"
   },
   {
-    "name": "Golf +",
-    "group": "رياضة أوروبية",
-    "url": "http://tv.streambox.fr/live/testlivestream/testlivestream/49.m3u8",
-    "note": "قناة مفتوحة — فرنسا",
-    "logo": "https://i.imgur.com/WHnddkg.png"
-  },
-  {
     "name": "Golf Channel",
     "group": "رياضة أوروبية",
     "url": "https://dash4.antik.sk/live/test_golf_channel/playlist.m3u8",
@@ -246,7 +203,7 @@
   {
     "name": "Horse TV",
     "group": "رياضة أوروبية",
-    "url": "https://cdn78-at.azotosolutions.com/cdnedge39/Canale4/master.m3u8",
+    "url": "https://a-cdn.klowdtv.com/live2/horsetv_720p/playlist.m3u8",
     "note": "قناة مفتوحة — إيطاليا",
     "logo": "https://i.imgur.com/nK4UUX4.png"
   },
@@ -280,33 +237,12 @@
     "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
   },
   {
-    "name": "Lazio Style Channel",
-    "group": "رياضة أوروبية",
-    "url": "https://distribution.sportitalialive.it/origin/laziostyle_abr/playlist.m3u8",
-    "note": "قناة مفتوحة — إيطاليا",
-    "logo": "https://i.imgur.com/vDB8HFq.png"
-  },
-  {
     "name": "M4 Sport",
     "group": "رياضة أوروبية",
     "url": "http://88.212.7.14/live/uatlmvixrr/index.m3u8",
     "note": "قناة مفتوحة — المجر",
     "logo": "https://i.imgur.com/TQ4uJZk.png",
     "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-  },
-  {
-    "name": "MadeinBO TV",
-    "group": "رياضة أوروبية",
-    "url": "https://srvx1.selftv.video/dmchannel/live/playlist.m3u8",
-    "note": "قناة مفتوحة — إيطاليا",
-    "logo": "https://i.imgur.com/47X44DD.png"
-  },
-  {
-    "name": "Match4",
-    "group": "رياضة أوروبية",
-    "url": "http://141.94.193.53/Match4_HD/index.m3u8",
-    "note": "قناة مفتوحة — المجر",
-    "logo": "https://i.imgur.com/hzexBLX.png"
   },
   {
     "name": "Milan TV",
@@ -330,9 +266,16 @@
     "logo": "https://assets.antenaplay.ro/2024/10/25/HmBMStln2f1qwN0tAXpG.png"
   },
   {
+    "name": "NHL AntenaPlay",
+    "group": "رياضة أوروبية",
+    "url": "https://stream1.antenaplay.ro/promo/nhl-2911/chunklist.m3u8",
+    "note": "قناة مفتوحة — رومانيا",
+    "logo": "https://assets.antenaplay.ro/2024/10/25/SN0nevshXwKDcZ2Tw1jm.png"
+  },
+  {
     "name": "Nautical Channel",
     "group": "رياضة أوروبية",
-    "url": "https://cdn78-at.azotosolutions.com/cdnedge39/Canale2/master.m3u8",
+    "url": "https://a-cdn.klowdtv.com/live2/nautical_720p/playlist.m3u8",
     "note": "قناة مفتوحة — إيطاليا",
     "logo": "https://i.imgur.com/2ByDyzL.png"
   },
@@ -359,15 +302,14 @@
   {
     "name": "Real Madrid TV",
     "group": "رياضة أوروبية",
-    "url": "http://90.163.85.113:8093/stream/26/index.m3u8",
+    "url": "https://rmtv.akamaized.net/hls/live/2043153/rmtv-es-web/master.m3u8",
     "note": "قناة مفتوحة — إسبانيا",
-    "logo": "https://i.imgur.com/5pMo7dL.png",
-    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36"
+    "logo": "https://i.imgur.com/5pMo7dL.png"
   },
   {
     "name": "Real Madrid TV English",
     "group": "رياضة أوروبية",
-    "url": "http://88.212.15.50/live/real_madrid_tv/index.m3u8",
+    "url": "https://rmtv.akamaized.net/hls/live/2043154/rmtv-en-web/bitrate_3.m3u8",
     "note": "قناة مفتوحة — إسبانيا",
     "logo": "https://i.imgur.com/5pMo7dL.png"
   },
@@ -377,45 +319,6 @@
     "url": "https://stream.realitatea.net/realitatea/sportiva_md/ts:playlist.m3u8",
     "note": "قناة مفتوحة — رومانيا",
     "logo": "https://i.imgur.com/BaEyZto.png"
-  },
-  {
-    "name": "Spiler 1",
-    "group": "رياضة أوروبية",
-    "url": "http://88.212.7.14/live/spiler1/index.m3u8",
-    "note": "قناة مفتوحة — المجر",
-    "logo": "https://i.imgur.com/pbk8c4x.png",
-    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
-  },
-  {
-    "name": "Spiler 2",
-    "group": "رياضة أوروبية",
-    "url": "http://88.212.7.14/live/spiler2/index.m3u8",
-    "note": "قناة مفتوحة — المجر",
-    "logo": "https://i.imgur.com/1e0VsVH.png",
-    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
-  },
-  {
-    "name": "Sport",
-    "group": "رياضة أوروبية",
-    "url": "http://88.212.15.50/live/test_rtvs_sport_hevc/playlist.m3u8",
-    "note": "قناة مفتوحة — سلوفاكيا",
-    "logo": "https://i.imgur.com/oAtcxNZ.png"
-  },
-  {
-    "name": "Sport 1",
-    "group": "رياضة أوروبية",
-    "url": "http://88.212.7.14/live/sport1_hun/index.m3u8",
-    "note": "قناة مفتوحة — المجر",
-    "logo": "https://i.imgur.com/X5X3tKC.png",
-    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-  },
-  {
-    "name": "Sport 2",
-    "group": "رياضة أوروبية",
-    "url": "http://88.212.7.14/live/sport2_hun/index.m3u8",
-    "note": "قناة مفتوحة — المجر",
-    "logo": "https://i.imgur.com/UxflVoU.png",
-    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
   },
   {
     "name": "Sport Total FM",
@@ -439,28 +342,9 @@
     "logo": "https://i.imgur.com/UxflVoU.png"
   },
   {
-    "name": "Sportitalia",
-    "group": "رياضة أوروبية",
-    "url": "https://amg01370-italiansportcom-sportitalia-rakuten-3hmdb.amagi.tv/hls/amagi_hls_data_rakutenAA-sportitalia-rakuten/CDN/master.m3u8",
-    "note": "قناة مفتوحة — إيطاليا",
-    "logo": "https://i.imgur.com/0CJGGgd.png"
-  },
-  {
-    "name": "Sportitalia Solocalcio",
-    "group": "رياضة أوروبية",
-    "url": "https://distribution.sportitalialive.it/sportitalia/sisolocalcio_abr/playlist.m3u8",
-    "note": "قناة مفتوحة — إيطاليا",
-    "logo": "https://i.imgur.com/hu56Ya5.png"
-  },
-  {
     "name": "الجزيرة",
     "group": "إخبارية",
     "url": "https://live-hls-web-aja.getaj.net/AJA/index.m3u8"
-  },
-  {
-    "name": "الجزيرة مباشر",
-    "group": "إخبارية",
-    "url": "https://live-hls-web-ajm.getaj.net/AJM/index.m3u8"
   },
   {
     "name": "تجربة البث HD",
