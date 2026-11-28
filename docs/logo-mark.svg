@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="كورة تايم">
+  <defs>
+    <radialGradient id="ball" cx="42%" cy="36%" r="72%">
+      <stop offset="0%" stop-color="#F7F9F8"/>
+      <stop offset="100%" stop-color="#CED8D4"/>
+    </radialGradient>
+  </defs>
+  <circle cx="512.0" cy="512.0" r="468.0" fill="url(#ball)"/>
+  <polygon points="638.4,184.4 551.0,304.6 409.8,258.7 409.8,110.1 551.0,64.2" fill="#081A14"/>
+  <polygon points="862.6,530.9 721.3,485.0 721.3,336.5 862.6,290.6 949.9,410.8" fill="#081A14"/>
+  <polygon points="602.3,851.3 602.3,702.8 743.6,656.9 830.9,777.0 743.6,897.2" fill="#081A14"/>
+  <polygon points="217.2,702.8 358.5,656.9 445.8,777.0 358.5,897.2 217.2,851.3" fill="#081A14"/>
+  <polygon points="239.5,290.6 326.8,410.8 239.5,530.9 98.2,485.0 98.2,336.5" fill="#081A14"/>
+  <line x1="512.0" y1="512.0" x2="407.5" y2="368.1" stroke="#00D68F" stroke-width="58.7" stroke-linecap="round"/>
+  <line x1="512.0" y1="512.0" x2="660.5" y2="307.5" stroke="#00D68F" stroke-width="47.5" stroke-linecap="round"/>
+  <circle cx="512.0" cy="512.0" r="41.9" fill="#081A14"/>
+  <circle cx="512.0" cy="512.0" r="19.5" fill="#00D68F"/>
+</svg>
